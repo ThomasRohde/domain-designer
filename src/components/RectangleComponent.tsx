@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Rectangle } from '../types';
-import { GRID_SIZE } from '../utils/constants';
+import { GRID_SIZE, LABEL_MARGIN } from '../utils/constants';
 
 interface RectangleComponentProps {
   rectangle: Rectangle;
@@ -110,7 +110,10 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       {childCount > 0 ? (
         // Rectangles with children: label at top edge, centered horizontally
         <div className="relative h-full">
-          <div className="absolute top-2 left-0 right-0 text-center px-2">
+          <div 
+            className="absolute left-0 right-0 text-center px-2"
+            style={{ top: `${LABEL_MARGIN * 2}px` }}
+          >
             {isEditing ? (
               <input
                 ref={inputRef}
@@ -135,7 +138,10 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
           
           {/* Action buttons for selected rectangles with children */}
           {isSelected && (
-            <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+            <div 
+              className="absolute right-2 flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
+              style={{ top: `${LABEL_MARGIN * 2}px` }}
+            >
               <button
                 className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors"
                 onClick={(e) => {

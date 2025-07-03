@@ -1,5 +1,5 @@
 import { Rectangle } from '../types';
-import { MARGIN, MIN_WIDTH, MIN_HEIGHT } from './constants';
+import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT } from './constants';
 
 /**
  * Calculate auto-sized dimensions and positions for child rectangles
@@ -7,14 +7,18 @@ import { MARGIN, MIN_WIDTH, MIN_HEIGHT } from './constants';
 export const calculateChildLayout = (parentRect: Rectangle, children: Rectangle[]): Rectangle[] => {
   if (!parentRect || children.length === 0) return [];
 
-  const availableWidth = parentRect.w - (MARGIN * 2);
-  const availableHeight = parentRect.h - (MARGIN * 2);
+  // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
+  const topMargin = LABEL_MARGIN;
+  const sideMargin = MARGIN;
+  
+  const availableWidth = parentRect.w - (sideMargin * 2);
+  const availableHeight = parentRect.h - topMargin - sideMargin;
 
   const cols = Math.ceil(Math.sqrt(children.length));
   const rows = Math.ceil(children.length / cols);
 
-  const totalHorizontalSpacing = (cols - 1) * MARGIN;
-  const totalVerticalSpacing = (rows - 1) * MARGIN;
+  const totalHorizontalSpacing = (cols - 1) * sideMargin;
+  const totalVerticalSpacing = (rows - 1) * sideMargin;
   
   const childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
   const childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
@@ -25,8 +29,8 @@ export const calculateChildLayout = (parentRect: Rectangle, children: Rectangle[
 
     return {
       ...child,
-      x: parentRect.x + MARGIN + (col * (childWidth + MARGIN)),
-      y: parentRect.y + MARGIN + (row * (childHeight + MARGIN)),
+      x: parentRect.x + sideMargin + (col * (childWidth + sideMargin)),
+      y: parentRect.y + topMargin + (row * (childHeight + sideMargin)),
       w: childWidth,
       h: childHeight
     };
@@ -106,14 +110,18 @@ export const calculateNewRectangleLayout = (
       const existingChildren = rectangles.filter(rect => rect.parentId === parentId);
       const childIndex = existingChildren.length;
       
-      const availableWidth = Math.max(MIN_WIDTH, parent.w - (MARGIN * 2));
-      const availableHeight = Math.max(MIN_HEIGHT, parent.h - (MARGIN * 2));
+      // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
+      const topMargin = LABEL_MARGIN;
+      const sideMargin = MARGIN;
+      
+      const availableWidth = Math.max(MIN_WIDTH, parent.w - (sideMargin * 2));
+      const availableHeight = Math.max(MIN_HEIGHT, parent.h - topMargin - sideMargin);
       
       const cols = Math.ceil(Math.sqrt(childIndex + 1));
       const rows = Math.ceil((childIndex + 1) / cols);
       
-      const totalHorizontalSpacing = (cols - 1) * MARGIN;
-      const totalVerticalSpacing = (rows - 1) * MARGIN;
+      const totalHorizontalSpacing = (cols - 1) * sideMargin;
+      const totalVerticalSpacing = (rows - 1) * sideMargin;
       
       const childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
       const childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
@@ -121,8 +129,8 @@ export const calculateNewRectangleLayout = (
       const col = childIndex % cols;
       const row = Math.floor(childIndex / cols);
       
-      x = parent.x + MARGIN + (col * (childWidth + MARGIN));
-      y = parent.y + MARGIN + (row * (childHeight + MARGIN));
+      x = parent.x + sideMargin + (col * (childWidth + sideMargin));
+      y = parent.y + topMargin + (row * (childHeight + sideMargin));
       w = childWidth;
       h = childHeight;
       

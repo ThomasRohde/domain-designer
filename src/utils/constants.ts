@@ -1,5 +1,6 @@
 export const GRID_SIZE = 20;
-export const MARGIN = 1;
+export const MARGIN = 0.5;
+export const LABEL_MARGIN = 2; // Extra margin for nodes with children to accommodate labels
 export const MIN_WIDTH = 3;
 export const MIN_HEIGHT = 3;
 export const MAX_HISTORY_SIZE = 50;
