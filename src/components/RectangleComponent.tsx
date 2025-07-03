@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Rectangle } from '../types';
+import { Rectangle, RectangleCategory } from '../types';
 import { GRID_SIZE, CATEGORY_CONFIGS } from '../utils/constants';
 
 interface RectangleComponentProps {
@@ -11,7 +11,7 @@ interface RectangleComponentProps {
   onContextMenu: (e: React.MouseEvent, rectangleId: string) => void;
   onSelect: (id: string) => void;
   onUpdateLabel: (id: string, label: string) => void;
-  onAddChild: (parentId: string, category?: any) => void;
+  onAddChild: (parentId: string, category?: RectangleCategory) => void;
   onRemove: (id: string) => void;
   canDrag: boolean;
   canResize: boolean;
