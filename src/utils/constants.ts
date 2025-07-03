@@ -11,7 +11,7 @@ export const DEFAULT_COLORS = {
 };
 
 export const DEFAULT_RECTANGLE_SIZE = {
-  root: { w: 8, h: 6 },
+  root: { w: 16, h: 10 },
   parent: { w: 6, h: 4 },
   leaf: { w: 4, h: 3 }
 };

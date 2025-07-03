@@ -18,6 +18,7 @@ const HierarchicalDrawingApp = () => {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [history, setHistory] = useState<Rectangle[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Generate a unique ID for new rectangles
@@ -457,6 +458,23 @@ const HierarchicalDrawingApp = () => {
     }
   }, [dragState, resizeState, handleMouseMove, handleMouseUp]);
 
+  // Handle responsive sidebar behavior
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) { // lg breakpoint
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Handle clicks outside to close context menu
   React.useEffect(() => {
     const handleClick = () => setContextMenu(null);
@@ -466,21 +484,33 @@ const HierarchicalDrawingApp = () => {
     }
   }, [contextMenu]);
 
-  // Calculate canvas size
+  // Calculate canvas size based on viewport and content
   const canvasSize = useMemo(() => {
-    if (rectangles.length === 0) return { width: 1200, height: 800 };
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    
+    const sidebarWidth = sidebarOpen && viewportWidth >= 1024 ? 320 : 0;
+    const availableWidth = viewportWidth - sidebarWidth - 32; // Account for padding
+    const availableHeight = viewportHeight - 120; // Account for toolbar and padding
+    
+    if (rectangles.length === 0) {
+      return { 
+        width: Math.max(availableWidth, 800), 
+        height: Math.max(availableHeight, 600) 
+      };
+    }
     
     const maxX = Math.max(...rectangles.map(r => r.x + r.w));
     const maxY = Math.max(...rectangles.map(r => r.y + r.h));
     
     return {
-      width: Math.max(1200, (maxX + 5) * GRID_SIZE),
-      height: Math.max(800, (maxY + 5) * GRID_SIZE)
+      width: Math.max(availableWidth, (maxX + 5) * GRID_SIZE),
+      height: Math.max(availableHeight, (maxY + 5) * GRID_SIZE)
     };
-  }, [rectangles]);
+  }, [rectangles, sidebarOpen]);
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex flex-col">
+    <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
       <Toolbar
         onAddRectangle={addRectangle}
         onSave={saveDiagram}
@@ -491,73 +521,108 @@ const HierarchicalDrawingApp = () => {
         canUndo={historyIndex > 0}
         canRedo={historyIndex < history.length - 1}
         selectedId={selectedId}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        sidebarOpen={sidebarOpen}
       />
 
-      <div className="flex-1 flex">
-        <div className="flex-1 p-4">
-          <div 
-            className="bg-white rounded-lg shadow-lg overflow-auto h-full"
-          >
-            <div
-              ref={containerRef}
-              className="relative bg-gray-50"
-              style={{ 
-                width: canvasSize.width, 
-                height: canvasSize.height,
-                backgroundImage: `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
-                backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`
-              }}
-              onClick={() => setSelectedId(null)}
-            >
-              {rectangles.map(rect => (
-                <RectangleComponent
-                  key={rect.id}
-                  rectangle={rect}
-                  isSelected={selectedId === rect.id}
-                  zIndex={getZIndex(rect)}
-                  onMouseDown={handleMouseDown}
-                  onContextMenu={handleContextMenu}
-                  onSelect={setSelectedId}
-                  onUpdateLabel={updateRectangleLabel}
-                  onAddChild={addRectangle}
-                  onRemove={removeRectangle}
-                  canDrag={!rect.parentId}
-                  canResize={!isLeaf(rect.id) && !rect.parentId}
-                  childCount={getChildren(rect.id).length}
-                />
-              ))}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Main Canvas Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 p-2 sm:p-4 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-lg overflow-auto h-full w-full canvas-container">
+              <div
+                ref={containerRef}
+                className="relative bg-gray-50 min-w-full min-h-full"
+                style={{ 
+                  width: canvasSize.width, 
+                  height: canvasSize.height,
+                  backgroundImage: `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
+                  backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`
+                }}
+                onClick={() => setSelectedId(null)}
+              >
+                {rectangles.map(rect => (
+                  <RectangleComponent
+                    key={rect.id}
+                    rectangle={rect}
+                    isSelected={selectedId === rect.id}
+                    zIndex={getZIndex(rect)}
+                    onMouseDown={handleMouseDown}
+                    onContextMenu={handleContextMenu}
+                    onSelect={setSelectedId}
+                    onUpdateLabel={updateRectangleLabel}
+                    onAddChild={addRectangle}
+                    onRemove={removeRectangle}
+                    canDrag={!rect.parentId}
+                    canResize={!isLeaf(rect.id) && !rect.parentId}
+                    childCount={getChildren(rect.id).length}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="w-80 p-4 space-y-4">
-          <ColorPalette
-            selectedColor={selectedId ? findRectangle(selectedId)?.color : undefined}
-            onColorChange={(color) => selectedId && updateRectangleColor(selectedId, color)}
-          />
+        {/* Responsive Sidebar */}
+        <div className={`
+          ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
+          fixed lg:relative lg:translate-x-0 
+          top-0 right-0 bottom-0 z-40
+          w-80 bg-gray-50 shadow-xl lg:shadow-none
+          transition-transform duration-300 ease-in-out
+          flex flex-col
+          ${sidebarOpen ? '' : 'lg:w-80'}
+        `}>
+          {/* Mobile close button */}
+          <div className="lg:hidden p-4 border-b bg-white">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="w-full flex items-center justify-between text-gray-600 hover:text-gray-900"
+            >
+              <span className="font-medium">Properties</span>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-          {selectedId && (
-            <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="font-semibold mb-2">Selected: {selectedId}</h3>
-              <div className="text-sm text-gray-600 space-y-1">
-                {(() => {
-                  const rect = findRectangle(selectedId);
-                  if (!rect) return null;
-                  const children = getChildren(selectedId);
-                  return (
-                    <div>
-                      <div>Position: ({rect.x}, {rect.y})</div>
-                      <div>Size: {rect.w} × {rect.h}</div>
-                      <div>Children: {children.length}</div>
-                      <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
-                      <div>Color: {rect.color}</div>
-                    </div>
-                  );
-                })()}
+          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+            <ColorPalette
+              selectedColor={selectedId ? findRectangle(selectedId)?.color : undefined}
+              onColorChange={(color) => selectedId && updateRectangleColor(selectedId, color)}
+            />
+
+            {selectedId && (
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
+                <div className="text-xs lg:text-sm text-gray-600 space-y-1">
+                  {(() => {
+                    const rect = findRectangle(selectedId);
+                    if (!rect) return null;
+                    const children = getChildren(selectedId);
+                    return (
+                      <div>
+                        <div>Position: ({rect.x}, {rect.y})</div>
+                        <div>Size: {rect.w} × {rect.h}</div>
+                        <div>Children: {children.length}</div>
+                        <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
+                        <div>Color: {rect.color}</div>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* Overlay for mobile when sidebar is open */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
       </div>
 
       {contextMenu && (

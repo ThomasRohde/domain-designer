@@ -135,28 +135,28 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
             </div>
           </div>
           
-          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
             {isSelected && (
               <>
                 <button
-                  className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors"
+                  className="p-2 sm:p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors touch-friendly"
                   onClick={(e) => {
                     e.stopPropagation();
                     onAddChild(rectangle.id);
                   }}
                   title="Add Child"
                 >
-                  <Plus size={12} />
+                  <Plus size={14} className="sm:w-3 sm:h-3" />
                 </button>
                 <button
-                  className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                  className="p-2 sm:p-1 hover:bg-red-100 rounded text-red-600 transition-colors touch-friendly"
                   onClick={(e) => {
                     e.stopPropagation();
                     onRemove(rectangle.id);
                   }}
                   title="Remove"
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={14} className="sm:w-3 sm:h-3" />
                 </button>
               </>
             )}
@@ -195,7 +195,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       {/* Resize handle for resizable rectangles */}
       {canResize && isSelected && (
         <div
-          className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize rounded-tl-lg opacity-80 hover:opacity-100 transition-opacity"
+          className="absolute bottom-0 right-0 w-6 h-6 sm:w-4 sm:h-4 bg-blue-500 cursor-se-resize rounded-tl-lg opacity-80 hover:opacity-100 transition-opacity touch-friendly"
           onMouseDown={(e) => onMouseDown(e, rectangle, 'resize')}
           title="Resize"
         />

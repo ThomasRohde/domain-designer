@@ -9,6 +9,10 @@
     @apply border-gray-200;
   }
   
+  html, body, #root {
+    @apply h-full overflow-hidden;
+  }
+  
   body {
     @apply bg-gray-50 text-gray-900 font-sans;
   }
@@ -17,6 +21,20 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  /* Ensure canvas scrollbars are always visible when needed */
+  .canvas-container {
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+  }
+  
+  /* Touch-friendly responsive utilities */
+  @media (max-width: 640px) {
+    .touch-friendly {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 }
 
