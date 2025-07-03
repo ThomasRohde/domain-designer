@@ -16,6 +16,7 @@ interface RectangleComponentProps {
   canDrag: boolean;
   canResize: boolean;
   childCount: number;
+  gridSize?: number;
 }
 
 const RectangleComponent: React.FC<RectangleComponentProps> = ({
@@ -30,7 +31,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   onRemove,
   canDrag,
   canResize,
-  childCount
+  childCount,
+  gridSize = GRID_SIZE
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(rectangle.label);
@@ -78,10 +80,10 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: rectangle.x * GRID_SIZE,
-    top: rectangle.y * GRID_SIZE,
-    width: rectangle.w * GRID_SIZE,
-    height: rectangle.h * GRID_SIZE,
+    left: rectangle.x * gridSize,
+    top: rectangle.y * gridSize,
+    width: rectangle.w * gridSize,
+    height: rectangle.h * gridSize,
     backgroundColor: rectangle.color,
     border: `2px solid ${isSelected ? '#3b82f6' : '#e5e7eb'}`,
     borderRadius: '8px',

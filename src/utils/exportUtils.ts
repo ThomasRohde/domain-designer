@@ -5,7 +5,8 @@ import { Rectangle, ExportOptions } from '../types';
 export const exportDiagram = async (
   containerElement: HTMLElement,
   rectangles: Rectangle[],
-  options: ExportOptions
+  options: ExportOptions,
+  gridSize: number = 20
 ): Promise<void> => {
   const { format, quality = 1, scale = 1, includeBackground = true } = options;
   
@@ -17,7 +18,7 @@ export const exportDiagram = async (
       await exportToPNG(containerElement, filename, { quality, scale, includeBackground });
       break;
     case 'svg':
-      await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground });
+      await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, gridSize);
       break;
     case 'pdf':
       await exportToPDF(containerElement, filename, { quality, scale, includeBackground });
@@ -57,10 +58,11 @@ const exportToSVG = async (
   _element: HTMLElement,
   rectangles: Rectangle[],
   filename: string,
-  options: { scale: number; includeBackground: boolean }
+  options: { scale: number; includeBackground: boolean },
+  gridSize: number = 20
 ): Promise<void> => {
   try {
-    const svg = createSVGFromRectangles(rectangles, options);
+    const svg = createSVGFromRectangles(rectangles, options, gridSize);
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     
@@ -112,7 +114,7 @@ const exportToJSON = (rectangles: Rectangle[], filename: string): void => {
     metadata: {
       totalRectangles: rectangles.length,
       rootRectangles: rectangles.filter(r => !r.parentId).length,
-      categories: [...new Set(rectangles.map(r => r.category))]
+      types: [...new Set(rectangles.map(r => r.type))]
     }
   };
 
@@ -129,15 +131,15 @@ const exportToJSON = (rectangles: Rectangle[], filename: string): void => {
 
 const createSVGFromRectangles = (
   rectangles: Rectangle[],
-  options: { scale: number; includeBackground: boolean }
+  options: { scale: number; includeBackground: boolean },
+  gridSize: number = 20
 ): string => {
   if (rectangles.length === 0) return '';
 
-  const GRID_SIZE = 20;
   const maxX = Math.max(...rectangles.map(r => r.x + r.w));
   const maxY = Math.max(...rectangles.map(r => r.y + r.h));
-  const width = (maxX + 2) * GRID_SIZE * options.scale;
-  const height = (maxY + 2) * GRID_SIZE * options.scale;
+  const width = (maxX + 2) * gridSize * options.scale;
+  const height = (maxY + 2) * gridSize * options.scale;
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
   
@@ -146,8 +148,8 @@ const createSVGFromRectangles = (
     
     // Add grid pattern
     svg += `<defs>
-      <pattern id="grid" width="${GRID_SIZE * options.scale}" height="${GRID_SIZE * options.scale}" patternUnits="userSpaceOnUse">
-        <circle cx="${GRID_SIZE * options.scale / 2}" cy="${GRID_SIZE * options.scale / 2}" r="1" fill="#d1d5db"/>
+      <pattern id="grid" width="${gridSize * options.scale}" height="${gridSize * options.scale}" patternUnits="userSpaceOnUse">
+        <circle cx="${gridSize * options.scale / 2}" cy="${gridSize * options.scale / 2}" r="1" fill="#d1d5db"/>
       </pattern>
     </defs>`;
     svg += `<rect width="100%" height="100%" fill="url(#grid)"/>`;
@@ -161,10 +163,10 @@ const createSVGFromRectangles = (
   });
 
   sortedRectangles.forEach(rect => {
-    const x = rect.x * GRID_SIZE * options.scale;
-    const y = rect.y * GRID_SIZE * options.scale;
-    const w = rect.w * GRID_SIZE * options.scale;
-    const h = rect.h * GRID_SIZE * options.scale;
+    const x = rect.x * gridSize * options.scale;
+    const y = rect.y * gridSize * options.scale;
+    const w = rect.w * gridSize * options.scale;
+    const h = rect.h * gridSize * options.scale;
 
     svg += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
       fill="${rect.color}" 

@@ -15,6 +15,7 @@ import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
 import ExportModal from './ExportModal';
+import GlobalSettings from './GlobalSettings';
 
 const HierarchicalDrawingApp = () => {
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
@@ -25,6 +26,7 @@ const HierarchicalDrawingApp = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rectangleId: string } | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [gridSize, setGridSize] = useState(GRID_SIZE);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Generate a unique ID for new rectangles
@@ -133,8 +135,8 @@ const HierarchicalDrawingApp = () => {
         id: rect.id,
         startX,
         startY,
-        initialX: rect.x * GRID_SIZE,
-        initialY: rect.y * GRID_SIZE
+        initialX: rect.x * gridSize,
+        initialY: rect.y * gridSize
       });
     } else if (action === 'resize') {
       setResizeState({
@@ -145,7 +147,7 @@ const HierarchicalDrawingApp = () => {
         initialH: rect.h
       });
     }
-  }, []);
+  }, [gridSize]);
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -160,8 +162,8 @@ const HierarchicalDrawingApp = () => {
     if (dragState) {
       const deltaX = currentX - dragState.startX;
       const deltaY = currentY - dragState.startY;
-      const newX = Math.max(0, Math.round((dragState.initialX + deltaX) / GRID_SIZE));
-      const newY = Math.max(0, Math.round((dragState.initialY + deltaY) / GRID_SIZE));
+      const newX = Math.max(0, Math.round((dragState.initialX + deltaX) / gridSize));
+      const newY = Math.max(0, Math.round((dragState.initialY + deltaY) / gridSize));
 
       setRectangles(prev => prev.map(rect => 
         rect.id === dragState.id ? { ...rect, x: newX, y: newY } : rect
@@ -169,14 +171,14 @@ const HierarchicalDrawingApp = () => {
     } else if (resizeState) {
       const deltaX = currentX - resizeState.startX;
       const deltaY = currentY - resizeState.startY;
-      const newW = Math.max(MIN_WIDTH, Math.round(resizeState.initialW + deltaX / GRID_SIZE));
-      const newH = Math.max(MIN_HEIGHT, Math.round(resizeState.initialH + deltaY / GRID_SIZE));
+      const newW = Math.max(MIN_WIDTH, Math.round(resizeState.initialW + deltaX / gridSize));
+      const newH = Math.max(MIN_HEIGHT, Math.round(resizeState.initialH + deltaY / gridSize));
 
       setRectangles(prev => prev.map(rect => 
         rect.id === resizeState.id ? { ...rect, w: newW, h: newH } : rect
       ));
     }
-  }, [dragState, resizeState]);
+  }, [dragState, resizeState, gridSize]);
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
@@ -218,11 +220,11 @@ const HierarchicalDrawingApp = () => {
     if (!containerRef.current) return;
     
     try {
-      await exportDiagram(containerRef.current, rectangles, options);
+      await exportDiagram(containerRef.current, rectangles, options, gridSize);
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangles]);
+  }, [rectangles, gridSize]);
 
   // Add global mouse event listeners
   React.useEffect(() => {
@@ -282,10 +284,10 @@ const HierarchicalDrawingApp = () => {
     const maxY = Math.max(...rectangles.map(r => r.y + r.h));
     
     return {
-      width: Math.max(availableWidth, (maxX + 5) * GRID_SIZE),
-      height: Math.max(availableHeight, (maxY + 5) * GRID_SIZE)
+      width: Math.max(availableWidth, (maxX + 5) * gridSize),
+      height: Math.max(availableHeight, (maxY + 5) * gridSize)
     };
-  }, [rectangles]);
+  }, [rectangles, gridSize]);
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -309,7 +311,7 @@ const HierarchicalDrawingApp = () => {
                   width: canvasSize.width, 
                   height: canvasSize.height,
                   backgroundImage: `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
-                  backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px`
+                  backgroundSize: `${gridSize}px ${gridSize}px`
                 }}
                 onClick={() => setSelectedId(null)}
               >
@@ -328,6 +330,7 @@ const HierarchicalDrawingApp = () => {
                     canDrag={!rect.parentId}
                     canResize={!isLeaf(rect.id, rectangles) && !rect.parentId}
                     childCount={getChildren(rect.id, rectangles).length}
+                    gridSize={gridSize}
                   />
                 ))}
               </div>
@@ -358,31 +361,40 @@ const HierarchicalDrawingApp = () => {
           </div>
 
           <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-            <ColorPalette
-              selectedColor={selectedId ? findRectangle(selectedId)?.color : undefined}
-              onColorChange={(color) => selectedId && updateRectangleColor(selectedId, color)}
-            />
+            {selectedId ? (
+              // Node is selected: Show color picker and node details
+              <>
+                <ColorPalette
+                  selectedColor={findRectangle(selectedId)?.color}
+                  onColorChange={(color) => updateRectangleColor(selectedId, color)}
+                />
 
-            {selectedId && (
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
-                <div className="text-xs lg:text-sm text-gray-600 space-y-1">
-                  {(() => {
-                    const rect = findRectangle(selectedId);
-                    if (!rect) return null;
-                    const children = getChildren(selectedId, rectangles);
-                    return (
-                      <div>
-                        <div>Position: ({rect.x}, {rect.y})</div>
-                        <div>Size: {rect.w} × {rect.h}</div>
-                        <div>Children: {children.length}</div>
-                        <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
-                        <div>Color: {rect.color}</div>
-                      </div>
-                    );
-                  })()}
+                <div className="bg-white rounded-lg shadow p-4">
+                  <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
+                  <div className="text-xs lg:text-sm text-gray-600 space-y-1">
+                    {(() => {
+                      const rect = findRectangle(selectedId);
+                      if (!rect) return null;
+                      const children = getChildren(selectedId, rectangles);
+                      return (
+                        <div>
+                          <div>Position: ({rect.x}, {rect.y})</div>
+                          <div>Size: {rect.w} × {rect.h}</div>
+                          <div>Children: {children.length}</div>
+                          <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
+                          <div>Color: {rect.color}</div>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
-              </div>
+              </>
+            ) : (
+              // No node selected: Show global settings
+              <GlobalSettings
+                gridSize={gridSize}
+                onGridSizeChange={setGridSize}
+              />
             )}
           </div>
         </div>
