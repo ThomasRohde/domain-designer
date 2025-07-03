@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Rectangle, DragState, ResizeState, RectangleCategory, ExportOptions } from '../types';
-import { GRID_SIZE, MARGIN, MIN_WIDTH, MIN_HEIGHT, CATEGORY_CONFIGS, DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
+import { Rectangle, DragState, ResizeState, ExportOptions } from '../types';
+import { GRID_SIZE, MARGIN, MIN_WIDTH, MIN_HEIGHT, DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
 import { exportDiagram } from '../utils/exportUtils';
 import RectangleComponent from './RectangleComponent';
-import CategorySelector from './CategorySelector';
+import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
 import ExportModal from './ExportModal';
@@ -165,15 +165,16 @@ const HierarchicalDrawingApp = () => {
   }, [calculateChildLayout]);
 
   // Add a new rectangle
-  const addRectangle = useCallback((parentId: string | null = null, category: RectangleCategory = 'business') => {
+  const addRectangle = useCallback((parentId: string | null = null) => {
     const id = generateId();
-    const config = CATEGORY_CONFIGS[category];
     let x = 0, y = 0;
     let { w, h } = parentId ? DEFAULT_RECTANGLE_SIZE.leaf : DEFAULT_RECTANGLE_SIZE.root;
+    let color = DEFAULT_COLORS.root; // Default color
 
     if (parentId) {
       const parent = findRectangle(parentId);
       if (parent) {
+        color = DEFAULT_COLORS.leaf;
         const existingChildren = getChildren(parentId);
         const childIndex = existingChildren.length;
         
@@ -216,9 +217,8 @@ const HierarchicalDrawingApp = () => {
       y,
       w,
       h,
-      label: config.name,
-      color: config.backgroundColor,
-      category,
+      label: `Rectangle ${id}`,
+      color,
       type: parentId ? (isLeaf(parentId) ? 'leaf' : 'parent') : 'root',
     };
 
@@ -267,15 +267,13 @@ const HierarchicalDrawingApp = () => {
     );
   }, []);
 
-  // Update rectangle category
-  const updateRectangleCategory = useCallback((id: string, category: RectangleCategory) => {
-    const config = CATEGORY_CONFIGS[category];
+  // Update rectangle color
+  const updateRectangleColor = useCallback((id: string, color: string) => {
     setRectangles(prev => {
       const updated = prev.map(rect => 
         rect.id === id ? { 
           ...rect, 
-          category,
-          color: config.backgroundColor 
+          color
         } : rect
       );
       saveToHistory(updated);
@@ -533,9 +531,9 @@ const HierarchicalDrawingApp = () => {
         </div>
 
         <div className="w-80 p-4 space-y-4">
-          <CategorySelector
-            selectedCategory={selectedId ? findRectangle(selectedId)?.category : undefined}
-            onCategoryChange={(category) => selectedId && updateRectangleCategory(selectedId, category)}
+          <ColorPalette
+            selectedColor={selectedId ? findRectangle(selectedId)?.color : undefined}
+            onColorChange={(color) => selectedId && updateRectangleColor(selectedId, color)}
           />
 
           {selectedId && (
@@ -552,7 +550,7 @@ const HierarchicalDrawingApp = () => {
                       <div>Size: {rect.w} × {rect.h}</div>
                       <div>Children: {children.length}</div>
                       <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
-                      <div>Category: {CATEGORY_CONFIGS[rect.category].name}</div>
+                      <div>Color: {rect.color}</div>
                     </div>
                   );
                 })()}

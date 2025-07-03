@@ -1,12 +1,11 @@
 import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { RectangleCategory } from '../types';
 
 interface ContextMenuProps {
   x: number;
   y: number;
   rectangleId: string;
-  onAddChild: (parentId: string, category: RectangleCategory) => void;
+  onAddChild: (parentId: string) => void;
   onRemove: (id: string) => void;
   onClose: () => void;
 }
@@ -19,8 +18,8 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onRemove,
   onClose
 }) => {
-  const handleAddChild = (category: RectangleCategory) => {
-    onAddChild(rectangleId, category);
+  const handleAddChild = () => {
+    onAddChild(rectangleId);
     onClose();
   };
 
@@ -41,27 +40,11 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
       
       <div className="py-1">
         <button
-          onClick={() => handleAddChild('business')}
+          onClick={handleAddChild}
           className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
         >
           <Plus size={14} />
-          <span>Add Business Child</span>
-        </button>
-        
-        <button
-          onClick={() => handleAddChild('channel')}
-          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
-        >
-          <Plus size={14} />
-          <span>Add Channel Child</span>
-        </button>
-        
-        <button
-          onClick={() => handleAddChild('product')}
-          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
-        >
-          <Plus size={14} />
-          <span>Add Product Child</span>
+          <span>Add Child</span>
         </button>
       </div>
       

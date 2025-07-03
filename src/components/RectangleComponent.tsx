@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import { Rectangle, RectangleCategory } from '../types';
-import { GRID_SIZE, CATEGORY_CONFIGS } from '../utils/constants';
+import { Rectangle } from '../types';
+import { GRID_SIZE } from '../utils/constants';
 
 interface RectangleComponentProps {
   rectangle: Rectangle;
@@ -11,7 +11,7 @@ interface RectangleComponentProps {
   onContextMenu: (e: React.MouseEvent, rectangleId: string) => void;
   onSelect: (id: string) => void;
   onUpdateLabel: (id: string, label: string) => void;
-  onAddChild: (parentId: string, category?: RectangleCategory) => void;
+  onAddChild: (parentId: string) => void;
   onRemove: (id: string) => void;
   canDrag: boolean;
   canResize: boolean;
@@ -36,7 +36,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   const [editValue, setEditValue] = useState(rectangle.label);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const config = CATEGORY_CONFIGS[rectangle.category];
   const isLeaf = childCount === 0;
 
   useEffect(() => {
@@ -66,14 +65,27 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     }
   };
 
+  // Helper function to determine text color based on background
+  const getTextColor = (backgroundColor: string) => {
+    // Simple contrast calculation - in a real app you might want something more sophisticated
+    const hex = backgroundColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return brightness > 128 ? '#000000' : '#ffffff';
+  };
+
+  const textColor = getTextColor(rectangle.color);
+  
   const style: React.CSSProperties = {
     position: 'absolute',
     left: rectangle.x * GRID_SIZE,
     top: rectangle.y * GRID_SIZE,
     width: rectangle.w * GRID_SIZE,
     height: rectangle.h * GRID_SIZE,
-    backgroundColor: config.backgroundColor,
-    border: `2px solid ${isSelected ? '#3b82f6' : config.borderColor}`,
+    backgroundColor: rectangle.color,
+    border: `2px solid ${isSelected ? '#3b82f6' : '#e5e7eb'}`,
     borderRadius: '8px',
     cursor: canDrag ? 'move' : 'pointer',
     zIndex: zIndex,
@@ -99,7 +111,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       <div className="p-3 h-full flex flex-col">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center space-x-2 flex-1 min-w-0">
-            <span className="text-lg">{config.icon}</span>
             <div className="flex-1 min-w-0">
               {isEditing ? (
                 <input
@@ -110,12 +121,12 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                   onBlur={handleInputSubmit}
                   onKeyDown={handleInputKeyDown}
                   className="w-full px-1 py-0.5 text-sm font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ color: config.textColor }}
+                  style={{ color: textColor }}
                 />
               ) : (
                 <div 
                   className="text-sm font-medium truncate cursor-text"
-                  style={{ color: config.textColor }}
+                  style={{ color: textColor }}
                   title={rectangle.label}
                 >
                   {rectangle.label}
@@ -131,7 +142,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                   className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onAddChild(rectangle.id, rectangle.category);
+                    onAddChild(rectangle.id);
                   }}
                   title="Add Child"
                 >
@@ -152,31 +163,31 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
           </div>
         </div>
         
-        <div className="text-xs opacity-75 mb-1" style={{ color: config.textColor }}>
+        <div className="text-xs opacity-75 mb-1" style={{ color: textColor }}>
           {rectangle.parentId ? `Child of ${rectangle.parentId}` : 'Root'}
         </div>
         
         {childCount > 0 && (
-          <div className="text-xs opacity-75 mb-1" style={{ color: config.textColor }}>
+          <div className="text-xs opacity-75 mb-1" style={{ color: textColor }}>
             {childCount} child{childCount !== 1 ? 'ren' : ''}
           </div>
         )}
         
         {isLeaf && (
-          <div className="text-xs font-medium mb-1" style={{ color: config.textColor }}>
+          <div className="text-xs font-medium mb-1" style={{ color: textColor }}>
             Leaf (fixed size)
           </div>
         )}
 
         {!isLeaf && !rectangle.parentId && (
-          <div className="text-xs font-medium mb-1" style={{ color: config.textColor }}>
+          <div className="text-xs font-medium mb-1" style={{ color: textColor }}>
             Resizable parent
           </div>
         )}
 
         <div className="flex-1"></div>
         
-        <div className="text-xs opacity-60 text-right" style={{ color: config.textColor }}>
+        <div className="text-xs opacity-60 text-right" style={{ color: textColor }}>
           {rectangle.w}×{rectangle.h}
         </div>
       </div>

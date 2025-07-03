@@ -1,14 +1,3 @@
-export type RectangleCategory = 
-  | 'channel'
-  | 'relationship' 
-  | 'business'
-  | 'product'
-  | 'control'
-  | 'risk'
-  | 'platform'
-  | 'data'
-  | 'support';
-
 export type RectangleType = 'root' | 'parent' | 'leaf';
 
 export interface Rectangle {
@@ -20,7 +9,6 @@ export interface Rectangle {
   h: number;
   label: string;
   color: string;
-  category: RectangleCategory;
   type: RectangleType;
   isEditing?: boolean;
   metadata?: {
@@ -54,15 +42,6 @@ export interface DiagramState {
   resizeState: ResizeState | null;
   history: Rectangle[][];
   historyIndex: number;
-}
-
-export interface CategoryConfig {
-  name: string;
-  color: string;
-  backgroundColor: string;
-  borderColor: string;
-  textColor: string;
-  icon?: string;
 }
 
 export interface ExportOptions {

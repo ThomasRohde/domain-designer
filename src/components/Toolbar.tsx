@@ -1,9 +1,8 @@
 import React, { useRef } from 'react';
 import { Plus, Save, FolderOpen, Grid, Download, Undo, Redo } from 'lucide-react';
-import { RectangleCategory } from '../types';
 
 interface ToolbarProps {
-  onAddRectangle: (parentId: string | null, category?: RectangleCategory) => void;
+  onAddRectangle: (parentId: string | null) => void;
   onSave: () => void;
   onLoad: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onExport: () => void;
@@ -63,7 +62,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <div className="w-px h-6 bg-gray-300"></div>
           
           <button
-            onClick={() => onAddRectangle(null, 'business')}
+            onClick={() => onAddRectangle(null)}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center space-x-2 text-sm font-medium"
           >
             <Plus size={16} />
@@ -72,7 +71,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           
           {selectedId && (
             <button
-              onClick={() => onAddRectangle(selectedId, 'business')}
+              onClick={() => onAddRectangle(selectedId)}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center space-x-2 text-sm font-medium"
             >
               <Plus size={16} />
