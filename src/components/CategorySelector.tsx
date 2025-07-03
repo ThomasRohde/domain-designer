@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Palette, Plus } from 'lucide-react';
+import { Palette } from 'lucide-react';
 
 interface ColorPaletteProps {
   selectedColor?: string;
   onColorChange: (color: string) => void;
 }
 
-// Predefined color palette
-const PREDEFINED_COLORS = [
+// Initial predefined color palette
+const INITIAL_PREDEFINED_COLORS = [
   '#FF6B6B', // Red
   '#4ECDC4', // Teal
   '#45B7D1', // Blue
@@ -30,12 +30,18 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
   selectedColor,
   onColorChange
 }) => {
-  const [customColor, setCustomColor] = useState('#000000');
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const [predefinedColors, setPredefinedColors] = useState(INITIAL_PREDEFINED_COLORS);
+  const colorInputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleCustomColorSubmit = () => {
-    onColorChange(customColor);
-    setShowCustomPicker(false);
+  const handleCustomColorChange = (newColor: string) => {
+    onColorChange(newColor);
+    
+    // If the new color is not already in the predefined colors, replace the last one
+    if (!predefinedColors.includes(newColor)) {
+      const updatedColors = [...predefinedColors];
+      updatedColors[updatedColors.length - 1] = newColor;
+      setPredefinedColors(updatedColors);
+    }
   };
 
   return (
@@ -45,18 +51,11 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
           <Palette size={16} />
           Color Palette
         </h3>
-        <button
-          onClick={() => setShowCustomPicker(!showCustomPicker)}
-          className="p-1 rounded hover:bg-gray-100 transition-colors"
-          title="Add custom color"
-        >
-          <Plus size={14} />
-        </button>
       </div>
 
       {/* Predefined Colors */}
       <div className="grid grid-cols-4 gap-2 mb-4">
-        {PREDEFINED_COLORS.map((color) => (
+        {predefinedColors.map((color) => (
           <button
             key={color}
             onClick={() => onColorChange(color)}
@@ -71,45 +70,30 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
         ))}
       </div>
 
-      {/* Custom Color Picker */}
-      {showCustomPicker && (
-        <div className="border-t pt-4">
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={customColor}
-              onChange={(e) => setCustomColor(e.target.value)}
-              className="w-12 h-8 rounded border border-gray-300 cursor-pointer"
-            />
-            <input
-              type="text"
-              value={customColor}
-              onChange={(e) => setCustomColor(e.target.value)}
-              placeholder="#000000"
-              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={handleCustomColorSubmit}
-              className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-            >
-              Apply
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Selected Color Display */}
       {selectedColor && (
         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-2">
             <div
-              className="w-6 h-6 rounded border border-gray-300"
+              className="w-6 h-6 rounded border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors relative"
               style={{ backgroundColor: selectedColor }}
-            />
+              title="Click to change color"
+            >
+              {/* Invisible color input positioned over the color square */}
+              <input
+                ref={colorInputRef}
+                type="color"
+                value={selectedColor || '#000000'}
+                onChange={(e) => handleCustomColorChange(e.target.value)}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                tabIndex={-1}
+              />
+            </div>
             <span className="text-sm font-medium">Selected: {selectedColor}</span>
           </div>
         </div>
       )}
+
     </div>
   );
 };
