@@ -24,7 +24,7 @@ const HierarchicalDrawingApp = () => {
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rectangleId: string } | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Generate a unique ID for new rectangles
@@ -239,15 +239,16 @@ const HierarchicalDrawingApp = () => {
   // Handle responsive sidebar behavior
   React.useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) { // lg breakpoint
-        setSidebarOpen(true);
-      } else {
+      // Only auto-close sidebar on mobile, don't auto-open on desktop
+      if (window.innerWidth < 1024) { // below lg breakpoint
         setSidebarOpen(false);
       }
     };
 
-    // Set initial state
-    handleResize();
+    // Set initial state - closed by default
+    if (window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -267,8 +268,7 @@ const HierarchicalDrawingApp = () => {
     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
     
-    const sidebarWidth = sidebarOpen && viewportWidth >= 1024 ? 320 : 0;
-    const availableWidth = viewportWidth - sidebarWidth - 32; // Account for padding
+    const availableWidth = viewportWidth - 32; // Account for padding
     const availableHeight = viewportHeight - 120; // Account for toolbar and padding
     
     if (rectangles.length === 0) {
@@ -285,7 +285,7 @@ const HierarchicalDrawingApp = () => {
       width: Math.max(availableWidth, (maxX + 5) * GRID_SIZE),
       height: Math.max(availableHeight, (maxY + 5) * GRID_SIZE)
     };
-  }, [rectangles, sidebarOpen]);
+  }, [rectangles]);
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -338,12 +338,11 @@ const HierarchicalDrawingApp = () => {
         {/* Responsive Sidebar */}
         <div className={`
           ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
-          fixed lg:relative lg:translate-x-0 
-          top-0 right-0 bottom-0 z-40
-          w-80 bg-gray-50 shadow-xl lg:shadow-none
+          fixed lg:fixed
+          top-16 right-0 bottom-0 z-40
+          w-80 bg-gray-50 shadow-xl
           transition-transform duration-300 ease-in-out
           flex flex-col
-          ${sidebarOpen ? '' : 'lg:w-80'}
         `}>
           {/* Mobile close button */}
           <div className="lg:hidden p-4 border-b bg-white">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Grid, Download, Menu, X } from 'lucide-react';
+import { Plus, Grid, Download, Settings } from 'lucide-react';
 
 interface ToolbarProps {
   onAddRectangle: (parentId: string | null) => void;
@@ -66,10 +66,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <div className="w-px h-6 bg-gray-300"></div>
               <button
                 onClick={onToggleSidebar}
-                className="p-2 text-gray-700 hover:bg-gray-50 rounded-md border border-gray-300 lg:hidden"
+                className="p-2 text-gray-700 hover:bg-gray-50 rounded-md border border-gray-300"
                 title={sidebarOpen ? "Close Properties" : "Open Properties"}
               >
-                {sidebarOpen ? <X size={16} /> : <Menu size={16} />}
+                <Settings size={16} />
               </button>
             </>
           )}
