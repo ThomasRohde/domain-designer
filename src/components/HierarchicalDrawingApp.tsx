@@ -365,43 +365,6 @@ const HierarchicalDrawingApp = () => {
     });
   }, []);
 
-  // Save diagram
-  const saveDiagram = useCallback(() => {
-    const data = {
-      rectangles,
-      version: '1.0',
-      timestamp: new Date().toISOString()
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `diagram-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [rectangles]);
-
-  // Load diagram
-  const loadDiagram = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-        if (data.rectangles && Array.isArray(data.rectangles)) {
-          setRectangles(data.rectangles);
-          setSelectedId(null);
-        }
-      } catch (error) {
-        console.error('Error loading diagram:', error);
-      }
-    };
-    reader.readAsText(file);
-  }, []);
-
   // Handle export
   const handleExport = useCallback(async (options: ExportOptions) => {
     if (!containerRef.current) return;
@@ -480,8 +443,6 @@ const HierarchicalDrawingApp = () => {
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
       <Toolbar
         onAddRectangle={addRectangle}
-        onSave={saveDiagram}
-        onLoad={loadDiagram}
         onExport={() => setExportModalOpen(true)}
         selectedId={selectedId}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
