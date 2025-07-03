@@ -36,8 +36,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   const [editValue, setEditValue] = useState(rectangle.label);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isLeaf = childCount === 0;
-
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -108,89 +106,115 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         onSelect(rectangle.id);
       }}
     >
-      <div className="p-3 h-full flex flex-col">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2 flex-1 min-w-0">
-            <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onBlur={handleInputSubmit}
-                  onKeyDown={handleInputKeyDown}
-                  className="w-full px-1 py-0.5 text-sm font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  style={{ color: textColor }}
-                />
-              ) : (
-                <div 
-                  className="text-sm font-medium truncate cursor-text"
-                  style={{ color: textColor }}
-                  title={rectangle.label}
-                >
-                  {rectangle.label}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
-            {isSelected && (
-              <>
-                <button
-                  className="p-2 sm:p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors touch-friendly"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddChild(rectangle.id);
-                  }}
-                  title="Add Child"
-                >
-                  <Plus size={14} className="sm:w-3 sm:h-3" />
-                </button>
-                <button
-                  className="p-2 sm:p-1 hover:bg-red-100 rounded text-red-600 transition-colors touch-friendly"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(rectangle.id);
-                  }}
-                  title="Remove"
-                >
-                  <Trash2 size={14} className="sm:w-3 sm:h-3" />
-                </button>
-              </>
+      {/* Label positioning based on whether rectangle has children */}
+      {childCount > 0 ? (
+        // Rectangles with children: label at top edge, centered horizontally
+        <div className="relative h-full">
+          <div className="absolute top-2 left-0 right-0 text-center px-2">
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={handleInputSubmit}
+                onKeyDown={handleInputKeyDown}
+                className="w-full px-1 py-0.5 text-sm font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                style={{ color: textColor }}
+              />
+            ) : (
+              <div 
+                className="text-sm font-medium cursor-text truncate"
+                style={{ color: textColor }}
+                title={rectangle.label}
+              >
+                {rectangle.label}
+              </div>
             )}
           </div>
+          
+          {/* Action buttons for selected rectangles with children */}
+          {isSelected && (
+            <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+              <button
+                className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddChild(rectangle.id);
+                }}
+                title="Add Child"
+              >
+                <Plus size={12} />
+              </button>
+              <button
+                className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(rectangle.id);
+                }}
+                title="Remove"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          )}
         </div>
-        
-        <div className="text-xs opacity-75 mb-1" style={{ color: textColor }}>
-          {rectangle.parentId ? `Child of ${rectangle.parentId}` : 'Root'}
+      ) : (
+        // Leaf rectangles: label centered and word wrapped in both dimensions
+        <div className="h-full flex items-center justify-center p-2">
+          {isEditing ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={handleInputSubmit}
+              onKeyDown={handleInputKeyDown}
+              className="w-full px-1 py-0.5 text-sm font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+              style={{ color: textColor }}
+            />
+          ) : (
+            <div 
+              className="text-sm font-medium cursor-text text-center break-words leading-tight"
+              style={{ 
+                color: textColor,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                hyphens: 'auto'
+              }}
+              title={rectangle.label}
+            >
+              {rectangle.label}
+            </div>
+          )}
+          
+          {/* Action buttons for selected leaf rectangles */}
+          {isSelected && (
+            <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+              <button
+                className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddChild(rectangle.id);
+                }}
+                title="Add Child"
+              >
+                <Plus size={10} />
+              </button>
+              <button
+                className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(rectangle.id);
+                }}
+                title="Remove"
+              >
+                <Trash2 size={10} />
+              </button>
+            </div>
+          )}
         </div>
-        
-        {childCount > 0 && (
-          <div className="text-xs opacity-75 mb-1" style={{ color: textColor }}>
-            {childCount} child{childCount !== 1 ? 'ren' : ''}
-          </div>
-        )}
-        
-        {isLeaf && (
-          <div className="text-xs font-medium mb-1" style={{ color: textColor }}>
-            Leaf (fixed size)
-          </div>
-        )}
-
-        {!isLeaf && !rectangle.parentId && (
-          <div className="text-xs font-medium mb-1" style={{ color: textColor }}>
-            Resizable parent
-          </div>
-        )}
-
-        <div className="flex-1"></div>
-        
-        <div className="text-xs opacity-60 text-right" style={{ color: textColor }}>
-          {rectangle.w}×{rectangle.h}
-        </div>
-      </div>
+      )}
 
       {/* Resize handle for resizable rectangles */}
       {canResize && isSelected && (
