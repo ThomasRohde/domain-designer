@@ -1,5 +1,5 @@
 export const GRID_SIZE = 20;
-export const MARGIN = 2;
+export const MARGIN = 1;
 export const MIN_WIDTH = 3;
 export const MIN_HEIGHT = 3;
 export const MAX_HISTORY_SIZE = 50;
