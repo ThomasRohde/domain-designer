@@ -3,8 +3,6 @@ import { useEffect } from 'react';
 interface KeyboardShortcuts {
   onSave?: () => void;
   onLoad?: () => void;
-  onUndo?: () => void;
-  onRedo?: () => void;
   onDelete?: () => void;
   onCopy?: () => void;
   onPaste?: () => void;
@@ -36,21 +34,6 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           if (shortcuts.onLoad) {
             event.preventDefault();
             shortcuts.onLoad();
-          }
-          break;
-        case 'z':
-          if (event.shiftKey && shortcuts.onRedo) {
-            event.preventDefault();
-            shortcuts.onRedo();
-          } else if (shortcuts.onUndo) {
-            event.preventDefault();
-            shortcuts.onUndo();
-          }
-          break;
-        case 'y':
-          if (shortcuts.onRedo) {
-            event.preventDefault();
-            shortcuts.onRedo();
           }
           break;
         case 'c':

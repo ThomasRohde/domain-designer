@@ -189,3 +189,4 @@ exports/
 # Development utilities
 .eslintcache
 .stylelintcache
+test.json

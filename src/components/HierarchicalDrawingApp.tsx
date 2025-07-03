@@ -16,8 +16,6 @@ const HierarchicalDrawingApp = () => {
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rectangleId: string } | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [history, setHistory] = useState<Rectangle[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -27,16 +25,6 @@ const HierarchicalDrawingApp = () => {
     setNextId(prev => prev + 1);
     return id;
   }, [nextId]);
-
-  // Save state to history for undo/redo
-  const saveToHistory = useCallback((newRectangles: Rectangle[]) => {
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push([...newRectangles]);
-      return newHistory.slice(-50); // Keep last 50 states
-    });
-    setHistoryIndex(prev => Math.min(prev + 1, 49));
-  }, [historyIndex]);
 
   // Find rectangle by ID
   const findRectangle = useCallback((id: string) => {
@@ -225,7 +213,6 @@ const HierarchicalDrawingApp = () => {
 
     setRectangles(prev => {
       const updated = [...prev, newRect];
-      saveToHistory(updated);
       return updated;
     });
     setSelectedId(id);
@@ -233,7 +220,7 @@ const HierarchicalDrawingApp = () => {
     if (parentId) {
       setTimeout(() => updateChildrenLayout(), 10);
     }
-  }, [generateId, getRootRectangles, findRectangle, getChildren, updateChildrenLayout, saveToHistory, isLeaf]);
+  }, [generateId, getRootRectangles, findRectangle, getChildren, updateChildrenLayout, isLeaf]);
 
   // Get all descendants of a rectangle (recursive)
   const getAllDescendants = useCallback((parentId: string): string[] => {
@@ -253,11 +240,10 @@ const HierarchicalDrawingApp = () => {
     const toRemove = [id, ...getAllDescendants(id)];
     setRectangles(prev => {
       const updated = prev.filter(rect => !toRemove.includes(rect.id));
-      saveToHistory(updated);
       return updated;
     });
     setSelectedId(null);
-  }, [getAllDescendants, saveToHistory]);
+  }, [getAllDescendants]);
 
   // Update rectangle label
   const updateRectangleLabel = useCallback((id: string, label: string) => {
@@ -277,10 +263,9 @@ const HierarchicalDrawingApp = () => {
           color
         } : rect
       );
-      saveToHistory(updated);
       return updated;
     });
-  }, [saveToHistory]);
+  }, []);
 
   // Handle mouse down for dragging
   const handleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' = 'drag') => {
@@ -364,11 +349,10 @@ const HierarchicalDrawingApp = () => {
           if (hasDescendants) {
             setTimeout(() => updateChildrenLayout(), 10);
           }
-          saveToHistory(rectangles);
         }
       }
     }
-  }, [dragState, resizeState, rectangles, updateChildrenLayout, getAllDescendants, saveToHistory]);
+  }, [dragState, resizeState, rectangles, updateChildrenLayout, getAllDescendants]);
 
   // Handle context menu
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -380,22 +364,6 @@ const HierarchicalDrawingApp = () => {
       rectangleId
     });
   }, []);
-
-  // Handle undo
-  const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      setHistoryIndex(prev => prev - 1);
-      setRectangles(history[historyIndex - 1]);
-    }
-  }, [history, historyIndex]);
-
-  // Handle redo
-  const handleRedo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      setHistoryIndex(prev => prev + 1);
-      setRectangles(history[historyIndex + 1]);
-    }
-  }, [history, historyIndex]);
 
   // Save diagram
   const saveDiagram = useCallback(() => {
@@ -425,7 +393,6 @@ const HierarchicalDrawingApp = () => {
         const data = JSON.parse(e.target?.result as string);
         if (data.rectangles && Array.isArray(data.rectangles)) {
           setRectangles(data.rectangles);
-          saveToHistory(data.rectangles);
           setSelectedId(null);
         }
       } catch (error) {
@@ -433,7 +400,7 @@ const HierarchicalDrawingApp = () => {
       }
     };
     reader.readAsText(file);
-  }, [saveToHistory]);
+  }, []);
 
   // Handle export
   const handleExport = useCallback(async (options: ExportOptions) => {
@@ -516,10 +483,6 @@ const HierarchicalDrawingApp = () => {
         onSave={saveDiagram}
         onLoad={loadDiagram}
         onExport={() => setExportModalOpen(true)}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < history.length - 1}
         selectedId={selectedId}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         sidebarOpen={sidebarOpen}

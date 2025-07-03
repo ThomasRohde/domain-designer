@@ -1,15 +1,11 @@
 import React, { useRef } from 'react';
-import { Plus, Save, FolderOpen, Grid, Download, Undo, Redo, Menu, X } from 'lucide-react';
+import { Plus, Save, FolderOpen, Grid, Download, Menu, X } from 'lucide-react';
 
 interface ToolbarProps {
   onAddRectangle: (parentId: string | null) => void;
   onSave: () => void;
   onLoad: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onExport: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   selectedId: string | null;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
@@ -20,10 +16,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onSave,
   onLoad,
   onExport,
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo,
   selectedId,
   onToggleSidebar,
   sidebarOpen
@@ -45,28 +37,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
         
         <div className="flex items-center space-x-1 sm:space-x-2">
           {/* Mobile-first responsive controls */}
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={onUndo}
-              disabled={!canUndo}
-              className="p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md border border-gray-300"
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo size={16} />
-            </button>
-            
-            <button
-              onClick={onRedo}
-              disabled={!canRedo}
-              className="p-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md border border-gray-300"
-              title="Redo (Ctrl+Y)"
-            >
-              <Redo size={16} />
-            </button>
-          </div>
-          
-          <div className="w-px h-6 bg-gray-300 hidden sm:block"></div>
-          
           <div className="flex items-center space-x-1">
             <button
               onClick={() => onAddRectangle(null)}
