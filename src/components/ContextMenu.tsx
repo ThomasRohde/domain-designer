@@ -30,7 +30,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 
   return (
     <div
-      className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-48 animate-in"
+      className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[9999] min-w-48 animate-in"
       style={{ left: x, top: y }}
       onClick={(e) => e.stopPropagation()}
     >
