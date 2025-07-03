@@ -1,0 +1,81 @@
+{
+  "rectangles": [
+    {
+      "id": "rect-1",
+      "x": 2,
+      "y": 2,
+      "w": 12,
+      "h": 8,
+      "label": "Channels",
+      "color": "#E3F2FD",
+      "category": "channel",
+      "type": "root"
+    },
+    {
+      "id": "rect-2",
+      "parentId": "rect-1",
+      "x": 3,
+      "y": 3,
+      "w": 4,
+      "h": 3,
+      "label": "Digital Self-Service Channels",
+      "color": "#E3F2FD",
+      "category": "channel",
+      "type": "parent"
+    },
+    {
+      "id": "rect-3",
+      "parentId": "rect-2",
+      "x": 4,
+      "y": 4,
+      "w": 2,
+      "h": 1,
+      "label": "Web & Mobile Banking",
+      "color": "#E3F2FD",
+      "category": "channel",
+      "type": "leaf"
+    },
+    {
+      "id": "rect-4",
+      "x": 16,
+      "y": 2,
+      "w": 12,
+      "h": 8,
+      "label": "Business Support",
+      "color": "#E8F5E8",
+      "category": "business",
+      "type": "root"
+    },
+    {
+      "id": "rect-5",
+      "parentId": "rect-4",
+      "x": 17,
+      "y": 3,
+      "w": 4,
+      "h": 3,
+      "label": "Product Management",
+      "color": "#E8F5E8",
+      "category": "business",
+      "type": "parent"
+    },
+    {
+      "id": "rect-6",
+      "parentId": "rect-5",
+      "x": 18,
+      "y": 4,
+      "w": 2,
+      "h": 1,
+      "label": "Product Development",
+      "color": "#E8F5E8",
+      "category": "business",
+      "type": "leaf"
+    }
+  ],
+  "version": "1.0",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "metadata": {
+    "totalRectangles": 6,
+    "rootRectangles": 2,
+    "categories": ["channel", "business"]
+  }
+}
