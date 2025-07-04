@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, Settings, Lock, Unlock } from 'lucide-react';
+import { Settings, Lock, Unlock } from 'lucide-react';
 
 interface GlobalSettingsProps {
   gridSize: number;

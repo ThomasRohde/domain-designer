@@ -37,22 +37,22 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 - [x] Test the hook
 
 ### 1.2 App Settings Hook
-- [ ] Create `src/hooks/useAppSettings.ts`
-- [ ] Extract state:
-  - [ ] `gridSize`
-  - [ ] `leafFixedWidth`, `leafFixedHeight`
-  - [ ] `leafWidth`, `leafHeight`
-  - [ ] `rootFontSize`, `dynamicFontSizing`
-- [ ] Extract functions:
-  - [ ] `getFixedDimensions()`
-  - [ ] `calculateFontSize(rectangleId: string)`
-  - [ ] `handleLeafFixedWidthChange(enabled: boolean)`
-  - [ ] `handleLeafFixedHeightChange(enabled: boolean)`
-  - [ ] `handleLeafWidthChange(width: number)`
-  - [ ] `handleLeafHeightChange(height: number)`
-  - [ ] `handleRootFontSizeChange(size: number)`
-  - [ ] `handleDynamicFontSizingChange(enabled: boolean)`
-- [ ] Test the hook
+- [x] Create `src/hooks/useAppSettings.ts`
+- [x] Extract state:
+  - [x] `gridSize`
+  - [x] `leafFixedWidth`, `leafFixedHeight`
+  - [x] `leafWidth`, `leafHeight`
+  - [x] `rootFontSize`, `dynamicFontSizing`
+- [x] Extract functions:
+  - [x] `getFixedDimensions()`
+  - [x] `calculateFontSize(rectangleId: string)`
+  - [x] `handleLeafFixedWidthChange(enabled: boolean)`
+  - [x] `handleLeafFixedHeightChange(enabled: boolean)`
+  - [x] `handleLeafWidthChange(width: number)`
+  - [x] `handleLeafHeightChange(height: number)`
+  - [x] `handleRootFontSizeChange(size: number)`
+  - [x] `handleDynamicFontSizingChange(enabled: boolean)`
+- [x] Test the hook
 
 ### 1.3 UI State Hook
 - [ ] Create `src/hooks/useUIState.ts`

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Rectangle, DragState, ResizeState, PanState, ExportOptions } from '../types';
-import { GRID_SIZE, MIN_WIDTH, MIN_HEIGHT, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS } from '../utils/constants';
+import { MIN_WIDTH, MIN_HEIGHT } from '../utils/constants';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
   updateChildrenLayout, 
@@ -9,6 +9,7 @@ import {
   getZIndex,
 } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
+import { useAppSettings } from '../hooks/useAppSettings';
 import RectangleComponent from './RectangleComponent';
 import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
@@ -26,22 +27,28 @@ const HierarchicalDrawingApp = () => {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rectangleId: string } | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [gridSize, setGridSize] = useState(GRID_SIZE);
-  const [leafFixedWidth, setLeafFixedWidth] = useState(false);
-  const [leafFixedHeight, setLeafFixedHeight] = useState(false);
-  const [leafWidth, setLeafWidth] = useState(DEFAULT_RECTANGLE_SIZE.leaf.w);
-  const [leafHeight, setLeafHeight] = useState(DEFAULT_RECTANGLE_SIZE.leaf.h);
-  const [rootFontSize, setRootFontSize] = useState(DEFAULT_FONT_SETTINGS.rootFontSize);
-  const [dynamicFontSizing, setDynamicFontSizing] = useState(DEFAULT_FONT_SETTINGS.dynamicFontSizing);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Helper function to get fixed dimensions settings
-  const getFixedDimensions = useCallback(() => ({
+  // Use the app settings hook
+  const {
+    gridSize,
     leafFixedWidth,
     leafFixedHeight,
     leafWidth,
-    leafHeight
-  }), [leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
+    leafHeight,
+    rootFontSize,
+    dynamicFontSizing,
+    getFixedDimensions,
+    calculateFontSize,
+    handleLeafFixedWidthChange,
+    handleLeafFixedHeightChange,
+    handleLeafWidthChange,
+    handleLeafHeightChange,
+    handleRootFontSizeChange,
+    handleDynamicFontSizingChange,
+    setGridSize,
+    setRectanglesRef
+  } = useAppSettings();
 
   // Use the rectangle manager hook
   const {
@@ -61,6 +68,11 @@ const HierarchicalDrawingApp = () => {
     containerRef,
     getFixedDimensions
   });
+
+  // Connect the app settings hook to the rectangle manager's setRectangles
+  React.useEffect(() => {
+    setRectanglesRef(setRectangles);
+  }, [setRectangles, setRectanglesRef]);
 
   // Wrapper function to match Toolbar's expected signature
   const addRectangle = useCallback((parentId: string | null = null) => {
@@ -210,126 +222,6 @@ const HierarchicalDrawingApp = () => {
     }
   }, [rectangles, gridSize]);
 
-  // Update leaf nodes when settings change
-  const handleLeafFixedWidthChange = useCallback((enabled: boolean) => {
-    setLeafFixedWidth(enabled);
-    if (enabled) {
-      // Apply fixed width to all existing leaf nodes
-      setRectangles(prev => 
-        prev.map(rect => 
-          rect.type === 'leaf' ? { ...rect, w: leafWidth } : rect
-        )
-      );
-    }
-    // Trigger layout update for all children
-    setTimeout(() => {
-      setRectangles(prev => updateChildrenLayout(prev, {
-        leafFixedWidth: enabled,
-        leafFixedHeight,
-        leafWidth,
-        leafHeight
-      }));
-    }, 10);
-  }, [leafWidth, leafFixedHeight, leafHeight]);
-
-  const handleLeafFixedHeightChange = useCallback((enabled: boolean) => {
-    setLeafFixedHeight(enabled);
-    if (enabled) {
-      // Apply fixed height to all existing leaf nodes
-      setRectangles(prev => 
-        prev.map(rect => 
-          rect.type === 'leaf' ? { ...rect, h: leafHeight } : rect
-        )
-      );
-    }
-    // Trigger layout update for all children
-    setTimeout(() => {
-      setRectangles(prev => updateChildrenLayout(prev, {
-        leafFixedWidth,
-        leafFixedHeight: enabled,
-        leafWidth,
-        leafHeight
-      }));
-    }, 10);
-  }, [leafHeight, leafFixedWidth, leafWidth]);
-
-  const handleLeafWidthChange = useCallback((width: number) => {
-    setLeafWidth(width);
-    if (leafFixedWidth) {
-      // Apply new width to all existing leaf nodes
-      setRectangles(prev => 
-        prev.map(rect => 
-          rect.type === 'leaf' ? { ...rect, w: width } : rect
-        )
-      );
-      // Trigger layout update for all children
-      setTimeout(() => {
-        setRectangles(prev => updateChildrenLayout(prev, {
-          leafFixedWidth,
-          leafFixedHeight,
-          leafWidth: width,
-          leafHeight
-        }));
-      }, 10);
-    }
-  }, [leafFixedWidth, leafFixedHeight, leafHeight]);
-
-  const handleLeafHeightChange = useCallback((height: number) => {
-    setLeafHeight(height);
-    if (leafFixedHeight) {
-      // Apply new height to all existing leaf nodes
-      setRectangles(prev => 
-        prev.map(rect => 
-          rect.type === 'leaf' ? { ...rect, h: height } : rect
-        )
-      );
-      // Trigger layout update for all children
-      setTimeout(() => {
-        setRectangles(prev => updateChildrenLayout(prev, {
-          leafFixedWidth,
-          leafFixedHeight,
-          leafWidth,
-          leafHeight: height
-        }));
-      }, 10);
-    }
-  }, [leafFixedHeight, leafFixedWidth, leafWidth]);
-
-  // Font settings handlers
-  const handleRootFontSizeChange = useCallback((size: number) => {
-    setRootFontSize(size);
-  }, []);
-
-  const handleDynamicFontSizingChange = useCallback((enabled: boolean) => {
-    setDynamicFontSizing(enabled);
-  }, []);
-
-  // Calculate font size based on hierarchy level
-  const calculateFontSize = useCallback((rectangleId: string) => {
-    if (!dynamicFontSizing) return rootFontSize;
-    
-    // Find the rectangle and calculate its depth
-    const rect = rectangles.find(r => r.id === rectangleId);
-    if (!rect) return rootFontSize;
-    
-    let depth = 0;
-    let currentRect: Rectangle | undefined = rect;
-    
-    while (currentRect?.parentId) {
-      depth++;
-      currentRect = rectangles.find(r => r.id === currentRect!.parentId);
-      if (!currentRect) break;
-    }
-    
-    // Apply scaling formula: root = 1.0, level 1 = 0.9, level 2 = 0.8, level 3+ = 0.7
-    let scale = 1.0;
-    if (depth === 1) scale = 0.9;
-    else if (depth === 2) scale = 0.8;
-    else if (depth >= 3) scale = 0.7;
-    
-    return Math.max(10, Math.round(rootFontSize * scale));
-  }, [dynamicFontSizing, rootFontSize, rectangles]);
-
   // Add global mouse event listeners
   React.useEffect(() => {
     if (dragState || resizeState || panState) {
@@ -468,7 +360,7 @@ const HierarchicalDrawingApp = () => {
                     canResize={!rect.parentId} // Allow resizing for all root nodes (regardless of children)
                     childCount={getChildren(rect.id, rectangles).length}
                     gridSize={gridSize}
-                    fontSize={calculateFontSize(rect.id)}
+                    fontSize={calculateFontSize(rect.id, rectangles)}
                     panOffset={panOffset} // Pass pan offset separately
                   />
                 ))}
