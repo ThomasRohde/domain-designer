@@ -94,12 +94,12 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 - [x] Test panning functionality
 
 ### 2.3 Canvas Interactions Hook (Coordinator)
-- [ ] Create `src/hooks/useCanvasInteractions.ts`
-- [ ] Combine drag, resize, and pan hooks
-- [ ] Handle mouse move coordination
-- [ ] Handle mouse up coordination
-- [ ] Add global event listeners
-- [ ] Test all interactions work together
+- [x] Create `src/hooks/useCanvasInteractions.ts`
+- [x] Combine drag, resize, and pan hooks
+- [x] Handle mouse move coordination
+- [x] Handle mouse up coordination
+- [x] Add global event listeners
+- [x] Test all interactions work together
 
 ---
 

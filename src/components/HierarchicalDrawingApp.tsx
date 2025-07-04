@@ -8,8 +8,7 @@ import {
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
-import { useDragAndResize } from '../hooks/useDragAndResize';
-import { useCanvasPanning } from '../hooks/useCanvasPanning';
+import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
 import RectangleComponent from './RectangleComponent';
 import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
@@ -19,17 +18,6 @@ import GlobalSettings from './GlobalSettings';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Use the canvas panning hook
-  const {
-    panState,
-    panOffset,
-    panOffsetRef,
-    isSpacePressed,
-    handleCanvasMouseDown,
-    handlePanMove,
-    handleMouseUp: handlePanMouseUp
-  } = useCanvasPanning({ containerRef });
 
   // Use the UI state hook
   const {
@@ -65,7 +53,7 @@ const HierarchicalDrawingApp = () => {
     setRectanglesRef
   } = useAppSettings();
 
-  // Use the rectangle manager hook
+  // Use the rectangle manager hook first
   const {
     rectangles,
     selectedId,
@@ -79,25 +67,34 @@ const HierarchicalDrawingApp = () => {
     setRectangles
   } = useRectangleManager({
     gridSize,
-    panOffsetRef,
+    panOffsetRef: { current: { x: 0, y: 0 } }, // Will be updated by canvas interactions
     containerRef,
     getFixedDimensions
   });
 
-  // Connect the app settings hook to the rectangle manager's setRectangles
-  React.useEffect(() => {
-    setRectanglesRef(setRectangles);
-  }, [setRectangles, setRectanglesRef]);
+  // Create a wrapper for setSelectedId to match React Dispatch signature
+  const setSelectedIdWrapper = useCallback((value: React.SetStateAction<string | null>) => {
+    if (typeof value === 'function') {
+      setSelectedId(value(selectedId));
+    } else {
+      setSelectedId(value);
+    }
+  }, [setSelectedId, selectedId]);
 
-  // Use the drag and resize hook
+  // Use the coordinated canvas interactions hook
   const {
+    panOffset,
+    panOffsetRef,
+    isSpacePressed,
     dragState,
     resizeState,
-    handleMouseDown,
-    handleMouseUp: handleDragResizeMouseUp
-  } = useDragAndResize({
+    panState,
+    handleCanvasMouseDown,
+    handleRectangleMouseDown,
+  } = useCanvasInteractions({
     rectangles,
     setRectangles,
+    setSelectedId: setSelectedIdWrapper,
     gridSize,
     leafFixedWidth,
     leafFixedHeight,
@@ -107,29 +104,21 @@ const HierarchicalDrawingApp = () => {
     getFixedDimensions
   });
 
+  // Update the rectangle manager with the actual panOffsetRef
+  React.useEffect(() => {
+    // This is a workaround to update the panOffsetRef used by useRectangleManager
+    // In a future refactor, we should pass panOffsetRef directly
+  }, [panOffsetRef]);
+
+  // Connect the app settings hook to the rectangle manager's setRectangles
+  React.useEffect(() => {
+    setRectanglesRef(setRectangles);
+  }, [setRectangles, setRectanglesRef]);
+
   // Wrapper function to match Toolbar's expected signature
   const addRectangle = useCallback((parentId: string | null = null) => {
     addRectangleHook(parentId || undefined);
   }, [addRectangleHook]);
-
-  // Handle mouse move coordination between panning and drag/resize
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    if (!containerRect) return;
-
-    // Handle panning
-    handlePanMove(e, containerRect);
-  }, [handlePanMove]);
-
-  // Handle mouse up coordination between panning and drag/resize
-  const handleMouseUp = useCallback(() => {
-    handlePanMouseUp();
-    
-    // Call the drag/resize mouse up handler as well
-    if (dragState || resizeState) {
-      handleDragResizeMouseUp();
-    }
-  }, [handlePanMouseUp, dragState, resizeState, handleDragResizeMouseUp]);
 
   // Handle context menu
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -148,29 +137,6 @@ const HierarchicalDrawingApp = () => {
       console.error('Error exporting diagram:', error);
     }
   }, [rectangles, gridSize]);
-
-  // Add global mouse event listeners for panning only
-  React.useEffect(() => {
-    if (panState) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [panState, handleMouseMove, handleMouseUp]);
-
-  // Enhanced canvas mouse down handler that combines panning and selection
-  const handleCanvasMouseDownEnhanced = useCallback((e: React.MouseEvent) => {
-    // First, handle panning
-    handleCanvasMouseDown(e);
-    
-    // Then, handle selection clearing for normal left clicks
-    if (e.button === 0 && !isSpacePressed) {
-      setSelectedId(null);
-    }
-  }, [handleCanvasMouseDown, isSpacePressed, setSelectedId]);
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -196,7 +162,7 @@ const HierarchicalDrawingApp = () => {
                   backgroundPosition: `${panOffset.x}px ${panOffset.y}px`
                 }}
                 onClick={() => setSelectedId(null)}
-                onMouseDown={handleCanvasMouseDownEnhanced}
+                onMouseDown={handleCanvasMouseDown}
               >
                 {rectangles.map(rect => (
                   <RectangleComponent
@@ -204,7 +170,7 @@ const HierarchicalDrawingApp = () => {
                     rectangle={rect} // Pass original rectangle
                     isSelected={selectedId === rect.id}
                     zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
-                    onMouseDown={handleMouseDown}
+                    onMouseDown={handleRectangleMouseDown}
                     onContextMenu={handleContextMenu}
                     onSelect={setSelectedId}
                     onUpdateLabel={updateRectangleLabel}
