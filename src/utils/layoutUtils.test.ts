@@ -1,13 +1,10 @@
 import { Rectangle } from '../types';
 import { 
   calculateChildLayout, 
-  updateChildrenLayout, 
-  calculateNewRectangleLayout,
   getAllDescendants,
   getChildren,
   isLeaf,
-  getRootRectangles,
-  getZIndex
+  getRootRectangles
 } from '../utils/layoutUtils';
 
 // Simple test to verify layout functions

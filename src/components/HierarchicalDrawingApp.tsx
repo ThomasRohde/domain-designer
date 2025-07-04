@@ -27,7 +27,19 @@ const HierarchicalDrawingApp = () => {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [gridSize, setGridSize] = useState(GRID_SIZE);
+  const [leafFixedWidth, setLeafFixedWidth] = useState(false);
+  const [leafFixedHeight, setLeafFixedHeight] = useState(false);
+  const [leafWidth, setLeafWidth] = useState(DEFAULT_RECTANGLE_SIZE.leaf.w);
+  const [leafHeight, setLeafHeight] = useState(DEFAULT_RECTANGLE_SIZE.leaf.h);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to get fixed dimensions settings
+  const getFixedDimensions = useCallback(() => ({
+    leafFixedWidth,
+    leafFixedHeight,
+    leafWidth,
+    leafHeight
+  }), [leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
 
   // Generate a unique ID for new rectangles
   const generateId = useCallback(() => {
@@ -48,9 +60,23 @@ const HierarchicalDrawingApp = () => {
     const { x, y, w, h } = calculateNewRectangleLayout(parentId, rectangles, DEFAULT_RECTANGLE_SIZE);
     
     let color = DEFAULT_COLORS.root; // Default color
+    let finalW = w;
+    let finalH = h;
 
     if (parentId) {
       color = DEFAULT_COLORS.leaf;
+      // A new rectangle with a parent is always initially a leaf
+      const rectType = 'leaf';
+      
+      // Apply fixed dimensions for leaf nodes if enabled
+      if (rectType === 'leaf') {
+        if (leafFixedWidth) {
+          finalW = leafWidth;
+        }
+        if (leafFixedHeight) {
+          finalH = leafHeight;
+        }
+      }
     }
 
     const newRect: Rectangle = {
@@ -58,25 +84,37 @@ const HierarchicalDrawingApp = () => {
       parentId: parentId || undefined,
       x,
       y,
-      w,
-      h,
+      w: finalW,
+      h: finalH,
       label: `Rectangle ${id}`,
       color,
-      type: parentId ? (isLeaf(parentId, rectangles) ? 'leaf' : 'parent') : 'root',
+      type: parentId ? 'leaf' : 'root',
     };
 
     setRectangles(prev => {
       const updated = [...prev, newRect];
+      
+      // Update parent type if it was a leaf and now has children
+      if (parentId) {
+        const parentIndex = updated.findIndex(r => r.id === parentId);
+        if (parentIndex !== -1) {
+          const parent = updated[parentIndex];
+          if (parent.type === 'leaf') {
+            updated[parentIndex] = { ...parent, type: 'parent' };
+          }
+        }
+      }
+      
       return updated;
     });
     setSelectedId(id);
     
     if (parentId) {
       setTimeout(() => {
-        setRectangles(prev => updateChildrenLayout(prev));
+        setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
       }, 10);
     }
-  }, [generateId, rectangles]);
+  }, [generateId, rectangles, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
 
   // Get all descendants of a rectangle (recursive)
   const getAllDescendantsWrapper = useCallback((parentId: string): string[] => {
@@ -196,13 +234,13 @@ const HierarchicalDrawingApp = () => {
           const hasDescendants = getAllDescendants(rect.id, rectangles).length > 0;
           if (hasDescendants) {
             setTimeout(() => {
-              setRectangles(prev => updateChildrenLayout(prev));
+              setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
             }, 10);
           }
         }
       }
     }
-  }, [dragState, resizeState, rectangles, updateChildrenLayout, getAllDescendants]);
+  }, [dragState, resizeState, rectangles, updateChildrenLayout, getAllDescendants, getFixedDimensions]);
 
   // Handle context menu
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -225,6 +263,55 @@ const HierarchicalDrawingApp = () => {
       console.error('Error exporting diagram:', error);
     }
   }, [rectangles, gridSize]);
+
+  // Update leaf nodes when settings change
+  const handleLeafFixedWidthChange = useCallback((enabled: boolean) => {
+    setLeafFixedWidth(enabled);
+    if (enabled) {
+      // Apply fixed width to all existing leaf nodes
+      setRectangles(prev => 
+        prev.map(rect => 
+          rect.type === 'leaf' ? { ...rect, w: leafWidth } : rect
+        )
+      );
+    }
+  }, [leafWidth]);
+
+  const handleLeafFixedHeightChange = useCallback((enabled: boolean) => {
+    setLeafFixedHeight(enabled);
+    if (enabled) {
+      // Apply fixed height to all existing leaf nodes
+      setRectangles(prev => 
+        prev.map(rect => 
+          rect.type === 'leaf' ? { ...rect, h: leafHeight } : rect
+        )
+      );
+    }
+  }, [leafHeight]);
+
+  const handleLeafWidthChange = useCallback((width: number) => {
+    setLeafWidth(width);
+    if (leafFixedWidth) {
+      // Apply new width to all existing leaf nodes
+      setRectangles(prev => 
+        prev.map(rect => 
+          rect.type === 'leaf' ? { ...rect, w: width } : rect
+        )
+      );
+    }
+  }, [leafFixedWidth]);
+
+  const handleLeafHeightChange = useCallback((height: number) => {
+    setLeafHeight(height);
+    if (leafFixedHeight) {
+      // Apply new height to all existing leaf nodes
+      setRectangles(prev => 
+        prev.map(rect => 
+          rect.type === 'leaf' ? { ...rect, h: height } : rect
+        )
+      );
+    }
+  }, [leafFixedHeight]);
 
   // Add global mouse event listeners
   React.useEffect(() => {
@@ -394,6 +481,14 @@ const HierarchicalDrawingApp = () => {
               <GlobalSettings
                 gridSize={gridSize}
                 onGridSizeChange={setGridSize}
+                leafFixedWidth={leafFixedWidth}
+                onLeafFixedWidthChange={handleLeafFixedWidthChange}
+                leafFixedHeight={leafFixedHeight}
+                onLeafFixedHeightChange={handleLeafFixedHeightChange}
+                leafWidth={leafWidth}
+                onLeafWidthChange={handleLeafWidthChange}
+                leafHeight={leafHeight}
+                onLeafHeightChange={handleLeafHeightChange}
               />
             )}
           </div>

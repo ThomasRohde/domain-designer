@@ -4,7 +4,16 @@ import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT } from './constants';
 /**
  * Calculate auto-sized dimensions and positions for child rectangles
  */
-export const calculateChildLayout = (parentRect: Rectangle, children: Rectangle[]): Rectangle[] => {
+export const calculateChildLayout = (
+  parentRect: Rectangle, 
+  children: Rectangle[], 
+  fixedDimensions?: {
+    leafFixedWidth: boolean;
+    leafFixedHeight: boolean;
+    leafWidth: number;
+    leafHeight: number;
+  }
+): Rectangle[] => {
   if (!parentRect || children.length === 0) return [];
 
   // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
@@ -20,12 +29,26 @@ export const calculateChildLayout = (parentRect: Rectangle, children: Rectangle[
   const totalHorizontalSpacing = (cols - 1) * sideMargin;
   const totalVerticalSpacing = (rows - 1) * sideMargin;
   
-  const childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
-  const childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
+  // Calculate default child dimensions
+  const defaultChildWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
+  const defaultChildHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
 
   return children.map((child, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
+
+    // Determine dimensions based on fixed settings for leaf nodes
+    let childWidth = defaultChildWidth;
+    let childHeight = defaultChildHeight;
+    
+    if (child.type === 'leaf' && fixedDimensions) {
+      if (fixedDimensions.leafFixedWidth) {
+        childWidth = fixedDimensions.leafWidth;
+      }
+      if (fixedDimensions.leafFixedHeight) {
+        childHeight = fixedDimensions.leafHeight;
+      }
+    }
 
     return {
       ...child,
@@ -40,7 +63,15 @@ export const calculateChildLayout = (parentRect: Rectangle, children: Rectangle[
 /**
  * Update child rectangles layout when parent changes
  */
-export const updateChildrenLayout = (rectangles: Rectangle[]): Rectangle[] => {
+export const updateChildrenLayout = (
+  rectangles: Rectangle[],
+  fixedDimensions?: {
+    leafFixedWidth: boolean;
+    leafFixedHeight: boolean;
+    leafWidth: number;
+    leafHeight: number;
+  }
+): Rectangle[] => {
   const updated = [...rectangles];
   const processedIds = new Set<string>();
   
@@ -61,7 +92,7 @@ export const updateChildrenLayout = (rectangles: Rectangle[]): Rectangle[] => {
         if (siblings.length > 0) {
           const currentParent = updated.find(p => p.id === rect.parentId);
           if (currentParent) {
-            const newLayout = calculateChildLayout(currentParent, siblings);
+            const newLayout = calculateChildLayout(currentParent, siblings, fixedDimensions);
             
             newLayout.forEach(layoutRect => {
               const index = updated.findIndex(r => r.id === layoutRect.id);
