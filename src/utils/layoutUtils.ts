@@ -26,20 +26,38 @@ export const calculateChildLayout = (
   const cols = Math.ceil(Math.sqrt(children.length));
   const rows = Math.ceil(children.length / cols);
 
+  // Calculate spacing and dimensions considering fixed dimensions for leaves
+  let maxChildWidth = MIN_WIDTH;
+  let maxChildHeight = MIN_HEIGHT;
+  
+  // First pass: determine actual dimensions for all children
+  children.forEach(child => {
+    let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - ((cols - 1) * sideMargin)) / cols));
+    let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - ((rows - 1) * sideMargin)) / rows));
+    
+    if (child.type === 'leaf' && fixedDimensions) {
+      if (fixedDimensions.leafFixedWidth) {
+        childWidth = fixedDimensions.leafWidth;
+      }
+      if (fixedDimensions.leafFixedHeight) {
+        childHeight = fixedDimensions.leafHeight;
+      }
+    }
+    
+    maxChildWidth = Math.max(maxChildWidth, childWidth);
+    maxChildHeight = Math.max(maxChildHeight, childHeight);
+  });
+
   const totalHorizontalSpacing = (cols - 1) * sideMargin;
   const totalVerticalSpacing = (rows - 1) * sideMargin;
   
-  // Calculate default child dimensions
-  const defaultChildWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
-  const defaultChildHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
-
   return children.map((child, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
 
     // Determine dimensions based on fixed settings for leaf nodes
-    let childWidth = defaultChildWidth;
-    let childHeight = defaultChildHeight;
+    let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
+    let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
     
     if (child.type === 'leaf' && fixedDimensions) {
       if (fixedDimensions.leafFixedWidth) {
@@ -52,8 +70,8 @@ export const calculateChildLayout = (
 
     return {
       ...child,
-      x: parentRect.x + sideMargin + (col * (childWidth + sideMargin)),
-      y: parentRect.y + topMargin + (row * (childHeight + sideMargin)),
+      x: parentRect.x + sideMargin + (col * (maxChildWidth + sideMargin)),
+      y: parentRect.y + topMargin + (row * (maxChildHeight + sideMargin)),
       w: childWidth,
       h: childHeight
     };

@@ -275,7 +275,16 @@ const HierarchicalDrawingApp = () => {
         )
       );
     }
-  }, [leafWidth]);
+    // Trigger layout update for all children
+    setTimeout(() => {
+      setRectangles(prev => updateChildrenLayout(prev, {
+        leafFixedWidth: enabled,
+        leafFixedHeight,
+        leafWidth,
+        leafHeight
+      }));
+    }, 10);
+  }, [leafWidth, leafFixedHeight, leafHeight]);
 
   const handleLeafFixedHeightChange = useCallback((enabled: boolean) => {
     setLeafFixedHeight(enabled);
@@ -287,7 +296,16 @@ const HierarchicalDrawingApp = () => {
         )
       );
     }
-  }, [leafHeight]);
+    // Trigger layout update for all children
+    setTimeout(() => {
+      setRectangles(prev => updateChildrenLayout(prev, {
+        leafFixedWidth,
+        leafFixedHeight: enabled,
+        leafWidth,
+        leafHeight
+      }));
+    }, 10);
+  }, [leafHeight, leafFixedWidth, leafWidth]);
 
   const handleLeafWidthChange = useCallback((width: number) => {
     setLeafWidth(width);
@@ -298,8 +316,17 @@ const HierarchicalDrawingApp = () => {
           rect.type === 'leaf' ? { ...rect, w: width } : rect
         )
       );
+      // Trigger layout update for all children
+      setTimeout(() => {
+        setRectangles(prev => updateChildrenLayout(prev, {
+          leafFixedWidth,
+          leafFixedHeight,
+          leafWidth: width,
+          leafHeight
+        }));
+      }, 10);
     }
-  }, [leafFixedWidth]);
+  }, [leafFixedWidth, leafFixedHeight, leafHeight]);
 
   const handleLeafHeightChange = useCallback((height: number) => {
     setLeafHeight(height);
@@ -310,8 +337,17 @@ const HierarchicalDrawingApp = () => {
           rect.type === 'leaf' ? { ...rect, h: height } : rect
         )
       );
+      // Trigger layout update for all children
+      setTimeout(() => {
+        setRectangles(prev => updateChildrenLayout(prev, {
+          leafFixedWidth,
+          leafFixedHeight,
+          leafWidth,
+          leafHeight: height
+        }));
+      }, 10);
     }
-  }, [leafFixedHeight]);
+  }, [leafFixedHeight, leafFixedWidth, leafWidth]);
 
   // Add global mouse event listeners
   React.useEffect(() => {
