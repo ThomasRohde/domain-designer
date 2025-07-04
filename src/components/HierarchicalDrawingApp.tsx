@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { PanState, ExportOptions } from '../types';
+import React, { useCallback, useRef } from 'react';
+import { ExportOptions } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
   getChildren,
@@ -9,6 +9,7 @@ import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
 import { useDragAndResize } from '../hooks/useDragAndResize';
+import { useCanvasPanning } from '../hooks/useCanvasPanning';
 import RectangleComponent from './RectangleComponent';
 import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
@@ -17,11 +18,18 @@ import ExportModal from './ExportModal';
 import GlobalSettings from './GlobalSettings';
 
 const HierarchicalDrawingApp = () => {
-  const [panState, setPanState] = useState<PanState | null>(null);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const panOffsetRef = useRef({ x: 0, y: 0 });
-  const [isSpacePressed, setIsSpacePressed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use the canvas panning hook
+  const {
+    panState,
+    panOffset,
+    panOffsetRef,
+    isSpacePressed,
+    handleCanvasMouseDown,
+    handlePanMove,
+    handleMouseUp: handlePanMouseUp
+  } = useCanvasPanning({ containerRef });
 
   // Use the UI state hook
   const {
@@ -104,38 +112,24 @@ const HierarchicalDrawingApp = () => {
     addRectangleHook(parentId || undefined);
   }, [addRectangleHook]);
 
-  // Handle mouse move for panning only
+  // Handle mouse move coordination between panning and drag/resize
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!panState) return;
-
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
 
-    const currentX = e.clientX - containerRect.left;
-    const currentY = e.clientY - containerRect.top;
+    // Handle panning
+    handlePanMove(e, containerRect);
+  }, [handlePanMove]);
 
-    const deltaX = currentX - panState.startX;
-    const deltaY = currentY - panState.startY;
-    
-    const newOffset = {
-      x: panState.initialOffsetX + deltaX,
-      y: panState.initialOffsetY + deltaY
-    };
-    
-    // Update both ref and state for immediate and persistent updates
-    panOffsetRef.current = newOffset;
-    setPanOffset(newOffset);
-  }, [panState]);
-
-  // Handle mouse up for panning only
+  // Handle mouse up coordination between panning and drag/resize
   const handleMouseUp = useCallback(() => {
-    setPanState(null);
+    handlePanMouseUp();
     
     // Call the drag/resize mouse up handler as well
     if (dragState || resizeState) {
       handleDragResizeMouseUp();
     }
-  }, [panState, dragState, resizeState, handleDragResizeMouseUp]);
+  }, [handlePanMouseUp, dragState, resizeState, handleDragResizeMouseUp]);
 
   // Handle context menu
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -167,61 +161,16 @@ const HierarchicalDrawingApp = () => {
     }
   }, [panState, handleMouseMove, handleMouseUp]);
 
-  // Handle keyboard events for space key panning
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !isSpacePressed) {
-        e.preventDefault();
-        setIsSpacePressed(true);
-      }
-    };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setIsSpacePressed(false);
-        setPanState(null); // Stop any active panning
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp);
+  // Enhanced canvas mouse down handler that combines panning and selection
+  const handleCanvasMouseDownEnhanced = useCallback((e: React.MouseEvent) => {
+    // First, handle panning
+    handleCanvasMouseDown(e);
     
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [isSpacePressed]);
-
-  // Handle canvas mouse down for panning
-  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
-    // Start panning on middle mouse button or space+left click
-    if (e.button === 1 || (isSpacePressed && e.button === 0)) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const containerRect = containerRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
-
-      const startX = e.clientX - containerRect.left;
-      const startY = e.clientY - containerRect.top;
-
-      setPanState({
-        startX,
-        startY,
-        initialOffsetX: panOffsetRef.current.x,
-        initialOffsetY: panOffsetRef.current.y
-      });
-    } else if (e.button === 0 && !isSpacePressed) {
-      // Normal left click behavior - clear selection
+    // Then, handle selection clearing for normal left clicks
+    if (e.button === 0 && !isSpacePressed) {
       setSelectedId(null);
     }
-  }, [isSpacePressed]);
-
-  // Sync panOffset state with ref for immediate updates
-  React.useEffect(() => {
-    panOffsetRef.current = panOffset;
-  }, [panOffset]);
+  }, [handleCanvasMouseDown, isSpacePressed, setSelectedId]);
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -247,7 +196,7 @@ const HierarchicalDrawingApp = () => {
                   backgroundPosition: `${panOffset.x}px ${panOffset.y}px`
                 }}
                 onClick={() => setSelectedId(null)}
-                onMouseDown={handleCanvasMouseDown}
+                onMouseDown={handleCanvasMouseDownEnhanced}
               >
                 {rectangles.map(rect => (
                   <RectangleComponent

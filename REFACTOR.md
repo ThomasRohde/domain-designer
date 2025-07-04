@@ -84,14 +84,14 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 - [x] Test drag and resize operations
 
 ### 2.2 Canvas Panning Hook
-- [ ] Create `src/hooks/useCanvasPanning.ts`
-- [ ] Extract state: `panState`, `panOffset`, `panOffsetRef`, `isSpacePressed`
-- [ ] Extract functions:
-  - [ ] `handleCanvasMouseDown(e: React.MouseEvent)`
-  - [ ] `handlePanMove(e: MouseEvent, containerRect: DOMRect)`
-  - [ ] `handleSpaceKeyEvents()`
-- [ ] Add keyboard event listeners
-- [ ] Test panning functionality
+- [x] Create `src/hooks/useCanvasPanning.ts`
+- [x] Extract state: `panState`, `panOffset`, `panOffsetRef`, `isSpacePressed`
+- [x] Extract functions:
+  - [x] `handleCanvasMouseDown(e: React.MouseEvent)`
+  - [x] `handlePanMove(e: MouseEvent, containerRect: DOMRect)`
+  - [x] `handleSpaceKeyEvents()`
+- [x] Add keyboard event listeners
+- [x] Test panning functionality
 
 ### 2.3 Canvas Interactions Hook (Coordinator)
 - [ ] Create `src/hooks/useCanvasInteractions.ts`
