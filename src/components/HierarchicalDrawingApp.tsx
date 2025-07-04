@@ -10,6 +10,7 @@ import {
 } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
+import { useUIState } from '../hooks/useUIState';
 import RectangleComponent from './RectangleComponent';
 import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
@@ -24,10 +25,20 @@ const HierarchicalDrawingApp = () => {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const panOffsetRef = useRef({ x: 0, y: 0 });
   const [isSpacePressed, setIsSpacePressed] = useState(false);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rectangleId: string } | null>(null);
-  const [exportModalOpen, setExportModalOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use the UI state hook
+  const {
+    sidebarOpen,
+    contextMenu,
+    exportModalOpen,
+    toggleSidebar,
+    closeSidebar,
+    showContextMenu,
+    hideContextMenu,
+    openExportModal,
+    closeExportModal,
+  } = useUIState();
 
   // Use the app settings hook
   const {
@@ -204,12 +215,8 @@ const HierarchicalDrawingApp = () => {
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      rectangleId
-    });
-  }, []);
+    showContextMenu(e.clientX, e.clientY, rectangleId);
+  }, [showContextMenu]);
 
   // Handle export
   const handleExport = useCallback(async (options: ExportOptions) => {
@@ -260,33 +267,6 @@ const HierarchicalDrawingApp = () => {
     };
   }, [isSpacePressed]);
 
-  // Handle responsive sidebar behavior
-  React.useEffect(() => {
-    const handleResize = () => {
-      // Only auto-close sidebar on mobile, don't auto-open on desktop
-      if (window.innerWidth < 1024) { // below lg breakpoint
-        setSidebarOpen(false);
-      }
-    };
-
-    // Set initial state - closed by default
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Handle clicks outside to close context menu
-  React.useEffect(() => {
-    const handleClick = () => setContextMenu(null);
-    if (contextMenu) {
-      document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
-    }
-  }, [contextMenu]);
-
   // Handle canvas mouse down for panning
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     // Start panning on middle mouse button or space+left click
@@ -321,9 +301,9 @@ const HierarchicalDrawingApp = () => {
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
       <Toolbar
         onAddRectangle={addRectangle}
-        onExport={() => setExportModalOpen(true)}
+        onExport={openExportModal}
         selectedId={selectedId}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onToggleSidebar={toggleSidebar}
         sidebarOpen={sidebarOpen}
       />
 
@@ -381,7 +361,7 @@ const HierarchicalDrawingApp = () => {
           {/* Mobile close button */}
           <div className="lg:hidden p-4 border-b bg-white">
             <button
-              onClick={() => setSidebarOpen(false)}
+              onClick={closeSidebar}
               className="w-full flex items-center justify-between text-gray-600 hover:text-gray-900"
             >
               <span className="font-medium">Properties</span>
@@ -446,7 +426,7 @@ const HierarchicalDrawingApp = () => {
         {sidebarOpen && (
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
+            onClick={closeSidebar}
           />
         )}
       </div>
@@ -458,13 +438,13 @@ const HierarchicalDrawingApp = () => {
           rectangleId={contextMenu.rectangleId}
           onAddChild={addRectangle}
           onRemove={removeRectangle}
-          onClose={() => setContextMenu(null)}
+          onClose={hideContextMenu}
         />
       )}
 
       <ExportModal
         isOpen={exportModalOpen}
-        onClose={() => setExportModalOpen(false)}
+        onClose={closeExportModal}
         onExport={handleExport}
       />
     </div>

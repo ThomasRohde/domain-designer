@@ -55,23 +55,18 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 - [x] Test the hook
 
 ### 1.3 UI State Hook
-- [ ] Create `src/hooks/useUIState.ts`
-- [ ] Extract state:
-  - [ ] `sidebarOpen`
-  - [ ] `contextMenu`
-  - [ ] `exportModalOpen`
-- [ ] Extract functions:
-  - [ ] `toggleSidebar()`
-  - [ ] `openSidebar()`, `closeSidebar()`
-  - [ ] `showContextMenu(x: number, y: number, rectangleId: string)`
-  - [ ] `hideContextMenu()`
-  - [ ] `openExportModal()`, `closeExportModal()`
-- [ ] Test the hook
-
-### Phase 1 Integration
-- [ ] Update `HierarchicalDrawingApp.tsx` to use new hooks
-- [ ] Verify all functionality works
-- [ ] Test edge cases
+- [x] Create `src/hooks/useUIState.ts`
+- [x] Extract state:
+  - [x] `sidebarOpen`
+  - [x] `contextMenu`
+  - [x] `exportModalOpen`
+- [x] Extract functions:
+  - [x] `toggleSidebar()`
+  - [x] `openSidebar()`, `closeSidebar()`
+  - [x] `showContextMenu(x: number, y: number, rectangleId: string)`
+  - [x] `hideContextMenu()`
+  - [x] `openExportModal()`, `closeExportModal()`
+- [x] Test the hook
 
 ---
 

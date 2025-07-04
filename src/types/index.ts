@@ -68,3 +68,9 @@ export interface ExportOptions {
   scale?: number;
   includeBackground?: boolean;
 }
+
+export interface ContextMenuState {
+  x: number;
+  y: number;
+  rectangleId: string;
+}
