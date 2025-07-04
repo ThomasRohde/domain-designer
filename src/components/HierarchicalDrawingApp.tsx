@@ -16,6 +16,7 @@ import ExportModal from './ExportModal';
 import GlobalSettings from './GlobalSettings';
 import ActionButtonsOverlay from './ActionButtonsOverlay';
 import Canvas from './Canvas';
+import Sidebar from './Sidebar';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -192,85 +193,55 @@ const HierarchicalDrawingApp = () => {
         </div>
 
         {/* Responsive Sidebar */}
-        <div className={`
-          ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}
-          fixed lg:fixed
-          top-16 right-0 bottom-0 z-40
-          w-80 bg-gray-50 shadow-xl
-          transition-transform duration-300 ease-in-out
-          flex flex-col
-        `}>
-          {/* Mobile close button */}
-          <div className="lg:hidden p-4 border-b bg-white">
-            <button
-              onClick={closeSidebar}
-              className="w-full flex items-center justify-between text-gray-600 hover:text-gray-900"
-            >
-              <span className="font-medium">Properties</span>
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-            {selectedId ? (
-              // Node is selected: Show color picker and node details
-              <>
-                <ColorPalette
-                  selectedColor={findRectangle(selectedId)?.color}
-                  onColorChange={(color) => updateRectangleColor(selectedId, color)}
-                />
-
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
-                  <div className="text-xs lg:text-sm text-gray-600 space-y-1">
-                    {(() => {
-                      const rect = findRectangle(selectedId);
-                      if (!rect) return null;
-                      const children = getChildren(selectedId, rectangles);
-                      return (
-                        <div>
-                          <div>Position: ({rect.x}, {rect.y})</div>
-                          <div>Size: {rect.w} × {rect.h}</div>
-                          <div>Children: {children.length}</div>
-                          <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
-                          <div>Color: {rect.color}</div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </>
-            ) : (
-              // No node selected: Show global settings
-              <GlobalSettings
-                gridSize={gridSize}
-                onGridSizeChange={setGridSize}
-                leafFixedWidth={leafFixedWidth}
-                onLeafFixedWidthChange={handleLeafFixedWidthChange}
-                leafFixedHeight={leafFixedHeight}
-                onLeafFixedHeightChange={handleLeafFixedHeightChange}
-                leafWidth={leafWidth}
-                onLeafWidthChange={handleLeafWidthChange}
-                leafHeight={leafHeight}
-                onLeafHeightChange={handleLeafHeightChange}
-                rootFontSize={rootFontSize}
-                onRootFontSizeChange={handleRootFontSizeChange}
-                dynamicFontSizing={dynamicFontSizing}
-                onDynamicFontSizingChange={handleDynamicFontSizingChange}
+        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar}>
+          {selectedId ? (
+            // Node is selected: Show color picker and node details
+            <>
+              <ColorPalette
+                selectedColor={findRectangle(selectedId)?.color}
+                onColorChange={(color) => updateRectangleColor(selectedId, color)}
               />
-            )}
-          </div>
-        </div>
 
-        {/* Overlay for mobile when sidebar is open */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-            onClick={closeSidebar}
-          />
-        )}
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
+                <div className="text-xs lg:text-sm text-gray-600 space-y-1">
+                  {(() => {
+                    const rect = findRectangle(selectedId);
+                    if (!rect) return null;
+                    const children = getChildren(selectedId, rectangles);
+                    return (
+                      <div>
+                        <div>Position: ({rect.x}, {rect.y})</div>
+                        <div>Size: {rect.w} × {rect.h}</div>
+                        <div>Children: {children.length}</div>
+                        <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
+                        <div>Color: {rect.color}</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </>
+          ) : (
+            // No node selected: Show global settings
+            <GlobalSettings
+              gridSize={gridSize}
+              onGridSizeChange={setGridSize}
+              leafFixedWidth={leafFixedWidth}
+              onLeafFixedWidthChange={handleLeafFixedWidthChange}
+              leafFixedHeight={leafFixedHeight}
+              onLeafFixedHeightChange={handleLeafFixedHeightChange}
+              leafWidth={leafWidth}
+              onLeafWidthChange={handleLeafWidthChange}
+              leafHeight={leafHeight}
+              onLeafHeightChange={handleLeafHeightChange}
+              rootFontSize={rootFontSize}
+              onRootFontSizeChange={handleRootFontSizeChange}
+              dynamicFontSizing={dynamicFontSizing}
+              onDynamicFontSizingChange={handleDynamicFontSizingChange}
+            />
+          )}
+        </Sidebar>
       </div>
 
       {contextMenu && (

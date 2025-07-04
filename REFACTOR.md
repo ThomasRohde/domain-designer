@@ -149,9 +149,9 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 - [x] Test rectangle rendering
 
 ### 3.3 Sidebar Component
-- [ ] Create `src/components/Sidebar.tsx`
-- [ ] Extract entire sidebar structure
-- [ ] Props interface:
+- [x] Create `src/components/Sidebar.tsx`
+- [x] Extract entire sidebar structure
+- [x] Props interface:
   ```typescript
   interface SidebarProps {
     isOpen: boolean;
@@ -159,8 +159,8 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
     children: React.ReactNode;
   }
   ```
-- [ ] Include mobile overlay logic
-- [ ] Test responsive behavior
+- [x] Include mobile overlay logic
+- [x] Test responsive behavior
 
 ### 3.4 Property Panel Component
 - [ ] Create `src/components/PropertyPanel.tsx`
