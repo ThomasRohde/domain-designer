@@ -106,9 +106,9 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 ## Phase 3: Extract UI Components
 
 ### 3.1 Canvas Component
-- [ ] Create `src/components/Canvas.tsx`
-- [ ] Extract canvas div with grid background
-- [ ] Props interface:
+- [x] Create `src/components/Canvas.tsx`
+- [x] Extract canvas div with grid background
+- [x] Props interface:
   ```typescript
   interface CanvasProps {
     containerRef: RefObject<HTMLDivElement>;
@@ -119,9 +119,10 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
     onMouseDown: (e: React.MouseEvent) => void;
     onSelect: (id: string | null) => void;
     children: React.ReactNode;
+    overlay?: React.ReactNode;
   }
   ```
-- [ ] Test canvas rendering and interactions
+- [x] Test canvas rendering and interactions
 
 ### 3.2 Rectangle Renderer Component
 - [ ] Create `src/components/RectangleRenderer.tsx`

@@ -17,6 +17,7 @@ import Toolbar from './Toolbar';
 import ExportModal from './ExportModal';
 import GlobalSettings from './GlobalSettings';
 import ActionButtonsOverlay from './ActionButtonsOverlay';
+import Canvas from './Canvas';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -153,40 +154,15 @@ const HierarchicalDrawingApp = () => {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 p-2 sm:p-4 overflow-hidden">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full canvas-container relative">
-              <div
-                ref={containerRef}
-                className={`relative bg-gray-50 w-full h-full ${isSpacePressed ? 'cursor-grab' : ''} ${panState ? 'cursor-grabbing' : ''}`}
-                style={{ 
-                  backgroundImage: `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
-                  backgroundSize: `${gridSize}px ${gridSize}px`,
-                  backgroundPosition: `${panOffset.x}px ${panOffset.y}px`
-                }}
-                onClick={() => setSelectedId(null)}
-                onMouseDown={handleCanvasMouseDown}
-              >
-                {sortRectanglesByDepth(rectangles).map(rect => (
-                  <RectangleComponent
-                    key={rect.id}
-                    rectangle={rect} // Pass original rectangle
-                    isSelected={selectedId === rect.id}
-                    zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
-                    onMouseDown={handleRectangleMouseDown}
-                    onContextMenu={handleContextMenu}
-                    onSelect={setSelectedId}
-                    onUpdateLabel={updateRectangleLabel}
-                    canDrag={!rect.parentId}
-                    canResize={!rect.parentId} // Allow resizing for all root nodes (regardless of children)
-                    childCount={getChildren(rect.id, rectangles).length}
-                    gridSize={gridSize}
-                    fontSize={calculateFontSize(rect.id, rectangles)}
-                    panOffset={panOffset} // Pass pan offset separately
-                  />
-                ))}
-              </div>
-              
-              {/* Action buttons overlay rendered outside the canvas but within the same container */}
+          <Canvas
+            containerRef={containerRef}
+            gridSize={gridSize}
+            panOffset={panOffset}
+            isSpacePressed={isSpacePressed}
+            panState={panState}
+            onMouseDown={handleCanvasMouseDown}
+            onSelect={setSelectedId}
+            overlay={
               <ActionButtonsOverlay
                 selectedRectangle={selectedId ? findRectangle(selectedId) || null : null}
                 childCount={selectedId ? getChildren(selectedId, rectangles).length : 0}
@@ -196,8 +172,27 @@ const HierarchicalDrawingApp = () => {
                 gridSize={gridSize}
                 panOffset={panOffset}
               />
-            </div>
-          </div>
+            }
+          >
+            {sortRectanglesByDepth(rectangles).map(rect => (
+              <RectangleComponent
+                key={rect.id}
+                rectangle={rect} // Pass original rectangle
+                isSelected={selectedId === rect.id}
+                zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
+                onMouseDown={handleRectangleMouseDown}
+                onContextMenu={handleContextMenu}
+                onSelect={setSelectedId}
+                onUpdateLabel={updateRectangleLabel}
+                canDrag={!rect.parentId}
+                canResize={!rect.parentId} // Allow resizing for all root nodes (regardless of children)
+                childCount={getChildren(rect.id, rectangles).length}
+                gridSize={gridSize}
+                fontSize={calculateFontSize(rect.id, rectangles)}
+                panOffset={panOffset} // Pass pan offset separately
+              />
+            ))}
+          </Canvas>
         </div>
 
         {/* Responsive Sidebar */}
