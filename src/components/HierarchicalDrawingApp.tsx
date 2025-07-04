@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
-import { Rectangle, DragState, ResizeState, ExportOptions } from '../types';
+import React, { useState, useCallback, useRef } from 'react';
+import { Rectangle, DragState, ResizeState, PanState, ExportOptions } from '../types';
 import { GRID_SIZE, MIN_WIDTH, MIN_HEIGHT, DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS } from '../utils/constants';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
@@ -24,6 +24,10 @@ const HierarchicalDrawingApp = () => {
   const [nextId, setNextId] = useState(1);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
+  const [panState, setPanState] = useState<PanState | null>(null);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const panOffsetRef = useRef({ x: 0, y: 0 });
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; rectangleId: string } | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -60,7 +64,47 @@ const HierarchicalDrawingApp = () => {
   const addRectangle = useCallback((parentId: string | null = null) => {
     const id = generateId();
     
-    const { x, y, w, h } = calculateNewRectangleLayout(parentId, rectangles, DEFAULT_RECTANGLE_SIZE);
+    let { x, y, w, h } = calculateNewRectangleLayout(parentId, rectangles, DEFAULT_RECTANGLE_SIZE);
+    
+    // If creating a root rectangle, ensure it's positioned in a visible and accessible area
+    if (!parentId) {
+      const rootRects = rectangles.filter(rect => !rect.parentId);
+      if (rootRects.length === 0) {
+        // For the very first rectangle, place it in an easily accessible area
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          // Position it at about 20% from top-left of the viewport, accounting for current pan
+          const viewportX = Math.round(-panOffsetRef.current.x / gridSize);
+          const viewportY = Math.round(-panOffsetRef.current.y / gridSize);
+          const marginX = Math.max(5, Math.round(containerRect.width * 0.2 / gridSize));
+          const marginY = Math.max(5, Math.round(containerRect.height * 0.2 / gridSize));
+          x = viewportX + marginX;
+          y = viewportY + marginY;
+        } else {
+          // Fallback: position it away from the edge
+          x = Math.round(-panOffsetRef.current.x / gridSize) + 10;
+          y = Math.round(-panOffsetRef.current.y / gridSize) + 10;
+        }
+      } else {
+        // For subsequent root rectangles, ensure they're also in a visible area
+        // If the calculated position would be outside the current viewport, adjust it
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        if (containerRect) {
+          const viewportX = Math.round(-panOffsetRef.current.x / gridSize);
+          const viewportY = Math.round(-panOffsetRef.current.y / gridSize);
+          const viewportWidth = Math.round(containerRect.width / gridSize);
+          const viewportHeight = Math.round(containerRect.height / gridSize);
+          
+          // Check if the calculated position is outside the viewport
+          if (x < viewportX || x > viewportX + viewportWidth - w || 
+              y < viewportY || y > viewportY + viewportHeight - h) {
+            // Position it in the viewport with some margin
+            x = viewportX + Math.max(5, Math.round(viewportWidth * 0.1));
+            y = viewportY + Math.max(5, Math.round(viewportHeight * 0.1));
+          }
+        }
+      }
+    }
     
     let color = DEFAULT_COLORS.root; // Default color
     let finalW = w;
@@ -197,8 +241,8 @@ const HierarchicalDrawingApp = () => {
         id: rect.id,
         startX,
         startY,
-        initialX: rect.x * gridSize,
-        initialY: rect.y * gridSize
+        initialX: rect.x, // Store as grid coordinates
+        initialY: rect.y  // Store as grid coordinates
       });
     } else if (action === 'resize') {
       setResizeState({
@@ -213,7 +257,7 @@ const HierarchicalDrawingApp = () => {
 
   // Handle mouse move
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragState && !resizeState) return;
+    if (!dragState && !resizeState && !panState) return;
 
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
@@ -224,8 +268,11 @@ const HierarchicalDrawingApp = () => {
     if (dragState) {
       const deltaX = currentX - dragState.startX;
       const deltaY = currentY - dragState.startY;
-      const newX = Math.max(0, Math.round((dragState.initialX + deltaX) / gridSize));
-      const newY = Math.max(0, Math.round((dragState.initialY + deltaY) / gridSize));
+      // Convert screen delta to grid delta and add to initial grid position
+      const gridDeltaX = deltaX / gridSize;
+      const gridDeltaY = deltaY / gridSize;
+      const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
+      const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
 
       setRectangles(prev => prev.map(rect => 
         rect.id === dragState.id ? { ...rect, x: newX, y: newY } : rect
@@ -239,18 +286,32 @@ const HierarchicalDrawingApp = () => {
       setRectangles(prev => prev.map(rect => 
         rect.id === resizeState.id ? { ...rect, w: newW, h: newH } : rect
       ));
+    } else if (panState) {
+      const deltaX = currentX - panState.startX;
+      const deltaY = currentY - panState.startY;
+      
+      const newOffset = {
+        x: panState.initialOffsetX + deltaX,
+        y: panState.initialOffsetY + deltaY
+      };
+      
+      // Update both ref and state for immediate and persistent updates
+      panOffsetRef.current = newOffset;
+      setPanOffset(newOffset);
     }
-  }, [dragState, resizeState, gridSize]);
+  }, [dragState, resizeState, panState, gridSize]);
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
     const wasDragging = dragState;
     const wasResizing = resizeState;
+    const wasPanning = panState;
     
     setDragState(null);
     setResizeState(null);
+    setPanState(null);
     
-    if ((wasDragging || wasResizing)) {
+    if ((wasDragging || wasResizing) && !wasPanning) {
       const rectId = wasDragging?.id || wasResizing?.id;
       if (rectId) {
         const rect = rectangles.find(r => r.id === rectId);
@@ -264,7 +325,7 @@ const HierarchicalDrawingApp = () => {
         }
       }
     }
-  }, [dragState, resizeState, rectangles, updateChildrenLayout, getAllDescendants, getFixedDimensions]);
+  }, [dragState, resizeState, panState, rectangles, updateChildrenLayout, getAllDescendants, getFixedDimensions]);
 
   // Handle context menu
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -410,7 +471,7 @@ const HierarchicalDrawingApp = () => {
 
   // Add global mouse event listeners
   React.useEffect(() => {
-    if (dragState || resizeState) {
+    if (dragState || resizeState || panState) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -418,7 +479,33 @@ const HierarchicalDrawingApp = () => {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [dragState, resizeState, handleMouseMove, handleMouseUp]);
+  }, [dragState, resizeState, panState, handleMouseMove, handleMouseUp]);
+
+  // Handle keyboard events for space key panning
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !isSpacePressed) {
+        e.preventDefault();
+        setIsSpacePressed(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsSpacePressed(false);
+        setPanState(null); // Stop any active panning
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isSpacePressed]);
 
   // Handle responsive sidebar behavior
   React.useEffect(() => {
@@ -447,29 +534,35 @@ const HierarchicalDrawingApp = () => {
     }
   }, [contextMenu]);
 
-  // Calculate canvas size based on viewport and content
-  const canvasSize = useMemo(() => {
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-    
-    const availableWidth = viewportWidth - 32; // Account for padding
-    const availableHeight = viewportHeight - 120; // Account for toolbar and padding
-    
-    if (rectangles.length === 0) {
-      return { 
-        width: Math.max(availableWidth, 800), 
-        height: Math.max(availableHeight, 600) 
-      };
+  // Handle canvas mouse down for panning
+  const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
+    // Start panning on middle mouse button or space+left click
+    if (e.button === 1 || (isSpacePressed && e.button === 0)) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const containerRect = containerRef.current?.getBoundingClientRect();
+      if (!containerRect) return;
+
+      const startX = e.clientX - containerRect.left;
+      const startY = e.clientY - containerRect.top;
+
+      setPanState({
+        startX,
+        startY,
+        initialOffsetX: panOffsetRef.current.x,
+        initialOffsetY: panOffsetRef.current.y
+      });
+    } else if (e.button === 0 && !isSpacePressed) {
+      // Normal left click behavior - clear selection
+      setSelectedId(null);
     }
-    
-    const maxX = Math.max(...rectangles.map(r => r.x + r.w));
-    const maxY = Math.max(...rectangles.map(r => r.y + r.h));
-    
-    return {
-      width: Math.max(availableWidth, (maxX + 5) * gridSize),
-      height: Math.max(availableHeight, (maxY + 5) * gridSize)
-    };
-  }, [rectangles, gridSize]);
+  }, [isSpacePressed]);
+
+  // Sync panOffset state with ref for immediate updates
+  React.useEffect(() => {
+    panOffsetRef.current = panOffset;
+  }, [panOffset]);
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -485,22 +578,22 @@ const HierarchicalDrawingApp = () => {
         {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 p-2 sm:p-4 overflow-hidden">
-            <div className="bg-white rounded-lg shadow-lg overflow-auto h-full w-full canvas-container">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full canvas-container">
               <div
                 ref={containerRef}
-                className="relative bg-gray-50 min-w-full min-h-full"
+                className={`relative bg-gray-50 w-full h-full ${isSpacePressed ? 'cursor-grab' : ''} ${panState ? 'cursor-grabbing' : ''}`}
                 style={{ 
-                  width: canvasSize.width, 
-                  height: canvasSize.height,
                   backgroundImage: `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
-                  backgroundSize: `${gridSize}px ${gridSize}px`
+                  backgroundSize: `${gridSize}px ${gridSize}px`,
+                  backgroundPosition: `${panOffset.x}px ${panOffset.y}px`
                 }}
                 onClick={() => setSelectedId(null)}
+                onMouseDown={handleCanvasMouseDown}
               >
                 {rectangles.map(rect => (
                   <RectangleComponent
                     key={rect.id}
-                    rectangle={rect}
+                    rectangle={rect} // Pass original rectangle
                     isSelected={selectedId === rect.id}
                     zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
                     onMouseDown={handleMouseDown}
@@ -515,6 +608,7 @@ const HierarchicalDrawingApp = () => {
                     childCount={getChildren(rect.id, rectangles).length}
                     gridSize={gridSize}
                     fontSize={calculateFontSize(rect.id)}
+                    panOffset={panOffset} // Pass pan offset separately
                   />
                 ))}
               </div>

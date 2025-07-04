@@ -19,6 +19,7 @@ interface RectangleComponentProps {
   childCount: number;
   gridSize?: number;
   fontSize?: number;
+  panOffset?: { x: number; y: number };
 }
 
 const RectangleComponent: React.FC<RectangleComponentProps> = ({
@@ -36,7 +37,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   canResize,
   childCount,
   gridSize = GRID_SIZE,
-  fontSize = 14
+  fontSize = 14,
+  panOffset = { x: 0, y: 0 }
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(rectangle.label);
@@ -84,8 +86,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: rectangle.x * gridSize,
-    top: rectangle.y * gridSize,
+    left: rectangle.x * gridSize + panOffset.x,
+    top: rectangle.y * gridSize + panOffset.y,
     width: rectangle.w * gridSize,
     height: rectangle.h * gridSize,
     backgroundColor: rectangle.color,
@@ -94,7 +96,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     cursor: canDrag ? 'move' : 'pointer',
     zIndex: zIndex,
     opacity: 1,
-    transition: 'all 0.2s ease-in-out',
     boxShadow: isSelected 
       ? '0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.04)'
       : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
@@ -103,7 +104,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   return (
     <div
       style={style}
-      className="group hover:shadow-lg transition-shadow duration-200"
+      className="group"
       onMouseDown={(e) => canDrag && onMouseDown(e, rectangle, 'drag')}
       onContextMenu={(e) => onContextMenu(e, rectangle.id)}
       onDoubleClick={handleDoubleClick}

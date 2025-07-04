@@ -34,6 +34,13 @@ export interface ResizeState {
   initialH: number;
 }
 
+export interface PanState {
+  startX: number;
+  startY: number;
+  initialOffsetX: number;
+  initialOffsetY: number;
+}
+
 export interface GlobalSettings {
   gridSize: number;
   leafFixedWidth: boolean;
