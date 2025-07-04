@@ -1,4 +1,5 @@
 import React from 'react';
+import MobileOverlay from './MobileOverlay';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -36,13 +37,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, children }) => {
         </div>
       </div>
 
-      {/* Overlay for mobile when sidebar is open */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+      {/* Mobile overlay when sidebar is open */}
+      <MobileOverlay isVisible={isOpen} onClick={onClose} />
     </>
   );
 };
