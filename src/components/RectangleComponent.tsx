@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Minimize2 } from 'lucide-react';
 import { Rectangle } from '../types';
 import { GRID_SIZE, LABEL_MARGIN } from '../utils/constants';
 
@@ -13,6 +13,7 @@ interface RectangleComponentProps {
   onUpdateLabel: (id: string, label: string) => void;
   onAddChild: (parentId: string) => void;
   onRemove: (id: string) => void;
+  onFitToChildren: (id: string) => void;
   canDrag: boolean;
   canResize: boolean;
   childCount: number;
@@ -30,6 +31,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   onUpdateLabel,
   onAddChild,
   onRemove,
+  onFitToChildren,
   canDrag,
   canResize,
   childCount,
@@ -155,6 +157,16 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 title="Add Child"
               >
                 <Plus size={12} />
+              </button>
+              <button
+                className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFitToChildren(rectangle.id);
+                }}
+                title="Fit to Children"
+              >
+                <Minimize2 size={12} />
               </button>
               <button
                 className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"

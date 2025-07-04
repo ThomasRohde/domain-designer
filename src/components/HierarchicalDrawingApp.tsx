@@ -8,7 +8,8 @@ import {
   getAllDescendants,
   getChildren,
   isLeaf,
-  getZIndex
+  getZIndex,
+  calculateMinimumParentSize
 } from '../utils/layoutUtils';
 import RectangleComponent from './RectangleComponent';
 import ColorPalette from './ColorPalette';
@@ -154,6 +155,27 @@ const HierarchicalDrawingApp = () => {
       return updated;
     });
   }, []);
+
+  // Fit rectangle to children
+  const fitToChildren = useCallback((id: string) => {
+    setRectangles(prev => {
+      const parent = prev.find(rect => rect.id === id);
+      if (!parent) return prev;
+
+      const children = getChildren(id, prev);
+      if (children.length === 0) return prev;
+
+      const newSize = calculateMinimumParentSize(id, prev, getFixedDimensions());
+
+      // Update parent size
+      const updated = prev.map(rect => 
+        rect.id === id ? { ...rect, w: newSize.w, h: newSize.h } : rect
+      );
+
+      // Recalculate children layout after parent resize
+      return updateChildrenLayout(updated, getFixedDimensions());
+    });
+  }, [getFixedDimensions]);
 
   // Handle mouse down for dragging
   const handleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' = 'drag') => {
@@ -487,6 +509,7 @@ const HierarchicalDrawingApp = () => {
                     onUpdateLabel={updateRectangleLabel}
                     onAddChild={addRectangle}
                     onRemove={removeRectangle}
+                    onFitToChildren={fitToChildren}
                     canDrag={!rect.parentId}
                     canResize={!isLeaf(rect.id, rectangles) && !rect.parentId}
                     childCount={getChildren(rect.id, rectangles).length}

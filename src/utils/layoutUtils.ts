@@ -272,3 +272,65 @@ export const getZIndex = (
   
   return baseZ + selectedBoost;
 };
+
+/**
+ * Calculate minimum size needed to fit all children snugly
+ */
+export const calculateMinimumParentSize = (
+  parentId: string,
+  rectangles: Rectangle[],
+  fixedDimensions?: {
+    leafFixedWidth: boolean;
+    leafFixedHeight: boolean;
+    leafWidth: number;
+    leafHeight: number;
+  }
+): { w: number; h: number } => {
+  const children = getChildren(parentId, rectangles);
+  if (children.length === 0) return { w: MIN_WIDTH, h: MIN_HEIGHT };
+
+  // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
+  const topMargin = LABEL_MARGIN;
+  const sideMargin = MARGIN;
+
+  const cols = Math.ceil(Math.sqrt(children.length));
+  const rows = Math.ceil(children.length / cols);
+
+  // Calculate dimensions for all children, considering fixed dimensions for leaves
+  const childDimensions = children.map(child => {
+    let childWidth = Math.max(MIN_WIDTH, child.w);
+    let childHeight = Math.max(MIN_HEIGHT, child.h);
+    
+    if (child.type === 'leaf' && fixedDimensions) {
+      if (fixedDimensions.leafFixedWidth) {
+        childWidth = fixedDimensions.leafWidth;
+      }
+      if (fixedDimensions.leafFixedHeight) {
+        childHeight = fixedDimensions.leafHeight;
+      }
+    }
+    
+    return { width: childWidth, height: childHeight };
+  });
+
+  // Calculate maximum dimensions needed
+  const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
+  const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
+
+  // Calculate total space needed for all children with minimal spacing
+  const totalChildrenWidth = cols * maxChildWidth;
+  const totalChildrenHeight = rows * maxChildHeight;
+
+  // Add minimal spacing between children (1 grid unit)
+  const minHorizontalSpacing = cols > 1 ? (cols - 1) * 1 : 0;
+  const minVerticalSpacing = rows > 1 ? (rows - 1) * 1 : 0;
+
+  // Calculate minimum required parent size
+  const minParentWidth = totalChildrenWidth + minHorizontalSpacing + (sideMargin * 2);
+  const minParentHeight = totalChildrenHeight + minVerticalSpacing + topMargin + sideMargin;
+
+  return {
+    w: Math.max(MIN_WIDTH, Math.ceil(minParentWidth)),
+    h: Math.max(MIN_HEIGHT, Math.ceil(minParentHeight))
+  };
+};

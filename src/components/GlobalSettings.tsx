@@ -66,18 +66,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
           </div>
         </div>
 
-        {/* Grid Visibility Info */}
-        <div className="bg-gray-50 p-3 rounded-lg">
-          <div className="flex items-center gap-2 mb-1">
-            <Grid size={14} className="text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Grid Info</span>
-          </div>
-          <div className="text-xs text-gray-600 space-y-1">
-            <div>Current size: {gridSize}px</div>
-            <div>Snap precision: {gridSize < 15 ? 'High' : gridSize < 25 ? 'Medium' : 'Low'}</div>
-            <div>Recommended: 20px for most diagrams</div>
-          </div>
-        </div>
 
         {/* Leaf Node Settings */}
         <div className="border-t pt-3 mt-3">
@@ -212,17 +200,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               </button>
             </div>
 
-            {dynamicFontSizing && (
-              <div className="bg-blue-50 p-2 rounded text-xs text-blue-700">
-                <div>Font scaling formula:</div>
-                <div className="font-mono mt-1">
-                  Level 0 (Root): {rootFontSize}px<br />
-                  Level 1: {Math.max(10, Math.round(rootFontSize * 0.9))}px<br />
-                  Level 2: {Math.max(10, Math.round(rootFontSize * 0.8))}px<br />
-                  Level 3+: {Math.max(10, Math.round(rootFontSize * 0.7))}px
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
