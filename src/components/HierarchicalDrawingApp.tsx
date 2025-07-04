@@ -3,14 +3,12 @@ import { ExportOptions } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
   getChildren,
-  getZIndex,
-  sortRectanglesByDepth,
 } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
-import RectangleComponent from './RectangleComponent';
+import RectangleRenderer from './RectangleRenderer';
 import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -174,24 +172,22 @@ const HierarchicalDrawingApp = () => {
               />
             }
           >
-            {sortRectanglesByDepth(rectangles).map(rect => (
-              <RectangleComponent
-                key={rect.id}
-                rectangle={rect} // Pass original rectangle
-                isSelected={selectedId === rect.id}
-                zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
-                onMouseDown={handleRectangleMouseDown}
-                onContextMenu={handleContextMenu}
-                onSelect={setSelectedId}
-                onUpdateLabel={updateRectangleLabel}
-                canDrag={!rect.parentId}
-                canResize={!rect.parentId} // Allow resizing for all root nodes (regardless of children)
-                childCount={getChildren(rect.id, rectangles).length}
-                gridSize={gridSize}
-                fontSize={calculateFontSize(rect.id, rectangles)}
-                panOffset={panOffset} // Pass pan offset separately
-              />
-            ))}
+            <RectangleRenderer
+              rectangles={rectangles}
+              selectedId={selectedId}
+              dragState={dragState}
+              resizeState={resizeState}
+              gridSize={gridSize}
+              panOffset={panOffset}
+              onMouseDown={handleRectangleMouseDown}
+              onContextMenu={handleContextMenu}
+              onSelect={setSelectedId}
+              onUpdateLabel={updateRectangleLabel}
+              onAddChild={addRectangle}
+              onRemove={removeRectangle}
+              onFitToChildren={fitToChildren}
+              calculateFontSize={calculateFontSize}
+            />
           </Canvas>
         </div>
 

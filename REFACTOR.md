@@ -125,9 +125,9 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 - [x] Test canvas rendering and interactions
 
 ### 3.2 Rectangle Renderer Component
-- [ ] Create `src/components/RectangleRenderer.tsx`
-- [ ] Extract rectangle mapping logic
-- [ ] Props interface:
+- [x] Create `src/components/RectangleRenderer.tsx`
+- [x] Extract rectangle mapping logic
+- [x] Props interface:
   ```typescript
   interface RectangleRendererProps {
     rectangles: Rectangle[];
@@ -143,10 +143,10 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
     onAddChild: (parentId: string) => void;
     onRemove: (id: string) => void;
     onFitToChildren: (id: string) => void;
-    calculateFontSize: (rectangleId: string) => number;
+    calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
   }
   ```
-- [ ] Test rectangle rendering
+- [x] Test rectangle rendering
 
 ### 3.3 Sidebar Component
 - [ ] Create `src/components/Sidebar.tsx`
