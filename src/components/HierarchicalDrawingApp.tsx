@@ -7,7 +7,6 @@ import {
   calculateNewRectangleLayout,
   getAllDescendants,
   getChildren,
-  isLeaf,
   getZIndex,
   calculateMinimumParentSize
 } from '../utils/layoutUtils';
@@ -280,11 +279,26 @@ const HierarchicalDrawingApp = () => {
     } else if (resizeState) {
       const deltaX = currentX - resizeState.startX;
       const deltaY = currentY - resizeState.startY;
-      const newW = Math.max(MIN_WIDTH, Math.round(resizeState.initialW + deltaX / gridSize));
-      const newH = Math.max(MIN_HEIGHT, Math.round(resizeState.initialH + deltaY / gridSize));
+      
+      // Find the rectangle being resized
+      const rect = rectangles.find(r => r.id === resizeState.id);
+      if (!rect) return;
+      
+      let newW = Math.max(MIN_WIDTH, Math.round(resizeState.initialW + deltaX / gridSize));
+      let newH = Math.max(MIN_HEIGHT, Math.round(resizeState.initialH + deltaY / gridSize));
+      
+      // Apply fixed dimension constraints for leaf nodes
+      if (rect.type === 'leaf') {
+        if (leafFixedWidth) {
+          newW = leafWidth;
+        }
+        if (leafFixedHeight) {
+          newH = leafHeight;
+        }
+      }
 
-      setRectangles(prev => prev.map(rect => 
-        rect.id === resizeState.id ? { ...rect, w: newW, h: newH } : rect
+      setRectangles(prev => prev.map(r => 
+        r.id === resizeState.id ? { ...r, w: newW, h: newH } : r
       ));
     } else if (panState) {
       const deltaX = currentX - panState.startX;
@@ -299,7 +313,7 @@ const HierarchicalDrawingApp = () => {
       panOffsetRef.current = newOffset;
       setPanOffset(newOffset);
     }
-  }, [dragState, resizeState, panState, gridSize]);
+  }, [dragState, resizeState, panState, gridSize, rectangles, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
@@ -604,7 +618,7 @@ const HierarchicalDrawingApp = () => {
                     onRemove={removeRectangle}
                     onFitToChildren={fitToChildren}
                     canDrag={!rect.parentId}
-                    canResize={!isLeaf(rect.id, rectangles) && !rect.parentId}
+                    canResize={!rect.parentId} // Allow resizing for all root nodes (regardless of children)
                     childCount={getChildren(rect.id, rectangles).length}
                     gridSize={gridSize}
                     fontSize={calculateFontSize(rect.id)}
