@@ -1,5 +1,5 @@
 import React, { useCallback, useRef } from 'react';
-import { ExportOptions } from '../types';
+import { ExportOptions, AppSettings } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
   getChildren,
@@ -9,14 +9,13 @@ import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
 import RectangleRenderer from './RectangleRenderer';
-import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
 import ExportModal from './ExportModal';
-import GlobalSettings from './GlobalSettings';
 import ActionButtonsOverlay from './ActionButtonsOverlay';
 import Canvas from './Canvas';
 import Sidebar from './Sidebar';
+import PropertyPanel from './PropertyPanel';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,6 +128,39 @@ const HierarchicalDrawingApp = () => {
     showContextMenu(e.clientX, e.clientY, rectangleId);
   }, [showContextMenu]);
 
+  // Handle settings changes for PropertyPanel
+  const handleSettingsChange = useCallback((settings: Partial<AppSettings>) => {
+    if (settings.gridSize !== undefined) {
+      setGridSize(settings.gridSize);
+    }
+    if (settings.leafFixedWidth !== undefined) {
+      handleLeafFixedWidthChange(settings.leafFixedWidth);
+    }
+    if (settings.leafFixedHeight !== undefined) {
+      handleLeafFixedHeightChange(settings.leafFixedHeight);
+    }
+    if (settings.leafWidth !== undefined) {
+      handleLeafWidthChange(settings.leafWidth);
+    }
+    if (settings.leafHeight !== undefined) {
+      handleLeafHeightChange(settings.leafHeight);
+    }
+    if (settings.rootFontSize !== undefined) {
+      handleRootFontSizeChange(settings.rootFontSize);
+    }
+    if (settings.dynamicFontSizing !== undefined) {
+      handleDynamicFontSizingChange(settings.dynamicFontSizing);
+    }
+  }, [
+    setGridSize,
+    handleLeafFixedWidthChange,
+    handleLeafFixedHeightChange,
+    handleLeafWidthChange,
+    handleLeafHeightChange,
+    handleRootFontSizeChange,
+    handleDynamicFontSizingChange,
+  ]);
+
   // Handle export
   const handleExport = useCallback(async (options: ExportOptions) => {
     if (!containerRef.current) return;
@@ -194,53 +226,22 @@ const HierarchicalDrawingApp = () => {
 
         {/* Responsive Sidebar */}
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar}>
-          {selectedId ? (
-            // Node is selected: Show color picker and node details
-            <>
-              <ColorPalette
-                selectedColor={findRectangle(selectedId)?.color}
-                onColorChange={(color) => updateRectangleColor(selectedId, color)}
-              />
-
-              <div className="bg-white rounded-lg shadow p-4">
-                <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
-                <div className="text-xs lg:text-sm text-gray-600 space-y-1">
-                  {(() => {
-                    const rect = findRectangle(selectedId);
-                    if (!rect) return null;
-                    const children = getChildren(selectedId, rectangles);
-                    return (
-                      <div>
-                        <div>Position: ({rect.x}, {rect.y})</div>
-                        <div>Size: {rect.w} × {rect.h}</div>
-                        <div>Children: {children.length}</div>
-                        <div>Type: {rect.parentId ? 'Child' : 'Root'}</div>
-                        <div>Color: {rect.color}</div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </>
-          ) : (
-            // No node selected: Show global settings
-            <GlobalSettings
-              gridSize={gridSize}
-              onGridSizeChange={setGridSize}
-              leafFixedWidth={leafFixedWidth}
-              onLeafFixedWidthChange={handleLeafFixedWidthChange}
-              leafFixedHeight={leafFixedHeight}
-              onLeafFixedHeightChange={handleLeafFixedHeightChange}
-              leafWidth={leafWidth}
-              onLeafWidthChange={handleLeafWidthChange}
-              leafHeight={leafHeight}
-              onLeafHeightChange={handleLeafHeightChange}
-              rootFontSize={rootFontSize}
-              onRootFontSizeChange={handleRootFontSizeChange}
-              dynamicFontSizing={dynamicFontSizing}
-              onDynamicFontSizingChange={handleDynamicFontSizingChange}
-            />
-          )}
+          <PropertyPanel
+            selectedId={selectedId}
+            selectedRectangle={selectedId ? findRectangle(selectedId) || null : null}
+            rectangles={rectangles}
+            onColorChange={updateRectangleColor}
+            appSettings={{
+              gridSize,
+              leafFixedWidth,
+              leafFixedHeight,
+              leafWidth,
+              leafHeight,
+              rootFontSize,
+              dynamicFontSizing,
+            }}
+            onSettingsChange={handleSettingsChange}
+          />
         </Sidebar>
       </div>
 

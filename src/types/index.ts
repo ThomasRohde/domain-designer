@@ -51,6 +51,9 @@ export interface GlobalSettings {
   dynamicFontSizing: boolean;
 }
 
+// Alias for consistency with hooks
+export type AppSettings = GlobalSettings;
+
 export interface DiagramState {
   rectangles: Rectangle[];
   selectedId: string | null;
