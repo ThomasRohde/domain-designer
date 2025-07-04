@@ -1,16 +1,14 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Rectangle, DragState, ResizeState, PanState, ExportOptions } from '../types';
-import { MIN_WIDTH, MIN_HEIGHT } from '../utils/constants';
+import { PanState, ExportOptions } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
-  updateChildrenLayout, 
-  getAllDescendants,
   getChildren,
   getZIndex,
 } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
+import { useDragAndResize } from '../hooks/useDragAndResize';
 import RectangleComponent from './RectangleComponent';
 import ColorPalette from './ColorPalette';
 import ContextMenu from './ContextMenu';
@@ -19,8 +17,6 @@ import ExportModal from './ExportModal';
 import GlobalSettings from './GlobalSettings';
 
 const HierarchicalDrawingApp = () => {
-  const [dragState, setDragState] = useState<DragState | null>(null);
-  const [resizeState, setResizeState] = useState<ResizeState | null>(null);
   const [panState, setPanState] = useState<PanState | null>(null);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const panOffsetRef = useRef({ x: 0, y: 0 });
@@ -85,48 +81,32 @@ const HierarchicalDrawingApp = () => {
     setRectanglesRef(setRectangles);
   }, [setRectangles, setRectanglesRef]);
 
+  // Use the drag and resize hook
+  const {
+    dragState,
+    resizeState,
+    handleMouseDown,
+    handleMouseUp: handleDragResizeMouseUp
+  } = useDragAndResize({
+    rectangles,
+    setRectangles,
+    gridSize,
+    leafFixedWidth,
+    leafFixedHeight,
+    leafWidth,
+    leafHeight,
+    containerRef,
+    getFixedDimensions
+  });
+
   // Wrapper function to match Toolbar's expected signature
   const addRectangle = useCallback((parentId: string | null = null) => {
     addRectangleHook(parentId || undefined);
   }, [addRectangleHook]);
 
-  // Handle mouse down for dragging
-  const handleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' = 'drag') => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (rect.parentId && action === 'drag') {
-      return;
-    }
-
-    const containerRect = containerRef.current?.getBoundingClientRect();
-    if (!containerRect) return;
-
-    const startX = e.clientX - containerRect.left;
-    const startY = e.clientY - containerRect.top;
-
-    if (action === 'drag') {
-      setDragState({
-        id: rect.id,
-        startX,
-        startY,
-        initialX: rect.x, // Store as grid coordinates
-        initialY: rect.y  // Store as grid coordinates
-      });
-    } else if (action === 'resize') {
-      setResizeState({
-        id: rect.id,
-        startX,
-        startY,
-        initialW: rect.w,
-        initialH: rect.h
-      });
-    }
-  }, [gridSize]);
-
-  // Handle mouse move
+  // Handle mouse move for panning only
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!dragState && !resizeState && !panState) return;
+    if (!panState) return;
 
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
@@ -134,82 +114,28 @@ const HierarchicalDrawingApp = () => {
     const currentX = e.clientX - containerRect.left;
     const currentY = e.clientY - containerRect.top;
 
-    if (dragState) {
-      const deltaX = currentX - dragState.startX;
-      const deltaY = currentY - dragState.startY;
-      // Convert screen delta to grid delta and add to initial grid position
-      const gridDeltaX = deltaX / gridSize;
-      const gridDeltaY = deltaY / gridSize;
-      const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
-      const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
-
-      setRectangles(prev => prev.map(rect => 
-        rect.id === dragState.id ? { ...rect, x: newX, y: newY } : rect
-      ));
-    } else if (resizeState) {
-      const deltaX = currentX - resizeState.startX;
-      const deltaY = currentY - resizeState.startY;
-      
-      // Find the rectangle being resized
-      const rect = rectangles.find(r => r.id === resizeState.id);
-      if (!rect) return;
-      
-      let newW = Math.max(MIN_WIDTH, Math.round(resizeState.initialW + deltaX / gridSize));
-      let newH = Math.max(MIN_HEIGHT, Math.round(resizeState.initialH + deltaY / gridSize));
-      
-      // Apply fixed dimension constraints for leaf nodes
-      if (rect.type === 'leaf') {
-        if (leafFixedWidth) {
-          newW = leafWidth;
-        }
-        if (leafFixedHeight) {
-          newH = leafHeight;
-        }
-      }
-
-      setRectangles(prev => prev.map(r => 
-        r.id === resizeState.id ? { ...r, w: newW, h: newH } : r
-      ));
-    } else if (panState) {
-      const deltaX = currentX - panState.startX;
-      const deltaY = currentY - panState.startY;
-      
-      const newOffset = {
-        x: panState.initialOffsetX + deltaX,
-        y: panState.initialOffsetY + deltaY
-      };
-      
-      // Update both ref and state for immediate and persistent updates
-      panOffsetRef.current = newOffset;
-      setPanOffset(newOffset);
-    }
-  }, [dragState, resizeState, panState, gridSize, rectangles, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
-
-  // Handle mouse up
-  const handleMouseUp = useCallback(() => {
-    const wasDragging = dragState;
-    const wasResizing = resizeState;
-    const wasPanning = panState;
+    const deltaX = currentX - panState.startX;
+    const deltaY = currentY - panState.startY;
     
-    setDragState(null);
-    setResizeState(null);
+    const newOffset = {
+      x: panState.initialOffsetX + deltaX,
+      y: panState.initialOffsetY + deltaY
+    };
+    
+    // Update both ref and state for immediate and persistent updates
+    panOffsetRef.current = newOffset;
+    setPanOffset(newOffset);
+  }, [panState]);
+
+  // Handle mouse up for panning only
+  const handleMouseUp = useCallback(() => {
     setPanState(null);
     
-    if ((wasDragging || wasResizing) && !wasPanning) {
-      const rectId = wasDragging?.id || wasResizing?.id;
-      if (rectId) {
-        const rect = rectangles.find(r => r.id === rectId);
-        if (rect) {
-          const hasDescendants = getAllDescendants(rect.id, rectangles).length > 0;
-          if (hasDescendants) {
-            setTimeout(() => {
-              setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
-            }, 10);
-          }
-        }
-      }
+    // Call the drag/resize mouse up handler as well
+    if (dragState || resizeState) {
+      handleDragResizeMouseUp();
     }
-  }, [dragState, resizeState, panState, rectangles, updateChildrenLayout, getAllDescendants, getFixedDimensions]);
+  }, [panState, dragState, resizeState, handleDragResizeMouseUp]);
 
   // Handle context menu
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -229,9 +155,9 @@ const HierarchicalDrawingApp = () => {
     }
   }, [rectangles, gridSize]);
 
-  // Add global mouse event listeners
+  // Add global mouse event listeners for panning only
   React.useEffect(() => {
-    if (dragState || resizeState || panState) {
+    if (panState) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -239,7 +165,7 @@ const HierarchicalDrawingApp = () => {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [dragState, resizeState, panState, handleMouseMove, handleMouseUp]);
+  }, [panState, handleMouseMove, handleMouseUp]);
 
   // Handle keyboard events for space key panning
   React.useEffect(() => {

@@ -73,15 +73,15 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 ## Phase 2: Extract Interaction Hooks
 
 ### 2.1 Drag and Resize Hook
-- [ ] Create `src/hooks/useDragAndResize.ts`
-- [ ] Extract state: `dragState`, `resizeState`
-- [ ] Extract functions:
-  - [ ] `handleMouseDown(e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize')`
-  - [ ] `handleDragMove(e: MouseEvent, containerRect: DOMRect)`
-  - [ ] `handleResizeMove(e: MouseEvent, containerRect: DOMRect)`
-  - [ ] `handleMouseUp()`
-- [ ] Add proper event cleanup
-- [ ] Test drag and resize operations
+- [x] Create `src/hooks/useDragAndResize.ts`
+- [x] Extract state: `dragState`, `resizeState`
+- [x] Extract functions:
+  - [x] `handleMouseDown(e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize')`
+  - [x] `handleDragMove(e: MouseEvent, containerRect: DOMRect)`
+  - [x] `handleResizeMove(e: MouseEvent, containerRect: DOMRect)`
+  - [x] `handleMouseUp()`
+- [x] Add proper event cleanup
+- [x] Test drag and resize operations
 
 ### 2.2 Canvas Panning Hook
 - [ ] Create `src/hooks/useCanvasPanning.ts`
@@ -100,11 +100,6 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 - [ ] Handle mouse up coordination
 - [ ] Add global event listeners
 - [ ] Test all interactions work together
-
-### Phase 2 Integration
-- [ ] Update `HierarchicalDrawingApp.tsx` to use interaction hooks
-- [ ] Verify all mouse/keyboard interactions work
-- [ ] Test interaction conflicts (drag vs pan, etc.)
 
 ---
 
