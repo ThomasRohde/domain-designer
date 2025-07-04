@@ -26,14 +26,10 @@ export const calculateChildLayout = (
   const cols = Math.ceil(Math.sqrt(children.length));
   const rows = Math.ceil(children.length / cols);
 
-  // Calculate spacing and dimensions considering fixed dimensions for leaves
-  let maxChildWidth = MIN_WIDTH;
-  let maxChildHeight = MIN_HEIGHT;
-  
-  // First pass: determine actual dimensions for all children
-  children.forEach(child => {
-    let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - ((cols - 1) * sideMargin)) / cols));
-    let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - ((rows - 1) * sideMargin)) / rows));
+  // Calculate dimensions for all children, considering fixed dimensions for leaves
+  const childDimensions = children.map(child => {
+    let childWidth = Math.max(MIN_WIDTH, Math.floor(availableWidth / cols));
+    let childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
     
     if (child.type === 'leaf' && fixedDimensions) {
       if (fixedDimensions.leafFixedWidth) {
@@ -44,34 +40,40 @@ export const calculateChildLayout = (
       }
     }
     
-    maxChildWidth = Math.max(maxChildWidth, childWidth);
-    maxChildHeight = Math.max(maxChildHeight, childHeight);
+    return { width: childWidth, height: childHeight };
   });
 
-  const totalHorizontalSpacing = (cols - 1) * sideMargin;
-  const totalVerticalSpacing = (rows - 1) * sideMargin;
-  
+  // Calculate maximum dimensions needed
+  const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
+  const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
+
+  // Calculate total space needed for all children
+  const totalChildrenWidth = cols * maxChildWidth;
+  const totalChildrenHeight = rows * maxChildHeight;
+
+  // Calculate remaining space for even distribution
+  const extraHorizontalSpace = Math.max(0, availableWidth - totalChildrenWidth);
+  const extraVerticalSpace = Math.max(0, availableHeight - totalChildrenHeight);
+
+  // Distribute extra space evenly between children (for spacing)
+  const horizontalSpacing = cols > 1 ? extraHorizontalSpace / (cols + 1) : extraHorizontalSpace / 2;
+  const verticalSpacing = rows > 1 ? extraVerticalSpace / (rows + 1) : extraVerticalSpace / 2;
+
   return children.map((child, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
 
-    // Determine dimensions based on fixed settings for leaf nodes
-    let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
-    let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
-    
-    if (child.type === 'leaf' && fixedDimensions) {
-      if (fixedDimensions.leafFixedWidth) {
-        childWidth = fixedDimensions.leafWidth;
-      }
-      if (fixedDimensions.leafFixedHeight) {
-        childHeight = fixedDimensions.leafHeight;
-      }
-    }
+    // Use the calculated dimensions for this specific child
+    const { width: childWidth, height: childHeight } = childDimensions[index];
+
+    // Calculate position with even spacing distribution
+    const x = parentRect.x + sideMargin + horizontalSpacing + (col * (maxChildWidth + horizontalSpacing));
+    const y = parentRect.y + topMargin + verticalSpacing + (row * (maxChildHeight + verticalSpacing));
 
     return {
       ...child,
-      x: parentRect.x + sideMargin + (col * (maxChildWidth + sideMargin)),
-      y: parentRect.y + topMargin + (row * (maxChildHeight + sideMargin)),
+      x,
+      y,
       w: childWidth,
       h: childHeight
     };
@@ -157,7 +159,7 @@ export const calculateNewRectangleLayout = (
     const parent = rectangles.find(rect => rect.id === parentId);
     if (parent) {
       const existingChildren = rectangles.filter(rect => rect.parentId === parentId);
-      const childIndex = existingChildren.length;
+      const totalChildren = existingChildren.length + 1; // +1 for the new child
       
       // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
       const topMargin = LABEL_MARGIN;
@@ -166,20 +168,28 @@ export const calculateNewRectangleLayout = (
       const availableWidth = Math.max(MIN_WIDTH, parent.w - (sideMargin * 2));
       const availableHeight = Math.max(MIN_HEIGHT, parent.h - topMargin - sideMargin);
       
-      const cols = Math.ceil(Math.sqrt(childIndex + 1));
-      const rows = Math.ceil((childIndex + 1) / cols);
+      const cols = Math.ceil(Math.sqrt(totalChildren));
+      const rows = Math.ceil(totalChildren / cols);
       
-      const totalHorizontalSpacing = (cols - 1) * sideMargin;
-      const totalVerticalSpacing = (rows - 1) * sideMargin;
+      // Calculate child dimensions
+      const childWidth = Math.max(MIN_WIDTH, Math.floor(availableWidth / cols));
+      const childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
       
-      const childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - totalHorizontalSpacing) / cols));
-      const childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - totalVerticalSpacing) / rows));
+      // Calculate spacing for symmetry
+      const totalChildrenWidth = cols * childWidth;
+      const totalChildrenHeight = rows * childHeight;
       
-      const col = childIndex % cols;
-      const row = Math.floor(childIndex / cols);
+      const extraHorizontalSpace = Math.max(0, availableWidth - totalChildrenWidth);
+      const extraVerticalSpace = Math.max(0, availableHeight - totalChildrenHeight);
       
-      x = parent.x + sideMargin + (col * (childWidth + sideMargin));
-      y = parent.y + topMargin + (row * (childHeight + sideMargin));
+      const horizontalSpacing = cols > 1 ? extraHorizontalSpace / (cols + 1) : extraHorizontalSpace / 2;
+      const verticalSpacing = rows > 1 ? extraVerticalSpace / (rows + 1) : extraVerticalSpace / 2;
+      
+      const col = existingChildren.length % cols;
+      const row = Math.floor(existingChildren.length / cols);
+      
+      x = parent.x + sideMargin + horizontalSpacing + (col * (childWidth + horizontalSpacing));
+      y = parent.y + topMargin + verticalSpacing + (row * (childHeight + verticalSpacing));
       w = childWidth;
       h = childHeight;
       
