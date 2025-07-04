@@ -17,6 +17,7 @@ interface RectangleComponentProps {
   canResize: boolean;
   childCount: number;
   gridSize?: number;
+  fontSize?: number;
 }
 
 const RectangleComponent: React.FC<RectangleComponentProps> = ({
@@ -32,7 +33,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   canDrag,
   canResize,
   childCount,
-  gridSize = GRID_SIZE
+  gridSize = GRID_SIZE,
+  fontSize = 14
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(rectangle.label);
@@ -124,13 +126,13 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={handleInputSubmit}
                 onKeyDown={handleInputKeyDown}
-                className="w-full px-1 py-0.5 text-sm font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                style={{ color: textColor }}
+                className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                style={{ color: textColor, fontSize: `${fontSize}px` }}
               />
             ) : (
               <div 
-                className="text-sm font-medium cursor-text truncate"
-                style={{ color: textColor }}
+                className="font-medium cursor-text truncate"
+                style={{ color: textColor, fontSize: `${fontSize}px` }}
                 title={rectangle.label}
               >
                 {rectangle.label}
@@ -178,14 +180,15 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleInputSubmit}
               onKeyDown={handleInputKeyDown}
-              className="w-full px-1 py-0.5 text-sm font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-              style={{ color: textColor }}
+              className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+              style={{ color: textColor, fontSize: `${fontSize}px` }}
             />
           ) : (
             <div 
-              className="text-sm font-medium cursor-text text-center break-words leading-tight"
+              className="font-medium cursor-text text-center break-words leading-tight"
               style={{ 
                 color: textColor,
+                fontSize: `${fontSize}px`,
                 wordWrap: 'break-word',
                 overflowWrap: 'break-word',
                 hyphens: 'auto'

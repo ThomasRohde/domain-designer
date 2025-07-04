@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { Rectangle, DragState, ResizeState, ExportOptions } from '../types';
-import { GRID_SIZE, MIN_WIDTH, MIN_HEIGHT, DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
+import { GRID_SIZE, MIN_WIDTH, MIN_HEIGHT, DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS } from '../utils/constants';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
   updateChildrenLayout, 
@@ -31,6 +31,8 @@ const HierarchicalDrawingApp = () => {
   const [leafFixedHeight, setLeafFixedHeight] = useState(false);
   const [leafWidth, setLeafWidth] = useState(DEFAULT_RECTANGLE_SIZE.leaf.w);
   const [leafHeight, setLeafHeight] = useState(DEFAULT_RECTANGLE_SIZE.leaf.h);
+  const [rootFontSize, setRootFontSize] = useState(DEFAULT_FONT_SETTINGS.rootFontSize);
+  const [dynamicFontSizing, setDynamicFontSizing] = useState(DEFAULT_FONT_SETTINGS.dynamicFontSizing);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Helper function to get fixed dimensions settings
@@ -349,6 +351,41 @@ const HierarchicalDrawingApp = () => {
     }
   }, [leafFixedHeight, leafFixedWidth, leafWidth]);
 
+  // Font settings handlers
+  const handleRootFontSizeChange = useCallback((size: number) => {
+    setRootFontSize(size);
+  }, []);
+
+  const handleDynamicFontSizingChange = useCallback((enabled: boolean) => {
+    setDynamicFontSizing(enabled);
+  }, []);
+
+  // Calculate font size based on hierarchy level
+  const calculateFontSize = useCallback((rectangleId: string) => {
+    if (!dynamicFontSizing) return rootFontSize;
+    
+    // Find the rectangle and calculate its depth
+    const rect = rectangles.find(r => r.id === rectangleId);
+    if (!rect) return rootFontSize;
+    
+    let depth = 0;
+    let currentRect: Rectangle | undefined = rect;
+    
+    while (currentRect?.parentId) {
+      depth++;
+      currentRect = rectangles.find(r => r.id === currentRect!.parentId);
+      if (!currentRect) break;
+    }
+    
+    // Apply scaling formula: root = 1.0, level 1 = 0.9, level 2 = 0.8, level 3+ = 0.7
+    let scale = 1.0;
+    if (depth === 1) scale = 0.9;
+    else if (depth === 2) scale = 0.8;
+    else if (depth >= 3) scale = 0.7;
+    
+    return Math.max(10, Math.round(rootFontSize * scale));
+  }, [dynamicFontSizing, rootFontSize, rectangles]);
+
   // Add global mouse event listeners
   React.useEffect(() => {
     if (dragState || resizeState) {
@@ -454,6 +491,7 @@ const HierarchicalDrawingApp = () => {
                     canResize={!isLeaf(rect.id, rectangles) && !rect.parentId}
                     childCount={getChildren(rect.id, rectangles).length}
                     gridSize={gridSize}
+                    fontSize={calculateFontSize(rect.id)}
                   />
                 ))}
               </div>
@@ -525,6 +563,10 @@ const HierarchicalDrawingApp = () => {
                 onLeafWidthChange={handleLeafWidthChange}
                 leafHeight={leafHeight}
                 onLeafHeightChange={handleLeafHeightChange}
+                rootFontSize={rootFontSize}
+                onRootFontSizeChange={handleRootFontSizeChange}
+                dynamicFontSizing={dynamicFontSizing}
+                onDynamicFontSizingChange={handleDynamicFontSizingChange}
               />
             )}
           </div>

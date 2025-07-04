@@ -40,6 +40,8 @@ export interface GlobalSettings {
   leafFixedHeight: boolean;
   leafWidth: number;
   leafHeight: number;
+  rootFontSize: number;
+  dynamicFontSizing: boolean;
 }
 
 export interface DiagramState {

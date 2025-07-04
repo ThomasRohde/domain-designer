@@ -17,6 +17,11 @@ export const DEFAULT_RECTANGLE_SIZE = {
   leaf: { w: 4, h: 3 }
 };
 
+export const DEFAULT_FONT_SETTINGS = {
+  rootFontSize: 16,
+  dynamicFontSizing: false
+};
+
 export const KEYBOARD_SHORTCUTS = {
   SAVE: 'Ctrl+S',
   LOAD: 'Ctrl+O',
