@@ -47,17 +47,22 @@ export const calculateChildLayout = (
   const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
   const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
 
-  // Calculate total space needed for all children
-  const totalChildrenWidth = cols * maxChildWidth;
-  const totalChildrenHeight = rows * maxChildHeight;
+  // Use consistent spacing between children (same as margin)
+  const childSpacing = MARGIN;
+  
+  // Calculate total space needed for all children including spacing
+  const totalSpacingWidth = (cols - 1) * childSpacing;
+  const totalSpacingHeight = (rows - 1) * childSpacing;
+  const totalChildrenWidth = cols * maxChildWidth + totalSpacingWidth;
+  const totalChildrenHeight = rows * maxChildHeight + totalSpacingHeight;
 
-  // Calculate remaining space for even distribution
+  // Calculate remaining space for centering, but ensure we don't exceed available space
   const extraHorizontalSpace = Math.max(0, availableWidth - totalChildrenWidth);
   const extraVerticalSpace = Math.max(0, availableHeight - totalChildrenHeight);
 
-  // Distribute extra space evenly between children (for spacing)
-  const horizontalSpacing = cols > 1 ? extraHorizontalSpace / (cols + 1) : extraHorizontalSpace / 2;
-  const verticalSpacing = rows > 1 ? extraVerticalSpace / (rows + 1) : extraVerticalSpace / 2;
+  // Center the children grid within the available space
+  const horizontalOffset = extraHorizontalSpace / 2;
+  const verticalOffset = extraVerticalSpace / 2;
 
   return children.map((child, index) => {
     const col = index % cols;
@@ -66,14 +71,20 @@ export const calculateChildLayout = (
     // Use the calculated dimensions for this specific child
     const { width: childWidth, height: childHeight } = childDimensions[index];
 
-    // Calculate position with even spacing distribution
-    const x = parentRect.x + sideMargin + horizontalSpacing + (col * (maxChildWidth + horizontalSpacing));
-    const y = parentRect.y + topMargin + verticalSpacing + (row * (maxChildHeight + verticalSpacing));
+    // Calculate position with consistent spacing between children
+    // For columns: start position + (column index * (child width + spacing))
+    // For rows: start position + (row index * (child height + spacing))
+    const x = parentRect.x + sideMargin + horizontalOffset + (col * (maxChildWidth + childSpacing));
+    const y = parentRect.y + topMargin + verticalOffset + (row * (maxChildHeight + childSpacing));
+
+    // Ensure the child doesn't extend beyond the parent's boundaries
+    const maxX = parentRect.x + parentRect.w - sideMargin - childWidth;
+    const maxY = parentRect.y + parentRect.h - sideMargin - childHeight;
 
     return {
       ...child,
-      x,
-      y,
+      x: Math.min(x, maxX),
+      y: Math.min(y, maxY),
       w: childWidth,
       h: childHeight
     };
@@ -98,16 +109,16 @@ export const updateChildrenLayout = (
   const processLevel = (): boolean => {
     let processedAny = false;
     
-    rectangles.forEach(rect => {
+    updated.forEach(rect => {
       if (processedIds.has(rect.id) || !rect.parentId) return;
       
-      const parent = rectangles.find(p => p.id === rect.parentId);
+      const parent = updated.find(p => p.id === rect.parentId);
       if (!parent || (!parent.parentId && !processedIds.has(parent.id))) {
         if (parent && !parent.parentId) processedIds.add(parent.id);
       }
       
       if (processedIds.has(rect.parentId) || (parent && !parent.parentId)) {
-        const siblings = rectangles.filter(s => s.parentId === rect.parentId);
+        const siblings = updated.filter(s => s.parentId === rect.parentId);
         
         if (siblings.length > 0) {
           const currentParent = updated.find(p => p.id === rect.parentId);
@@ -175,21 +186,27 @@ export const calculateNewRectangleLayout = (
       const childWidth = Math.max(MIN_WIDTH, Math.floor(availableWidth / cols));
       const childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
       
-      // Calculate spacing for symmetry
-      const totalChildrenWidth = cols * childWidth;
-      const totalChildrenHeight = rows * childHeight;
+      // Use consistent spacing between children (same as margin)
+      const childSpacing = MARGIN;
+      
+      // Calculate total space needed including spacing
+      const totalSpacingWidth = (cols - 1) * childSpacing;
+      const totalSpacingHeight = (rows - 1) * childSpacing;
+      const totalChildrenWidth = cols * childWidth + totalSpacingWidth;
+      const totalChildrenHeight = rows * childHeight + totalSpacingHeight;
       
       const extraHorizontalSpace = Math.max(0, availableWidth - totalChildrenWidth);
       const extraVerticalSpace = Math.max(0, availableHeight - totalChildrenHeight);
       
-      const horizontalSpacing = cols > 1 ? extraHorizontalSpace / (cols + 1) : extraHorizontalSpace / 2;
-      const verticalSpacing = rows > 1 ? extraVerticalSpace / (rows + 1) : extraVerticalSpace / 2;
+      // Center the children grid within the available space
+      const horizontalOffset = extraHorizontalSpace / 2;
+      const verticalOffset = extraVerticalSpace / 2;
       
       const col = existingChildren.length % cols;
       const row = Math.floor(existingChildren.length / cols);
       
-      x = parent.x + sideMargin + horizontalSpacing + (col * (childWidth + horizontalSpacing));
-      y = parent.y + topMargin + verticalSpacing + (row * (childHeight + verticalSpacing));
+      x = parent.x + sideMargin + horizontalOffset + (col * (childWidth + childSpacing));
+      y = parent.y + topMargin + verticalOffset + (row * (childHeight + childSpacing));
       w = childWidth;
       h = childHeight;
       
@@ -317,17 +334,20 @@ export const calculateMinimumParentSize = (
   const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
   const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
 
-  // Calculate total space needed for all children with minimal spacing
+  // Use consistent spacing between children (same as margin)
+  const childSpacing = MARGIN;
+
+  // Calculate total space needed for all children with consistent spacing
   const totalChildrenWidth = cols * maxChildWidth;
   const totalChildrenHeight = rows * maxChildHeight;
 
-  // Add minimal spacing between children (1 grid unit)
-  const minHorizontalSpacing = cols > 1 ? (cols - 1) * 1 : 0;
-  const minVerticalSpacing = rows > 1 ? (rows - 1) * 1 : 0;
+  // Add consistent spacing between children
+  const horizontalSpacing = cols > 1 ? (cols - 1) * childSpacing : 0;
+  const verticalSpacing = rows > 1 ? (rows - 1) * childSpacing : 0;
 
-  // Calculate minimum required parent size
-  const minParentWidth = totalChildrenWidth + minHorizontalSpacing + (sideMargin * 2);
-  const minParentHeight = totalChildrenHeight + minVerticalSpacing + topMargin + sideMargin;
+  // Calculate minimum required parent size with proper margins
+  const minParentWidth = totalChildrenWidth + horizontalSpacing + (sideMargin * 2);
+  const minParentHeight = totalChildrenHeight + verticalSpacing + topMargin + sideMargin;
 
   return {
     w: Math.max(MIN_WIDTH, Math.ceil(minParentWidth)),
