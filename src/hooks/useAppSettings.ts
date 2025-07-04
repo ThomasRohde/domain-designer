@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Rectangle } from '../types';
 import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS } from '../utils/constants';
 import { updateChildrenLayout } from '../utils/layoutUtils';

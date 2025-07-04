@@ -72,7 +72,7 @@ export const useDragAndResize = ({
         initialH: rect.h
       });
     }
-  }, []);
+  }, [containerRef]);
 
   // Handle drag movement
   const handleDragMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
@@ -139,7 +139,7 @@ export const useDragAndResize = ({
     } else if (resizeState) {
       handleResizeMove(e, containerRect);
     }
-  }, [dragState, resizeState, handleDragMove, handleResizeMove]);
+  }, [dragState, resizeState, handleDragMove, handleResizeMove, containerRef]);
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {

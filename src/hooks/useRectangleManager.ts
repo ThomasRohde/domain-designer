@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Rectangle } from '../types';
 import { DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
 import { 

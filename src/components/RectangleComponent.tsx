@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Trash2, Minimize2 } from 'lucide-react';
 import { Rectangle } from '../types';
 import { GRID_SIZE, LABEL_MARGIN } from '../utils/constants';
 
@@ -11,9 +10,6 @@ interface RectangleComponentProps {
   onContextMenu: (e: React.MouseEvent, rectangleId: string) => void;
   onSelect: (id: string) => void;
   onUpdateLabel: (id: string, label: string) => void;
-  onAddChild: (parentId: string) => void;
-  onRemove: (id: string) => void;
-  onFitToChildren: (id: string) => void;
   canDrag: boolean;
   canResize: boolean;
   childCount: number;
@@ -30,9 +26,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   onContextMenu,
   onSelect,
   onUpdateLabel,
-  onAddChild,
-  onRemove,
-  onFitToChildren,
   canDrag,
   canResize,
   childCount,
@@ -144,43 +137,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
           </div>
           
           {/* Action buttons for selected rectangles with children */}
-          {isSelected && (
-            <div 
-              className="absolute right-2 flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity"
-              style={{ top: `${LABEL_MARGIN * 2}px` }}
-            >
-              <button
-                className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddChild(rectangle.id);
-                }}
-                title="Add Child"
-              >
-                <Plus size={12} />
-              </button>
-              <button
-                className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onFitToChildren(rectangle.id);
-                }}
-                title="Fit to Children"
-              >
-                <Minimize2 size={12} />
-              </button>
-              <button
-                className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(rectangle.id);
-                }}
-                title="Remove"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-          )}
+          {/* Action buttons moved to ActionButtonsOverlay component for better z-index handling */}
         </div>
       ) : (
         // Leaf rectangles: label centered and word wrapped in both dimensions
@@ -213,30 +170,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
           )}
           
           {/* Action buttons for selected leaf rectangles */}
-          {isSelected && (
-            <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
-              <button
-                className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddChild(rectangle.id);
-                }}
-                title="Add Child"
-              >
-                <Plus size={10} />
-              </button>
-              <button
-                className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemove(rectangle.id);
-                }}
-                title="Remove"
-              >
-                <Trash2 size={10} />
-              </button>
-            </div>
-          )}
+          {/* Action buttons moved to ActionButtonsOverlay component for better z-index handling */}
         </div>
       )}
 

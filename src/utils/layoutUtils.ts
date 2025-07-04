@@ -1,4 +1,4 @@
-import { Rectangle } from '../types';
+import { Rectangle, DragState, ResizeState } from '../types';
 import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT } from './constants';
 
 /**
@@ -268,8 +268,8 @@ export const getZIndex = (
   rect: Rectangle, 
   rectangles: Rectangle[], 
   selectedId: string | null,
-  dragState: any,
-  resizeState: any
+  dragState: DragState | null,
+  resizeState: ResizeState | null
 ): number => {
   let depth = 0;
   let current: Rectangle | undefined = rect;
@@ -284,6 +284,8 @@ export const getZIndex = (
   let selectedBoost = 0;
   if (selectedId === rect.id && !dragState && !resizeState) {
     const hasChildren = getChildren(rect.id, rectangles).length > 0;
+    // For parent rectangles with children, don't give them a boost that would put them above their children
+    // Children need to remain visible when parent is selected
     selectedBoost = hasChildren ? 5 : 100;
   }
   
@@ -353,4 +355,33 @@ export const calculateMinimumParentSize = (
     w: Math.max(MIN_WIDTH, Math.ceil(minParentWidth)),
     h: Math.max(MIN_HEIGHT, Math.ceil(minParentHeight))
   };
+};
+
+/**
+ * Sort rectangles by depth (deepest first) to ensure parents render after children
+ */
+export const sortRectanglesByDepth = (rectangles: Rectangle[]): Rectangle[] => {
+  const getDepth = (rect: Rectangle, rectangles: Rectangle[]): number => {
+    let depth = 0;
+    let current: Rectangle | undefined = rect;
+    
+    while (current && current.parentId) {
+      depth++;
+      current = rectangles.find(r => r.id === current!.parentId);
+      if (!current || depth > 10) break;
+    }
+    
+    return depth;
+  };
+
+  return [...rectangles].sort((a, b) => {
+    const depthA = getDepth(a, rectangles);
+    const depthB = getDepth(b, rectangles);
+    
+    // Sort by depth (deepest first), then by creation order (id) for stable sorting
+    if (depthA !== depthB) {
+      return depthB - depthA; // Deeper elements first
+    }
+    return a.id.localeCompare(b.id);
+  });
 };

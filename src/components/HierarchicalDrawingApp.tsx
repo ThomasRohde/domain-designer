@@ -4,6 +4,7 @@ import { exportDiagram } from '../utils/exportUtils';
 import { 
   getChildren,
   getZIndex,
+  sortRectanglesByDepth,
 } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
@@ -15,6 +16,7 @@ import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
 import ExportModal from './ExportModal';
 import GlobalSettings from './GlobalSettings';
+import ActionButtonsOverlay from './ActionButtonsOverlay';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -152,7 +154,7 @@ const HierarchicalDrawingApp = () => {
         {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 p-2 sm:p-4 overflow-hidden">
-            <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full canvas-container">
+            <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full canvas-container relative">
               <div
                 ref={containerRef}
                 className={`relative bg-gray-50 w-full h-full ${isSpacePressed ? 'cursor-grab' : ''} ${panState ? 'cursor-grabbing' : ''}`}
@@ -164,7 +166,7 @@ const HierarchicalDrawingApp = () => {
                 onClick={() => setSelectedId(null)}
                 onMouseDown={handleCanvasMouseDown}
               >
-                {rectangles.map(rect => (
+                {sortRectanglesByDepth(rectangles).map(rect => (
                   <RectangleComponent
                     key={rect.id}
                     rectangle={rect} // Pass original rectangle
@@ -174,9 +176,6 @@ const HierarchicalDrawingApp = () => {
                     onContextMenu={handleContextMenu}
                     onSelect={setSelectedId}
                     onUpdateLabel={updateRectangleLabel}
-                    onAddChild={addRectangle}
-                    onRemove={removeRectangle}
-                    onFitToChildren={fitToChildren}
                     canDrag={!rect.parentId}
                     canResize={!rect.parentId} // Allow resizing for all root nodes (regardless of children)
                     childCount={getChildren(rect.id, rectangles).length}
@@ -186,6 +185,17 @@ const HierarchicalDrawingApp = () => {
                   />
                 ))}
               </div>
+              
+              {/* Action buttons overlay rendered outside the canvas but within the same container */}
+              <ActionButtonsOverlay
+                selectedRectangle={selectedId ? findRectangle(selectedId) || null : null}
+                childCount={selectedId ? getChildren(selectedId, rectangles).length : 0}
+                onAddChild={addRectangle}
+                onRemove={removeRectangle}
+                onFitToChildren={fitToChildren}
+                gridSize={gridSize}
+                panOffset={panOffset}
+              />
             </div>
           </div>
         </div>
