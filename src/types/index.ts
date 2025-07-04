@@ -34,6 +34,14 @@ export interface ResizeState {
   initialH: number;
 }
 
+export interface GlobalSettings {
+  gridSize: number;
+  leafFixedWidth: boolean;
+  leafFixedHeight: boolean;
+  leafWidth: number;
+  leafHeight: number;
+}
+
 export interface DiagramState {
   rectangles: Rectangle[];
   selectedId: string | null;
@@ -42,6 +50,7 @@ export interface DiagramState {
   resizeState: ResizeState | null;
   history: Rectangle[][];
   historyIndex: number;
+  globalSettings: GlobalSettings;
 }
 
 export interface ExportOptions {
