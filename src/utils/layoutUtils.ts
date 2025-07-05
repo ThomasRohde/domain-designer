@@ -26,10 +26,13 @@ export const calculateChildLayout = (
   const cols = Math.ceil(Math.sqrt(children.length));
   const rows = Math.ceil(children.length / cols);
 
+  // Use consistent spacing between children (same as margin)
+  const childSpacing = MARGIN;
+  
   // Calculate dimensions for all children, considering fixed dimensions for leaves
   const childDimensions = children.map(child => {
-    let childWidth = Math.max(MIN_WIDTH, Math.floor(availableWidth / cols));
-    let childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
+    let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - (cols - 1) * childSpacing) / cols));
+    let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - (rows - 1) * childSpacing) / rows));
     
     if (child.type === 'leaf' && fixedDimensions) {
       if (fixedDimensions.leafFixedWidth) {
@@ -46,9 +49,6 @@ export const calculateChildLayout = (
   // Calculate maximum dimensions needed
   const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
   const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
-
-  // Use consistent spacing between children (same as margin)
-  const childSpacing = MARGIN;
   
   // Calculate total space needed for all children including spacing
   const totalSpacingWidth = (cols - 1) * childSpacing;
@@ -68,8 +68,9 @@ export const calculateChildLayout = (
     const col = index % cols;
     const row = Math.floor(index / cols);
 
-    // Use the calculated dimensions for this specific child
-    const { width: childWidth, height: childHeight } = childDimensions[index];
+    // Use consistent dimensions for all children based on maximum size
+    const childWidth = maxChildWidth;
+    const childHeight = maxChildHeight;
 
     // Calculate position with consistent spacing between children
     // For columns: start position + (column index * (child width + spacing))
@@ -77,42 +78,12 @@ export const calculateChildLayout = (
     const x = parentRect.x + sideMargin + horizontalOffset + (col * (maxChildWidth + childSpacing));
     const y = parentRect.y + topMargin + verticalOffset + (row * (maxChildHeight + childSpacing));
 
-    // Check if we need to adjust layout to prevent overlap
-    const maxX = parentRect.x + parentRect.w - sideMargin - childWidth;
-    const maxY = parentRect.y + parentRect.h - sideMargin - childHeight;
-
-    // If the calculated position would place the child outside the parent,
-    // we need to adjust the layout to prevent overlap
-    let adjustedX = x;
-    let adjustedY = y;
-    let adjustedWidth = childWidth;
-    let adjustedHeight = childHeight;
-
-    if (x > maxX || y > maxY) {
-      // Parent is too small for the ideal layout - adjust to prevent overlap
-      // Recalculate with tighter packing
-      const availableWidthPerChild = (availableWidth - (cols - 1) * childSpacing) / cols;
-      const availableHeightPerChild = (availableHeight - (rows - 1) * childSpacing) / rows;
-      
-      // Shrink children if needed, but not below minimum size
-      adjustedWidth = Math.max(MIN_WIDTH, Math.floor(availableWidthPerChild));
-      adjustedHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeightPerChild));
-      
-      // Recalculate position with adjusted dimensions
-      adjustedX = parentRect.x + sideMargin + (col * (adjustedWidth + childSpacing));
-      adjustedY = parentRect.y + topMargin + (row * (adjustedHeight + childSpacing));
-      
-      // Final clamp to ensure we don't exceed parent boundaries
-      adjustedX = Math.min(adjustedX, parentRect.x + parentRect.w - sideMargin - adjustedWidth);
-      adjustedY = Math.min(adjustedY, parentRect.y + parentRect.h - sideMargin - adjustedHeight);
-    }
-
     return {
       ...child,
-      x: adjustedX,
-      y: adjustedY,
-      w: adjustedWidth,
-      h: adjustedHeight
+      x: x,
+      y: y,
+      w: childWidth,
+      h: childHeight
     };
   });
 };
@@ -341,10 +312,19 @@ export const calculateMinimumParentSize = (
   const cols = Math.ceil(Math.sqrt(children.length));
   const rows = Math.ceil(children.length / cols);
 
-  // Calculate dimensions for all children, considering fixed dimensions for leaves
+  // Calculate theoretical optimal child dimensions (not actual current dimensions)
+  // This ensures consistent sizing and prevents growth on repeated fit-to-children
+  const childSpacing = MARGIN;
+  
+  // Use a reasonable default child size for calculation
+  const theoreticalChildWidth = Math.max(MIN_WIDTH, 
+    fixedDimensions && fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : 4);
+  const theoreticalChildHeight = Math.max(MIN_HEIGHT, 
+    fixedDimensions && fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : 3);
+  
   const childDimensions = children.map(child => {
-    let childWidth = Math.max(MIN_WIDTH, child.w);
-    let childHeight = Math.max(MIN_HEIGHT, child.h);
+    let childWidth = theoreticalChildWidth;
+    let childHeight = theoreticalChildHeight;
     
     if (child.type === 'leaf' && fixedDimensions) {
       if (fixedDimensions.leafFixedWidth) {
@@ -362,9 +342,6 @@ export const calculateMinimumParentSize = (
   const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
   const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
 
-  // Use consistent spacing between children (same as margin)
-  const childSpacing = MARGIN;
-
   // Calculate total space needed for all children with consistent spacing
   const totalChildrenWidth = cols * maxChildWidth;
   const totalChildrenHeight = rows * maxChildHeight;
@@ -378,8 +355,8 @@ export const calculateMinimumParentSize = (
   const minParentHeight = totalChildrenHeight + verticalSpacing + topMargin + sideMargin;
 
   return {
-    w: Math.max(MIN_WIDTH, Math.ceil(minParentWidth)),
-    h: Math.max(MIN_HEIGHT, Math.ceil(minParentHeight))
+    w: Math.max(MIN_WIDTH, minParentWidth),
+    h: Math.max(MIN_HEIGHT, minParentHeight)
   };
 };
 

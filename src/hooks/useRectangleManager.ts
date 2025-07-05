@@ -74,7 +74,7 @@ export const useRectangleManager = ({
   const setRectanglesWithHistory = useCallback((value: React.SetStateAction<Rectangle[]>) => {
     setRectangles(prev => {
       // Save the previous state to history before making the change
-      if (prev.length > 0 && !isUndoRedoInProgress.current) {
+      if (!isUndoRedoInProgress.current) {
         history.pushState(prev);
       }
       const newRectangles = typeof value === 'function' ? value(prev) : value;

@@ -12,7 +12,8 @@
       "Bash(mv:*)",
       "Bash(grep:*)",
       "Bash(npm run lint)",
-      "Bash(npm start)"
+      "Bash(npm start)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

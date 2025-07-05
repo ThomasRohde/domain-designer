@@ -1,5 +1,5 @@
 export const GRID_SIZE = 20;
-export const MARGIN = 1; // Increased from 0.5 to 1 for better spacing between children
+export const MARGIN = 2; // Increased for better spacing between children
 export const LABEL_MARGIN = 2; // Extra margin for nodes with children to accommodate labels
 export const MIN_WIDTH = 3;
 export const MIN_HEIGHT = 3;
