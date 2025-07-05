@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useMemo } from 'react';
 import { ExportOptions, AppSettings } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { 
@@ -8,6 +8,7 @@ import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -65,7 +66,10 @@ const HierarchicalDrawingApp = () => {
     updateRectangleLabel,
     updateRectangleColor,
     fitToChildren,
-    setRectangles
+    setRectangles,
+    setRectanglesWithHistory,
+    undo,
+    redo
   } = useRectangleManager({
     gridSize,
     panOffsetRef: { current: { x: 0, y: 0 } }, // Will be updated by canvas interactions
@@ -95,6 +99,7 @@ const HierarchicalDrawingApp = () => {
   } = useCanvasInteractions({
     rectangles,
     setRectangles,
+    setRectanglesWithHistory,
     setSelectedId: setSelectedIdWrapper,
     gridSize,
     leafFixedWidth,
@@ -171,6 +176,23 @@ const HierarchicalDrawingApp = () => {
       console.error('Error exporting diagram:', error);
     }
   }, [rectangles, gridSize]);
+
+  // Handle delete selected rectangle
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedId) {
+      removeRectangle(selectedId);
+    }
+  }, [selectedId, removeRectangle]);
+
+  // Setup keyboard shortcuts (memoized to prevent re-creating the object on every render)
+  const keyboardShortcuts = useMemo(() => ({
+    onUndo: undo,
+    onRedo: redo,
+    onDelete: handleDeleteSelected,
+    // TODO: Implement other shortcuts like save/load/copy/paste
+  }), [undo, redo, handleDeleteSelected]);
+
+  useKeyboardShortcuts(keyboardShortcuts);
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">

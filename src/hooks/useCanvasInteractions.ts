@@ -6,6 +6,7 @@ import { Rectangle, DragState, ResizeState, PanState } from '../types';
 interface UseCanvasInteractionsProps {
   rectangles: Rectangle[];
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
+  setRectanglesWithHistory: React.Dispatch<React.SetStateAction<Rectangle[]>>;
   setSelectedId: React.Dispatch<React.SetStateAction<string | null>>;
   gridSize: number;
   leafFixedWidth: boolean;
@@ -38,6 +39,7 @@ interface UseCanvasInteractionsReturn {
 export const useCanvasInteractions = ({
   rectangles,
   setRectangles,
+  setRectanglesWithHistory,
   setSelectedId,
   gridSize,
   leafFixedWidth,
@@ -59,6 +61,7 @@ export const useCanvasInteractions = ({
   } = useDragAndResize({
     rectangles,
     setRectangles,
+    setRectanglesWithHistory,
     gridSize,
     leafFixedWidth,
     leafFixedHeight,

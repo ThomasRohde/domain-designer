@@ -7,6 +7,8 @@ interface KeyboardShortcuts {
   onCopy?: () => void;
   onPaste?: () => void;
   onSelectAll?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
@@ -52,6 +54,24 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           if (shortcuts.onSelectAll) {
             event.preventDefault();
             shortcuts.onSelectAll();
+          }
+          break;
+        case 'z':
+          if (event.shiftKey && shortcuts.onRedo) {
+            console.log('Executing redo shortcut (Ctrl+Shift+Z)');
+            event.preventDefault();
+            shortcuts.onRedo();
+          } else if (!event.shiftKey && shortcuts.onUndo) {
+            console.log('Executing undo shortcut (Ctrl+Z)');
+            event.preventDefault();
+            shortcuts.onUndo();
+          }
+          break;
+        case 'y':
+          if (shortcuts.onRedo) {
+            console.log('Executing redo shortcut (Ctrl+Y)');
+            event.preventDefault();
+            shortcuts.onRedo();
           }
           break;
       }

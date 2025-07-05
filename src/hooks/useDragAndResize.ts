@@ -6,6 +6,7 @@ import { updateChildrenLayout, getAllDescendants } from '../utils/layoutUtils';
 interface UseDragAndResizeProps {
   rectangles: Rectangle[];
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
+  setRectanglesWithHistory: React.Dispatch<React.SetStateAction<Rectangle[]>>;
   gridSize: number;
   leafFixedWidth: boolean;
   leafFixedHeight: boolean;
@@ -27,6 +28,7 @@ interface UseDragAndResizeReturn {
 export const useDragAndResize = ({
   rectangles,
   setRectangles,
+  setRectanglesWithHistory,
   gridSize,
   leafFixedWidth,
   leafFixedHeight,
@@ -48,6 +50,9 @@ export const useDragAndResize = ({
     if (rect.parentId && action === 'drag') {
       return;
     }
+
+    // Save current state to history before starting drag/resize operation
+    setRectanglesWithHistory(prev => prev);
 
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
@@ -72,7 +77,7 @@ export const useDragAndResize = ({
         initialH: rect.h
       });
     }
-  }, [containerRef]);
+  }, [containerRef, setRectanglesWithHistory]);
 
   // Handle drag movement
   const handleDragMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Rectangle } from '../types';
 import { DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
 import { 
@@ -9,6 +9,7 @@ import {
   calculateMinimumParentSize,
   calculateChildLayout
 } from '../utils/layoutUtils';
+import { useHistory } from './useHistory';
 
 export interface FixedDimensions {
   leafFixedWidth: boolean;
@@ -41,8 +42,15 @@ export interface UseRectangleManagerReturn {
   fitToChildren: (id: string) => void;
   getAllDescendantsWrapper: (parentId: string) => string[];
   
+  // History actions
+  undo: () => void;
+  redo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  
   // Internal state setters (for drag/resize operations)
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
+  setRectanglesWithHistory: React.Dispatch<React.SetStateAction<Rectangle[]>>;
 }
 
 export const useRectangleManager = ({
@@ -54,6 +62,50 @@ export const useRectangleManager = ({
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [nextId, setNextId] = useState(1);
+  
+  // History management
+  const history = useHistory();
+  const isUndoRedoInProgress = useRef(false);
+  
+  // Note: History management is handled by setRectanglesWithHistory, not here
+  // to avoid double history entries
+  
+  // Wrapper for setRectangles that saves history
+  const setRectanglesWithHistory = useCallback((value: React.SetStateAction<Rectangle[]>) => {
+    setRectangles(prev => {
+      // Save the previous state to history before making the change
+      if (prev.length > 0 && !isUndoRedoInProgress.current) {
+        history.pushState(prev);
+      }
+      const newRectangles = typeof value === 'function' ? value(prev) : value;
+      return newRectangles;
+    });
+  }, [history]);
+  
+  // Undo/Redo functions
+  const undo = useCallback(() => {
+    const previousState = history.undo();
+    if (previousState) {
+      isUndoRedoInProgress.current = true;
+      setRectangles(previousState);
+      setSelectedId(null); // Clear selection on undo
+      setTimeout(() => {
+        isUndoRedoInProgress.current = false;
+      }, 0);
+    }
+  }, [history]);
+  
+  const redo = useCallback(() => {
+    const nextState = history.redo();
+    if (nextState) {
+      isUndoRedoInProgress.current = true;
+      setRectangles(nextState);
+      setSelectedId(null); // Clear selection on redo
+      setTimeout(() => {
+        isUndoRedoInProgress.current = false;
+      }, 0);
+    }
+  }, [history]);
 
   // Generate a unique ID for new rectangles
   const generateId = useCallback(() => {
@@ -146,7 +198,7 @@ export const useRectangleManager = ({
       type: parentId ? 'leaf' : 'root',
     };
 
-    setRectangles(prev => {
+    setRectanglesWithHistory(prev => {
       const updated = [...prev, newRect];
       
       // Update parent type if it was a leaf and now has children
@@ -186,7 +238,7 @@ export const useRectangleManager = ({
     setSelectedId(id);
     
     // Remove the setTimeout since we're doing the layout update immediately above
-  }, [generateId, rectangles, gridSize, panOffsetRef, containerRef, getFixedDimensions]);
+  }, [generateId, rectangles, gridSize, panOffsetRef, containerRef, getFixedDimensions, setRectanglesWithHistory]);
 
   // Get all descendants of a rectangle (recursive)
   const getAllDescendantsWrapper = useCallback((parentId: string): string[] => {
@@ -196,25 +248,25 @@ export const useRectangleManager = ({
   // Remove a rectangle and its children
   const removeRectangle = useCallback((id: string) => {
     const toRemove = [id, ...getAllDescendantsWrapper(id)];
-    setRectangles(prev => {
+    setRectanglesWithHistory(prev => {
       const updated = prev.filter(rect => !toRemove.includes(rect.id));
       return updated;
     });
     setSelectedId(null);
-  }, [getAllDescendantsWrapper]);
+  }, [getAllDescendantsWrapper, setRectanglesWithHistory]);
 
   // Update rectangle label
   const updateRectangleLabel = useCallback((id: string, label: string) => {
-    setRectangles(prev => 
+    setRectanglesWithHistory(prev => 
       prev.map(rect => 
         rect.id === id ? { ...rect, label } : rect
       )
     );
-  }, []);
+  }, [setRectanglesWithHistory]);
 
   // Update rectangle color
   const updateRectangleColor = useCallback((id: string, color: string) => {
-    setRectangles(prev => {
+    setRectanglesWithHistory(prev => {
       const updated = prev.map(rect => 
         rect.id === id ? { 
           ...rect, 
@@ -223,11 +275,11 @@ export const useRectangleManager = ({
       );
       return updated;
     });
-  }, []);
+  }, [setRectanglesWithHistory]);
 
   // Fit rectangle to children
   const fitToChildren = useCallback((id: string) => {
-    setRectangles(prev => {
+    setRectanglesWithHistory(prev => {
       const parent = prev.find(rect => rect.id === id);
       if (!parent) return prev;
 
@@ -244,7 +296,7 @@ export const useRectangleManager = ({
       // Recalculate children layout after parent resize
       return updateChildrenLayout(updated, getFixedDimensions());
     });
-  }, [getFixedDimensions]);
+  }, [getFixedDimensions, setRectanglesWithHistory]);
 
   return {
     // State
@@ -263,7 +315,14 @@ export const useRectangleManager = ({
     fitToChildren,
     getAllDescendantsWrapper,
     
+    // History actions
+    undo,
+    redo,
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
+    
     // Internal state setters (for drag/resize operations)
     setRectangles,
+    setRectanglesWithHistory,
   };
 };
