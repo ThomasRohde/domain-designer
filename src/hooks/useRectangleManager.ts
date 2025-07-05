@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Rectangle } from '../types';
-import { DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
+import { DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
 import { 
   updateChildrenLayout, 
   calculateNewRectangleLayout,
@@ -9,14 +9,16 @@ import {
   calculateMinimumParentSize,
   calculateChildLayout
 } from '../utils/layoutUtils';
+import { 
+  createRectangle,
+  updateRectangleType,
+  applyFixedDimensions,
+  FixedDimensions
+} from '../utils/rectangleOperations';
 import { useHistory } from './useHistory';
 
-export interface FixedDimensions {
-  leafFixedWidth: boolean;
-  leafFixedHeight: boolean;
-  leafWidth: number;
-  leafHeight: number;
-}
+// Use the FixedDimensions from rectangleOperations
+export type { FixedDimensions } from '../utils/rectangleOperations';
 
 export interface UseRectangleManagerProps {
   gridSize: number;
@@ -165,50 +167,22 @@ export const useRectangleManager = ({
       }
     }
     
-    let color = DEFAULT_COLORS.root; // Default color
-    let finalW = w;
-    let finalH = h;
-
+    // Create rectangle using utility function
+    let newRect = createRectangle(id, x, y, w, h, parentId || undefined);
+    
+    // Apply fixed dimensions if this is a leaf rectangle
     if (parentId) {
-      color = DEFAULT_COLORS.leaf;
-      // A new rectangle with a parent is always initially a leaf
-      const rectType = 'leaf';
-      
-      // Apply fixed dimensions for leaf nodes if enabled
-      if (rectType === 'leaf') {
-        const fixedDimensions = getFixedDimensions();
-        if (fixedDimensions.leafFixedWidth) {
-          finalW = fixedDimensions.leafWidth;
-        }
-        if (fixedDimensions.leafFixedHeight) {
-          finalH = fixedDimensions.leafHeight;
-        }
-      }
+      newRect = applyFixedDimensions(newRect, getFixedDimensions());
     }
 
-    const newRect: Rectangle = {
-      id,
-      parentId: parentId || undefined,
-      x,
-      y,
-      w: finalW,
-      h: finalH,
-      label: `Rectangle ${id}`,
-      color,
-      type: parentId ? 'leaf' : 'root',
-    };
-
     setRectanglesWithHistory(prev => {
-      const updated = [...prev, newRect];
+      let updated = [...prev, newRect];
       
-      // Update parent type if it was a leaf and now has children
+      // Update parent type using utility function
       if (parentId) {
+        updated = updateRectangleType(updated, parentId);
         const parentIndex = updated.findIndex(r => r.id === parentId);
         if (parentIndex !== -1) {
-          const parent = updated[parentIndex];
-          if (parent.type === 'leaf') {
-            updated[parentIndex] = { ...parent, type: 'parent' };
-          }
           
           // Immediately recalculate layout for all children of this parent
           const allChildren = updated.filter(r => r.parentId === parentId);

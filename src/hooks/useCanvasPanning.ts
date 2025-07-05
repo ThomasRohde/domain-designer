@@ -1,10 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { PanState } from '../types';
-
-interface PanOffset {
-  x: number;
-  y: number;
-}
+import { getMousePosition, shouldStartPan, preventEventDefault } from '../utils/eventUtils';
+import { PanOffset } from '../utils/canvasUtils';
 
 interface UseCanvasPanningProps {
   containerRef: React.RefObject<HTMLDivElement>;
@@ -29,15 +26,13 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
   // Handle canvas mouse down for panning
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     // Start panning on middle mouse button or space+left click
-    if (e.button === 1 || (isSpacePressed && e.button === 0)) {
-      e.preventDefault();
-      e.stopPropagation();
+    if (shouldStartPan(e, isSpacePressed)) {
+      preventEventDefault(e);
 
       const containerRect = containerRef.current?.getBoundingClientRect();
       if (!containerRect) return;
 
-      const startX = e.clientX - containerRect.left;
-      const startY = e.clientY - containerRect.top;
+      const { x: startX, y: startY } = getMousePosition(e, containerRect);
 
       setPanState({
         startX,

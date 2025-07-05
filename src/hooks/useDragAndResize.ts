@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, DragState, ResizeState } from '../types';
 import { MIN_WIDTH, MIN_HEIGHT } from '../utils/constants';
 import { updateChildrenLayout, getAllDescendants } from '../utils/layoutUtils';
+import { getMousePosition, preventEventDefault } from '../utils/eventUtils';
 
 interface UseDragAndResizeProps {
   rectangles: Rectangle[];
@@ -43,8 +44,7 @@ export const useDragAndResize = ({
 
   // Handle mouse down for dragging and resizing
   const handleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' = 'drag') => {
-    e.preventDefault();
-    e.stopPropagation();
+    preventEventDefault(e);
 
     // Prevent dragging child rectangles
     if (rect.parentId && action === 'drag') {
@@ -57,8 +57,7 @@ export const useDragAndResize = ({
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
 
-    const startX = e.clientX - containerRect.left;
-    const startY = e.clientY - containerRect.top;
+    const { x: startX, y: startY } = getMousePosition(e, containerRect);
 
     if (action === 'drag') {
       setDragState({
@@ -83,8 +82,7 @@ export const useDragAndResize = ({
   const handleDragMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
     if (!dragState) return;
 
-    const currentX = e.clientX - containerRect.left;
-    const currentY = e.clientY - containerRect.top;
+    const { x: currentX, y: currentY } = getMousePosition(e, containerRect);
 
     const deltaX = currentX - dragState.startX;
     const deltaY = currentY - dragState.startY;

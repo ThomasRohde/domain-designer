@@ -202,27 +202,27 @@ The `HierarchicalDrawingApp.tsx` component has grown to 735 lines and violates t
 ## Phase 4: Extract Business Logic
 
 ### 4.1 Rectangle Operations Utility
-- [ ] Create `src/utils/rectangleOperations.ts`
-- [ ] Extract pure functions:
-  - [ ] `createRectangle(id: string, parentId?: string, ...)`
-  - [ ] `updateRectangleType(rectangles: Rectangle[], parentId: string)`
-  - [ ] `validateRectanglePosition(rect: Rectangle, containerRect: DOMRect)`
-  - [ ] `applyFixedDimensions(rect: Rectangle, fixedDimensions: FixedDimensions)`
+- [x] Create `src/utils/rectangleOperations.ts`
+- [x] Extract pure functions:
+  - [x] `createRectangle(id: string, parentId?: string, ...)`
+  - [x] `updateRectangleType(rectangles: Rectangle[], parentId: string)`
+  - [x] `validateRectanglePosition(rect: Rectangle, containerRect: DOMRect)`
+  - [x] `applyFixedDimensions(rect: Rectangle, fixedDimensions: FixedDimensions)`
 
 ### 4.2 Canvas Utilities
-- [ ] Create `src/utils/canvasUtils.ts`
-- [ ] Extract coordinate transformation functions:
-  - [ ] `screenToGrid(screenX: number, screenY: number, gridSize: number)`
-  - [ ] `gridToScreen(gridX: number, gridY: number, gridSize: number)`
-  - [ ] `getViewportBounds(containerRect: DOMRect, panOffset: PanOffset, gridSize: number)`
-  - [ ] `calculateOptimalPosition(existing: Rectangle[], containerRect: DOMRect)`
+- [x] Create `src/utils/canvasUtils.ts`
+- [x] Extract coordinate transformation functions:
+  - [x] `screenToGrid(screenX: number, screenY: number, gridSize: number)`
+  - [x] `gridToScreen(gridX: number, gridY: number, gridSize: number)`
+  - [x] `getViewportBounds(containerRect: DOMRect, panOffset: PanOffset, gridSize: number)`
+  - [x] `calculateOptimalPosition(existing: Rectangle[], containerRect: DOMRect)`
 
 ### 4.3 Event Utilities
-- [ ] Create `src/utils/eventUtils.ts`
-- [ ] Extract event handling helpers:
-  - [ ] `getMousePosition(e: MouseEvent, containerRect: DOMRect)`
-  - [ ] `isRightClick(e: MouseEvent)`, `isMiddleClick(e: MouseEvent)`
-  - [ ] `shouldStartPan(e: MouseEvent, isSpacePressed: boolean)`
+- [x] Create `src/utils/eventUtils.ts`
+- [x] Extract event handling helpers:
+  - [x] `getMousePosition(e: MouseEvent, containerRect: DOMRect)`
+  - [x] `isRightClick(e: MouseEvent)`, `isMiddleClick(e: MouseEvent)`
+  - [x] `shouldStartPan(e: MouseEvent, isSpacePressed: boolean)`
 
 ---
 
