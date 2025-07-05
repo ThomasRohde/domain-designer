@@ -4,130 +4,71 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-### Core Development
-```bash
-npm run dev          # Start development server with hot reload
-npm run build        # Build for production (TypeScript compilation + Vite build)
-npm run preview      # Preview production build locally
-npm run typecheck    # Run TypeScript type checking without emitting files
-npm run lint         # Run ESLint with TypeScript support
-```
-
-### Development Workflow
-- Always run `npm run typecheck` before committing changes
-- Use `npm run lint` to catch potential issues and enforce code style
-- The build process requires both TypeScript compilation and Vite bundling to succeed
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build for production (runs TypeScript compilation + Vite build)
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run ESLint with zero warnings policy
+- `npm run typecheck` - Run TypeScript type checking without emitting files
 
 ## Architecture Overview
 
-### Core Data Flow
-The application centers around a **constraint-based hierarchical rectangle system**:
+This is a React+TypeScript hierarchical drawing application for domain modeling with constraint-based layout.
 
-1. **Rectangle Hierarchy**: Root → Parent → Leaf rectangles with automatic layout
-2. **Constraint Engine**: Child rectangles auto-size to fit within parents with margins
-3. **State Management**: Centralized in `HierarchicalDrawingApp` with history tracking
-4. **Export Pipeline**: Multi-format export via `html2canvas`, SVG generation, and jsPDF
+### Core Design Patterns
 
-### Key Architecture Patterns
+**Hook-Based Architecture**: The application uses custom hooks to separate concerns:
+- `useRectangleManager` - Manages rectangle state and CRUD operations
+- `useCanvasInteractions` - Handles drag/drop, resize, and pan operations
+- `useAppSettings` - Manages global app settings and fixed dimensions
+- `useUIState` - Manages UI state (sidebar, modals, context menus)
 
-#### Rectangle Management System
-- **Grid-based positioning**: All coordinates are multiples of `GRID_SIZE` (20px)
-- **Auto-layout algorithm**: Children are arranged in a grid pattern within parents
-- **Z-index hierarchy**: Deeper nested rectangles have higher z-index values
-- **Type classification**: `root` (draggable), `parent` (resizable), `leaf` (fixed size)
+**Constraint-Based Layout**: The layout system automatically manages parent-child relationships:
+- Children auto-size to fit within parents with proper margins
+- Parents can auto-resize to fit children (`fitToChildren`)
+- Layout calculations use a grid-based system with consistent spacing
+- Fixed dimensions can be enforced for leaf nodes
 
-#### State Management Strategy
-```typescript
-// Central state in HierarchicalDrawingApp.tsx
-const [rectangles, setRectangles] = useState<Rectangle[]>([]);
-const [history, setHistory] = useState<Rectangle[][]>([]);  // Undo/redo
-const [dragState, setDragState] = useState<DragState | null>(null);
-const [resizeState, setResizeState] = useState<ResizeState | null>(null);
-```
+**Hierarchical Data Structure**: Rectangles form a tree structure:
+- Root rectangles have no `parentId`
+- Parent rectangles contain children and auto-size
+- Leaf rectangles are terminal nodes with optional fixed dimensions
 
-#### Category System
-9 predefined enterprise domain categories in `CATEGORY_CONFIGS`:
-- Each category has: `name`, `backgroundColor`, `borderColor`, `textColor`, `icon`
-- Categories map to business domains (Channels, Business Support, Risk Management, etc.)
-- Visual styling is driven by category configuration
+### Key Components
 
-#### Constraint Resolution
-The layout engine processes rectangles level-by-level:
-1. **Process parent positioning first** (roots don't move)
-2. **Calculate available space** within each parent
-3. **Apply grid packing algorithm** for child placement
-4. **Enforce minimum sizes** and margin constraints
-5. **Update z-index hierarchy** based on nesting depth
+- `HierarchicalDrawingApp` - Main orchestrator component, coordinates all hooks
+- `RectangleRenderer` - Handles rendering of all rectangles with proper z-indexing
+- `Canvas` - Manages the drawing canvas with pan/zoom capabilities
+- `Sidebar` + `PropertyPanel` - Settings and properties management
+- `Toolbar` - Main actions and navigation
 
-### Component Architecture
+### Layout System
 
-#### Core Components
-- **`HierarchicalDrawingApp`**: Main state container and coordination logic
-- **`RectangleComponent`**: Individual rectangle rendering with edit capabilities
-- **`Toolbar`**: Action commands (add, save, load, export, undo/redo)
-- **`CategorySelector`**: Visual category picker with live preview
-- **`ContextMenu`**: Right-click operations context-sensitive to rectangle type
-- **`ExportModal`**: Multi-format export configuration
+The layout system in `src/utils/layoutUtils.ts` provides:
+- `calculateChildLayout` - Arranges children in a grid within parent bounds
+- `updateChildrenLayout` - Recursively updates all child layouts
+- `calculateMinimumParentSize` - Calculates minimum size needed for parents
+- Consistent margin system: `LABEL_MARGIN` for top spacing, `MARGIN` for other sides
 
-#### Export System
-Multi-format export pipeline in `utils/exportUtils.ts`:
-- **PNG/PDF**: Uses `html2canvas` to capture DOM elements
-- **SVG**: Programmatic SVG generation from rectangle data
-- **JSON**: Serialized diagram state with metadata
+### State Management
 
-### Critical Constants and Configuration
+State is managed through React hooks with clear separation:
+- Rectangle data and operations in `useRectangleManager`
+- Canvas interactions (drag/resize/pan) in `useCanvasInteractions`
+- Global settings persistence in `useAppSettings`
+- UI state (modals, sidebar) in `useUIState`
 
-#### Layout Constants (`utils/constants.ts`)
-```typescript
-GRID_SIZE = 20          // Base grid unit for all positioning
-MARGIN = 2              // Grid units between parent and child
-MIN_WIDTH = 3           // Minimum rectangle width in grid units  
-MIN_HEIGHT = 3          // Minimum rectangle height in grid units
-MAX_HISTORY_SIZE = 50   // Undo/redo history limit
-```
+### Export System
 
-#### Type System (`types/index.ts`)
-The `Rectangle` interface is central to all operations:
-- **Positioning**: `x`, `y`, `w`, `h` (all in grid units)
-- **Hierarchy**: `parentId` links create the tree structure
-- **Categorization**: `category` determines visual styling
-- **Type**: `'root' | 'parent' | 'leaf'` controls behavior
+The application supports multiple export formats through `src/utils/exportUtils.ts`:
+- PNG, SVG, PDF, and JSON formats
+- Uses html2canvas for raster exports
+- Maintains layout integrity across all formats
 
-### Key Behavioral Rules
+## Technology Stack
 
-#### Interaction Model
-- **Root rectangles**: Can be dragged and resized
-- **Child rectangles**: Position/size controlled by parent's constraint system
-- **Leaf rectangles**: Fixed size, cannot be resized
-- **Double-click**: Enters label editing mode
-- **Right-click**: Opens context menu with category-specific actions
-
-#### Constraint Enforcement
-- Children must fit within parent bounds minus `MARGIN`
-- Parent rectangles auto-expand to contain all children
-- Grid-based positioning ensures pixel-perfect alignment
-- Z-index prevents parent rectangles from obscuring children during interactions
-
-#### State Persistence
-- **Save/Load**: JSON format with versioning and metadata
-- **Undo/Redo**: Command pattern with 50-state history buffer
-- **Export**: Preserves styling and layout across all formats
-
-### Development Notes
-
-#### Adding New Categories
-1. Update `RectangleCategory` type in `types/index.ts`
-2. Add configuration to `CATEGORY_CONFIGS` in `utils/constants.ts`
-3. Update context menu options in `ContextMenu.tsx` if needed
-
-#### Modifying Layout Algorithm
-The constraint resolution happens in `calculateChildLayout()` and `updateChildrenLayout()`:
-- Grid packing algorithm can be swapped for different arrangements
-- Margin and spacing logic is centralized in these functions
-- Changes affect the entire hierarchy due to cascading layout updates
-
-#### Export Format Extensions
-Add new formats by:
-1. Extending `ExportOptions.format` type
-2. Adding handler in `exportDiagram()` function
-3. Implementing format-specific logic in `utils/exportUtils.ts`
+- **React 18** with TypeScript
+- **Vite** for development and building
+- **Tailwind CSS** for styling
+- **Lucide React** for icons
+- **html2canvas** + **jsPDF** for export functionality
+- **ESLint** with TypeScript rules and React hooks plugin

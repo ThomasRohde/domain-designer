@@ -90,10 +90,31 @@ export const useDragAndResize = ({
     const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
     const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
 
-    setRectangles(prev => prev.map(rect => 
-      rect.id === dragState.id ? { ...rect, x: newX, y: newY } : rect
-    ));
-  }, [dragState, gridSize, setRectangles]);
+    // Calculate the actual movement delta from the dragged rectangle's current position
+    const draggedRect = rectangles.find(r => r.id === dragState.id);
+    if (!draggedRect) return;
+    
+    const actualDeltaX = newX - draggedRect.x;
+    const actualDeltaY = newY - draggedRect.y;
+    
+    // Get all descendants of the dragged rectangle
+    const descendantIds = new Set(getAllDescendants(dragState.id, rectangles));
+
+    setRectangles(prev => prev.map(rect => {
+      if (rect.id === dragState.id) {
+        // Update the dragged rectangle
+        return { ...rect, x: newX, y: newY };
+      } else if (descendantIds.has(rect.id)) {
+        // Update all descendants with the same delta
+        return { 
+          ...rect, 
+          x: Math.max(0, rect.x + actualDeltaX), 
+          y: Math.max(0, rect.y + actualDeltaY) 
+        };
+      }
+      return rect;
+    }));
+  }, [dragState, gridSize, setRectangles, rectangles]);
 
   // Handle resize movement
   const handleResizeMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
@@ -143,20 +164,21 @@ export const useDragAndResize = ({
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
-    const wasDragging = dragState;
     const wasResizing = resizeState;
     
     setDragState(null);
     setResizeState(null);
     
-    if (wasDragging || wasResizing) {
-      const rectId = wasDragging?.id || wasResizing?.id;
+    if (wasResizing) {
+      // Only update children layout after resize operations
+      // Drag operations now handle children positioning in real-time
+      const rectId = wasResizing.id;
       if (rectId) {
         const rect = rectangles.find(r => r.id === rectId);
         if (rect) {
           const hasDescendants = getAllDescendants(rect.id, rectangles).length > 0;
           if (hasDescendants) {
-            // Update children layout after drag/resize operation
+            // Update children layout after resize operation
             setTimeout(() => {
               setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
             }, 10);
@@ -164,7 +186,7 @@ export const useDragAndResize = ({
         }
       }
     }
-  }, [dragState, resizeState, rectangles, setRectangles, getFixedDimensions]);
+  }, [resizeState, rectangles, setRectangles, getFixedDimensions]);
 
   // Store the mouse move handler in a ref to ensure proper cleanup
   React.useEffect(() => {
