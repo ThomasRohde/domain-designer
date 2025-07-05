@@ -77,16 +77,42 @@ export const calculateChildLayout = (
     const x = parentRect.x + sideMargin + horizontalOffset + (col * (maxChildWidth + childSpacing));
     const y = parentRect.y + topMargin + verticalOffset + (row * (maxChildHeight + childSpacing));
 
-    // Ensure the child doesn't extend beyond the parent's boundaries
+    // Check if we need to adjust layout to prevent overlap
     const maxX = parentRect.x + parentRect.w - sideMargin - childWidth;
     const maxY = parentRect.y + parentRect.h - sideMargin - childHeight;
 
+    // If the calculated position would place the child outside the parent,
+    // we need to adjust the layout to prevent overlap
+    let adjustedX = x;
+    let adjustedY = y;
+    let adjustedWidth = childWidth;
+    let adjustedHeight = childHeight;
+
+    if (x > maxX || y > maxY) {
+      // Parent is too small for the ideal layout - adjust to prevent overlap
+      // Recalculate with tighter packing
+      const availableWidthPerChild = (availableWidth - (cols - 1) * childSpacing) / cols;
+      const availableHeightPerChild = (availableHeight - (rows - 1) * childSpacing) / rows;
+      
+      // Shrink children if needed, but not below minimum size
+      adjustedWidth = Math.max(MIN_WIDTH, Math.floor(availableWidthPerChild));
+      adjustedHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeightPerChild));
+      
+      // Recalculate position with adjusted dimensions
+      adjustedX = parentRect.x + sideMargin + (col * (adjustedWidth + childSpacing));
+      adjustedY = parentRect.y + topMargin + (row * (adjustedHeight + childSpacing));
+      
+      // Final clamp to ensure we don't exceed parent boundaries
+      adjustedX = Math.min(adjustedX, parentRect.x + parentRect.w - sideMargin - adjustedWidth);
+      adjustedY = Math.min(adjustedY, parentRect.y + parentRect.h - sideMargin - adjustedHeight);
+    }
+
     return {
       ...child,
-      x: Math.min(x, maxX),
-      y: Math.min(y, maxY),
-      w: childWidth,
-      h: childHeight
+      x: adjustedX,
+      y: adjustedY,
+      w: adjustedWidth,
+      h: adjustedHeight
     };
   });
 };
