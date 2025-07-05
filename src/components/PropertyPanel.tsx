@@ -77,4 +77,4 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   );
 };
 
-export default PropertyPanel;
+export default React.memo(PropertyPanel);

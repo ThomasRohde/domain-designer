@@ -43,4 +43,4 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, children }) => {
   );
 };
 
-export default Sidebar;
+export default React.memo(Sidebar);

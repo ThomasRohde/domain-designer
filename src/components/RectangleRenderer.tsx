@@ -61,4 +61,4 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   );
 };
 
-export default RectangleRenderer;
+export default React.memo(RectangleRenderer);

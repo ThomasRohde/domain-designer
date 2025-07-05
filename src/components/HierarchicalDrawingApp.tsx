@@ -1,9 +1,7 @@
 import React, { useCallback, useRef, useMemo } from 'react';
 import { ExportOptions, AppSettings } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
-import { 
-  getChildren,
-} from '../utils/layoutUtils';
+import { getChildren } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
@@ -21,266 +19,185 @@ import PropertyPanel from './PropertyPanel';
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Use the UI state hook
-  const {
-    sidebarOpen,
-    contextMenu,
-    exportModalOpen,
-    toggleSidebar,
-    closeSidebar,
-    showContextMenu,
-    hideContextMenu,
-    openExportModal,
-    closeExportModal,
-  } = useUIState();
-
-  // Use the app settings hook
-  const {
-    gridSize,
-    leafFixedWidth,
-    leafFixedHeight,
-    leafWidth,
-    leafHeight,
-    rootFontSize,
-    dynamicFontSizing,
-    getFixedDimensions,
-    calculateFontSize,
-    handleLeafFixedWidthChange,
-    handleLeafFixedHeightChange,
-    handleLeafWidthChange,
-    handleLeafHeightChange,
-    handleRootFontSizeChange,
-    handleDynamicFontSizingChange,
-    setGridSize,
-    setRectanglesRef
-  } = useAppSettings();
-
-  // Use the rectangle manager hook first
-  const {
-    rectangles,
-    selectedId,
-    setSelectedId,
-    findRectangle,
-    addRectangle: addRectangleHook,
-    removeRectangle,
-    updateRectangleLabel,
-    updateRectangleColor,
-    fitToChildren,
-    setRectangles,
-    setRectanglesWithHistory,
-    undo,
-    redo
-  } = useRectangleManager({
-    gridSize,
-    panOffsetRef: { current: { x: 0, y: 0 } }, // Will be updated by canvas interactions
+  // Initialize hooks
+  const uiState = useUIState();
+  const appSettings = useAppSettings();
+  const rectangleManager = useRectangleManager({
+    gridSize: appSettings.gridSize,
+    panOffsetRef: { current: { x: 0, y: 0 } },
     containerRef,
-    getFixedDimensions
+    getFixedDimensions: appSettings.getFixedDimensions
   });
 
-  // Create a wrapper for setSelectedId to match React Dispatch signature
+  // Canvas interactions with proper setSelectedId wrapper
   const setSelectedIdWrapper = useCallback((value: React.SetStateAction<string | null>) => {
     if (typeof value === 'function') {
-      setSelectedId(value(selectedId));
+      rectangleManager.setSelectedId(value(rectangleManager.selectedId));
     } else {
-      setSelectedId(value);
+      rectangleManager.setSelectedId(value);
     }
-  }, [setSelectedId, selectedId]);
+  }, [rectangleManager]);
 
-  // Use the coordinated canvas interactions hook
-  const {
-    panOffset,
-    panOffsetRef,
-    isSpacePressed,
-    dragState,
-    resizeState,
-    panState,
-    handleCanvasMouseDown,
-    handleRectangleMouseDown,
-  } = useCanvasInteractions({
-    rectangles,
-    setRectangles,
-    setRectanglesWithHistory,
+  const canvasInteractions = useCanvasInteractions({
+    rectangles: rectangleManager.rectangles,
+    setRectangles: rectangleManager.setRectangles,
+    setRectanglesWithHistory: rectangleManager.setRectanglesWithHistory,
     setSelectedId: setSelectedIdWrapper,
-    gridSize,
-    leafFixedWidth,
-    leafFixedHeight,
-    leafWidth,
-    leafHeight,
+    gridSize: appSettings.gridSize,
+    leafFixedWidth: appSettings.leafFixedWidth,
+    leafFixedHeight: appSettings.leafFixedHeight,
+    leafWidth: appSettings.leafWidth,
+    leafHeight: appSettings.leafHeight,
     containerRef,
-    getFixedDimensions
+    getFixedDimensions: appSettings.getFixedDimensions
   });
 
-  // Update the rectangle manager with the actual panOffsetRef
+  // Connect app settings to rectangle manager
   React.useEffect(() => {
-    // This is a workaround to update the panOffsetRef used by useRectangleManager
-    // In a future refactor, we should pass panOffsetRef directly
-  }, [panOffsetRef]);
+    appSettings.setRectanglesRef(rectangleManager.setRectangles);
+  }, [rectangleManager.setRectangles, appSettings]);
 
-  // Connect the app settings hook to the rectangle manager's setRectangles
-  React.useEffect(() => {
-    setRectanglesRef(setRectangles);
-  }, [setRectangles, setRectanglesRef]);
-
-  // Wrapper function to match Toolbar's expected signature
-  const addRectangle = useCallback((parentId: string | null = null) => {
-    addRectangleHook(parentId || undefined);
-  }, [addRectangleHook]);
-
-  // Handle context menu
+  // Event handlers
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    showContextMenu(e.clientX, e.clientY, rectangleId);
-  }, [showContextMenu]);
+    uiState.showContextMenu(e.clientX, e.clientY, rectangleId);
+  }, [uiState]);
 
-  // Handle settings changes for PropertyPanel
-  const handleSettingsChange = useCallback((settings: Partial<AppSettings>) => {
-    if (settings.gridSize !== undefined) {
-      setGridSize(settings.gridSize);
-    }
-    if (settings.leafFixedWidth !== undefined) {
-      handleLeafFixedWidthChange(settings.leafFixedWidth);
-    }
-    if (settings.leafFixedHeight !== undefined) {
-      handleLeafFixedHeightChange(settings.leafFixedHeight);
-    }
-    if (settings.leafWidth !== undefined) {
-      handleLeafWidthChange(settings.leafWidth);
-    }
-    if (settings.leafHeight !== undefined) {
-      handleLeafHeightChange(settings.leafHeight);
-    }
-    if (settings.rootFontSize !== undefined) {
-      handleRootFontSizeChange(settings.rootFontSize);
-    }
-    if (settings.dynamicFontSizing !== undefined) {
-      handleDynamicFontSizingChange(settings.dynamicFontSizing);
-    }
-  }, [
-    setGridSize,
-    handleLeafFixedWidthChange,
-    handleLeafFixedHeightChange,
-    handleLeafWidthChange,
-    handleLeafHeightChange,
-    handleRootFontSizeChange,
-    handleDynamicFontSizingChange,
-  ]);
+  const handleAddRectangle = useCallback((parentId: string | null = null) => {
+    rectangleManager.addRectangle(parentId || undefined);
+  }, [rectangleManager]);
 
-  // Handle export
   const handleExport = useCallback(async (options: ExportOptions) => {
     if (!containerRef.current) return;
-    
     try {
-      await exportDiagram(containerRef.current, rectangles, options, gridSize);
+      await exportDiagram(containerRef.current, rectangleManager.rectangles, options, appSettings.gridSize);
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangles, gridSize]);
+  }, [rectangleManager.rectangles, appSettings.gridSize]);
 
-  // Handle delete selected rectangle
   const handleDeleteSelected = useCallback(() => {
-    if (selectedId) {
-      removeRectangle(selectedId);
+    if (rectangleManager.selectedId) {
+      rectangleManager.removeRectangle(rectangleManager.selectedId);
     }
-  }, [selectedId, removeRectangle]);
+  }, [rectangleManager]);
 
-  // Setup keyboard shortcuts (memoized to prevent re-creating the object on every render)
-  const keyboardShortcuts = useMemo(() => ({
-    onUndo: undo,
-    onRedo: redo,
+  const handleSettingsChange = useCallback((settings: Partial<AppSettings>) => {
+    if (settings.gridSize !== undefined) appSettings.setGridSize(settings.gridSize);
+    if (settings.leafFixedWidth !== undefined) appSettings.handleLeafFixedWidthChange(settings.leafFixedWidth);
+    if (settings.leafFixedHeight !== undefined) appSettings.handleLeafFixedHeightChange(settings.leafFixedHeight);
+    if (settings.leafWidth !== undefined) appSettings.handleLeafWidthChange(settings.leafWidth);
+    if (settings.leafHeight !== undefined) appSettings.handleLeafHeightChange(settings.leafHeight);
+    if (settings.rootFontSize !== undefined) appSettings.handleRootFontSizeChange(settings.rootFontSize);
+    if (settings.dynamicFontSizing !== undefined) appSettings.handleDynamicFontSizingChange(settings.dynamicFontSizing);
+  }, [appSettings]);
+
+  // Memoized calculations
+  const selectedRectangle = useMemo(() => 
+    rectangleManager.selectedId ? rectangleManager.findRectangle(rectangleManager.selectedId) || null : null,
+    [rectangleManager]
+  );
+
+  const selectedChildCount = useMemo(() =>
+    rectangleManager.selectedId ? getChildren(rectangleManager.selectedId, rectangleManager.rectangles).length : 0,
+    [rectangleManager]
+  );
+
+  const appSettingsObject = useMemo(() => ({
+    gridSize: appSettings.gridSize,
+    leafFixedWidth: appSettings.leafFixedWidth,
+    leafFixedHeight: appSettings.leafFixedHeight,
+    leafWidth: appSettings.leafWidth,
+    leafHeight: appSettings.leafHeight,
+    rootFontSize: appSettings.rootFontSize,
+    dynamicFontSizing: appSettings.dynamicFontSizing,
+  }), [appSettings]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts(useMemo(() => ({
+    onUndo: rectangleManager.undo,
+    onRedo: rectangleManager.redo,
     onDelete: handleDeleteSelected,
-    // TODO: Implement other shortcuts like save/load/copy/paste
-  }), [undo, redo, handleDeleteSelected]);
-
-  useKeyboardShortcuts(keyboardShortcuts);
+  }), [rectangleManager.undo, rectangleManager.redo, handleDeleteSelected]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
       <Toolbar
-        onAddRectangle={addRectangle}
-        onExport={openExportModal}
-        selectedId={selectedId}
-        onToggleSidebar={toggleSidebar}
-        sidebarOpen={sidebarOpen}
+        onAddRectangle={handleAddRectangle}
+        onExport={uiState.openExportModal}
+        selectedId={rectangleManager.selectedId}
+        onToggleSidebar={uiState.toggleSidebar}
+        sidebarOpen={uiState.sidebarOpen}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Main Canvas Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <Canvas
             containerRef={containerRef}
-            gridSize={gridSize}
-            panOffset={panOffset}
-            isSpacePressed={isSpacePressed}
-            panState={panState}
-            onMouseDown={handleCanvasMouseDown}
-            onSelect={setSelectedId}
+            gridSize={appSettings.gridSize}
+            panOffset={canvasInteractions.panOffset}
+            isSpacePressed={canvasInteractions.isSpacePressed}
+            panState={canvasInteractions.panState}
+            onMouseDown={canvasInteractions.handleCanvasMouseDown}
+            onSelect={rectangleManager.setSelectedId}
             overlay={
               <ActionButtonsOverlay
-                selectedRectangle={selectedId ? findRectangle(selectedId) || null : null}
-                childCount={selectedId ? getChildren(selectedId, rectangles).length : 0}
-                onAddChild={addRectangle}
-                onRemove={removeRectangle}
-                onFitToChildren={fitToChildren}
-                gridSize={gridSize}
-                panOffset={panOffset}
+                selectedRectangle={selectedRectangle}
+                childCount={selectedChildCount}
+                onAddChild={handleAddRectangle}
+                onRemove={rectangleManager.removeRectangle}
+                onFitToChildren={rectangleManager.fitToChildren}
+                gridSize={appSettings.gridSize}
+                panOffset={canvasInteractions.panOffset}
               />
             }
           >
             <RectangleRenderer
-              rectangles={rectangles}
-              selectedId={selectedId}
-              dragState={dragState}
-              resizeState={resizeState}
-              gridSize={gridSize}
-              panOffset={panOffset}
-              onMouseDown={handleRectangleMouseDown}
+              rectangles={rectangleManager.rectangles}
+              selectedId={rectangleManager.selectedId}
+              dragState={canvasInteractions.dragState}
+              resizeState={canvasInteractions.resizeState}
+              gridSize={appSettings.gridSize}
+              panOffset={canvasInteractions.panOffset}
+              onMouseDown={canvasInteractions.handleRectangleMouseDown}
               onContextMenu={handleContextMenu}
-              onSelect={setSelectedId}
-              onUpdateLabel={updateRectangleLabel}
-              onAddChild={addRectangle}
-              onRemove={removeRectangle}
-              onFitToChildren={fitToChildren}
-              calculateFontSize={calculateFontSize}
+              onSelect={rectangleManager.setSelectedId}
+              onUpdateLabel={rectangleManager.updateRectangleLabel}
+              onAddChild={rectangleManager.addRectangle}
+              onRemove={rectangleManager.removeRectangle}
+              onFitToChildren={rectangleManager.fitToChildren}
+              calculateFontSize={appSettings.calculateFontSize}
             />
           </Canvas>
         </div>
 
-        {/* Responsive Sidebar */}
-        <Sidebar isOpen={sidebarOpen} onClose={closeSidebar}>
+        <Sidebar isOpen={uiState.sidebarOpen} onClose={uiState.closeSidebar}>
           <PropertyPanel
-            selectedId={selectedId}
-            selectedRectangle={selectedId ? findRectangle(selectedId) || null : null}
-            rectangles={rectangles}
-            onColorChange={updateRectangleColor}
-            appSettings={{
-              gridSize,
-              leafFixedWidth,
-              leafFixedHeight,
-              leafWidth,
-              leafHeight,
-              rootFontSize,
-              dynamicFontSizing,
-            }}
+            selectedId={rectangleManager.selectedId}
+            selectedRectangle={selectedRectangle}
+            rectangles={rectangleManager.rectangles}
+            onColorChange={rectangleManager.updateRectangleColor}
+            appSettings={appSettingsObject}
             onSettingsChange={handleSettingsChange}
           />
         </Sidebar>
       </div>
 
-      {contextMenu && (
+      {uiState.contextMenu && (
         <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          rectangleId={contextMenu.rectangleId}
-          onAddChild={addRectangle}
-          onRemove={removeRectangle}
-          onClose={hideContextMenu}
+          x={uiState.contextMenu.x}
+          y={uiState.contextMenu.y}
+          rectangleId={uiState.contextMenu.rectangleId}
+          onAddChild={rectangleManager.addRectangle}
+          onRemove={rectangleManager.removeRectangle}
+          onClose={uiState.hideContextMenu}
         />
       )}
 
       <ExportModal
-        isOpen={exportModalOpen}
-        onClose={closeExportModal}
+        isOpen={uiState.exportModalOpen}
+        onClose={uiState.closeExportModal}
         onExport={handleExport}
       />
     </div>
