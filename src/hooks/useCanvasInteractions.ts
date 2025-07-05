@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect } from 'react';
 import { useDragAndResize } from './useDragAndResize';
 import { useCanvasPanning } from './useCanvasPanning';
-import { Rectangle, DragState, ResizeState, PanState } from '../types';
+import { Rectangle, CanvasInteractionsHook } from '../types';
 
 interface UseCanvasInteractionsProps {
   rectangles: Rectangle[];
@@ -17,24 +17,6 @@ interface UseCanvasInteractionsProps {
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
 }
 
-interface UseCanvasInteractionsReturn {
-  // Canvas state
-  panOffset: { x: number; y: number };
-  panOffsetRef: React.MutableRefObject<{ x: number; y: number }>;
-  isSpacePressed: boolean;
-  
-  // Interaction states
-  dragState: DragState | null;
-  resizeState: ResizeState | null;
-  panState: PanState | null;
-  isDragging: boolean;
-  isResizing: boolean;
-  isPanning: boolean;
-  
-  // Event handlers
-  handleCanvasMouseDown: (e: React.MouseEvent) => void;
-  handleRectangleMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize') => void;
-}
 
 export const useCanvasInteractions = ({
   rectangles,
@@ -48,7 +30,7 @@ export const useCanvasInteractions = ({
   leafHeight,
   containerRef,
   getFixedDimensions
-}: UseCanvasInteractionsProps): UseCanvasInteractionsReturn => {
+}: UseCanvasInteractionsProps): CanvasInteractionsHook => {
   
   // Initialize the drag and resize hook
   const {

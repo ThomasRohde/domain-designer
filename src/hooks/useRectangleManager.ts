@@ -42,7 +42,7 @@ export interface UseRectangleManagerReturn {
   updateRectangleLabel: (id: string, label: string) => void;
   updateRectangleColor: (id: string, color: string) => void;
   fitToChildren: (id: string) => void;
-  getAllDescendantsWrapper: (parentId: string) => string[];
+  getAllDescendantsWrapper: (parentId: string) => Rectangle[];
   
   // History actions
   undo: () => void;
@@ -215,13 +215,13 @@ export const useRectangleManager = ({
   }, [generateId, rectangles, gridSize, panOffsetRef, containerRef, getFixedDimensions, setRectanglesWithHistory]);
 
   // Get all descendants of a rectangle (recursive)
-  const getAllDescendantsWrapper = useCallback((parentId: string): string[] => {
-    return getAllDescendants(parentId, rectangles);
+  const getAllDescendantsWrapper = useCallback((parentId: string): Rectangle[] => {
+    return getAllDescendants(parentId, rectangles).map(id => rectangles.find(r => r.id === id)!).filter(Boolean);
   }, [rectangles]);
 
   // Remove a rectangle and its children
   const removeRectangle = useCallback((id: string) => {
-    const toRemove = [id, ...getAllDescendantsWrapper(id)];
+    const toRemove = [id, ...getAllDescendantsWrapper(id).map(r => r.id)];
     setRectanglesWithHistory(prev => {
       const updated = prev.filter(rect => !toRemove.includes(rect.id));
       return updated;

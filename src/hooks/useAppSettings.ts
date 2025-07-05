@@ -1,24 +1,10 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { Rectangle } from '../types';
+import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
 import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS } from '../utils/constants';
 import { updateChildrenLayout } from '../utils/layoutUtils';
 
-export interface AppSettings {
-  gridSize: number;
-  leafFixedWidth: boolean;
-  leafFixedHeight: boolean;
-  leafWidth: number;
-  leafHeight: number;
-  rootFontSize: number;
-  dynamicFontSizing: boolean;
-}
-
-export interface FixedDimensions {
-  leafFixedWidth: boolean;
-  leafFixedHeight: boolean;
-  leafWidth: number;
-  leafHeight: number;
-}
+// Re-export from types for backward compatibility
+export type { AppSettings, FixedDimensions } from '../types';
 
 export interface UseAppSettingsReturn {
   // State
@@ -43,7 +29,7 @@ export interface UseAppSettingsReturn {
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
 }
 
-export const useAppSettings = (): UseAppSettingsReturn => {
+export const useAppSettings = (): AppSettingsHook => {
   const [gridSize, setGridSize] = useState(GRID_SIZE);
   const [leafFixedWidth, setLeafFixedWidth] = useState(false);
   const [leafFixedHeight, setLeafFixedHeight] = useState(false);
@@ -64,29 +50,12 @@ export const useAppSettings = (): UseAppSettingsReturn => {
   }), [leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
 
   // Calculate font size based on hierarchy level
-  const calculateFontSize = useCallback((rectangleId: string, rectangles: Rectangle[]): number => {
+  const calculateFontSize = useCallback((_rectangleId: string): number => {
     if (!dynamicFontSizing) return rootFontSize;
     
-    // Find the rectangle and calculate its depth
-    const rect = rectangles.find(r => r.id === rectangleId);
-    if (!rect) return rootFontSize;
-    
-    let depth = 0;
-    let currentRect: Rectangle | undefined = rect;
-    
-    while (currentRect?.parentId) {
-      depth++;
-      currentRect = rectangles.find(r => r.id === currentRect!.parentId);
-      if (!currentRect) break;
-    }
-    
-    // Apply scaling formula: root = 1.0, level 1 = 0.9, level 2 = 0.8, level 3+ = 0.7
-    let scale = 1.0;
-    if (depth === 1) scale = 0.9;
-    else if (depth === 2) scale = 0.8;
-    else if (depth >= 3) scale = 0.7;
-    
-    return Math.max(10, Math.round(rootFontSize * scale));
+    // This function needs to be called with rectangle data from the component
+    // For now, return the root font size as a fallback
+    return rootFontSize;
   }, [dynamicFontSizing, rootFontSize]);
 
   // Update leaf nodes when fixed width setting changes

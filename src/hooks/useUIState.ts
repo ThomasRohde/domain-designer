@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ContextMenuState } from '../types';
+import { ContextMenuState, UIStateHook } from '../types';
 
 export interface UIState {
   sidebarOpen: boolean;
@@ -27,7 +27,7 @@ export interface UseUIStateReturn extends UIState, UIActions {}
 /**
  * Custom hook for managing UI state including sidebar, context menu, and export modal
  */
-export const useUIState = (): UseUIStateReturn => {
+export const useUIState = (): UIStateHook => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
