@@ -280,6 +280,7 @@ const HierarchicalDrawingApp = () => {
             selectedRectangle={selectedRectangle}
             rectangles={rectangleManager.rectangles}
             onColorChange={rectangleManager.updateRectangleColor}
+            onLayoutPreferencesChange={rectangleManager.updateRectangleLayoutPreferences}
             appSettings={appSettingsObject}
             onSettingsChange={handleSettingsChange}
             onAddCustomColor={appSettings.addCustomColor}

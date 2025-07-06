@@ -16,6 +16,23 @@ export type InteractionType = 'drag' | 'resize' | 'pan' | 'select';
 export type ResizeHandle = 'se' | 'sw' | 'ne' | 'nw' | 'n' | 's' | 'e' | 'w';
 
 /**
+ * Layout filling strategy for arranging children
+ */
+export type LayoutFillStrategy = 'fill-columns-first' | 'fill-rows-first';
+
+/**
+ * Layout preferences for a rectangle's children
+ */
+export interface LayoutPreferences {
+  /** How to arrange children - fill columns first or rows first */
+  fillStrategy: LayoutFillStrategy;
+  /** Maximum number of columns (only used when fillStrategy is 'fill-rows-first') */
+  maxColumns?: number;
+  /** Maximum number of rows (only used when fillStrategy is 'fill-columns-first') */
+  maxRows?: number;
+}
+
+/**
  * Rectangle data structure for hierarchical drawing
  */
 export interface Rectangle {
@@ -39,6 +56,8 @@ export interface Rectangle {
   type: RectangleType;
   /** Whether the rectangle is currently being edited */
   isEditing?: boolean;
+  /** Layout preferences for arranging children */
+  layoutPreferences?: LayoutPreferences;
   /** Optional metadata for extensibility */
   metadata?: {
     description?: string;

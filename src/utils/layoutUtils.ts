@@ -1,5 +1,34 @@
-import { Rectangle, DragState, ResizeState, HierarchyDragState } from '../types';
+import { Rectangle, DragState, ResizeState, HierarchyDragState, LayoutPreferences } from '../types';
 import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT, DEFAULT_RECTANGLE_SIZE } from './constants';
+
+/**
+ * Calculate grid dimensions based on layout preferences
+ */
+export const calculateGridDimensions = (
+  childrenCount: number,
+  layoutPreferences?: LayoutPreferences
+): { cols: number; rows: number } => {
+  if (!layoutPreferences) {
+    // Default behavior - square grid
+    const cols = Math.ceil(Math.sqrt(childrenCount));
+    const rows = Math.ceil(childrenCount / cols);
+    return { cols, rows };
+  }
+
+  const { fillStrategy, maxColumns, maxRows } = layoutPreferences;
+
+  if (fillStrategy === 'fill-rows-first') {
+    // Fill rows first, limited by maxColumns
+    const cols = maxColumns ? Math.min(maxColumns, childrenCount) : Math.ceil(Math.sqrt(childrenCount));
+    const rows = Math.ceil(childrenCount / cols);
+    return { cols, rows };
+  } else {
+    // Fill columns first, limited by maxRows
+    const rows = maxRows ? Math.min(maxRows, childrenCount) : Math.ceil(Math.sqrt(childrenCount));
+    const cols = Math.ceil(childrenCount / rows);
+    return { cols, rows };
+  }
+};
 
 /**
  * Calculate auto-sized dimensions and positions for child rectangles
@@ -23,8 +52,8 @@ export const calculateChildLayout = (
   const availableWidth = parentRect.w - (sideMargin * 2);
   const availableHeight = parentRect.h - topMargin - sideMargin;
 
-  const cols = Math.ceil(Math.sqrt(children.length));
-  const rows = Math.ceil(children.length / cols);
+  // Use layout preferences from parent rectangle
+  const { cols, rows } = calculateGridDimensions(children.length, parentRect.layoutPreferences);
 
   // Use consistent spacing between children (same as margin)
   const childSpacing = MARGIN;
@@ -176,8 +205,8 @@ export const calculateNewRectangleLayout = (
       const availableWidth = Math.max(MIN_WIDTH, parent.w - (sideMargin * 2));
       const availableHeight = Math.max(MIN_HEIGHT, parent.h - topMargin - sideMargin);
       
-      const cols = Math.ceil(Math.sqrt(totalChildren));
-      const rows = Math.ceil(totalChildren / cols);
+      // Use layout preferences from parent rectangle
+      const { cols, rows } = calculateGridDimensions(totalChildren, parent.layoutPreferences);
       
       // Calculate child dimensions
       const childWidth = Math.max(MIN_WIDTH, Math.floor(availableWidth / cols));
@@ -332,8 +361,9 @@ export const calculateMinimumParentSize = (
   const topMargin = LABEL_MARGIN;
   const sideMargin = MARGIN;
 
-  const cols = Math.ceil(Math.sqrt(children.length));
-  const rows = Math.ceil(children.length / cols);
+  // Get parent rectangle to access layout preferences
+  const parent = rectangles.find(r => r.id === parentId);
+  const { cols, rows } = calculateGridDimensions(children.length, parent?.layoutPreferences);
 
   // Calculate theoretical optimal child dimensions (not actual current dimensions)
   // This ensures consistent sizing and prevents growth on repeated fit-to-children

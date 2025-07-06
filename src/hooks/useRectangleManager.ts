@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Rectangle } from '../types';
+import { Rectangle, LayoutPreferences } from '../types';
 import { DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
 import { 
   updateChildrenLayout, 
@@ -42,6 +42,7 @@ export interface UseRectangleManagerReturn {
   removeRectangle: (id: string) => void;
   updateRectangleLabel: (id: string, label: string) => void;
   updateRectangleColor: (id: string, color: string) => void;
+  updateRectangleLayoutPreferences: (id: string, preferences: LayoutPreferences) => void;
   fitToChildren: (id: string) => void;
   getAllDescendantsWrapper: (parentId: string) => Rectangle[];
   
@@ -210,17 +211,12 @@ export const useRectangleManager = ({
         const parentIndex = updated.findIndex(r => r.id === parentId);
         if (parentIndex !== -1) {
           
-          // Check if parent needs to be resized to accommodate fixed-dimension children
+          // Check if parent needs to be resized to accommodate all children
           const parent = updated[parentIndex];
           const allChildren = updated.filter(r => r.parentId === parentId);
           
-          // Check if any children have fixed dimensions that might require parent resize
-          const hasFixedDimensionChildren = allChildren.some(child => {
-            const fixedDims = getFixedDimensions();
-            return child.type === 'leaf' && (fixedDims.leafFixedWidth || fixedDims.leafFixedHeight);
-          });
-          
-          if (hasFixedDimensionChildren) {
+          // Always check if parent needs to be resized, especially for restrictive layout preferences
+          if (allChildren.length > 0) {
             // Calculate minimum size needed for the parent to accommodate all children
             const minParentSize = calculateMinimumParentSize(parentId, updated, getFixedDimensions());
             
@@ -301,6 +297,43 @@ export const useRectangleManager = ({
       return updated;
     });
   }, [setRectanglesWithHistory]);
+
+  // Update rectangle layout preferences
+  const updateRectangleLayoutPreferences = useCallback((id: string, preferences: LayoutPreferences) => {
+    setRectanglesWithHistory(prev => {
+      const updated = prev.map(rect => 
+        rect.id === id ? { 
+          ...rect, 
+          layoutPreferences: preferences
+        } : rect
+      );
+      
+      // Check if parent needs to be resized to accommodate new layout
+      const parent = updated.find(rect => rect.id === id);
+      if (parent) {
+        const children = getChildren(id, updated);
+        if (children.length > 0) {
+          // Calculate minimum size needed for the new layout
+          const minParentSize = calculateMinimumParentSize(id, updated, getFixedDimensions());
+          
+          // Resize parent if it's too small to accommodate the new layout
+          if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
+            const resizedUpdated = updated.map(rect => 
+              rect.id === id 
+                ? { ...rect, w: Math.max(rect.w, minParentSize.w), h: Math.max(rect.h, minParentSize.h) }
+                : rect
+            );
+            
+            // Recalculate layout for all children after parent resize
+            return updateChildrenLayout(resizedUpdated, getFixedDimensions());
+          }
+        }
+      }
+      
+      // Recalculate layout for all children after preferences change
+      return updateChildrenLayout(updated, getFixedDimensions());
+    });
+  }, [setRectanglesWithHistory, getFixedDimensions]);
 
   // Fit rectangle to children
   const fitToChildren = useCallback((id: string) => {
@@ -395,18 +428,13 @@ export const useRectangleManager = ({
         );
       }
       
-      // Check if new parent needs to be resized to accommodate fixed-dimension children
+      // Check if new parent needs to be resized to accommodate all children
       if (newParentId) {
         const newParent = updated.find(r => r.id === newParentId);
         const newParentChildren = updated.filter(r => r.parentId === newParentId);
         
-        // Check if any children have fixed dimensions that might require parent resize
-        const hasFixedDimensionChildren = newParentChildren.some(child => {
-          const fixedDims = getFixedDimensions();
-          return child.type === 'leaf' && (fixedDims.leafFixedWidth || fixedDims.leafFixedHeight);
-        });
-        
-        if (hasFixedDimensionChildren && newParent) {
+        // Always check if parent needs to be resized, especially for restrictive layout preferences
+        if (newParentChildren.length > 0 && newParent) {
           // Calculate minimum size needed for the parent to accommodate all children
           const minParentSize = calculateMinimumParentSize(newParentId, updated, getFixedDimensions());
           
@@ -450,6 +478,7 @@ export const useRectangleManager = ({
     removeRectangle,
     updateRectangleLabel,
     updateRectangleColor,
+    updateRectangleLayoutPreferences,
     fitToChildren,
     getAllDescendantsWrapper,
     
