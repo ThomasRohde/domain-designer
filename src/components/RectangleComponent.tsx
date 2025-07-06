@@ -17,6 +17,7 @@ interface RectangleComponentProps {
   fontSize?: number;
   panOffset?: { x: number; y: number };
   isDropTarget?: boolean;
+  isValidDropTarget?: boolean;
   isCurrentDropTarget?: boolean;
   isBeingDragged?: boolean;
   isHierarchyDragActive?: boolean;
@@ -40,6 +41,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   fontSize = 14,
   panOffset = { x: 0, y: 0 },
   isDropTarget = false,
+  isValidDropTarget = true,
   isCurrentDropTarget = false,
   isBeingDragged = false,
   isHierarchyDragActive = false,
@@ -107,15 +109,29 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     opacity = 0.8;
     boxShadow = '0 20px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(99, 102, 241, 0.1)';
   } else if (isCurrentDropTarget) {
-    finalBorderColor = '#10b981';
-    finalBorderWidth = `${borderWidth + 1}px`;
-    borderStyle = 'solid';
-    boxShadow = '0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 10px 10px -5px rgba(16, 185, 129, 0.1)';
+    if (isValidDropTarget) {
+      finalBorderColor = '#10b981';
+      finalBorderWidth = `${borderWidth + 1}px`;
+      borderStyle = 'solid';
+      boxShadow = '0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 10px 10px -5px rgba(16, 185, 129, 0.1)';
+    } else {
+      finalBorderColor = '#ef4444';
+      finalBorderWidth = `${borderWidth + 1}px`;
+      borderStyle = 'solid';
+      boxShadow = '0 10px 25px -5px rgba(239, 68, 68, 0.4), 0 10px 10px -5px rgba(239, 68, 68, 0.1)';
+    }
   } else if (isDropTarget) {
-    finalBorderColor = '#10b981';
-    finalBorderWidth = `${borderWidth}px`;
-    borderStyle = 'dashed';
-    boxShadow = '0 4px 6px -1px rgba(16, 185, 129, 0.2), 0 2px 4px -1px rgba(16, 185, 129, 0.1)';
+    if (isValidDropTarget) {
+      finalBorderColor = '#10b981';
+      finalBorderWidth = `${borderWidth}px`;
+      borderStyle = 'dashed';
+      boxShadow = '0 4px 6px -1px rgba(16, 185, 129, 0.2), 0 2px 4px -1px rgba(16, 185, 129, 0.1)';
+    } else {
+      finalBorderColor = '#ef4444';
+      finalBorderWidth = `${borderWidth}px`;
+      borderStyle = 'dashed';
+      boxShadow = '0 4px 6px -1px rgba(239, 68, 68, 0.2), 0 2px 4px -1px rgba(239, 68, 68, 0.1)';
+    }
   }
   
   const style: React.CSSProperties = {

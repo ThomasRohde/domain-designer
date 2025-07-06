@@ -189,7 +189,8 @@ const HierarchicalDrawingApp = () => {
     onUndo: rectangleManager.undo,
     onRedo: rectangleManager.redo,
     onDelete: handleDeleteSelected,
-  }), [rectangleManager.undo, rectangleManager.redo, handleDeleteSelected]));
+    onCancel: canvasInteractions.cancelDrag,
+  }), [rectangleManager.undo, rectangleManager.redo, handleDeleteSelected, canvasInteractions.cancelDrag]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">

@@ -26,6 +26,7 @@ interface UseDragAndResizeReturn {
   hierarchyDragState: HierarchyDragState | null;
   handleMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
   handleMouseUp: () => void;
+  cancelDrag: () => void;
   isDragging: boolean;
   isResizing: boolean;
   isHierarchyDragging: boolean;
@@ -339,13 +340,43 @@ export const useDragAndResize = ({
       const { draggedRectangleId, currentDropTarget } = currentHierarchyState;
       
       if (currentDropTarget && currentDropTarget.isValid) {
-        // Perform the reparenting operation
-        const success = reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
-        if (success) {
-          // Update the layout after reparenting
-          setTimeout(() => {
-            setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
-          }, 10);
+        // Check if dropping on the original parent (no-op operation)
+        const draggedRect = rectangles.find(r => r.id === draggedRectangleId);
+        const originalParentId = draggedRect?.parentId || null;
+        
+        if (currentDropTarget.targetId === originalParentId) {
+          // No-op: dropping on original parent, reset position without state changes
+          setRectangles(prev => prev.map(rect => {
+            if (rect.id === draggedRectangleId) {
+              return { ...rect, x: dragState?.initialX || rect.x, y: dragState?.initialY || rect.y };
+            }
+            // Reset descendants if needed
+            if (dragState?.initialX !== undefined && dragState?.initialY !== undefined) {
+              const descendantIds = new Set(getAllDescendants(draggedRectangleId, prev));
+              if (descendantIds.has(rect.id)) {
+                const currentRect = prev.find(r => r.id === draggedRectangleId);
+                if (currentRect) {
+                  const parentDeltaX = currentRect.x - dragState.initialX;
+                  const parentDeltaY = currentRect.y - dragState.initialY;
+                  return { 
+                    ...rect, 
+                    x: rect.x - parentDeltaX, 
+                    y: rect.y - parentDeltaY 
+                  };
+                }
+              }
+            }
+            return rect;
+          }));
+        } else {
+          // Perform the reparenting operation
+          const success = reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
+          if (success) {
+            // Update the layout after reparenting
+            setTimeout(() => {
+              setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
+            }, 10);
+          }
         }
       }
     }
@@ -395,12 +426,48 @@ export const useDragAndResize = ({
     }
   }, [dragState, resizeState, handleMouseUp]);
 
+  // Cancel drag operation - reset to original position without state changes
+  const cancelDrag = useCallback(() => {
+    if (dragState) {
+      // Reset dragged rectangle to original position
+      setRectangles(prev => prev.map(rect => {
+        if (rect.id === dragState.id) {
+          return { ...rect, x: dragState.initialX, y: dragState.initialY };
+        }
+        // If it's a hierarchy drag, also reset descendants
+        if (dragState.isHierarchyDrag) {
+          const draggedRect = prev.find(r => r.id === dragState.id);
+          if (draggedRect) {
+            const descendantIds = new Set(getAllDescendants(dragState.id, prev));
+            if (descendantIds.has(rect.id)) {
+              // Calculate how much the parent moved and reverse it
+              const parentDeltaX = draggedRect.x - dragState.initialX;
+              const parentDeltaY = draggedRect.y - dragState.initialY;
+              return { 
+                ...rect, 
+                x: rect.x - parentDeltaX, 
+                y: rect.y - parentDeltaY 
+              };
+            }
+          }
+        }
+        return rect;
+      }));
+    }
+    
+    // Clear all drag states
+    setDragState(null);
+    setResizeState(null);
+    setHierarchyDragState(null);
+  }, [dragState, setRectangles]);
+
   return {
     dragState,
     resizeState,
     hierarchyDragState,
     handleMouseDown,
     handleMouseUp,
+    cancelDrag,
     isDragging: dragState !== null,
     isResizing: resizeState !== null,
     isHierarchyDragging: hierarchyDragState !== null

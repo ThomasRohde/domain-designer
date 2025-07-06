@@ -1,4 +1,4 @@
-import { Rectangle, DragState, ResizeState } from '../types';
+import { Rectangle, DragState, ResizeState, HierarchyDragState } from '../types';
 import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT } from './constants';
 
 /**
@@ -266,7 +266,8 @@ export const getZIndex = (
   rectangles: Rectangle[], 
   selectedId: string | null,
   dragState: DragState | null,
-  resizeState: ResizeState | null
+  resizeState: ResizeState | null,
+  hierarchyDragState?: HierarchyDragState | null
 ): number => {
   let depth = 0;
   let current: Rectangle | undefined = rect;
@@ -278,6 +279,28 @@ export const getZIndex = (
   }
   
   const baseZ = 10 + (depth * 10);
+  
+  // Check if this rectangle is being dragged or is a descendant of the dragged rectangle
+  if (dragState || hierarchyDragState) {
+    const draggedId = dragState?.id || hierarchyDragState?.draggedRectangleId;
+    if (draggedId) {
+      const isDraggedRect = rect.id === draggedId;
+      const isDescendantOfDragged = getAllDescendants(draggedId, rectangles).includes(rect.id);
+      
+      if (isDraggedRect || isDescendantOfDragged) {
+        // Elevate dragged rectangle and its descendants above everything else
+        // Use a high base value (1000) plus depth to maintain hierarchy within the dragged group
+        return 1000 + depth;
+      }
+    }
+  }
+  
+  // Check if this rectangle is being resized
+  if (resizeState && rect.id === resizeState.id) {
+    // Elevate resized rectangle above others (but not as high as dragged)
+    return 900 + depth;
+  }
+  
   let selectedBoost = 0;
   if (selectedId === rect.id && !dragState && !resizeState) {
     const hasChildren = getChildren(rect.id, rectangles).length > 0;

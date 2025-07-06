@@ -340,6 +340,7 @@ export interface CanvasInteractionsHook {
   // Event handlers
   handleCanvasMouseDown: (e: React.MouseEvent) => void;
   handleRectangleMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
+  cancelDrag: () => void;
 }
 
 // Error Handling Types

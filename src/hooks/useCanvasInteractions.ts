@@ -45,6 +45,7 @@ export const useCanvasInteractions = ({
     hierarchyDragState,
     handleMouseDown: handleDragResizeMouseDown,
     handleMouseUp: handleDragResizeMouseUp,
+    cancelDrag,
     isDragging,
     isResizing,
     isHierarchyDragging
@@ -150,5 +151,6 @@ export const useCanvasInteractions = ({
     // Event handlers
     handleCanvasMouseDown,
     handleRectangleMouseDown,
+    cancelDrag,
   };
 };

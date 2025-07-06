@@ -9,6 +9,7 @@ interface KeyboardShortcuts {
   onSelectAll?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
+  onCancel?: () => void;
 }
 
 export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
@@ -21,6 +22,9 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
         if (key === 'Delete' && shortcuts.onDelete) {
           event.preventDefault();
           shortcuts.onDelete();
+        } else if (key === 'Escape' && shortcuts.onCancel) {
+          event.preventDefault();
+          shortcuts.onCancel();
         }
         return;
       }

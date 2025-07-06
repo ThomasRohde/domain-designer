@@ -49,7 +49,9 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
     <>
       {sortRectanglesByDepth(rectangles).map(rect => {
         // Check if this rectangle is a potential drop target during hierarchy drag
-        const isDropTarget = hierarchyDragState?.potentialTargets.some(target => target.targetId === rect.id) || false;
+        const dropTarget = hierarchyDragState?.potentialTargets.find(target => target.targetId === rect.id);
+        const isDropTarget = dropTarget !== undefined;
+        const isValidDropTarget = dropTarget?.isValid || false;
         const isCurrentDropTarget = hierarchyDragState?.currentDropTarget?.targetId === rect.id || false;
         const isBeingDragged = hierarchyDragState?.draggedRectangleId === rect.id || false;
         
@@ -58,7 +60,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             key={rect.id}
             rectangle={rect}
             isSelected={selectedId === rect.id}
-            zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
+            zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState, hierarchyDragState)}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}
             onSelect={onSelect}
@@ -70,6 +72,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             fontSize={calculateFontSize(rect.id, rectangles)}
             panOffset={panOffset}
             isDropTarget={isDropTarget}
+            isValidDropTarget={isValidDropTarget}
             isCurrentDropTarget={isCurrentDropTarget}
             isBeingDragged={isBeingDragged}
             isHierarchyDragActive={hierarchyDragState !== null}
