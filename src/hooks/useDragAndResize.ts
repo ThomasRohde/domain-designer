@@ -114,12 +114,11 @@ export const useDragAndResize = ({
       bounds: { x: 0, y: 0, width: 0, height: 0 } // Canvas background bounds
     });
     
-    // Check all other rectangles as potential drop targets
+    // Find all rectangles that the mouse is over, sorted by z-index (deepest first)
+    const mouseOverRects: Array<{ rect: Rectangle; bounds: { x: number; y: number; width: number; height: number }; zIndex: number }> = [];
+    
     rectangles.forEach(rect => {
       if (rect.id === draggedRectId) return; // Can't drop on self
-      
-      // Check if we can reparent (avoid circular hierarchies)
-      const canDrop = canReparent ? canReparent(draggedRectId, rect.id) : true;
       
       // Calculate rectangle bounds in screen coordinates
       const rectBounds = {
@@ -136,13 +135,34 @@ export const useDragAndResize = ({
                          mouseY <= rectBounds.y + rectBounds.height;
       
       if (isMouseOver) {
-        targets.push({
-          targetId: rect.id,
-          isValid: canDrop,
-          dropType: 'parent',
-          bounds: rectBounds
-        });
+        // Calculate z-index for this rectangle to determine stacking order
+        let depth = 0;
+        let current = rect;
+        while (current && current.parentId) {
+          depth++;
+          current = rectangles.find(r => r.id === current!.parentId) || rect;
+          if (depth > 10) break; // Prevent infinite loops
+        }
+        const zIndex = 10 + (depth * 10);
+        
+        mouseOverRects.push({ rect, bounds: rectBounds, zIndex });
       }
+    });
+    
+    // Sort by z-index (highest first) to prioritize children over parents
+    mouseOverRects.sort((a, b) => b.zIndex - a.zIndex);
+    
+    // Add all overlapping rectangles as potential targets
+    mouseOverRects.forEach(({ rect, bounds }) => {
+      // Check if we can reparent (avoid circular hierarchies)
+      const canDrop = canReparent ? canReparent(draggedRectId, rect.id) : true;
+      
+      targets.push({
+        targetId: rect.id,
+        isValid: canDrop,
+        dropType: 'parent',
+        bounds
+      });
     });
     
     return targets;
@@ -157,11 +177,21 @@ export const useDragAndResize = ({
     if (dragState.isHierarchyDrag) {
       // Handle hierarchy drag - update mouse position and detect drop targets
       const potentialTargets = detectDropTargets(currentX, currentY, dragState.id);
-      const currentDropTarget = potentialTargets.find(target => 
-        target.targetId !== null && target.bounds && 
-        currentX >= target.bounds.x && currentX <= target.bounds.x + target.bounds.width &&
-        currentY >= target.bounds.y && currentY <= target.bounds.y + target.bounds.height
-      ) || potentialTargets.find(target => target.targetId === null) || null;
+      
+      // Find the best drop target - prioritize the first valid target (highest z-index)
+      let currentDropTarget: DropTarget | null = null;
+      
+      // First try to find a valid rectangle target (excluding canvas background)
+      const rectTargets = potentialTargets.filter(target => target.targetId !== null && target.isValid);
+      if (rectTargets.length > 0) {
+        currentDropTarget = rectTargets[0]; // First one is highest z-index
+      } else {
+        // Fall back to canvas background if no valid rectangle targets
+        const canvasTarget = potentialTargets.find(target => target.targetId === null);
+        if (canvasTarget) {
+          currentDropTarget = canvasTarget;
+        }
+      }
       
       setHierarchyDragState(prev => prev ? {
         ...prev,
