@@ -11,6 +11,9 @@ interface ActionButtonsOverlayProps {
   onFitToChildren: (id: string) => void;
   gridSize: number;
   panOffset: { x: number; y: number };
+  isDragging?: boolean;
+  isResizing?: boolean;
+  isHierarchyDragging?: boolean;
 }
 
 const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
@@ -20,9 +23,15 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
   onRemove,
   onFitToChildren,
   gridSize,
-  panOffset
+  panOffset,
+  isDragging = false,
+  isResizing = false,
+  isHierarchyDragging = false
 }) => {
-  if (!selectedRectangle) return null;
+  // Hide action buttons during any drag/resize operation
+  if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging) {
+    return null;
+  }
 
   const rect = selectedRectangle;
   const hasChildren = childCount > 0;

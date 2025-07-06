@@ -169,6 +169,9 @@ const HierarchicalDrawingApp = () => {
                 onFitToChildren={rectangleManager.fitToChildren}
                 gridSize={appSettings.gridSize}
                 panOffset={canvasInteractions.panOffset}
+                isDragging={canvasInteractions.isDragging}
+                isResizing={canvasInteractions.isResizing}
+                isHierarchyDragging={canvasInteractions.isHierarchyDragging}
               />
             }
           >

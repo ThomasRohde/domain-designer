@@ -151,9 +151,9 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         onSelect(rectangle.id);
       }}
     >
-      {/* Label positioning based on whether rectangle has children */}
-      {childCount > 0 ? (
-        // Rectangles with children: label at top edge, centered horizontally
+      {/* Label positioning based on whether rectangle has children OR is a drop target */}
+      {childCount > 0 || isCurrentDropTarget || isDropTarget ? (
+        // Rectangles with children OR drop targets: label at top edge, centered horizontally
         <div className="relative h-full">
           <div 
             className="absolute left-0 right-0 text-center px-2"
