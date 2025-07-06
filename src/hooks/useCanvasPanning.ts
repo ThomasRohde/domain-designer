@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { PanState } from '../types';
-import { getMousePosition, shouldStartPan, preventEventDefault } from '../utils/eventUtils';
+import { getMousePosition, shouldStartPan, preventEventDefault, isEventTargetEditable } from '../utils/eventUtils';
 import { PanOffset } from '../utils/canvasUtils';
 
 interface UseCanvasPanningProps {
@@ -71,7 +71,7 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
   // Handle keyboard events for space key panning
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !isSpacePressed) {
+      if (e.code === 'Space' && !isSpacePressed && !isEventTargetEditable(e)) {
         e.preventDefault();
         setIsSpacePressed(true);
       }
@@ -79,7 +79,9 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
-        e.preventDefault();
+        if (!isEventTargetEditable(e)) {
+          e.preventDefault();
+        }
         setIsSpacePressed(false);
         setPanState(null); // Stop any active panning
       }
