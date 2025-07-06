@@ -73,15 +73,24 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                 </label>
                 <select
                   className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
-                  value={selectedRectangle.layoutPreferences?.fillStrategy || 'fill-columns-first'}
+                  value={selectedRectangle.layoutPreferences?.fillStrategy || 'default'}
                   onChange={(e) => {
-                    const newPreferences: LayoutPreferences = {
-                      ...selectedRectangle.layoutPreferences,
-                      fillStrategy: e.target.value as 'fill-columns-first' | 'fill-rows-first'
-                    };
-                    onLayoutPreferencesChange(selectedId, newPreferences);
+                    if (e.target.value === 'default') {
+                      // Set to default behavior (fill columns first)
+                      const newPreferences: LayoutPreferences = {
+                        fillStrategy: 'fill-columns-first'
+                      };
+                      onLayoutPreferencesChange(selectedId, newPreferences);
+                    } else {
+                      const newPreferences: LayoutPreferences = {
+                        ...selectedRectangle.layoutPreferences,
+                        fillStrategy: e.target.value as 'fill-columns-first' | 'fill-rows-first'
+                      };
+                      onLayoutPreferencesChange(selectedId, newPreferences);
+                    }
                   }}
                 >
+                  <option value="default">Default (Fill Columns First)</option>
                   <option value="fill-columns-first">Fill Columns First</option>
                   <option value="fill-rows-first">Fill Rows First</option>
                 </select>
