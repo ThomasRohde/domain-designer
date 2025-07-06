@@ -49,7 +49,8 @@ const Canvas: React.FC<CanvasProps> = ({
               ? `radial-gradient(circle, #10b981 1px, transparent 1px)`
               : `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
             backgroundSize: `${gridSize}px ${gridSize}px`,
-            backgroundPosition: `${panOffset.x}px ${panOffset.y}px`
+            backgroundPosition: `${panOffset.x}px ${panOffset.y}px`,
+            willChange: panState ? 'background-position' : 'auto'
           }}
           onClick={() => onSelect(null)}
           onMouseDown={onMouseDown}

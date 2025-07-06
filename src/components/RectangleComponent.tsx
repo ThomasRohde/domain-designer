@@ -290,4 +290,4 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   );
 };
 
-export default RectangleComponent;
+export default React.memo(RectangleComponent);
