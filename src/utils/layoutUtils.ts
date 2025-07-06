@@ -316,27 +316,23 @@ export const calculateMinimumParentSize = (
   // This ensures consistent sizing and prevents growth on repeated fit-to-children
   const childSpacing = MARGIN;
   
-  // Use a reasonable default child size for calculation
-  const theoreticalChildWidth = Math.max(MIN_WIDTH, 
-    fixedDimensions && fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : 4);
-  const theoreticalChildHeight = Math.max(MIN_HEIGHT, 
-    fixedDimensions && fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : 3);
-  
-  const childDimensions = children.map(child => {
-    let childWidth = theoreticalChildWidth;
-    let childHeight = theoreticalChildHeight;
-    
+  // Calculate actual child dimensions based on current children or reasonable defaults
+  // For leaf rectangles, use fixed dimensions if available, otherwise use current dimensions
+  // For parent rectangles, use their current dimensions as they may have been sized to fit their own children
+  const actualChildDimensions = children.map(child => {
     if (child.type === 'leaf' && fixedDimensions) {
-      if (fixedDimensions.leafFixedWidth) {
-        childWidth = fixedDimensions.leafWidth;
-      }
-      if (fixedDimensions.leafFixedHeight) {
-        childHeight = fixedDimensions.leafHeight;
-      }
+      return {
+        width: fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : child.w,
+        height: fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : child.h
+      };
     }
-    
-    return { width: childWidth, height: childHeight };
+    // For parent rectangles, use their current dimensions
+    return { width: child.w, height: child.h };
   });
+  
+  
+  // Use the actual child dimensions we calculated above
+  const childDimensions = actualChildDimensions;
 
   // Calculate maximum dimensions needed
   const maxChildWidth = Math.max(...childDimensions.map(d => d.width));

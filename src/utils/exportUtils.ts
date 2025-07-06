@@ -1,11 +1,12 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { Rectangle, ExportOptions } from '../types';
+import { Rectangle, ExportOptions, GlobalSettings, ValidationResult } from '../types';
 
 export const exportDiagram = async (
   containerElement: HTMLElement,
   rectangles: Rectangle[],
   options: ExportOptions,
+  globalSettings?: GlobalSettings,
   gridSize: number = 20,
   borderRadius: number = 8,
   borderColor: string = '#374151',
@@ -27,7 +28,7 @@ export const exportDiagram = async (
       await exportToPDF(containerElement, filename, { quality, scale, includeBackground });
       break;
     case 'json':
-      exportToJSON(rectangles, filename);
+      exportToJSON(rectangles, globalSettings, filename);
       break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
@@ -112,15 +113,17 @@ const exportToPDF = async (
   }
 };
 
-const exportToJSON = (rectangles: Rectangle[], filename: string): void => {
+const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string): void => {
   const data = {
     rectangles,
+    globalSettings,
     version: '1.0',
     timestamp: new Date().toISOString(),
     metadata: {
       totalRectangles: rectangles.length,
       rootRectangles: rectangles.filter(r => !r.parentId).length,
-      types: [...new Set(rectangles.map(r => r.type))]
+      types: [...new Set(rectangles.map(r => r.type))],
+      hasGlobalSettings: !!globalSettings
     }
   };
 
@@ -192,4 +195,100 @@ const createSVGFromRectangles = (
 
   svg += '</svg>';
   return svg;
+};
+
+export interface ImportedDiagramData {
+  rectangles: Rectangle[];
+  globalSettings?: GlobalSettings;
+  version?: string;
+  timestamp?: string;
+  metadata?: {
+    totalRectangles: number;
+    rootRectangles: number;
+    types: string[];
+    hasGlobalSettings?: boolean;
+  };
+}
+
+export const validateImportedData = (data: unknown): ValidationResult => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!data || typeof data !== 'object') {
+    errors.push('Invalid JSON data structure');
+    return { isValid: false, errors, warnings };
+  }
+
+  const dataObj = data as Record<string, unknown>;
+
+  if (!Array.isArray(dataObj.rectangles)) {
+    errors.push('Missing or invalid rectangles array');
+    return { isValid: false, errors, warnings };
+  }
+
+  if (dataObj.rectangles.length === 0) {
+    warnings.push('No rectangles found in import data');
+  }
+
+  for (let i = 0; i < dataObj.rectangles.length; i++) {
+    const rect = dataObj.rectangles[i] as Record<string, unknown>;
+    if (!rect.id || typeof rect.id !== 'string') {
+      errors.push(`Rectangle at index ${i} missing valid id`);
+    }
+    if (typeof rect.x !== 'number' || typeof rect.y !== 'number') {
+      errors.push(`Rectangle at index ${i} missing valid coordinates`);
+    }
+    if (typeof rect.w !== 'number' || typeof rect.h !== 'number') {
+      errors.push(`Rectangle at index ${i} missing valid dimensions`);
+    }
+    if (!rect.label || typeof rect.label !== 'string') {
+      errors.push(`Rectangle at index ${i} missing valid label`);
+    }
+    if (!rect.color || typeof rect.color !== 'string') {
+      errors.push(`Rectangle at index ${i} missing valid color`);
+    }
+    if (!rect.type || !['root', 'parent', 'leaf'].includes(rect.type as string)) {
+      errors.push(`Rectangle at index ${i} missing valid type`);
+    }
+  }
+
+  if (dataObj.globalSettings && typeof dataObj.globalSettings !== 'object') {
+    warnings.push('Invalid global settings format, will use defaults');
+  }
+
+  return { isValid: errors.length === 0, errors, warnings };
+};
+
+export const importDiagramFromJSON = (file: File): Promise<ImportedDiagramData> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const data = JSON.parse(text);
+        
+        const validation = validateImportedData(data);
+        
+        if (!validation.isValid) {
+          reject(new Error(`Invalid JSON data: ${validation.errors.join(', ')}`));
+          return;
+        }
+
+        if (validation.warnings.length > 0) {
+          console.warn('Import warnings:', validation.warnings);
+        }
+
+        resolve(data as ImportedDiagramData);
+      } catch (error) {
+        reject(new Error(`Failed to parse JSON: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      }
+    };
+    
+    reader.onerror = () => {
+      reject(new Error('Failed to read file'));
+    };
+    
+    reader.readAsText(file);
+  });
 };

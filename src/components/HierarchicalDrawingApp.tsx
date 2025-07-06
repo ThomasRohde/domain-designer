@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useMemo, useState } from 'react';
 import { ExportOptions, AppSettings } from '../types';
-import { exportDiagram } from '../utils/exportUtils';
+import { exportDiagram, importDiagramFromJSON, ImportedDiagramData } from '../utils/exportUtils';
 import { getChildren } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
@@ -76,10 +76,24 @@ const HierarchicalDrawingApp = () => {
   const handleExport = useCallback(async (options: ExportOptions) => {
     if (!containerRef.current) return;
     try {
+      const globalSettings = {
+        gridSize: appSettings.gridSize,
+        leafFixedWidth: appSettings.leafFixedWidth,
+        leafFixedHeight: appSettings.leafFixedHeight,
+        leafWidth: appSettings.leafWidth,
+        leafHeight: appSettings.leafHeight,
+        rootFontSize: appSettings.rootFontSize,
+        dynamicFontSizing: appSettings.dynamicFontSizing,
+        borderRadius: appSettings.borderRadius,
+        borderColor: appSettings.borderColor,
+        borderWidth: appSettings.borderWidth
+      };
+      
       await exportDiagram(
         containerRef.current, 
         rectangleManager.rectangles, 
         options, 
+        globalSettings,
         appSettings.gridSize,
         appSettings.borderRadius,
         appSettings.borderColor,
@@ -88,7 +102,7 @@ const HierarchicalDrawingApp = () => {
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth]);
+  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth]);
 
   const handleDeleteSelected = useCallback(() => {
     if (rectangleManager.selectedId) {
@@ -108,6 +122,37 @@ const HierarchicalDrawingApp = () => {
     if (settings.borderColor !== undefined) appSettings.handleBorderColorChange(settings.borderColor);
     if (settings.borderWidth !== undefined) appSettings.handleBorderWidthChange(settings.borderWidth);
   }, [appSettings]);
+
+  const handleImport = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        const importedData: ImportedDiagramData = await importDiagramFromJSON(file);
+        
+        // Update rectangles
+        rectangleManager.setRectangles(importedData.rectangles);
+        
+        // Update global settings if available
+        if (importedData.globalSettings) {
+          handleSettingsChange(importedData.globalSettings);
+        }
+        
+        // Clear selection
+        rectangleManager.setSelectedId(null);
+        
+        console.log('Successfully imported diagram from JSON');
+      } catch (error) {
+        console.error('Failed to import diagram:', error);
+        alert(`Failed to import diagram: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    };
+    input.click();
+  }, [rectangleManager, handleSettingsChange]);
 
   const handleAboutClick = useCallback(() => {
     setAboutModalOpen(true);
@@ -150,6 +195,7 @@ const HierarchicalDrawingApp = () => {
       <Toolbar
         onAddRectangle={handleAddRectangle}
         onExport={uiState.openExportModal}
+        onImport={handleImport}
         selectedId={rectangleManager.selectedId}
         onToggleSidebar={uiState.toggleSidebar}
         sidebarOpen={uiState.sidebarOpen}

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Plus, Menu, Download, Settings } from 'lucide-react';
+import { Plus, Menu, Download, Upload, Settings } from 'lucide-react';
 
 interface ToolbarProps {
   onAddRectangle: (parentId: string | null) => void;
   onExport: () => void;
+  onImport: () => void;
   selectedId: string | null;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
@@ -14,6 +15,7 @@ interface ToolbarProps {
 const Toolbar: React.FC<ToolbarProps> = ({
   onAddRectangle,
   onExport,
+  onImport,
   selectedId,
   onToggleSidebar,
   sidebarOpen,
@@ -60,6 +62,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <div className="w-px h-6 bg-gray-300 hidden sm:block"></div>
           
           <div className="hidden sm:flex items-center space-x-1">
+            <button
+              onClick={onImport}
+              className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md border border-gray-300 flex items-center space-x-1"
+              title="Import diagram from JSON"
+            >
+              <Upload size={16} />
+              <span>Import</span>
+            </button>
             <button
               onClick={onExport}
               className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md border border-gray-300 flex items-center space-x-1"
