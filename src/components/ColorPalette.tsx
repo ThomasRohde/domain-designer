@@ -6,24 +6,24 @@ interface ColorPaletteProps {
   onColorChange: (color: string) => void;
 }
 
-// Initial predefined color palette
+// Initial predefined color palette - prioritizing colors from the handdrawn model
 const INITIAL_PREDEFINED_COLORS = [
-  '#FF6B6B', // Red
-  '#4ECDC4', // Teal
-  '#45B7D1', // Blue
-  '#96CEB4', // Green
+  '#87CEEB', // Sky Blue (main headers)
+  '#98D8C8', // Mint Green (subcategories)
+  '#D8BFD8', // Light Purple (IT/Data Platform)
+  '#F0E68C', // Light Yellow (Business Control)
+  '#FFB6C1', // Light Pink (Risk Management)
+  '#B0E0E6', // Powder Blue (variation)
+  '#4ECDC4', // Teal (existing default)
+  '#45B7D1', // Blue (existing default)
+  '#96CEB4', // Green (existing default)
   '#FFEAA7', // Yellow
   '#DDA0DD', // Plum
-  '#98D8C8', // Mint
   '#F7DC6F', // Light Yellow
   '#BB8FCE', // Light Purple
   '#85C1E9', // Light Blue
   '#F8C471', // Orange
   '#82E0AA', // Light Green
-  '#EC7063', // Light Red
-  '#AED6F1', // Sky Blue
-  '#F9E79F', // Pale Yellow
-  '#D7BDE2', // Pale Purple
 ];
 
 const ColorPalette: React.FC<ColorPaletteProps> = ({
