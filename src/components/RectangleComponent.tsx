@@ -232,7 +232,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       {isSelected && !isHierarchyDragActive && (
         <div
           className="absolute top-1 left-1 w-4 h-4 bg-purple-500 rounded-full opacity-70 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
-          title="Ctrl/Cmd + drag to rearrange hierarchy"
+          title="Drag to rearrange hierarchy"
           onMouseDown={(e) => {
             e.stopPropagation();
             onMouseDown(e, rectangle, 'hierarchy-drag');
