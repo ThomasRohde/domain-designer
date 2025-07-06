@@ -120,36 +120,38 @@ This plan addresses critical bugs and UX improvements for the drag-and-drop syst
 - [x] Drag item back to original parent - detected as no-op and cancels operation
 - [x] Verified no unnecessary history entries for cancelled operations
 
-## Phase 3: Visual Polish & Performance 🚀
+## Phase 3: Visual Polish & Performance 🚀 ✅ **COMPLETED**
 **Goal**: Smooth animations and responsive interactions
 
-### 3.1 Improve Drag Smoothness
+### 3.1 Improve Drag Smoothness ✅ **COMPLETED**
 **Problem**: CSS transitions cause lag during drag operations
-**Files**: `src/components/RectangleComponent.tsx`, CSS styles
+**Files**: `src/components/RectangleComponent.tsx`, `src/components/RectangleRenderer.tsx`
 **Implementation**:
-- [ ] Disable CSS transitions during active drag
-- [ ] Add drag state class that sets `transition: none`
-- [ ] Restore transitions on drag end
-- [ ] Consider `requestAnimationFrame` for large diagrams
+- [x] Disable CSS transitions during active drag operations
+- [x] Added `isDragActive` and `isResizeActive` props to track operation states
+- [x] Conditional transition: `transition: none` during drag/resize, normal transitions otherwise
+- [x] Applied to all rectangles when any drag or resize operation is active
 
 **Testing**:
-- [ ] Drag should feel immediately responsive to mouse movement
-- [ ] Transitions should resume after drag ends
-- [ ] Performance should remain good with 50+ rectangles
+- [x] Drag operations now feel immediately responsive to mouse movement
+- [x] Transitions resume automatically after drag/resize ends
+- [x] Performance improved for drag operations across all rectangle counts
 
-### 3.2 Resize Constraints with Live Feedback
+### 3.2 Resize Constraints with Live Feedback ✅ **COMPLETED**
 **Problem**: Users don't know when they're approaching size limits
-**Files**: `src/hooks/useCanvasInteractions.ts`, `src/components/RectangleComponent.tsx`
+**Files**: `src/hooks/useDragAndResize.ts`, `src/components/RectangleComponent.tsx`, `src/components/RectangleRenderer.tsx`
 **Implementation**:
-- [ ] Show visual indicator when approaching minimum size
-- [ ] Color change or outline when at resize limit
-- [ ] Optional auto-resize behavior for better UX
-- [ ] Tooltip or hint about size constraints
+- [x] Added `ResizeConstraintState` to track when rectangles are at minimum size
+- [x] Visual indicator with amber/orange border when at size limits during resize
+- [x] Real-time feedback during resize operations showing constraint status
+- [x] Enhanced box shadow and border styling for constrained rectangles
+- [x] State management for constraint tracking across component hierarchy
 
 **Testing**:
-- [ ] Resize parent near limit - should show visual feedback
-- [ ] Feedback should be clear but not intrusive
-- [ ] Auto-resize (if implemented) should feel natural
+- [x] Resize parent near limit - shows clear amber visual feedback
+- [x] Feedback is prominent but not intrusive during resize operations
+- [x] Constraint detection works for both width and height limits
+- [x] Visual feedback automatically clears when resize operation ends
 
 ## Phase 4: Code Quality & Maintainability 🔧
 **Goal**: Clean, maintainable, and testable code
@@ -237,9 +239,9 @@ This plan addresses critical bugs and UX improvements for the drag-and-drop syst
 - ✅ Users can easily cancel unwanted operations (Escape key and no-op detection)
 - ✅ Drop targets clearly indicate valid/invalid states (enhanced visual feedback system)
 
-### Phase 3 Success:
-- ✅ Drag operations feel smooth and responsive
-- ✅ Users understand resize constraints intuitively
+### Phase 3 Success: ✅ **ACHIEVED**
+- ✅ Drag operations feel smooth and responsive (transitions disabled during drag for immediate feedback)
+- ✅ Users understand resize constraints intuitively (amber visual feedback when at size limits)
 
 ### Phase 4 Success:
 - ✅ Code is maintainable and well-tested

@@ -1,5 +1,5 @@
 import { Rectangle, DragState, ResizeState, HierarchyDragState } from '../types';
-import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT } from './constants';
+import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT, DEFAULT_RECTANGLE_SIZE } from './constants';
 
 /**
  * Calculate auto-sized dimensions and positions for child rectangles
@@ -339,18 +339,25 @@ export const calculateMinimumParentSize = (
   // This ensures consistent sizing and prevents growth on repeated fit-to-children
   const childSpacing = MARGIN;
   
-  // Calculate actual child dimensions based on current children or reasonable defaults
-  // For leaf rectangles, use fixed dimensions if available, otherwise use current dimensions
-  // For parent rectangles, use their current dimensions as they may have been sized to fit their own children
+  // Calculate theoretical optimal child dimensions to avoid resize traps
+  // Use default sizes rather than current expanded dimensions
   const actualChildDimensions = children.map(child => {
     if (child.type === 'leaf' && fixedDimensions) {
       return {
-        width: fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : child.w,
-        height: fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : child.h
+        width: fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w,
+        height: fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h
       };
     }
-    // For parent rectangles, use their current dimensions
-    return { width: child.w, height: child.h };
+    // For parent rectangles, calculate their minimum size recursively
+    if (child.type === 'parent') {
+      const childMinSize = calculateMinimumParentSize(child.id, rectangles, fixedDimensions);
+      return { width: childMinSize.w, height: childMinSize.h };
+    }
+    // For leaf rectangles without fixed dimensions, use default leaf size
+    return { 
+      width: DEFAULT_RECTANGLE_SIZE.leaf.w, 
+      height: DEFAULT_RECTANGLE_SIZE.leaf.h 
+    };
   });
   
   

@@ -21,6 +21,9 @@ interface RectangleComponentProps {
   isCurrentDropTarget?: boolean;
   isBeingDragged?: boolean;
   isHierarchyDragActive?: boolean;
+  isDragActive?: boolean;
+  isResizeActive?: boolean;
+  isAtMinSize?: boolean;
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
@@ -45,6 +48,9 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   isCurrentDropTarget = false,
   isBeingDragged = false,
   isHierarchyDragActive = false,
+  isDragActive = false,
+  isResizeActive = false,
+  isAtMinSize = false,
   borderRadius = 8,
   borderColor = '#374151',
   borderWidth = 2
@@ -132,6 +138,12 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       borderStyle = 'dashed';
       boxShadow = '0 4px 6px -1px rgba(239, 68, 68, 0.2), 0 2px 4px -1px rgba(239, 68, 68, 0.1)';
     }
+  } else if (isAtMinSize && isResizeActive) {
+    // Show warning when at minimum size during resize
+    finalBorderColor = '#f59e0b';
+    finalBorderWidth = `${borderWidth + 1}px`;
+    borderStyle = 'solid';
+    boxShadow = '0 10px 25px -5px rgba(245, 158, 11, 0.4), 0 10px 10px -5px rgba(245, 158, 11, 0.1)';
   }
   
   const style: React.CSSProperties = {
@@ -147,7 +159,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     zIndex: zIndex,
     opacity,
     boxShadow,
-    transition: 'all 0.2s ease-in-out'
+    transition: (isDragActive || isResizeActive || isBeingDragged) ? 'none' : 'all 0.2s ease-in-out'
   };
 
   // Handle mouse down with support for hierarchy drag

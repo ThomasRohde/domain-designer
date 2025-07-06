@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Rectangle, DragState, ResizeState, HierarchyDragState, DropTarget } from '../types';
+import { Rectangle, DragState, ResizeState, HierarchyDragState, DropTarget, ResizeConstraintState } from '../types';
 import { MIN_WIDTH, MIN_HEIGHT } from '../utils/constants';
 import { updateChildrenLayout, getAllDescendants, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
 import { getMousePosition, preventEventDefault } from '../utils/eventUtils';
@@ -20,10 +20,12 @@ interface UseDragAndResizeProps {
   saveToHistory?: (rectangles: Rectangle[]) => void;
 }
 
+
 interface UseDragAndResizeReturn {
   dragState: DragState | null;
   resizeState: ResizeState | null;
   hierarchyDragState: HierarchyDragState | null;
+  resizeConstraintState: ResizeConstraintState | null;
   handleMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
   handleMouseUp: () => void;
   cancelDrag: () => void;
@@ -50,6 +52,7 @@ export const useDragAndResize = ({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
   const [hierarchyDragState, setHierarchyDragState] = useState<HierarchyDragState | null>(null);
+  const [resizeConstraintState, setResizeConstraintState] = useState<ResizeConstraintState | null>(null);
   const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
 
   // Handle mouse down for dragging and resizing
@@ -304,11 +307,31 @@ export const useDragAndResize = ({
     
     // For parent rectangles, enforce minimum size needed for children
     const children = getChildren(rect.id, rectangles);
+    let minRequiredW = MIN_WIDTH;
+    let minRequiredH = MIN_HEIGHT;
+    
     if (children.length > 0) {
       const minSize = calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions());
-      newW = Math.max(newW, minSize.w);
-      newH = Math.max(newH, minSize.h);
+      minRequiredW = minSize.w;
+      minRequiredH = minSize.h;
+      // Only enforce minimum if the new size would be too small
+      // Allow free resizing as long as children still fit
+      if (newW < minSize.w) {
+        newW = minSize.w;
+      }
+      if (newH < minSize.h) {
+        newH = minSize.h;
+      }
     }
+    
+    // Update resize constraint state for visual feedback
+    setResizeConstraintState({
+      rectangleId: rect.id,
+      isAtMinWidth: newW <= minRequiredW + 1, // +1 for slight tolerance
+      isAtMinHeight: newH <= minRequiredH + 1,
+      minRequiredWidth: minRequiredW,
+      minRequiredHeight: minRequiredH
+    });
 
     setRectangles(prev => prev.map(r => 
       r.id === resizeState.id ? { ...r, w: newW, h: newH } : r
@@ -385,6 +408,7 @@ export const useDragAndResize = ({
     setDragState(null);
     setResizeState(null);
     setHierarchyDragState(null);
+    setResizeConstraintState(null);
     
     if (wasResizing) {
       // Only update children layout after resize operations
@@ -459,12 +483,14 @@ export const useDragAndResize = ({
     setDragState(null);
     setResizeState(null);
     setHierarchyDragState(null);
+    setResizeConstraintState(null);
   }, [dragState, setRectangles]);
 
   return {
     dragState,
     resizeState,
     hierarchyDragState,
+    resizeConstraintState,
     handleMouseDown,
     handleMouseUp,
     cancelDrag,

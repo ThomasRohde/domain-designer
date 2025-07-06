@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rectangle, DragState, ResizeState, HierarchyDragState } from '../types';
+import { Rectangle, DragState, ResizeState, HierarchyDragState, ResizeConstraintState } from '../types';
 import { 
   getChildren,
   getZIndex,
@@ -13,6 +13,7 @@ interface RectangleRendererProps {
   dragState: DragState | null;
   resizeState: ResizeState | null;
   hierarchyDragState: HierarchyDragState | null;
+  resizeConstraintState: ResizeConstraintState | null;
   gridSize: number;
   panOffset: { x: number; y: number };
   onMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
@@ -34,6 +35,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   dragState,
   resizeState,
   hierarchyDragState,
+  resizeConstraintState,
   gridSize,
   panOffset,
   onMouseDown,
@@ -54,6 +56,10 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
         const isValidDropTarget = dropTarget?.isValid || false;
         const isCurrentDropTarget = hierarchyDragState?.currentDropTarget?.targetId === rect.id || false;
         const isBeingDragged = hierarchyDragState?.draggedRectangleId === rect.id || false;
+        const isDragActive = dragState !== null || hierarchyDragState !== null;
+        const isResizeActive = resizeState !== null;
+        const isAtMinSize = resizeConstraintState?.rectangleId === rect.id && 
+                           (resizeConstraintState?.isAtMinWidth || resizeConstraintState?.isAtMinHeight);
         
         return (
           <RectangleComponent
@@ -76,6 +82,9 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             isCurrentDropTarget={isCurrentDropTarget}
             isBeingDragged={isBeingDragged}
             isHierarchyDragActive={hierarchyDragState !== null}
+            isDragActive={isDragActive}
+            isResizeActive={isResizeActive}
+            isAtMinSize={isAtMinSize}
             borderRadius={borderRadius}
             borderColor={borderColor}
             borderWidth={borderWidth}

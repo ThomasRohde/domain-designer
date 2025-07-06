@@ -115,6 +115,22 @@ export interface ResizeState {
 }
 
 /**
+ * State tracking resize constraints for visual feedback
+ */
+export interface ResizeConstraintState {
+  /** ID of the rectangle being resized */
+  rectangleId: string;
+  /** Whether the rectangle is at minimum width */
+  isAtMinWidth: boolean;
+  /** Whether the rectangle is at minimum height */
+  isAtMinHeight: boolean;
+  /** Minimum required width for the rectangle */
+  minRequiredWidth: number;
+  /** Minimum required height for the rectangle */
+  minRequiredHeight: number;
+}
+
+/**
  * State during canvas panning operation
  */
 export interface PanState {
@@ -332,6 +348,7 @@ export interface CanvasInteractionsHook {
   resizeState: ResizeState | null;
   panState: PanState | null;
   hierarchyDragState: HierarchyDragState | null;
+  resizeConstraintState: ResizeConstraintState | null;
   isDragging: boolean;
   isResizing: boolean;
   isPanning: boolean;

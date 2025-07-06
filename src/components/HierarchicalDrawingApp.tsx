@@ -243,6 +243,7 @@ const HierarchicalDrawingApp = () => {
               dragState={canvasInteractions.dragState}
               resizeState={canvasInteractions.resizeState}
               hierarchyDragState={canvasInteractions.hierarchyDragState}
+              resizeConstraintState={canvasInteractions.resizeConstraintState}
               gridSize={appSettings.gridSize}
               panOffset={canvasInteractions.panOffset}
               onMouseDown={canvasInteractions.handleRectangleMouseDown}
