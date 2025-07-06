@@ -210,25 +210,50 @@ export const useRectangleManager = ({
         const parentIndex = updated.findIndex(r => r.id === parentId);
         if (parentIndex !== -1) {
           
-          // Immediately recalculate layout for all children of this parent
+          // Check if parent needs to be resized to accommodate fixed-dimension children
+          const parent = updated[parentIndex];
           const allChildren = updated.filter(r => r.parentId === parentId);
-          if (allChildren.length > 0) {
-            const updatedParent = updated[parentIndex];
-            const newChildLayout = calculateChildLayout(updatedParent, allChildren, getFixedDimensions());
+          
+          // Check if any children have fixed dimensions that might require parent resize
+          const hasFixedDimensionChildren = allChildren.some(child => {
+            const fixedDims = getFixedDimensions();
+            return child.type === 'leaf' && (fixedDims.leafFixedWidth || fixedDims.leafFixedHeight);
+          });
+          
+          if (hasFixedDimensionChildren) {
+            // Calculate minimum size needed for the parent to accommodate all children
+            const minParentSize = calculateMinimumParentSize(parentId, updated, getFixedDimensions());
             
-            // Apply the new layout to all children
-            newChildLayout.forEach(layoutChild => {
-              const childIndex = updated.findIndex(r => r.id === layoutChild.id);
-              if (childIndex !== -1) {
-                updated[childIndex] = {
-                  ...updated[childIndex],
-                  x: layoutChild.x,
-                  y: layoutChild.y,
-                  w: layoutChild.w,
-                  h: layoutChild.h
-                };
-              }
-            });
+            // Resize parent if it's too small to accommodate its children
+            if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
+              updated = updated.map(rect => 
+                rect.id === parentId 
+                  ? { ...rect, w: Math.max(rect.w, minParentSize.w), h: Math.max(rect.h, minParentSize.h) }
+                  : rect
+              );
+            }
+          }
+          
+          // Immediately recalculate layout for all children of this parent
+          if (allChildren.length > 0) {
+            const updatedParent = updated.find(r => r.id === parentId);
+            if (updatedParent) {
+              const newChildLayout = calculateChildLayout(updatedParent, allChildren, getFixedDimensions());
+              
+              // Apply the new layout to all children
+              newChildLayout.forEach(layoutChild => {
+                const childIndex = updated.findIndex(r => r.id === layoutChild.id);
+                if (childIndex !== -1) {
+                  updated[childIndex] = {
+                    ...updated[childIndex],
+                    x: layoutChild.x,
+                    y: layoutChild.y,
+                    w: layoutChild.w,
+                    h: layoutChild.h
+                  };
+                }
+              });
+            }
           }
         }
       }
@@ -368,6 +393,32 @@ export const useRectangleManager = ({
             ? applyFixedDimensions(rect, fixedDims)
             : rect
         );
+      }
+      
+      // Check if new parent needs to be resized to accommodate fixed-dimension children
+      if (newParentId) {
+        const newParent = updated.find(r => r.id === newParentId);
+        const newParentChildren = updated.filter(r => r.parentId === newParentId);
+        
+        // Check if any children have fixed dimensions that might require parent resize
+        const hasFixedDimensionChildren = newParentChildren.some(child => {
+          const fixedDims = getFixedDimensions();
+          return child.type === 'leaf' && (fixedDims.leafFixedWidth || fixedDims.leafFixedHeight);
+        });
+        
+        if (hasFixedDimensionChildren && newParent) {
+          // Calculate minimum size needed for the parent to accommodate all children
+          const minParentSize = calculateMinimumParentSize(newParentId, updated, getFixedDimensions());
+          
+          // Resize parent if it's too small to accommodate its children
+          if (newParent.w < minParentSize.w || newParent.h < minParentSize.h) {
+            updated = updated.map(rect => 
+              rect.id === newParentId 
+                ? { ...rect, w: Math.max(rect.w, minParentSize.w), h: Math.max(rect.h, minParentSize.h) }
+                : rect
+            );
+          }
+        }
       }
       
       // Update layout for both old and new parents
