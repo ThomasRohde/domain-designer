@@ -29,6 +29,9 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     leafHeight,
     rootFontSize,
     dynamicFontSizing,
+    borderRadius,
+    borderColor,
+    borderWidth,
   } = appSettings;
 
   if (selectedId && selectedRectangle) {
@@ -73,6 +76,12 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       onRootFontSizeChange={(size) => onSettingsChange({ rootFontSize: size })}
       dynamicFontSizing={dynamicFontSizing}
       onDynamicFontSizingChange={(enabled) => onSettingsChange({ dynamicFontSizing: enabled })}
+      borderRadius={borderRadius}
+      onBorderRadiusChange={(radius) => onSettingsChange({ borderRadius: radius })}
+      borderColor={borderColor}
+      onBorderColorChange={(color) => onSettingsChange({ borderColor: color })}
+      borderWidth={borderWidth}
+      onBorderWidthChange={(width) => onSettingsChange({ borderWidth: width })}
     />
   );
 };

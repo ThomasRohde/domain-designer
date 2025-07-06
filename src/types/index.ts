@@ -146,6 +146,12 @@ export interface GlobalSettings {
   rootFontSize: number;
   /** Whether to use dynamic font sizing based on rectangle size */
   dynamicFontSizing: boolean;
+  /** Border radius for rectangles in pixels */
+  borderRadius: number;
+  /** Border color for rectangles (hex format) */
+  borderColor: string;
+  /** Border width for rectangles in pixels */
+  borderWidth: number;
 }
 
 /**
@@ -274,6 +280,9 @@ export interface AppSettingsHook {
   leafHeight: number;
   rootFontSize: number;
   dynamicFontSizing: boolean;
+  borderRadius: number;
+  borderColor: string;
+  borderWidth: number;
   getFixedDimensions: () => FixedDimensions;
   calculateFontSize: (rectangleId: string) => number;
   handleLeafFixedWidthChange: (enabled: boolean) => void;
@@ -282,6 +291,9 @@ export interface AppSettingsHook {
   handleLeafHeightChange: (height: number) => void;
   handleRootFontSizeChange: (size: number) => void;
   handleDynamicFontSizingChange: (enabled: boolean) => void;
+  handleBorderRadiusChange: (radius: number) => void;
+  handleBorderColorChange: (color: string) => void;
+  handleBorderWidthChange: (width: number) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
 }

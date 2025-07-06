@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
-import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS } from '../utils/constants';
+import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS } from '../utils/constants';
 import { updateChildrenLayout } from '../utils/layoutUtils';
 
 // Re-export from types for backward compatibility
@@ -15,6 +15,9 @@ export interface UseAppSettingsReturn {
   leafHeight: number;
   rootFontSize: number;
   dynamicFontSizing: boolean;
+  borderRadius: number;
+  borderColor: string;
+  borderWidth: number;
   
   // Functions
   getFixedDimensions: () => FixedDimensions;
@@ -25,6 +28,9 @@ export interface UseAppSettingsReturn {
   handleLeafHeightChange: (height: number) => void;
   handleRootFontSizeChange: (size: number) => void;
   handleDynamicFontSizingChange: (enabled: boolean) => void;
+  handleBorderRadiusChange: (radius: number) => void;
+  handleBorderColorChange: (color: string) => void;
+  handleBorderWidthChange: (width: number) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
 }
@@ -37,6 +43,9 @@ export const useAppSettings = (): AppSettingsHook => {
   const [leafHeight, setLeafHeight] = useState(DEFAULT_RECTANGLE_SIZE.leaf.h);
   const [rootFontSize, setRootFontSize] = useState(DEFAULT_FONT_SETTINGS.rootFontSize);
   const [dynamicFontSizing, setDynamicFontSizing] = useState(DEFAULT_FONT_SETTINGS.dynamicFontSizing);
+  const [borderRadius, setBorderRadius] = useState(DEFAULT_BORDER_SETTINGS.borderRadius);
+  const [borderColor, setBorderColor] = useState(DEFAULT_BORDER_SETTINGS.borderColor);
+  const [borderWidth, setBorderWidth] = useState(DEFAULT_BORDER_SETTINGS.borderWidth);
   
   // Store a reference to the setRectangles function from the rectangle manager
   const setRectanglesRef = useRef<React.Dispatch<React.SetStateAction<Rectangle[]>> | null>(null);
@@ -159,6 +168,19 @@ export const useAppSettings = (): AppSettingsHook => {
     setDynamicFontSizing(enabled);
   }, []);
 
+  // Border settings handlers
+  const handleBorderRadiusChange = useCallback((radius: number) => {
+    setBorderRadius(radius);
+  }, []);
+
+  const handleBorderColorChange = useCallback((color: string) => {
+    setBorderColor(color);
+  }, []);
+
+  const handleBorderWidthChange = useCallback((width: number) => {
+    setBorderWidth(width);
+  }, []);
+
   // Function to set the rectangles setter reference
   const setRectanglesRefHandler = useCallback((setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => {
     setRectanglesRef.current = setRectangles;
@@ -173,6 +195,9 @@ export const useAppSettings = (): AppSettingsHook => {
     leafHeight,
     rootFontSize,
     dynamicFontSizing,
+    borderRadius,
+    borderColor,
+    borderWidth,
     
     // Functions
     getFixedDimensions,
@@ -183,6 +208,9 @@ export const useAppSettings = (): AppSettingsHook => {
     handleLeafHeightChange,
     handleRootFontSizeChange,
     handleDynamicFontSizingChange,
+    handleBorderRadiusChange,
+    handleBorderColorChange,
+    handleBorderWidthChange,
     setGridSize,
     setRectanglesRef: setRectanglesRefHandler,
   };

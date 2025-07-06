@@ -16,6 +16,12 @@ interface GlobalSettingsProps {
   onRootFontSizeChange: (size: number) => void;
   dynamicFontSizing: boolean;
   onDynamicFontSizingChange: (enabled: boolean) => void;
+  borderRadius: number;
+  onBorderRadiusChange: (radius: number) => void;
+  borderColor: string;
+  onBorderColorChange: (color: string) => void;
+  borderWidth: number;
+  onBorderWidthChange: (width: number) => void;
 }
 
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
@@ -32,7 +38,13 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   rootFontSize,
   onRootFontSizeChange,
   dynamicFontSizing,
-  onDynamicFontSizingChange
+  onDynamicFontSizingChange,
+  borderRadius,
+  onBorderRadiusChange,
+  borderColor,
+  onBorderColorChange,
+  borderWidth,
+  onBorderWidthChange
 }) => {
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
@@ -200,6 +212,80 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               </button>
             </div>
 
+          </div>
+        </div>
+
+        {/* Border Settings */}
+        <div className="border-t pt-3 mt-3">
+          <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            </svg>
+            Border Settings
+          </h4>
+          
+          <div className="space-y-3">
+            {/* Border Radius */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Border Radius: {borderRadius}px
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="20"
+                step="1"
+                value={borderRadius}
+                onChange={(e) => onBorderRadiusChange(parseInt(e.target.value))}
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0px (Square)</span>
+                <span>20px (Rounded)</span>
+              </div>
+            </div>
+
+            {/* Border Color */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Border Color
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={borderColor}
+                  onChange={(e) => onBorderColorChange(e.target.value)}
+                  className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                />
+                <input
+                  type="text"
+                  value={borderColor}
+                  onChange={(e) => onBorderColorChange(e.target.value)}
+                  className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="#374151"
+                />
+              </div>
+            </div>
+
+            {/* Border Width */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Border Width: {borderWidth}px
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="8"
+                step="1"
+                value={borderWidth}
+                onChange={(e) => onBorderWidthChange(parseInt(e.target.value))}
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>1px (Thin)</span>
+                <span>8px (Thick)</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

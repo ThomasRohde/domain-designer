@@ -22,6 +22,12 @@ export const DEFAULT_FONT_SETTINGS = {
   dynamicFontSizing: false
 };
 
+export const DEFAULT_BORDER_SETTINGS = {
+  borderRadius: 8,
+  borderColor: '#374151',
+  borderWidth: 2
+};
+
 export const KEYBOARD_SHORTCUTS = {
   SAVE: 'Ctrl+S',
   LOAD: 'Ctrl+O',

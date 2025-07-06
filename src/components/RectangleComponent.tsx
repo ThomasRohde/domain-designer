@@ -20,6 +20,9 @@ interface RectangleComponentProps {
   isCurrentDropTarget?: boolean;
   isBeingDragged?: boolean;
   isHierarchyDragActive?: boolean;
+  borderRadius?: number;
+  borderColor?: string;
+  borderWidth?: number;
 }
 
 const RectangleComponent: React.FC<RectangleComponentProps> = ({
@@ -39,7 +42,10 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   isDropTarget = false,
   isCurrentDropTarget = false,
   isBeingDragged = false,
-  isHierarchyDragActive = false
+  isHierarchyDragActive = false,
+  borderRadius = 8,
+  borderColor = '#374151',
+  borderWidth = 2
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(rectangle.label);
@@ -86,28 +92,28 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   const textColor = getTextColor(rectangle.color);
   
   // Determine border color and style based on state
-  let borderColor = '#e5e7eb'; // default
+  let finalBorderColor = borderColor; // Use global setting as default
   let borderStyle = 'solid';
-  let borderWidth = '2px';
+  let finalBorderWidth = `${borderWidth}px`;
   let boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
   let opacity = 1;
   
   if (isSelected && !isHierarchyDragActive) {
-    borderColor = '#3b82f6';
+    finalBorderColor = '#3b82f6';
     boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.04)';
   } else if (isBeingDragged) {
-    borderColor = '#6366f1';
-    borderWidth = '3px';
+    finalBorderColor = '#6366f1';
+    finalBorderWidth = `${borderWidth + 1}px`;
     opacity = 0.8;
     boxShadow = '0 20px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(99, 102, 241, 0.1)';
   } else if (isCurrentDropTarget) {
-    borderColor = '#10b981';
-    borderWidth = '3px';
+    finalBorderColor = '#10b981';
+    finalBorderWidth = `${borderWidth + 1}px`;
     borderStyle = 'solid';
     boxShadow = '0 10px 25px -5px rgba(16, 185, 129, 0.4), 0 10px 10px -5px rgba(16, 185, 129, 0.1)';
   } else if (isDropTarget) {
-    borderColor = '#10b981';
-    borderWidth = '2px';
+    finalBorderColor = '#10b981';
+    finalBorderWidth = `${borderWidth}px`;
     borderStyle = 'dashed';
     boxShadow = '0 4px 6px -1px rgba(16, 185, 129, 0.2), 0 2px 4px -1px rgba(16, 185, 129, 0.1)';
   }
@@ -119,8 +125,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     width: rectangle.w * gridSize,
     height: rectangle.h * gridSize,
     backgroundColor: rectangle.color,
-    border: `${borderWidth} ${borderStyle} ${borderColor}`,
-    borderRadius: '8px',
+    border: `${finalBorderWidth} ${borderStyle} ${finalBorderColor}`,
+    borderRadius: `${borderRadius}px`,
     cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'pointer'),
     zIndex: zIndex,
     opacity,

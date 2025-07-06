@@ -23,6 +23,9 @@ interface RectangleRendererProps {
   onRemove: (id: string) => void;
   onFitToChildren: (id: string) => void;
   calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
+  borderRadius: number;
+  borderColor: string;
+  borderWidth: number;
 }
 
 const RectangleRenderer: React.FC<RectangleRendererProps> = ({
@@ -38,6 +41,9 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   onSelect,
   onUpdateLabel,
   calculateFontSize,
+  borderRadius,
+  borderColor,
+  borderWidth,
 }) => {
   return (
     <>
@@ -67,6 +73,9 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             isCurrentDropTarget={isCurrentDropTarget}
             isBeingDragged={isBeingDragged}
             isHierarchyDragActive={hierarchyDragState !== null}
+            borderRadius={borderRadius}
+            borderColor={borderColor}
+            borderWidth={borderWidth}
           />
         );
       })}

@@ -76,11 +76,19 @@ const HierarchicalDrawingApp = () => {
   const handleExport = useCallback(async (options: ExportOptions) => {
     if (!containerRef.current) return;
     try {
-      await exportDiagram(containerRef.current, rectangleManager.rectangles, options, appSettings.gridSize);
+      await exportDiagram(
+        containerRef.current, 
+        rectangleManager.rectangles, 
+        options, 
+        appSettings.gridSize,
+        appSettings.borderRadius,
+        appSettings.borderColor,
+        appSettings.borderWidth
+      );
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangleManager.rectangles, appSettings.gridSize]);
+  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth]);
 
   const handleDeleteSelected = useCallback(() => {
     if (rectangleManager.selectedId) {
@@ -96,6 +104,9 @@ const HierarchicalDrawingApp = () => {
     if (settings.leafHeight !== undefined) appSettings.handleLeafHeightChange(settings.leafHeight);
     if (settings.rootFontSize !== undefined) appSettings.handleRootFontSizeChange(settings.rootFontSize);
     if (settings.dynamicFontSizing !== undefined) appSettings.handleDynamicFontSizingChange(settings.dynamicFontSizing);
+    if (settings.borderRadius !== undefined) appSettings.handleBorderRadiusChange(settings.borderRadius);
+    if (settings.borderColor !== undefined) appSettings.handleBorderColorChange(settings.borderColor);
+    if (settings.borderWidth !== undefined) appSettings.handleBorderWidthChange(settings.borderWidth);
   }, [appSettings]);
 
   const handleAboutClick = useCallback(() => {
@@ -122,6 +133,9 @@ const HierarchicalDrawingApp = () => {
     leafHeight: appSettings.leafHeight,
     rootFontSize: appSettings.rootFontSize,
     dynamicFontSizing: appSettings.dynamicFontSizing,
+    borderRadius: appSettings.borderRadius,
+    borderColor: appSettings.borderColor,
+    borderWidth: appSettings.borderWidth,
   }), [appSettings]);
 
   // Keyboard shortcuts
@@ -191,6 +205,9 @@ const HierarchicalDrawingApp = () => {
               onRemove={rectangleManager.removeRectangle}
               onFitToChildren={rectangleManager.fitToChildren}
               calculateFontSize={appSettings.calculateFontSize}
+              borderRadius={appSettings.borderRadius}
+              borderColor={appSettings.borderColor}
+              borderWidth={appSettings.borderWidth}
             />
           </Canvas>
         </div>

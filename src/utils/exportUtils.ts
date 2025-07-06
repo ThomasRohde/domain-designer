@@ -6,7 +6,10 @@ export const exportDiagram = async (
   containerElement: HTMLElement,
   rectangles: Rectangle[],
   options: ExportOptions,
-  gridSize: number = 20
+  gridSize: number = 20,
+  borderRadius: number = 8,
+  borderColor: string = '#374151',
+  borderWidth: number = 2
 ): Promise<void> => {
   const { format, quality = 1, scale = 1, includeBackground = true } = options;
   
@@ -18,7 +21,7 @@ export const exportDiagram = async (
       await exportToPNG(containerElement, filename, { quality, scale, includeBackground });
       break;
     case 'svg':
-      await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, gridSize);
+      await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, gridSize, borderRadius, borderColor, borderWidth);
       break;
     case 'pdf':
       await exportToPDF(containerElement, filename, { quality, scale, includeBackground });
@@ -59,10 +62,13 @@ const exportToSVG = async (
   rectangles: Rectangle[],
   filename: string,
   options: { scale: number; includeBackground: boolean },
-  gridSize: number = 20
+  gridSize: number = 20,
+  borderRadius: number = 8,
+  borderColor: string = '#374151',
+  borderWidth: number = 2
 ): Promise<void> => {
   try {
-    const svg = createSVGFromRectangles(rectangles, options, gridSize);
+    const svg = createSVGFromRectangles(rectangles, options, gridSize, borderRadius, borderColor, borderWidth);
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     
@@ -132,7 +138,10 @@ const exportToJSON = (rectangles: Rectangle[], filename: string): void => {
 const createSVGFromRectangles = (
   rectangles: Rectangle[],
   options: { scale: number; includeBackground: boolean },
-  gridSize: number = 20
+  gridSize: number = 20,
+  borderRadius: number = 8,
+  borderColor: string = '#374151',
+  borderWidth: number = 2
 ): string => {
   if (rectangles.length === 0) return '';
 
@@ -170,9 +179,9 @@ const createSVGFromRectangles = (
 
     svg += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
       fill="${rect.color}" 
-      stroke="#374151" 
-      stroke-width="2" 
-      rx="8"/>`;
+      stroke="${borderColor}" 
+      stroke-width="${borderWidth}" 
+      rx="${borderRadius}"/>`;
     
     svg += `<text x="${x + 10}" y="${y + 20}" 
       font-family="Arial, sans-serif" 
