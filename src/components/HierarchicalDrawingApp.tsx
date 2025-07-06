@@ -52,7 +52,9 @@ const HierarchicalDrawingApp = () => {
     leafWidth: appSettings.leafWidth,
     leafHeight: appSettings.leafHeight,
     containerRef,
-    getFixedDimensions: appSettings.getFixedDimensions
+    getFixedDimensions: appSettings.getFixedDimensions,
+    reparentRectangle: rectangleManager.reparentRectangle,
+    canReparent: rectangleManager.canReparent
   });
 
   // Connect app settings to rectangle manager
@@ -155,6 +157,7 @@ const HierarchicalDrawingApp = () => {
             panOffset={canvasInteractions.panOffset}
             isSpacePressed={canvasInteractions.isSpacePressed}
             panState={canvasInteractions.panState}
+            hierarchyDragState={canvasInteractions.hierarchyDragState}
             onMouseDown={canvasInteractions.handleCanvasMouseDown}
             onSelect={rectangleManager.setSelectedId}
             overlay={
@@ -174,6 +177,7 @@ const HierarchicalDrawingApp = () => {
               selectedId={rectangleManager.selectedId}
               dragState={canvasInteractions.dragState}
               resizeState={canvasInteractions.resizeState}
+              hierarchyDragState={canvasInteractions.hierarchyDragState}
               gridSize={appSettings.gridSize}
               panOffset={canvasInteractions.panOffset}
               onMouseDown={canvasInteractions.handleRectangleMouseDown}

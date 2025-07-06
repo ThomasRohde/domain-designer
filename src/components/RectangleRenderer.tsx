@@ -1,5 +1,5 @@
 import React from 'react';
-import { Rectangle, DragState, ResizeState } from '../types';
+import { Rectangle, DragState, ResizeState, HierarchyDragState } from '../types';
 import { 
   getChildren,
   getZIndex,
@@ -12,9 +12,10 @@ interface RectangleRendererProps {
   selectedId: string | null;
   dragState: DragState | null;
   resizeState: ResizeState | null;
+  hierarchyDragState: HierarchyDragState | null;
   gridSize: number;
   panOffset: { x: number; y: number };
-  onMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize') => void;
+  onMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
   onContextMenu: (e: React.MouseEvent, rectangleId: string) => void;
   onSelect: (id: string) => void;
   onUpdateLabel: (id: string, label: string) => void;
@@ -29,6 +30,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   selectedId,
   dragState,
   resizeState,
+  hierarchyDragState,
   gridSize,
   panOffset,
   onMouseDown,
@@ -39,24 +41,35 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
 }) => {
   return (
     <>
-      {sortRectanglesByDepth(rectangles).map(rect => (
-        <RectangleComponent
-          key={rect.id}
-          rectangle={rect}
-          isSelected={selectedId === rect.id}
-          zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
-          onMouseDown={onMouseDown}
-          onContextMenu={onContextMenu}
-          onSelect={onSelect}
-          onUpdateLabel={onUpdateLabel}
-          canDrag={!rect.parentId}
-          canResize={!rect.parentId}
-          childCount={getChildren(rect.id, rectangles).length}
-          gridSize={gridSize}
-          fontSize={calculateFontSize(rect.id, rectangles)}
-          panOffset={panOffset}
-        />
-      ))}
+      {sortRectanglesByDepth(rectangles).map(rect => {
+        // Check if this rectangle is a potential drop target during hierarchy drag
+        const isDropTarget = hierarchyDragState?.potentialTargets.some(target => target.targetId === rect.id) || false;
+        const isCurrentDropTarget = hierarchyDragState?.currentDropTarget?.targetId === rect.id || false;
+        const isBeingDragged = hierarchyDragState?.draggedRectangleId === rect.id || false;
+        
+        return (
+          <RectangleComponent
+            key={rect.id}
+            rectangle={rect}
+            isSelected={selectedId === rect.id}
+            zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState)}
+            onMouseDown={onMouseDown}
+            onContextMenu={onContextMenu}
+            onSelect={onSelect}
+            onUpdateLabel={onUpdateLabel}
+            canDrag={!rect.parentId}
+            canResize={!rect.parentId}
+            childCount={getChildren(rect.id, rectangles).length}
+            gridSize={gridSize}
+            fontSize={calculateFontSize(rect.id, rectangles)}
+            panOffset={panOffset}
+            isDropTarget={isDropTarget}
+            isCurrentDropTarget={isCurrentDropTarget}
+            isBeingDragged={isBeingDragged}
+            isHierarchyDragActive={hierarchyDragState !== null}
+          />
+        );
+      })}
     </>
   );
 };

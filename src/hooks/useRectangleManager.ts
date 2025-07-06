@@ -44,6 +44,11 @@ export interface UseRectangleManagerReturn {
   fitToChildren: (id: string) => void;
   getAllDescendantsWrapper: (parentId: string) => Rectangle[];
   
+  // Hierarchy actions
+  reparentRectangle: (childId: string, newParentId: string | null) => boolean;
+  canReparent: (childId: string, newParentId: string | null) => boolean;
+  recalculateZOrder: () => void;
+  
   // History actions
   undo: () => void;
   redo: () => void;
@@ -272,6 +277,80 @@ export const useRectangleManager = ({
     });
   }, [getFixedDimensions, setRectanglesWithHistory]);
 
+  // Check if reparenting is allowed (prevents circular hierarchies)
+  const canReparent = useCallback((childId: string, newParentId: string | null): boolean => {
+    if (newParentId === null) {
+      // Always allow making something a root
+      return true;
+    }
+    
+    if (childId === newParentId) {
+      // Can't make something its own parent
+      return false;
+    }
+    
+    // Check if newParentId is a descendant of childId (would create circular hierarchy)
+    const childDescendants = getAllDescendantsWrapper(childId);
+    return !childDescendants.some(desc => desc.id === newParentId);
+  }, [getAllDescendantsWrapper]);
+
+  // Reparent a rectangle (change its parent)
+  const reparentRectangle = useCallback((childId: string, newParentId: string | null): boolean => {
+    if (!canReparent(childId, newParentId)) {
+      return false;
+    }
+    
+    setRectanglesWithHistory(prev => {
+      const child = prev.find(rect => rect.id === childId);
+      if (!child) return prev;
+      
+      // Update the child's parentId
+      let updated = prev.map(rect => 
+        rect.id === childId 
+          ? { ...rect, parentId: newParentId || undefined }
+          : rect
+      );
+      
+      // Update rectangle types based on new hierarchy
+      updated = updated.map(rect => {
+        const hasChildren = updated.some(r => r.parentId === rect.id);
+        const hasParent = rect.parentId !== undefined;
+        
+        let newType: 'root' | 'parent' | 'leaf' = 'leaf';
+        if (!hasParent) {
+          newType = hasChildren ? 'root' : 'root';
+        } else {
+          newType = hasChildren ? 'parent' : 'leaf';
+        }
+        
+        return { ...rect, type: newType };
+      });
+      
+      // Apply fixed dimensions if the reparented rectangle is now a leaf
+      const reparentedRect = updated.find(r => r.id === childId);
+      if (reparentedRect && reparentedRect.type === 'leaf') {
+        const fixedDims = getFixedDimensions();
+        updated = updated.map(rect => 
+          rect.id === childId 
+            ? applyFixedDimensions(rect, fixedDims)
+            : rect
+        );
+      }
+      
+      // Update layout for both old and new parents
+      return updateChildrenLayout(updated, getFixedDimensions());
+    });
+    
+    return true;
+  }, [canReparent, setRectanglesWithHistory, getFixedDimensions]);
+
+  // Recalculate z-order after hierarchy changes
+  const recalculateZOrder = useCallback(() => {
+    // This is handled automatically by the getZIndex function in layoutUtils
+    // which calculates z-index based on hierarchy depth
+    // We could force a re-render here if needed, but the existing system should handle it
+  }, []);
+
   return {
     // State
     rectangles,
@@ -288,6 +367,11 @@ export const useRectangleManager = ({
     updateRectangleColor,
     fitToChildren,
     getAllDescendantsWrapper,
+    
+    // Hierarchy actions
+    reparentRectangle,
+    canReparent,
+    recalculateZOrder,
     
     // History actions
     undo,

@@ -61,6 +61,41 @@ export interface DragState {
   initialX: number;
   /** Initial rectangle Y position */
   initialY: number;
+  /** Whether this is a hierarchy rearrangement drag */
+  isHierarchyDrag?: boolean;
+}
+
+/**
+ * Information about a potential drop target during hierarchy drag
+ */
+export interface DropTarget {
+  /** ID of the target rectangle (null for canvas background) */
+  targetId: string | null;
+  /** Whether this is a valid drop target */
+  isValid: boolean;
+  /** Type of drop operation */
+  dropType: 'parent' | 'root';
+  /** Bounds of the drop zone */
+  bounds?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+/**
+ * State during hierarchy drag and drop operation
+ */
+export interface HierarchyDragState {
+  /** ID of the rectangle being dragged */
+  draggedRectangleId: string;
+  /** Current potential drop target */
+  currentDropTarget: DropTarget | null;
+  /** All potential drop targets */
+  potentialTargets: DropTarget[];
+  /** Mouse position for drop zone detection */
+  mousePosition: { x: number; y: number };
 }
 
 /**
@@ -223,6 +258,9 @@ export interface RectangleManagerHook {
   setSelectedId: (id: string | null) => void;
   setRectangles: (rectangles: Rectangle[]) => void;
   getAllDescendantsWrapper: (parentId: string) => Rectangle[];
+  reparentRectangle: (childId: string, newParentId: string | null) => boolean;
+  canReparent: (childId: string, newParentId: string | null) => boolean;
+  recalculateZOrder: () => void;
 }
 
 /**
@@ -281,13 +319,15 @@ export interface CanvasInteractionsHook {
   dragState: DragState | null;
   resizeState: ResizeState | null;
   panState: PanState | null;
+  hierarchyDragState: HierarchyDragState | null;
   isDragging: boolean;
   isResizing: boolean;
   isPanning: boolean;
+  isHierarchyDragging: boolean;
   
   // Event handlers
   handleCanvasMouseDown: (e: React.MouseEvent) => void;
-  handleRectangleMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize') => void;
+  handleRectangleMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
 }
 
 // Error Handling Types

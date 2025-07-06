@@ -15,6 +15,8 @@ interface UseCanvasInteractionsProps {
   leafHeight: number;
   containerRef: React.RefObject<HTMLDivElement>;
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
+  reparentRectangle: (childId: string, newParentId: string | null) => boolean;
+  canReparent: (childId: string, newParentId: string | null) => boolean;
 }
 
 
@@ -29,17 +31,21 @@ export const useCanvasInteractions = ({
   leafWidth,
   leafHeight,
   containerRef,
-  getFixedDimensions
+  getFixedDimensions,
+  reparentRectangle,
+  canReparent
 }: UseCanvasInteractionsProps): CanvasInteractionsHook => {
   
   // Initialize the drag and resize hook
   const {
     dragState,
     resizeState,
+    hierarchyDragState,
     handleMouseDown: handleDragResizeMouseDown,
     handleMouseUp: handleDragResizeMouseUp,
     isDragging,
-    isResizing
+    isResizing,
+    isHierarchyDragging
   } = useDragAndResize({
     rectangles,
     setRectangles,
@@ -50,7 +56,9 @@ export const useCanvasInteractions = ({
     leafWidth,
     leafHeight,
     containerRef,
-    getFixedDimensions
+    getFixedDimensions,
+    reparentRectangle,
+    canReparent
   });
 
   // Initialize the canvas panning hook
@@ -101,7 +109,7 @@ export const useCanvasInteractions = ({
   }, [handlePanMouseDown, isSpacePressed, setSelectedId]);
 
   // Rectangle mouse down handler that delegates to drag/resize
-  const handleRectangleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' = 'drag') => {
+  const handleRectangleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' | 'hierarchy-drag' = 'drag') => {
     handleDragResizeMouseDown(e, rect, action);
   }, [handleDragResizeMouseDown]);
 
@@ -130,9 +138,11 @@ export const useCanvasInteractions = ({
     dragState,
     resizeState,
     panState,
+    hierarchyDragState,
     isDragging,
     isResizing,
     isPanning: panState !== null,
+    isHierarchyDragging,
     
     // Event handlers
     handleCanvasMouseDown,
