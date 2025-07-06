@@ -159,7 +159,9 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     zIndex: zIndex,
     opacity,
     boxShadow,
-    transition: (isDragActive || isResizeActive || isBeingDragged) ? 'none' : 'all 0.2s ease-in-out'
+    transition: (isDragActive || isResizeActive || isBeingDragged) ? 'none' : 'all 0.2s ease-in-out',
+    // Hide children that overflow parent bounds during resize
+    overflow: childCount > 0 ? 'hidden' : 'visible'
   };
 
   // Handle mouse down with support for hierarchy drag
