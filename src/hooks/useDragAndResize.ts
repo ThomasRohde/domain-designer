@@ -53,6 +53,7 @@ export const useDragAndResize = ({
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
   const [hierarchyDragState, setHierarchyDragState] = useState<HierarchyDragState | null>(null);
   const [resizeConstraintState, setResizeConstraintState] = useState<ResizeConstraintState | null>(null);
+  const [needsLayoutUpdate, setNeedsLayoutUpdate] = useState<{ type: 'reparent' | 'resize'; rectangleId?: string } | null>(null);
   const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
 
   // Handle mouse down for dragging and resizing
@@ -176,25 +177,89 @@ export const useDragAndResize = ({
     return targets;
   }, [rectangles, gridSize, canReparent]);
 
-  // Handle drag movement
+  /**
+   * Common logic for calculating new position and moving rectangle with descendants
+   */
+  const moveRectangleWithDescendants = useCallback((
+    draggedId: string,
+    newX: number, 
+    newY: number,
+    rectangles: Rectangle[]
+  ) => {
+    // Calculate actual movement needed from current position
+    const draggedRect = rectangles.find(r => r.id === draggedId);
+    if (!draggedRect) return rectangles;
+    
+    const actualDeltaX = newX - draggedRect.x;
+    const actualDeltaY = newY - draggedRect.y;
+    
+    // Move entire subtree together
+    const descendantIds = new Set(getAllDescendants(draggedId, rectangles));
+
+    return rectangles.map(rect => {
+      if (rect.id === draggedId) {
+        // Update the dragged rectangle
+        return { ...rect, x: newX, y: newY };
+      } else if (descendantIds.has(rect.id)) {
+        // Move all descendants by the same delta
+        return { 
+          ...rect, 
+          x: Math.max(0, rect.x + actualDeltaX), 
+          y: Math.max(0, rect.y + actualDeltaY) 
+        };
+      }
+      return rect;
+    });
+  }, []);
+
+  /**
+   * Common logic for calculating grid-snapped position from mouse coordinates
+   */
+  const calculateNewPosition = useCallback((
+    currentX: number,
+    currentY: number,
+    dragState: DragState
+  ) => {
+    const deltaX = currentX - dragState.startX;
+    const deltaY = currentY - dragState.startY;
+    
+    const gridDeltaX = deltaX / gridSize;
+    const gridDeltaY = deltaY / gridSize;
+    const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
+    const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
+    
+    return { newX, newY };
+  }, [gridSize]);
+
+  /**
+   * Handle drag movement for both regular and hierarchy drag operations
+   * 
+   * Regular drag: Moves only root rectangles and their descendants in real-time
+   * Hierarchy drag: Moves any rectangle for reparenting, with drop target detection
+   */
   const handleDragMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
     if (!dragState) return;
 
     const { x: currentX, y: currentY } = getMousePosition(e, containerRect);
 
     if (dragState.isHierarchyDrag) {
-      // Handle hierarchy drag - update mouse position and detect drop targets
+      // === HIERARCHY DRAG MODE ===
+      // Used for reparenting operations (Ctrl+drag)
+      // Updates rectangle position AND detects potential drop targets
+      
+      // Detect all potential drop targets under the mouse cursor
       const potentialTargets = detectDropTargets(currentX, currentY, dragState.id);
       
-      // Find the best drop target - prioritize the first valid target (highest z-index)
+      // Find the best drop target - prioritize valid rectangle targets over canvas
       let currentDropTarget: DropTarget | null = null;
       
       // First try to find a valid rectangle target (excluding canvas background)
+      // These are sorted by z-index, so first = topmost/deepest
       const rectTargets = potentialTargets.filter(target => target.targetId !== null && target.isValid);
       if (rectTargets.length > 0) {
-        currentDropTarget = rectTargets[0]; // First one is highest z-index
+        currentDropTarget = rectTargets[0]; // Highest z-index (deepest/topmost)
       } else {
-        // Fall back to canvas background if no valid rectangle targets
+        // Fall back to canvas background for "make root" operation
         const canvasTarget = potentialTargets.find(target => target.targetId === null);
         if (canvasTarget) {
           currentDropTarget = canvasTarget;
@@ -208,75 +273,25 @@ export const useDragAndResize = ({
         currentDropTarget
       } : null);
       
-      // Still move the rectangle for visual feedback
-      const deltaX = currentX - dragState.startX;
-      const deltaY = currentY - dragState.startY;
+      // Move the rectangle for visual feedback during hierarchy drag
+      // This provides real-time preview of where the rectangle will be positioned
+      const { newX, newY } = calculateNewPosition(currentX, currentY, dragState);
       
-      const gridDeltaX = deltaX / gridSize;
-      const gridDeltaY = deltaY / gridSize;
-      const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
-      const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
-
-      // Calculate the actual movement delta from the dragged rectangle's current position
-      const draggedRect = rectangles.find(r => r.id === dragState.id);
-      if (!draggedRect) return;
-      
-      const actualDeltaX = newX - draggedRect.x;
-      const actualDeltaY = newY - draggedRect.y;
-      
-      // Get all descendants of the dragged rectangle
-      const descendantIds = new Set(getAllDescendants(dragState.id, rectangles));
-
-      setRectangles(prev => prev.map(rect => {
-        if (rect.id === dragState.id) {
-          // Update the dragged rectangle
-          return { ...rect, x: newX, y: newY };
-        } else if (descendantIds.has(rect.id)) {
-          // Update all descendants with the same delta
-          return { 
-            ...rect, 
-            x: Math.max(0, rect.x + actualDeltaX), 
-            y: Math.max(0, rect.y + actualDeltaY) 
-          };
-        }
-        return rect;
-      }));
+      // Move entire subtree together during hierarchy drag
+      // This ensures children follow their parent during reparenting preview
+      setRectangles(prev => moveRectangleWithDescendants(dragState.id, newX, newY, prev));
     } else {
-      // Handle regular drag movement
-      const deltaX = currentX - dragState.startX;
-      const deltaY = currentY - dragState.startY;
+      // === REGULAR DRAG MODE ===
+      // Used for moving root rectangles within the canvas (no reparenting)
+      // Moves the entire subtree as a unit to maintain hierarchy relationships
       
-      const gridDeltaX = deltaX / gridSize;
-      const gridDeltaY = deltaY / gridSize;
-      const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
-      const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
-
-      // Calculate the actual movement delta from the dragged rectangle's current position
-      const draggedRect = rectangles.find(r => r.id === dragState.id);
-      if (!draggedRect) return;
+      const { newX, newY } = calculateNewPosition(currentX, currentY, dragState);
       
-      const actualDeltaX = newX - draggedRect.x;
-      const actualDeltaY = newY - draggedRect.y;
-      
-      // Get all descendants of the dragged rectangle
-      const descendantIds = new Set(getAllDescendants(dragState.id, rectangles));
-
-      setRectangles(prev => prev.map(rect => {
-        if (rect.id === dragState.id) {
-          // Update the dragged rectangle
-          return { ...rect, x: newX, y: newY };
-        } else if (descendantIds.has(rect.id)) {
-          // Update all descendants with the same delta
-          return { 
-            ...rect, 
-            x: Math.max(0, rect.x + actualDeltaX), 
-            y: Math.max(0, rect.y + actualDeltaY) 
-          };
-        }
-        return rect;
-      }));
+      // Move entire subtree together during regular drag
+      // This maintains the visual hierarchy when moving root containers
+      setRectangles(prev => moveRectangleWithDescendants(dragState.id, newX, newY, prev));
     }
-  }, [dragState, gridSize, setRectangles, rectangles, detectDropTargets]);
+  }, [dragState, setRectangles, detectDropTargets, calculateNewPosition, moveRectangleWithDescendants]);
 
   // Handle resize movement
   const handleResizeMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
@@ -395,10 +410,8 @@ export const useDragAndResize = ({
           // Perform the reparenting operation
           const success = reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
           if (success) {
-            // Update the layout after reparenting
-            setTimeout(() => {
-              setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
-            }, 10);
+            // Schedule layout update after reparenting
+            setNeedsLayoutUpdate({ type: 'reparent' });
           }
         }
       }
@@ -419,15 +432,13 @@ export const useDragAndResize = ({
         if (rect) {
           const hasDescendants = getAllDescendants(rect.id, rectangles).length > 0;
           if (hasDescendants) {
-            // Update children layout after resize operation
-            setTimeout(() => {
-              setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
-            }, 10);
+            // Schedule layout update after resize operation
+            setNeedsLayoutUpdate({ type: 'resize', rectangleId: rectId });
           }
         }
       }
     }
-  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, getFixedDimensions, reparentRectangle]);
+  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle]);
 
   // Store the mouse move handler in a ref to ensure proper cleanup
   React.useEffect(() => {
@@ -485,6 +496,17 @@ export const useDragAndResize = ({
     setHierarchyDragState(null);
     setResizeConstraintState(null);
   }, [dragState, setRectangles]);
+
+  // Handle layout updates after reparenting or resize operations
+  useEffect(() => {
+    if (needsLayoutUpdate) {
+      // Use a microtask to ensure state has settled
+      Promise.resolve().then(() => {
+        setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
+        setNeedsLayoutUpdate(null);
+      });
+    }
+  }, [needsLayoutUpdate, setRectangles, getFixedDimensions]);
 
   return {
     dragState,

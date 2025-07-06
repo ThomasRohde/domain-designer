@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle } from '../types';
 import { DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
 import { 
@@ -90,6 +90,17 @@ export const useRectangleManager = ({
     });
   }, [history]);
   
+  // Track undo/redo operations for proper cleanup
+  const [undoRedoInProgress, setUndoRedoInProgress] = useState(false);
+  
+  // Effect to reset undo/redo flag after state updates
+  useEffect(() => {
+    if (undoRedoInProgress) {
+      isUndoRedoInProgress.current = false;
+      setUndoRedoInProgress(false);
+    }
+  }, [undoRedoInProgress, rectangles]);
+  
   // Undo/Redo functions
   const undo = useCallback(() => {
     const previousState = history.undo();
@@ -97,9 +108,7 @@ export const useRectangleManager = ({
       isUndoRedoInProgress.current = true;
       setRectangles(previousState);
       setSelectedId(null); // Clear selection on undo
-      setTimeout(() => {
-        isUndoRedoInProgress.current = false;
-      }, 0);
+      setUndoRedoInProgress(true);
     }
   }, [history]);
   
@@ -109,9 +118,7 @@ export const useRectangleManager = ({
       isUndoRedoInProgress.current = true;
       setRectangles(nextState);
       setSelectedId(null); // Clear selection on redo
-      setTimeout(() => {
-        isUndoRedoInProgress.current = false;
-      }, 0);
+      setUndoRedoInProgress(true);
     }
   }, [history]);
 
@@ -312,6 +319,12 @@ export const useRectangleManager = ({
       const child = prev.find(rect => rect.id === childId);
       if (!child) return prev;
       
+      // Guard against no-op reparenting (dropping on same parent)
+      const currentParentId = child.parentId || null;
+      if (currentParentId === newParentId) {
+        return prev; // No change needed, avoid unnecessary history entry
+      }
+      
       // Update the child's parentId
       let updated = prev.map(rect => 
         rect.id === childId 
@@ -324,11 +337,17 @@ export const useRectangleManager = ({
         const hasChildren = updated.some(r => r.parentId === rect.id);
         const hasParent = rect.parentId !== undefined;
         
-        let newType: 'root' | 'parent' | 'leaf' = 'leaf';
+        // Clearly handle the three cases for type assignment
+        let newType: 'root' | 'parent' | 'leaf';
         if (!hasParent) {
-          newType = hasChildren ? 'root' : 'root';
+          // No parent => root (regardless of whether it has children)
+          newType = 'root';
+        } else if (hasChildren) {
+          // Has parent and children => parent
+          newType = 'parent';
         } else {
-          newType = hasChildren ? 'parent' : 'leaf';
+          // Has parent but no children => leaf
+          newType = 'leaf';
         }
         
         return { ...rect, type: newType };

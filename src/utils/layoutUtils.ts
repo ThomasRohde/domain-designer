@@ -388,29 +388,48 @@ export const calculateMinimumParentSize = (
 
 /**
  * Sort rectangles by depth (deepest first) to ensure parents render after children
+ * Optimized to cache depth calculations and handle numeric ID sorting
  */
 export const sortRectanglesByDepth = (rectangles: Rectangle[]): Rectangle[] => {
-  const getDepth = (rect: Rectangle, rectangles: Rectangle[]): number => {
+  // Cache depth calculations to avoid recalculating for each comparison
+  const depthCache = new Map<string, number>();
+  
+  const getDepth = (rect: Rectangle): number => {
+    if (depthCache.has(rect.id)) {
+      return depthCache.get(rect.id)!;
+    }
+    
     let depth = 0;
     let current: Rectangle | undefined = rect;
     
     while (current && current.parentId) {
       depth++;
       current = rectangles.find(r => r.id === current!.parentId);
-      if (!current || depth > 10) break;
+      if (!current || depth > 10) break; // Prevent infinite loops
     }
     
+    depthCache.set(rect.id, depth);
     return depth;
+  };
+  
+  // Helper to extract numeric part of ID for proper sorting
+  const getNumericId = (id: string): number => {
+    const match = id.match(/\d+$/);
+    return match ? parseInt(match[0], 10) : 0;
   };
 
   return [...rectangles].sort((a, b) => {
-    const depthA = getDepth(a, rectangles);
-    const depthB = getDepth(b, rectangles);
+    const depthA = getDepth(a);
+    const depthB = getDepth(b);
     
-    // Sort by depth (deepest first), then by creation order (id) for stable sorting
+    // Sort by depth (deepest first), then by numeric creation order for stable sorting
     if (depthA !== depthB) {
       return depthB - depthA; // Deeper elements first
     }
-    return a.id.localeCompare(b.id);
+    
+    // Proper numeric ID sorting (rect-2 before rect-10)
+    const numA = getNumericId(a.id);
+    const numB = getNumericId(b.id);
+    return numA - numB;
   });
 };

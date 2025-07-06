@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
 import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS } from '../utils/constants';
 import { updateChildrenLayout } from '../utils/layoutUtils';
@@ -49,6 +49,22 @@ export const useAppSettings = (): AppSettingsHook => {
   
   // Store a reference to the setRectangles function from the rectangle manager
   const setRectanglesRef = useRef<React.Dispatch<React.SetStateAction<Rectangle[]>> | null>(null);
+  
+  // Track when layout update is needed
+  const [needsLayoutUpdate, setNeedsLayoutUpdate] = useState(false);
+  
+  // Effect to handle layout updates when settings change
+  useEffect(() => {
+    if (needsLayoutUpdate && setRectanglesRef.current) {
+      setRectanglesRef.current(prev => updateChildrenLayout(prev, {
+        leafFixedWidth,
+        leafFixedHeight,
+        leafWidth,
+        leafHeight
+      }));
+      setNeedsLayoutUpdate(false);
+    }
+  }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
 
   // Helper function to get fixed dimensions settings
   const getFixedDimensions = useCallback((): FixedDimensions => ({
@@ -80,16 +96,9 @@ export const useAppSettings = (): AppSettingsHook => {
     }
     // Trigger layout update for all children
     if (setRectanglesRef.current) {
-      setTimeout(() => {
-        setRectanglesRef.current!(prev => updateChildrenLayout(prev, {
-          leafFixedWidth: enabled,
-          leafFixedHeight,
-          leafWidth,
-          leafHeight
-        }));
-      }, 10);
+      setNeedsLayoutUpdate(true);
     }
-  }, [leafWidth, leafFixedHeight, leafHeight]);
+  }, [leafWidth]);
 
   // Update leaf nodes when fixed height setting changes
   const handleLeafFixedHeightChange = useCallback((enabled: boolean) => {
@@ -104,16 +113,9 @@ export const useAppSettings = (): AppSettingsHook => {
     }
     // Trigger layout update for all children
     if (setRectanglesRef.current) {
-      setTimeout(() => {
-        setRectanglesRef.current!(prev => updateChildrenLayout(prev, {
-          leafFixedWidth,
-          leafFixedHeight: enabled,
-          leafWidth,
-          leafHeight
-        }));
-      }, 10);
+      setNeedsLayoutUpdate(true);
     }
-  }, [leafHeight, leafFixedWidth, leafWidth]);
+  }, [leafHeight]);
 
   // Update leaf width and apply to existing leaf nodes if fixed width is enabled
   const handleLeafWidthChange = useCallback((width: number) => {
@@ -126,16 +128,9 @@ export const useAppSettings = (): AppSettingsHook => {
         )
       );
       // Trigger layout update for all children
-      setTimeout(() => {
-        setRectanglesRef.current!(prev => updateChildrenLayout(prev, {
-          leafFixedWidth,
-          leafFixedHeight,
-          leafWidth: width,
-          leafHeight
-        }));
-      }, 10);
+      setNeedsLayoutUpdate(true);
     }
-  }, [leafFixedWidth, leafFixedHeight, leafHeight]);
+  }, [leafFixedWidth]);
 
   // Update leaf height and apply to existing leaf nodes if fixed height is enabled
   const handleLeafHeightChange = useCallback((height: number) => {
@@ -148,16 +143,9 @@ export const useAppSettings = (): AppSettingsHook => {
         )
       );
       // Trigger layout update for all children
-      setTimeout(() => {
-        setRectanglesRef.current!(prev => updateChildrenLayout(prev, {
-          leafFixedWidth,
-          leafFixedHeight,
-          leafWidth,
-          leafHeight: height
-        }));
-      }, 10);
+      setNeedsLayoutUpdate(true);
     }
-  }, [leafFixedHeight, leafFixedWidth, leafWidth]);
+  }, [leafFixedHeight]);
 
   // Font settings handlers
   const handleRootFontSizeChange = useCallback((size: number) => {
