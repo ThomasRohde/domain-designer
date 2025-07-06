@@ -168,6 +168,8 @@ export interface GlobalSettings {
   borderColor: string;
   /** Border width for rectangles in pixels */
   borderWidth: number;
+  /** Predefined color palette for rectangles */
+  predefinedColors: string[];
 }
 
 /**
@@ -299,6 +301,7 @@ export interface AppSettingsHook {
   borderRadius: number;
   borderColor: string;
   borderWidth: number;
+  predefinedColors: string[];
   getFixedDimensions: () => FixedDimensions;
   calculateFontSize: (rectangleId: string) => number;
   handleLeafFixedWidthChange: (enabled: boolean) => void;
@@ -310,6 +313,7 @@ export interface AppSettingsHook {
   handleBorderRadiusChange: (radius: number) => void;
   handleBorderColorChange: (color: string) => void;
   handleBorderWidthChange: (width: number) => void;
+  addCustomColor: (color: string) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
 }

@@ -292,3 +292,92 @@ export const importDiagramFromJSON = (file: File): Promise<ImportedDiagramData> 
     reader.readAsText(file);
   });
 };
+
+/**
+ * Validates and fixes rectangle relationships in imported data
+ * Removes orphaned rectangles and ensures all parentId references are valid
+ */
+export const validateAndFixRectangleRelationships = (rectangles: Rectangle[]): Rectangle[] => {
+  const rectMap = new Map(rectangles.map(r => [r.id, r]));
+  
+  return rectangles.map(rect => {
+    // Fix invalid parent references
+    if (rect.parentId && !rectMap.has(rect.parentId)) {
+      console.warn(`Rectangle ${rect.id} has invalid parent ${rect.parentId}, making it a root`);
+      return { ...rect, parentId: undefined };
+    }
+    return rect;
+  });
+};
+
+/**
+ * Updates rectangle types based on actual parent-child relationships
+ */
+export const updateRectangleTypes = (rectangles: Rectangle[]): Rectangle[] => {
+  return rectangles.map(rect => {
+    const hasChildren = rectangles.some(r => r.parentId === rect.id);
+    const hasParent = rect.parentId !== undefined;
+    
+    let newType: 'root' | 'parent' | 'leaf';
+    if (!hasParent) {
+      newType = 'root';
+    } else if (hasChildren) {
+      newType = 'parent';
+    } else {
+      newType = 'leaf';
+    }
+    
+    return { ...rect, type: newType };
+  });
+};
+
+/**
+ * Validates and fixes rectangle IDs to prevent conflicts
+ * Returns both the fixed rectangles and the maximum ID number found
+ */
+export const validateAndFixRectangleIds = (rectangles: Rectangle[], currentNextId: number): { rectangles: Rectangle[], maxId: number } => {
+  const idSet = new Set<string>();
+  let nextId = currentNextId;
+  let maxId = currentNextId - 1;
+  
+  const fixedRectangles = rectangles.map(rect => {
+    // Extract numeric ID if it follows the rect-N pattern
+    const idMatch = rect.id.match(/^rect-(\d+)$/);
+    if (idMatch) {
+      const numericId = parseInt(idMatch[1], 10);
+      maxId = Math.max(maxId, numericId);
+    }
+    
+    // Check for duplicate or invalid IDs
+    if (idSet.has(rect.id) || !rect.id) {
+      const newId = `rect-${nextId++}`;
+      console.warn(`Rectangle ${rect.id} has duplicate/invalid ID, changing to ${newId}`);
+      idSet.add(newId);
+      return { ...rect, id: newId };
+    }
+    
+    idSet.add(rect.id);
+    return rect;
+  });
+  
+  return { rectangles: fixedRectangles, maxId };
+};
+
+/**
+ * Comprehensive import processing that validates and fixes all issues
+ */
+export const processImportedDiagram = (importedData: ImportedDiagramData, currentNextId: number): { rectangles: Rectangle[], nextId: number } => {
+  // Step 1: Validate and fix rectangle relationships
+  let processedRectangles = validateAndFixRectangleRelationships(importedData.rectangles);
+  
+  // Step 2: Update rectangle types based on actual relationships
+  processedRectangles = updateRectangleTypes(processedRectangles);
+  
+  // Step 3: Validate and fix rectangle IDs
+  const { rectangles: fixedRectangles, maxId } = validateAndFixRectangleIds(processedRectangles, currentNextId);
+  
+  // Step 4: Calculate new nextId to prevent future conflicts
+  const newNextId = maxId + 1;
+  
+  return { rectangles: fixedRectangles, nextId: newNextId };
+};

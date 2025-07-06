@@ -1,6 +1,26 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
 import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS } from '../utils/constants';
+
+// Initial predefined color palette - prioritizing colors from the handdrawn model
+const INITIAL_PREDEFINED_COLORS = [
+  '#87CEEB', // Sky Blue (main headers)
+  '#98D8C8', // Mint Green (subcategories)
+  '#D8BFD8', // Light Purple (IT/Data Platform)
+  '#F0E68C', // Light Yellow (Business Control)
+  '#FFB6C1', // Light Pink (Risk Management)
+  '#B0E0E6', // Powder Blue (variation)
+  '#4ECDC4', // Teal (existing default)
+  '#45B7D1', // Blue (existing default)
+  '#96CEB4', // Green (existing default)
+  '#FFEAA7', // Yellow
+  '#DDA0DD', // Plum
+  '#F7DC6F', // Light Yellow
+  '#BB8FCE', // Light Purple
+  '#85C1E9', // Light Blue
+  '#F8C471', // Orange
+  '#82E0AA', // Light Green
+];
 import { updateChildrenLayout } from '../utils/layoutUtils';
 
 // Re-export from types for backward compatibility
@@ -18,6 +38,7 @@ export interface UseAppSettingsReturn {
   borderRadius: number;
   borderColor: string;
   borderWidth: number;
+  predefinedColors: string[];
   
   // Functions
   getFixedDimensions: () => FixedDimensions;
@@ -31,6 +52,7 @@ export interface UseAppSettingsReturn {
   handleBorderRadiusChange: (radius: number) => void;
   handleBorderColorChange: (color: string) => void;
   handleBorderWidthChange: (width: number) => void;
+  addCustomColor: (color: string) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
 }
@@ -46,6 +68,7 @@ export const useAppSettings = (): AppSettingsHook => {
   const [borderRadius, setBorderRadius] = useState(DEFAULT_BORDER_SETTINGS.borderRadius);
   const [borderColor, setBorderColor] = useState(DEFAULT_BORDER_SETTINGS.borderColor);
   const [borderWidth, setBorderWidth] = useState(DEFAULT_BORDER_SETTINGS.borderWidth);
+  const [predefinedColors, setPredefinedColors] = useState(INITIAL_PREDEFINED_COLORS);
   
   // Store a reference to the setRectangles function from the rectangle manager
   const setRectanglesRef = useRef<React.Dispatch<React.SetStateAction<Rectangle[]>> | null>(null);
@@ -169,6 +192,16 @@ export const useAppSettings = (): AppSettingsHook => {
     setBorderWidth(width);
   }, []);
 
+  // Color palette handler
+  const addCustomColor = useCallback((color: string) => {
+    // If the new color is not already in the predefined colors, replace the last one
+    if (!predefinedColors.includes(color)) {
+      const updatedColors = [...predefinedColors];
+      updatedColors[updatedColors.length - 1] = color;
+      setPredefinedColors(updatedColors);
+    }
+  }, [predefinedColors]);
+
   // Function to set the rectangles setter reference
   const setRectanglesRefHandler = useCallback((setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => {
     setRectanglesRef.current = setRectangles;
@@ -186,6 +219,7 @@ export const useAppSettings = (): AppSettingsHook => {
     borderRadius,
     borderColor,
     borderWidth,
+    predefinedColors,
     
     // Functions
     getFixedDimensions,
@@ -199,6 +233,7 @@ export const useAppSettings = (): AppSettingsHook => {
     handleBorderRadiusChange,
     handleBorderColorChange,
     handleBorderWidthChange,
+    addCustomColor,
     setGridSize,
     setRectanglesRef: setRectanglesRefHandler,
   };

@@ -36,6 +36,7 @@ export interface UseRectangleManagerReturn {
   // Actions
   setSelectedId: (id: string | null) => void;
   generateId: () => string;
+  updateNextId: (newNextId: number) => void;
   findRectangle: (id: string) => Rectangle | undefined;
   addRectangle: (parentId?: string) => void;
   removeRectangle: (id: string) => void;
@@ -135,6 +136,11 @@ export const useRectangleManager = ({
     setNextId(prev => prev + 1);
     return id;
   }, [nextId]);
+
+  // Update the nextId counter (used for import operations)
+  const updateNextId = useCallback((newNextId: number) => {
+    setNextId(newNextId);
+  }, []);
 
   // Find rectangle by ID
   const findRectangle = useCallback((id: string) => {
@@ -387,6 +393,7 @@ export const useRectangleManager = ({
     // Actions
     setSelectedId,
     generateId,
+    updateNextId,
     findRectangle,
     addRectangle,
     removeRectangle,

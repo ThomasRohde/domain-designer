@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useMemo, useState } from 'react';
 import { ExportOptions, AppSettings } from '../types';
-import { exportDiagram, importDiagramFromJSON, ImportedDiagramData } from '../utils/exportUtils';
+import { exportDiagram, importDiagramFromJSON, ImportedDiagramData, processImportedDiagram } from '../utils/exportUtils';
 import { getChildren } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
@@ -87,7 +87,8 @@ const HierarchicalDrawingApp = () => {
         dynamicFontSizing: appSettings.dynamicFontSizing,
         borderRadius: appSettings.borderRadius,
         borderColor: appSettings.borderColor,
-        borderWidth: appSettings.borderWidth
+        borderWidth: appSettings.borderWidth,
+        predefinedColors: appSettings.predefinedColors
       };
       
       await exportDiagram(
@@ -103,7 +104,7 @@ const HierarchicalDrawingApp = () => {
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth]);
+  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors]);
 
   const handleDeleteSelected = useCallback(() => {
     if (rectangleManager.selectedId) {
@@ -135,8 +136,17 @@ const HierarchicalDrawingApp = () => {
       try {
         const importedData: ImportedDiagramData = await importDiagramFromJSON(file);
         
-        // Update rectangles
-        rectangleManager.setRectangles(importedData.rectangles);
+        // Process imported data with comprehensive validation and fixing
+        const { rectangles: processedRectangles, nextId: newNextId } = processImportedDiagram(
+          importedData, 
+          rectangleManager.nextId
+        );
+        
+        // Update rectangles with processed data
+        rectangleManager.setRectangles(processedRectangles);
+        
+        // Update the nextId counter to prevent ID conflicts
+        rectangleManager.updateNextId(newNextId);
         
         // Update global settings if available
         if (importedData.globalSettings) {
@@ -182,6 +192,7 @@ const HierarchicalDrawingApp = () => {
     borderRadius: appSettings.borderRadius,
     borderColor: appSettings.borderColor,
     borderWidth: appSettings.borderWidth,
+    predefinedColors: appSettings.predefinedColors,
   }), [appSettings]);
 
   // Keyboard shortcuts
@@ -269,6 +280,7 @@ const HierarchicalDrawingApp = () => {
             onColorChange={rectangleManager.updateRectangleColor}
             appSettings={appSettingsObject}
             onSettingsChange={handleSettingsChange}
+            onAddCustomColor={appSettings.addCustomColor}
           />
         </Sidebar>
       </div>

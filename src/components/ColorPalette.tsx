@@ -1,47 +1,24 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Palette } from 'lucide-react';
 
 interface ColorPaletteProps {
   selectedColor?: string;
   onColorChange: (color: string) => void;
+  predefinedColors: string[];
+  onAddCustomColor: (color: string) => void;
 }
-
-// Initial predefined color palette - prioritizing colors from the handdrawn model
-const INITIAL_PREDEFINED_COLORS = [
-  '#87CEEB', // Sky Blue (main headers)
-  '#98D8C8', // Mint Green (subcategories)
-  '#D8BFD8', // Light Purple (IT/Data Platform)
-  '#F0E68C', // Light Yellow (Business Control)
-  '#FFB6C1', // Light Pink (Risk Management)
-  '#B0E0E6', // Powder Blue (variation)
-  '#4ECDC4', // Teal (existing default)
-  '#45B7D1', // Blue (existing default)
-  '#96CEB4', // Green (existing default)
-  '#FFEAA7', // Yellow
-  '#DDA0DD', // Plum
-  '#F7DC6F', // Light Yellow
-  '#BB8FCE', // Light Purple
-  '#85C1E9', // Light Blue
-  '#F8C471', // Orange
-  '#82E0AA', // Light Green
-];
 
 const ColorPalette: React.FC<ColorPaletteProps> = ({
   selectedColor,
-  onColorChange
+  onColorChange,
+  predefinedColors,
+  onAddCustomColor
 }) => {
-  const [predefinedColors, setPredefinedColors] = useState(INITIAL_PREDEFINED_COLORS);
   const colorInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleCustomColorChange = (newColor: string) => {
     onColorChange(newColor);
-    
-    // If the new color is not already in the predefined colors, replace the last one
-    if (!predefinedColors.includes(newColor)) {
-      const updatedColors = [...predefinedColors];
-      updatedColors[updatedColors.length - 1] = newColor;
-      setPredefinedColors(updatedColors);
-    }
+    onAddCustomColor(newColor);
   };
 
   return (
