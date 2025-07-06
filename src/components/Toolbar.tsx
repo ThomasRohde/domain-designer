@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Grid, Download, Settings } from 'lucide-react';
+import { Plus, Menu, Download, Settings } from 'lucide-react';
 
 interface ToolbarProps {
   onAddRectangle: (parentId: string | null) => void;
@@ -7,6 +7,8 @@ interface ToolbarProps {
   selectedId: string | null;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
+  onToggleLeftMenu?: () => void;
+  leftMenuOpen?: boolean;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -14,13 +16,21 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onExport,
   selectedId,
   onToggleSidebar,
-  sidebarOpen
+  sidebarOpen,
+  onToggleLeftMenu,
+  leftMenuOpen
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Grid size={20} className="text-blue-600 sm:w-6 sm:h-6" />
+          <button
+            onClick={onToggleLeftMenu}
+            className="p-1 text-blue-600 hover:bg-blue-50 rounded-md"
+            title={leftMenuOpen ? "Close Menu" : "Open Menu"}
+          >
+            <Menu size={20} className="sm:w-6 sm:h-6" />
+          </button>
           <h1 className="text-lg sm:text-xl font-bold text-gray-800 hidden sm:block">Domain Modeling Tool</h1>
           <h1 className="text-sm font-bold text-gray-800 sm:hidden">Domain Tool</h1>
         </div>

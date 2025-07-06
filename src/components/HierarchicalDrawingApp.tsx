@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useMemo } from 'react';
+import React, { useCallback, useRef, useMemo, useState } from 'react';
 import { ExportOptions, AppSettings } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { getChildren } from '../utils/layoutUtils';
@@ -15,6 +15,8 @@ import ActionButtonsOverlay from './ActionButtonsOverlay';
 import Canvas from './Canvas';
 import Sidebar from './Sidebar';
 import PropertyPanel from './PropertyPanel';
+import LeftMenu from './LeftMenu';
+import AboutModal from './AboutModal';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,6 +24,7 @@ const HierarchicalDrawingApp = () => {
   // Initialize hooks
   const uiState = useUIState();
   const appSettings = useAppSettings();
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const rectangleManager = useRectangleManager({
     gridSize: appSettings.gridSize,
     panOffsetRef: { current: { x: 0, y: 0 } },
@@ -93,6 +96,11 @@ const HierarchicalDrawingApp = () => {
     if (settings.dynamicFontSizing !== undefined) appSettings.handleDynamicFontSizingChange(settings.dynamicFontSizing);
   }, [appSettings]);
 
+  const handleAboutClick = useCallback(() => {
+    setAboutModalOpen(true);
+    uiState.closeLeftMenu();
+  }, [uiState]);
+
   // Memoized calculations
   const selectedRectangle = useMemo(() => 
     rectangleManager.selectedId ? rectangleManager.findRectangle(rectangleManager.selectedId) || null : null,
@@ -129,9 +137,17 @@ const HierarchicalDrawingApp = () => {
         selectedId={rectangleManager.selectedId}
         onToggleSidebar={uiState.toggleSidebar}
         sidebarOpen={uiState.sidebarOpen}
+        onToggleLeftMenu={uiState.toggleLeftMenu}
+        leftMenuOpen={uiState.leftMenuOpen}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
+        <LeftMenu
+          isOpen={uiState.leftMenuOpen}
+          onClose={uiState.closeLeftMenu}
+          onAboutClick={handleAboutClick}
+        />
+        
         <div className="flex-1 flex flex-col overflow-hidden">
           <Canvas
             containerRef={containerRef}
@@ -199,6 +215,11 @@ const HierarchicalDrawingApp = () => {
         isOpen={uiState.exportModalOpen}
         onClose={uiState.closeExportModal}
         onExport={handleExport}
+      />
+
+      <AboutModal
+        isOpen={aboutModalOpen}
+        onClose={() => setAboutModalOpen(false)}
       />
     </div>
   );

@@ -253,11 +253,15 @@ export interface AppSettingsHook {
  */
 export interface UIStateHook {
   sidebarOpen: boolean;
+  leftMenuOpen: boolean;
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
   toggleSidebar: () => void;
   openSidebar: () => void;
   closeSidebar: () => void;
+  toggleLeftMenu: () => void;
+  openLeftMenu: () => void;
+  closeLeftMenu: () => void;
   showContextMenu: (x: number, y: number, rectangleId: string) => void;
   hideContextMenu: () => void;
   openExportModal: () => void;

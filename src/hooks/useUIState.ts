@@ -3,6 +3,7 @@ import { ContextMenuState, UIStateHook } from '../types';
 
 export interface UIState {
   sidebarOpen: boolean;
+  leftMenuOpen: boolean;
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
 }
@@ -12,6 +13,11 @@ export interface UIActions {
   toggleSidebar: () => void;
   openSidebar: () => void;
   closeSidebar: () => void;
+  
+  // Left menu actions
+  toggleLeftMenu: () => void;
+  openLeftMenu: () => void;
+  closeLeftMenu: () => void;
   
   // Context menu actions
   showContextMenu: (x: number, y: number, rectangleId: string) => void;
@@ -29,6 +35,7 @@ export interface UseUIStateReturn extends UIState, UIActions {}
  */
 export const useUIState = (): UIStateHook => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [leftMenuOpen, setLeftMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
 
@@ -43,6 +50,19 @@ export const useUIState = (): UIStateHook => {
 
   const closeSidebar = useCallback(() => {
     setSidebarOpen(false);
+  }, []);
+
+  // Left menu actions
+  const toggleLeftMenu = useCallback(() => {
+    setLeftMenuOpen(prev => !prev);
+  }, []);
+
+  const openLeftMenu = useCallback(() => {
+    setLeftMenuOpen(true);
+  }, []);
+
+  const closeLeftMenu = useCallback(() => {
+    setLeftMenuOpen(false);
   }, []);
 
   // Context menu actions
@@ -63,23 +83,25 @@ export const useUIState = (): UIStateHook => {
     setExportModalOpen(false);
   }, []);
 
-  // Handle responsive sidebar behavior - auto-close on mobile when clicking outside
+  // Handle responsive sidebar and left menu behavior - auto-close on mobile when clicking outside
   useEffect(() => {
     const handleResize = () => {
-      // Only auto-close sidebar on mobile, don't auto-open on desktop
-      if (window.innerWidth < 768 && sidebarOpen) {
-        setSidebarOpen(false);
+      // Only auto-close sidebar and left menu on mobile, don't auto-open on desktop
+      if (window.innerWidth < 768) {
+        if (sidebarOpen) setSidebarOpen(false);
+        if (leftMenuOpen) setLeftMenuOpen(false);
       }
     };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [sidebarOpen]);
+  }, [sidebarOpen, leftMenuOpen]);
 
   // Set initial state - closed by default on mobile
   useEffect(() => {
     if (window.innerWidth < 768) {
       setSidebarOpen(false);
+      setLeftMenuOpen(false);
     }
   }, []);
 
@@ -95,6 +117,7 @@ export const useUIState = (): UIStateHook => {
   return {
     // State
     sidebarOpen,
+    leftMenuOpen,
     contextMenu,
     exportModalOpen,
     
@@ -102,6 +125,9 @@ export const useUIState = (): UIStateHook => {
     toggleSidebar,
     openSidebar,
     closeSidebar,
+    toggleLeftMenu,
+    openLeftMenu,
+    closeLeftMenu,
     showContextMenu,
     hideContextMenu,
     openExportModal,
