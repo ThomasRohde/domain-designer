@@ -192,15 +192,48 @@ export const useAppSettings = (): AppSettingsHook => {
     setBorderWidth(width);
   }, []);
 
-  // Color palette handler
+  // Track custom colors separately to manage replacement from bottom-right
+  const [customColors, setCustomColors] = useState<string[]>([]);
+
+  // Color palette handlers
   const addCustomColor = useCallback((color: string) => {
-    // If the new color is not already in the predefined colors, replace the last one
+    // If the new color is not already in the predefined colors, add it
     if (!predefinedColors.includes(color)) {
-      const updatedColors = [...predefinedColors];
-      updatedColors[updatedColors.length - 1] = color;
+      // Add to custom colors list
+      const newCustomColors = [...customColors];
+      if (!newCustomColors.includes(color)) {
+        newCustomColors.push(color);
+      }
+      setCustomColors(newCustomColors);
+      
+      // Create updated palette by replacing from bottom-right
+      const updatedColors = [...INITIAL_PREDEFINED_COLORS];
+      const numCustomColors = newCustomColors.length;
+      
+      // Replace colors from the end (bottom-right of grid)
+      for (let i = 0; i < numCustomColors && i < updatedColors.length; i++) {
+        updatedColors[updatedColors.length - 1 - i] = newCustomColors[newCustomColors.length - 1 - i];
+      }
+      
       setPredefinedColors(updatedColors);
     }
-  }, [predefinedColors]);
+  }, [predefinedColors, customColors]);
+
+  const handlePredefinedColorsChange = useCallback((colors: string[]) => {
+    setPredefinedColors(colors);
+    
+    // Extract custom colors from the imported palette
+    const importedCustomColors: string[] = [];
+    for (let i = colors.length - 1; i >= 0; i--) {
+      if (!INITIAL_PREDEFINED_COLORS.includes(colors[i])) {
+        importedCustomColors.unshift(colors[i]);
+      } else {
+        break; // Stop when we reach initial colors
+      }
+    }
+    
+    setCustomColors(importedCustomColors);
+  }, []);
 
   // Function to set the rectangles setter reference
   const setRectanglesRefHandler = useCallback((setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => {
@@ -234,6 +267,7 @@ export const useAppSettings = (): AppSettingsHook => {
     handleBorderColorChange,
     handleBorderWidthChange,
     addCustomColor,
+    handlePredefinedColorsChange,
     setGridSize,
     setRectanglesRef: setRectanglesRefHandler,
   };

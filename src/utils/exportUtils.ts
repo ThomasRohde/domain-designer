@@ -10,7 +10,8 @@ export const exportDiagram = async (
   gridSize: number = 20,
   borderRadius: number = 8,
   borderColor: string = '#374151',
-  borderWidth: number = 2
+  borderWidth: number = 2,
+  predefinedColors?: string[]
 ): Promise<void> => {
   const { format, quality = 1, scale = 1, includeBackground = true } = options;
   
@@ -28,7 +29,7 @@ export const exportDiagram = async (
       await exportToPDF(containerElement, filename, { quality, scale, includeBackground });
       break;
     case 'json':
-      exportToJSON(rectangles, globalSettings, filename);
+      exportToJSON(rectangles, globalSettings, filename, predefinedColors);
       break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
@@ -113,17 +114,34 @@ const exportToPDF = async (
   }
 };
 
-const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string): void => {
+const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[]): void => {
+  const enhancedGlobalSettings = globalSettings ? {
+    ...globalSettings,
+    predefinedColors: predefinedColors || globalSettings.predefinedColors
+  } : predefinedColors ? {
+    gridSize: 20,
+    leafFixedWidth: false,
+    leafFixedHeight: false,
+    leafWidth: 8,
+    leafHeight: 4,
+    rootFontSize: 14,
+    dynamicFontSizing: false,
+    borderRadius: 8,
+    borderColor: '#374151',
+    borderWidth: 2,
+    predefinedColors
+  } : undefined;
+
   const data = {
     rectangles,
-    globalSettings,
+    globalSettings: enhancedGlobalSettings,
     version: '1.0',
     timestamp: new Date().toISOString(),
     metadata: {
       totalRectangles: rectangles.length,
       rootRectangles: rectangles.filter(r => !r.parentId).length,
       types: [...new Set(rectangles.map(r => r.type))],
-      hasGlobalSettings: !!globalSettings
+      hasGlobalSettings: !!enhancedGlobalSettings
     }
   };
 

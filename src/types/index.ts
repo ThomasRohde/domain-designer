@@ -314,6 +314,7 @@ export interface AppSettingsHook {
   handleBorderColorChange: (color: string) => void;
   handleBorderWidthChange: (width: number) => void;
   addCustomColor: (color: string) => void;
+  handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
 }

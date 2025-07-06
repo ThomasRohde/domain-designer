@@ -99,7 +99,8 @@ const HierarchicalDrawingApp = () => {
         appSettings.gridSize,
         appSettings.borderRadius,
         appSettings.borderColor,
-        appSettings.borderWidth
+        appSettings.borderWidth,
+        appSettings.predefinedColors
       );
     } catch (error) {
       console.error('Error exporting diagram:', error);
@@ -123,6 +124,7 @@ const HierarchicalDrawingApp = () => {
     if (settings.borderRadius !== undefined) appSettings.handleBorderRadiusChange(settings.borderRadius);
     if (settings.borderColor !== undefined) appSettings.handleBorderColorChange(settings.borderColor);
     if (settings.borderWidth !== undefined) appSettings.handleBorderWidthChange(settings.borderWidth);
+    if (settings.predefinedColors !== undefined) appSettings.handlePredefinedColorsChange(settings.predefinedColors);
   }, [appSettings]);
 
   const handleImport = useCallback(() => {
