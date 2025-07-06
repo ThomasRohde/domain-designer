@@ -54,6 +54,7 @@ export interface UseRectangleManagerReturn {
   redo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  saveToHistory: (rectangles: Rectangle[]) => void;
   
   // Internal state setters (for drag/resize operations)
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
@@ -111,6 +112,13 @@ export const useRectangleManager = ({
       setTimeout(() => {
         isUndoRedoInProgress.current = false;
       }, 0);
+    }
+  }, [history]);
+
+  // Save current state to history
+  const saveToHistory = useCallback((rectangles: Rectangle[]) => {
+    if (!isUndoRedoInProgress.current) {
+      history.pushState(rectangles);
     }
   }, [history]);
 
@@ -378,6 +386,7 @@ export const useRectangleManager = ({
     redo,
     canUndo: history.canUndo,
     canRedo: history.canRedo,
+    saveToHistory,
     
     // Internal state setters (for drag/resize operations)
     setRectangles,

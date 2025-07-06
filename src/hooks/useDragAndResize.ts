@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, DragState, ResizeState, HierarchyDragState, DropTarget } from '../types';
 import { MIN_WIDTH, MIN_HEIGHT } from '../utils/constants';
-import { updateChildrenLayout, getAllDescendants } from '../utils/layoutUtils';
+import { updateChildrenLayout, getAllDescendants, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
 import { getMousePosition, preventEventDefault } from '../utils/eventUtils';
 
 interface UseDragAndResizeProps {
@@ -17,6 +17,7 @@ interface UseDragAndResizeProps {
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
   reparentRectangle?: (childId: string, newParentId: string | null) => boolean;
   canReparent?: (childId: string, newParentId: string | null) => boolean;
+  saveToHistory?: (rectangles: Rectangle[]) => void;
 }
 
 interface UseDragAndResizeReturn {
@@ -33,7 +34,7 @@ interface UseDragAndResizeReturn {
 export const useDragAndResize = ({
   rectangles,
   setRectangles,
-  setRectanglesWithHistory,
+  setRectanglesWithHistory: _setRectanglesWithHistory,
   gridSize,
   leafFixedWidth,
   leafFixedHeight,
@@ -42,7 +43,8 @@ export const useDragAndResize = ({
   containerRef,
   getFixedDimensions,
   reparentRectangle,
-  canReparent
+  canReparent,
+  saveToHistory
 }: UseDragAndResizeProps): UseDragAndResizeReturn => {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
@@ -54,7 +56,9 @@ export const useDragAndResize = ({
     preventEventDefault(e);
 
     // Save current state to history before starting drag/resize operation
-    setRectanglesWithHistory(prev => prev);
+    if (saveToHistory) {
+      saveToHistory(rectangles);
+    }
 
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
@@ -100,7 +104,7 @@ export const useDragAndResize = ({
         initialH: rect.h
       });
     }
-  }, [containerRef, setRectanglesWithHistory]);
+  }, [containerRef, rectangles, saveToHistory]);
 
   // Detect drop targets during hierarchy drag
   const detectDropTargets = useCallback((mouseX: number, mouseY: number, draggedRectId: string): DropTarget[] => {
@@ -209,9 +213,27 @@ export const useDragAndResize = ({
       const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
       const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
 
+      // Calculate the actual movement delta from the dragged rectangle's current position
+      const draggedRect = rectangles.find(r => r.id === dragState.id);
+      if (!draggedRect) return;
+      
+      const actualDeltaX = newX - draggedRect.x;
+      const actualDeltaY = newY - draggedRect.y;
+      
+      // Get all descendants of the dragged rectangle
+      const descendantIds = new Set(getAllDescendants(dragState.id, rectangles));
+
       setRectangles(prev => prev.map(rect => {
         if (rect.id === dragState.id) {
+          // Update the dragged rectangle
           return { ...rect, x: newX, y: newY };
+        } else if (descendantIds.has(rect.id)) {
+          // Update all descendants with the same delta
+          return { 
+            ...rect, 
+            x: Math.max(0, rect.x + actualDeltaX), 
+            y: Math.max(0, rect.y + actualDeltaY) 
+          };
         }
         return rect;
       }));
@@ -278,11 +300,19 @@ export const useDragAndResize = ({
         newH = leafHeight;
       }
     }
+    
+    // For parent rectangles, enforce minimum size needed for children
+    const children = getChildren(rect.id, rectangles);
+    if (children.length > 0) {
+      const minSize = calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions());
+      newW = Math.max(newW, minSize.w);
+      newH = Math.max(newH, minSize.h);
+    }
 
     setRectangles(prev => prev.map(r => 
       r.id === resizeState.id ? { ...r, w: newW, h: newH } : r
     ));
-  }, [resizeState, rectangles, gridSize, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, setRectangles]);
+  }, [resizeState, rectangles, gridSize, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, setRectangles, getFixedDimensions]);
 
   // Handle mouse movement
   const handleMouseMove = useCallback((e: MouseEvent) => {

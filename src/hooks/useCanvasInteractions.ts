@@ -17,6 +17,7 @@ interface UseCanvasInteractionsProps {
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
   reparentRectangle: (childId: string, newParentId: string | null) => boolean;
   canReparent: (childId: string, newParentId: string | null) => boolean;
+  saveToHistory: (rectangles: Rectangle[]) => void;
 }
 
 
@@ -33,7 +34,8 @@ export const useCanvasInteractions = ({
   containerRef,
   getFixedDimensions,
   reparentRectangle,
-  canReparent
+  canReparent,
+  saveToHistory
 }: UseCanvasInteractionsProps): CanvasInteractionsHook => {
   
   // Initialize the drag and resize hook
@@ -58,7 +60,8 @@ export const useCanvasInteractions = ({
     containerRef,
     getFixedDimensions,
     reparentRectangle,
-    canReparent
+    canReparent,
+    saveToHistory
   });
 
   // Initialize the canvas panning hook

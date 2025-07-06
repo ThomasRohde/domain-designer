@@ -54,7 +54,8 @@ const HierarchicalDrawingApp = () => {
     containerRef,
     getFixedDimensions: appSettings.getFixedDimensions,
     reparentRectangle: rectangleManager.reparentRectangle,
-    canReparent: rectangleManager.canReparent
+    canReparent: rectangleManager.canReparent,
+    saveToHistory: rectangleManager.saveToHistory
   });
 
   // Connect app settings to rectangle manager
