@@ -15,7 +15,6 @@ interface RectangleComponentProps {
   childCount: number;
   gridSize?: number;
   fontSize?: number;
-  panOffset?: { x: number; y: number };
   isDropTarget?: boolean;
   isValidDropTarget?: boolean;
   isCurrentDropTarget?: boolean;
@@ -42,7 +41,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   childCount,
   gridSize = GRID_SIZE,
   fontSize = 14,
-  panOffset = { x: 0, y: 0 },
   isDropTarget = false,
   isValidDropTarget = true,
   isCurrentDropTarget = false,
@@ -148,8 +146,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: rectangle.x * gridSize + panOffset.x,
-    top: rectangle.y * gridSize + panOffset.y,
+    left: rectangle.x * gridSize,
+    top: rectangle.y * gridSize,
     width: rectangle.w * gridSize,
     height: rectangle.h * gridSize,
     backgroundColor: rectangle.color,

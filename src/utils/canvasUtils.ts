@@ -26,10 +26,11 @@ export const screenToGrid = (
   screenX: number,
   screenY: number,
   gridSize: number,
-  panOffset: PanOffset = { x: 0, y: 0 }
+  panOffset: PanOffset = { x: 0, y: 0 },
+  zoomLevel: number = 1.0
 ): { x: number; y: number } => {
-  const adjustedX = screenX - panOffset.x;
-  const adjustedY = screenY - panOffset.y;
+  const adjustedX = (screenX - panOffset.x) / zoomLevel;
+  const adjustedY = (screenY - panOffset.y) / zoomLevel;
   
   return {
     x: Math.floor(adjustedX / gridSize),
@@ -44,11 +45,12 @@ export const gridToScreen = (
   gridX: number,
   gridY: number,
   gridSize: number,
-  panOffset: PanOffset = { x: 0, y: 0 }
+  panOffset: PanOffset = { x: 0, y: 0 },
+  zoomLevel: number = 1.0
 ): { x: number; y: number } => {
   return {
-    x: gridX * gridSize + panOffset.x,
-    y: gridY * gridSize + panOffset.y
+    x: (gridX * gridSize + panOffset.x) * zoomLevel,
+    y: (gridY * gridSize + panOffset.y) * zoomLevel
   };
 };
 
@@ -58,10 +60,11 @@ export const gridToScreen = (
 export const getViewportBounds = (
   containerRect: DOMRect,
   panOffset: PanOffset,
-  gridSize: number
+  gridSize: number,
+  zoomLevel: number = 1.0
 ): ViewportBounds => {
-  const topLeft = screenToGrid(0, 0, gridSize, panOffset);
-  const bottomRight = screenToGrid(containerRect.width, containerRect.height, gridSize, panOffset);
+  const topLeft = screenToGrid(0, 0, gridSize, panOffset, zoomLevel);
+  const bottomRight = screenToGrid(containerRect.width, containerRect.height, gridSize, panOffset, zoomLevel);
   
   return {
     x: topLeft.x,
@@ -79,9 +82,10 @@ export const calculateOptimalPosition = (
   containerRect: DOMRect,
   panOffset: PanOffset,
   gridSize: number,
-  newRectSize: { w: number; h: number }
+  newRectSize: { w: number; h: number },
+  zoomLevel: number = 1.0
 ): { x: number; y: number } => {
-  const viewport = getViewportBounds(containerRect, panOffset, gridSize);
+  const viewport = getViewportBounds(containerRect, panOffset, gridSize, zoomLevel);
   
   // Start from top-left of viewport
   let x = viewport.x;

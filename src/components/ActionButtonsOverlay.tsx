@@ -12,7 +12,6 @@ interface ActionButtonsOverlayProps {
   onToggleManualPositioning: (id: string) => void;
   onShowLockConfirmation: (rectangleId: string, rectangleLabel: string) => void;
   gridSize: number;
-  panOffset: { x: number; y: number };
   isDragging?: boolean;
   isResizing?: boolean;
   isHierarchyDragging?: boolean;
@@ -27,7 +26,6 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
   onToggleManualPositioning,
   onShowLockConfirmation,
   gridSize,
-  panOffset,
   isDragging = false,
   isResizing = false,
   isHierarchyDragging = false
@@ -41,9 +39,9 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
   const hasChildren = childCount > 0;
   const isManualPositioningEnabled = rect.isManualPositioningEnabled ?? false;
 
-  // Calculate button position
-  const rectX = rect.x * gridSize + panOffset.x;
-  const rectY = rect.y * gridSize + panOffset.y;
+  // Calculate button position (panOffset is now handled by CSS transform)
+  const rectX = rect.x * gridSize;
+  const rectY = rect.y * gridSize;
   const rectWidth = rect.w * gridSize;
 
   const buttonStyle: React.CSSProperties = {

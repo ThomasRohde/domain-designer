@@ -1,5 +1,5 @@
 import React, { RefObject } from 'react';
-import { PanState, HierarchyDragState } from '../types';
+import { PanState, HierarchyDragState, ZoomState } from '../types';
 
 interface CanvasProps {
   containerRef: RefObject<HTMLDivElement>;
@@ -8,6 +8,7 @@ interface CanvasProps {
   isSpacePressed: boolean;
   panState: PanState | null;
   hierarchyDragState?: HierarchyDragState | null;
+  zoomState: ZoomState;
   onMouseDown: (e: React.MouseEvent) => void;
   onSelect: (id: string | null) => void;
   children: React.ReactNode;
@@ -21,6 +22,7 @@ const Canvas: React.FC<CanvasProps> = ({
   isSpacePressed,
   panState,
   hierarchyDragState,
+  zoomState,
   onMouseDown,
   onSelect,
   children,
@@ -48,14 +50,26 @@ const Canvas: React.FC<CanvasProps> = ({
             backgroundImage: isCanvasDropTarget 
               ? `radial-gradient(circle, #10b981 1px, transparent 1px)`
               : `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
-            backgroundSize: `${gridSize}px ${gridSize}px`,
+            backgroundSize: `${gridSize * zoomState.level}px ${gridSize * zoomState.level}px`,
             backgroundPosition: `${panOffset.x}px ${panOffset.y}px`,
-            willChange: panState ? 'background-position' : 'auto'
+            willChange: panState ? 'background-position' : 'auto',
+            overflow: 'hidden'
           }}
           onClick={() => onSelect(null)}
           onMouseDown={onMouseDown}
         >
-          {children}
+          <div
+            className="w-full h-full relative"
+            style={{
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomState.level})`,
+              transformOrigin: `${zoomState.centerX}px ${zoomState.centerY}px`,
+              transition: 'transform 0.1s ease-out'
+            }}
+          >
+            {children}
+            {/* Action buttons overlay moved inside zoomed content */}
+            {overlay}
+          </div>
           
           {/* Canvas drop zone indicator */}
           {isCanvasCurrentDropTarget && (
@@ -65,8 +79,12 @@ const Canvas: React.FC<CanvasProps> = ({
           )}
         </div>
         
-        {/* Action buttons overlay rendered outside the canvas but within the same container */}
-        {overlay}
+        {/* Zoom indicator */}
+        {zoomState.level !== 1.0 && (
+          <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm pointer-events-none">
+            Zoom: {Math.round(zoomState.level * 100)}%
+          </div>
+        )}
       </div>
     </div>
   );

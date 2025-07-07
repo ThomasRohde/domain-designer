@@ -1,7 +1,7 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDragAndResize } from './useDragAndResize';
 import { useCanvasPanning } from './useCanvasPanning';
-import { Rectangle, CanvasInteractionsHook } from '../types';
+import { Rectangle, CanvasInteractionsHook, ZoomState } from '../types';
 
 interface UseCanvasInteractionsProps {
   rectangles: Rectangle[];
@@ -77,6 +77,60 @@ export const useCanvasInteractions = ({
     handleMouseUp: handlePanMouseUp
   } = useCanvasPanning({ containerRef });
 
+  // Initialize zoom state
+  const [zoomState, setZoomState] = useState<ZoomState>({
+    level: 1.0,
+    centerX: 0,
+    centerY: 0,
+    minLevel: 0.1,
+    maxLevel: 3.0
+  });
+
+  // Handle wheel events for zooming with native event listener
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only handle zoom when Ctrl is pressed
+      if (!e.ctrlKey) return;
+      
+      // Prevent default browser zoom behavior
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const containerRect = container.getBoundingClientRect();
+      
+      // Calculate mouse position relative to container
+      const mouseX = e.clientX - containerRect.left;
+      const mouseY = e.clientY - containerRect.top;
+      
+      // Calculate zoom delta (positive for zoom in, negative for zoom out)
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      
+      setZoomState(prev => {
+        const newLevel = Math.max(prev.minLevel, Math.min(prev.maxLevel, prev.level + delta));
+        
+        // Only update if zoom level actually changed
+        if (newLevel === prev.level) return prev;
+        
+        return {
+          ...prev,
+          level: newLevel,
+          centerX: mouseX,
+          centerY: mouseY
+        };
+      });
+    };
+
+    // Add passive: false to ensure preventDefault works
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [containerRef]);
+
   // Coordinate mouse move events
   const handleMouseMove = useCallback((e: MouseEvent) => {
     const containerRect = containerRef.current?.getBoundingClientRect();
@@ -138,6 +192,7 @@ export const useCanvasInteractions = ({
     panOffset,
     panOffsetRef,
     isSpacePressed,
+    zoomState,
     
     // Interaction states
     dragState,

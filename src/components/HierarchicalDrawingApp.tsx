@@ -240,6 +240,7 @@ const HierarchicalDrawingApp = () => {
             isSpacePressed={canvasInteractions.isSpacePressed}
             panState={canvasInteractions.panState}
             hierarchyDragState={canvasInteractions.hierarchyDragState}
+            zoomState={canvasInteractions.zoomState}
             onMouseDown={canvasInteractions.handleCanvasMouseDown}
             onSelect={rectangleManager.setSelectedId}
             overlay={
@@ -252,7 +253,6 @@ const HierarchicalDrawingApp = () => {
                 onToggleManualPositioning={rectangleManager.toggleManualPositioning}
                 onShowLockConfirmation={uiState.showLockConfirmationModal}
                 gridSize={appSettings.gridSize}
-                panOffset={canvasInteractions.panOffset}
                 isDragging={canvasInteractions.isDragging}
                 isResizing={canvasInteractions.isResizing}
                 isHierarchyDragging={canvasInteractions.isHierarchyDragging}
@@ -267,7 +267,6 @@ const HierarchicalDrawingApp = () => {
               hierarchyDragState={canvasInteractions.hierarchyDragState}
               resizeConstraintState={canvasInteractions.resizeConstraintState}
               gridSize={appSettings.gridSize}
-              panOffset={canvasInteractions.panOffset}
               onMouseDown={canvasInteractions.handleRectangleMouseDown}
               onContextMenu={handleContextMenu}
               onSelect={rectangleManager.setSelectedId}

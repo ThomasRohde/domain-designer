@@ -166,6 +166,22 @@ export interface PanState {
 }
 
 /**
+ * State during canvas zooming operation
+ */
+export interface ZoomState {
+  /** Current zoom level (1.0 = 100%) */
+  level: number;
+  /** Center point of zoom in screen coordinates */
+  centerX: number;
+  /** Center point of zoom in screen coordinates */
+  centerY: number;
+  /** Minimum zoom level */
+  minLevel: number;
+  /** Maximum zoom level */
+  maxLevel: number;
+}
+
+/**
  * Global application settings for the drawing app
  */
 export interface GlobalSettings {
@@ -379,6 +395,7 @@ export interface CanvasInteractionsHook {
   panOffset: PanOffset;
   panOffsetRef: React.MutableRefObject<PanOffset>;
   isSpacePressed: boolean;
+  zoomState: ZoomState;
   
   // Interaction states
   dragState: DragState | null;

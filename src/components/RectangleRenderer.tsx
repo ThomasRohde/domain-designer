@@ -15,7 +15,6 @@ interface RectangleRendererProps {
   hierarchyDragState: HierarchyDragState | null;
   resizeConstraintState: ResizeConstraintState | null;
   gridSize: number;
-  panOffset: { x: number; y: number };
   onMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
   onContextMenu: (e: React.MouseEvent, rectangleId: string) => void;
   onSelect: (id: string) => void;
@@ -37,7 +36,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   hierarchyDragState,
   resizeConstraintState,
   gridSize,
-  panOffset,
   onMouseDown,
   onContextMenu,
   onSelect,
@@ -76,7 +74,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             childCount={getChildren(rect.id, rectangles).length}
             gridSize={gridSize}
             fontSize={calculateFontSize(rect.id, rectangles)}
-            panOffset={panOffset}
             isDropTarget={isDropTarget}
             isValidDropTarget={isValidDropTarget}
             isCurrentDropTarget={isCurrentDropTarget}
