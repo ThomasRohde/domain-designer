@@ -4,6 +4,7 @@
   "description": "A React+TypeScript hierarchical drawing program for domain modeling",
   "type": "module",
   "main": "index.js",
+  "homepage": "https://thomasrohde.github.io/domain-designer/",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

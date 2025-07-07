@@ -35,7 +35,7 @@ jobs:
         run: npm rebuild
 
       - name: Build
-        run: npm run build
+        run: GITHUB_PAGES=true npm run build
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
