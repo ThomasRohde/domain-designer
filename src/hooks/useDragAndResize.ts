@@ -71,9 +71,12 @@ export const useDragAndResize = ({
     const { x: startX, y: startY } = getMousePosition(e, containerRect);
 
     if (action === 'drag') {
-      // Regular drag - only allow for root rectangles
+      // Regular drag - allow for root rectangles and child rectangles when parent has manual positioning enabled
       if (rect.parentId) {
-        return;
+        const parent = rectangles.find(r => r.id === rect.parentId);
+        if (!parent?.isManualPositioningEnabled) {
+          return;
+        }
       }
       setDragState({
         id: rect.id,
@@ -320,12 +323,12 @@ export const useDragAndResize = ({
       }
     }
     
-    // For parent rectangles, enforce minimum size needed for children
+    // For parent rectangles, enforce minimum size needed for children (unless manual positioning is enabled)
     const children = getChildren(rect.id, rectangles);
     let minRequiredW = MIN_WIDTH;
     let minRequiredH = MIN_HEIGHT;
     
-    if (children.length > 0) {
+    if (children.length > 0 && !rect.isManualPositioningEnabled) {
       const minSize = calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions());
       minRequiredW = minSize.w;
       minRequiredH = minSize.h;
@@ -339,11 +342,11 @@ export const useDragAndResize = ({
       }
     }
     
-    // Update resize constraint state for visual feedback
+    // Update resize constraint state for visual feedback (only when constraints are active)
     setResizeConstraintState({
       rectangleId: rect.id,
-      isAtMinWidth: newW <= minRequiredW + 1, // +1 for slight tolerance
-      isAtMinHeight: newH <= minRequiredH + 1,
+      isAtMinWidth: !rect.isManualPositioningEnabled && newW <= minRequiredW + 1, // +1 for slight tolerance
+      isAtMinHeight: !rect.isManualPositioningEnabled && newH <= minRequiredH + 1,
       minRequiredWidth: minRequiredW,
       minRequiredHeight: minRequiredH
     });

@@ -71,8 +71,8 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             onContextMenu={onContextMenu}
             onSelect={onSelect}
             onUpdateLabel={onUpdateLabel}
-            canDrag={!rect.parentId}
-            canResize={!rect.parentId}
+            canDrag={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
+            canResize={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
             childCount={getChildren(rect.id, rectangles).length}
             gridSize={gridSize}
             fontSize={calculateFontSize(rect.id, rectangles)}

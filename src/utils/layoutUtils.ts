@@ -149,22 +149,31 @@ export const updateChildrenLayout = (
         if (siblings.length > 0) {
           const currentParent = updated.find(p => p.id === rect.parentId);
           if (currentParent) {
-            const newLayout = calculateChildLayout(currentParent, siblings, fixedDimensions);
-            
-            newLayout.forEach(layoutRect => {
-              const index = updated.findIndex(r => r.id === layoutRect.id);
-              if (index !== -1) {
-                updated[index] = { 
-                  ...updated[index], 
-                  x: layoutRect.x, 
-                  y: layoutRect.y, 
-                  w: layoutRect.w, 
-                  h: layoutRect.h 
-                };
-                processedIds.add(layoutRect.id);
-                processedAny = true;
-              }
-            });
+            // Skip automatic layout if manual positioning is enabled
+            if (currentParent.isManualPositioningEnabled) {
+              // Just mark as processed without updating layout
+              siblings.forEach(child => {
+                processedIds.add(child.id);
+              });
+              processedAny = true;
+            } else {
+              const newLayout = calculateChildLayout(currentParent, siblings, fixedDimensions);
+              
+              newLayout.forEach(layoutRect => {
+                const index = updated.findIndex(r => r.id === layoutRect.id);
+                if (index !== -1) {
+                  updated[index] = { 
+                    ...updated[index], 
+                    x: layoutRect.x, 
+                    y: layoutRect.y, 
+                    w: layoutRect.w, 
+                    h: layoutRect.h 
+                  };
+                  processedIds.add(layoutRect.id);
+                  processedAny = true;
+                }
+              });
+            }
           }
         }
       }

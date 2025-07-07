@@ -43,6 +43,7 @@ export interface UseRectangleManagerReturn {
   updateRectangleLabel: (id: string, label: string) => void;
   updateRectangleColor: (id: string, color: string) => void;
   updateRectangleLayoutPreferences: (id: string, preferences: LayoutPreferences) => void;
+  toggleManualPositioning: (id: string) => void;
   fitToChildren: (id: string) => void;
   getAllDescendantsWrapper: (parentId: string) => Rectangle[];
   
@@ -335,6 +336,26 @@ export const useRectangleManager = ({
     });
   }, [setRectanglesWithHistory, getFixedDimensions]);
 
+  // Toggle manual positioning for a rectangle
+  const toggleManualPositioning = useCallback((id: string) => {
+    setRectanglesWithHistory(prev => {
+      const updated = prev.map(rect => 
+        rect.id === id ? { 
+          ...rect, 
+          isManualPositioningEnabled: !rect.isManualPositioningEnabled
+        } : rect
+      );
+      
+      // If we're re-enabling auto layout, recalculate children positions
+      const parent = updated.find(rect => rect.id === id);
+      if (parent && !parent.isManualPositioningEnabled) {
+        return updateChildrenLayout(updated, getFixedDimensions());
+      }
+      
+      return updated;
+    });
+  }, [setRectanglesWithHistory, getFixedDimensions]);
+
   // Fit rectangle to children
   const fitToChildren = useCallback((id: string) => {
     setRectanglesWithHistory(prev => {
@@ -479,6 +500,7 @@ export const useRectangleManager = ({
     updateRectangleLabel,
     updateRectangleColor,
     updateRectangleLayoutPreferences,
+    toggleManualPositioning,
     fitToChildren,
     getAllDescendantsWrapper,
     

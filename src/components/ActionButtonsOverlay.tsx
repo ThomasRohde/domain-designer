@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Minimize2 } from 'lucide-react';
+import { Plus, Trash2, Minimize2, Lock, Unlock } from 'lucide-react';
 import { Rectangle } from '../types';
 import { LABEL_MARGIN } from '../utils/constants';
 
@@ -9,6 +9,7 @@ interface ActionButtonsOverlayProps {
   onAddChild: (parentId: string) => void;
   onRemove: (id: string) => void;
   onFitToChildren: (id: string) => void;
+  onToggleManualPositioning: (id: string) => void;
   gridSize: number;
   panOffset: { x: number; y: number };
   isDragging?: boolean;
@@ -22,6 +23,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
   onAddChild,
   onRemove,
   onFitToChildren,
+  onToggleManualPositioning,
   gridSize,
   panOffset,
   isDragging = false,
@@ -35,6 +37,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
 
   const rect = selectedRectangle;
   const hasChildren = childCount > 0;
+  const isManualPositioningEnabled = rect.isManualPositioningEnabled ?? false;
 
   // Calculate button position
   const rectX = rect.x * gridSize + panOffset.x;
@@ -70,6 +73,27 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
       >
         <Plus size={hasChildren ? 12 : 10} />
       </button>
+      
+      {hasChildren && (
+        <button
+          className={`p-1 hover:bg-opacity-70 rounded transition-colors bg-white bg-opacity-80 shadow-sm ${
+            isManualPositioningEnabled ? 'text-green-600 hover:bg-green-100' : 'text-gray-600 hover:bg-gray-100'
+          }`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Overlay Toggle Manual Positioning button clicked for:', rect.id);
+            onToggleManualPositioning(rect.id);
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          title={isManualPositioningEnabled ? "Lock automatic layout" : "Unlock for manual positioning"}
+        >
+          {isManualPositioningEnabled ? <Unlock size={12} /> : <Lock size={12} />}
+        </button>
+      )}
       
       {hasChildren && (
         <button

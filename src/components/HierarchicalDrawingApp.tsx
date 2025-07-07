@@ -242,6 +242,7 @@ const HierarchicalDrawingApp = () => {
                 onAddChild={handleAddRectangle}
                 onRemove={rectangleManager.removeRectangle}
                 onFitToChildren={rectangleManager.fitToChildren}
+                onToggleManualPositioning={rectangleManager.toggleManualPositioning}
                 gridSize={appSettings.gridSize}
                 panOffset={canvasInteractions.panOffset}
                 isDragging={canvasInteractions.isDragging}

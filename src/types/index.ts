@@ -58,6 +58,8 @@ export interface Rectangle {
   isEditing?: boolean;
   /** Layout preferences for arranging children */
   layoutPreferences?: LayoutPreferences;
+  /** Whether manual positioning is enabled for direct children (unlocked padlock) */
+  isManualPositioningEnabled?: boolean;
   /** Optional metadata for extensibility */
   metadata?: {
     description?: string;
