@@ -153,7 +153,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     backgroundColor: rectangle.color,
     border: `${finalBorderWidth} ${borderStyle} ${finalBorderColor}`,
     borderRadius: `${borderRadius}px`,
-    cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'pointer'),
+    cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'default'),
     zIndex: zIndex,
     opacity,
     boxShadow,
@@ -206,9 +206,21 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
               />
             ) : (
               <div 
-                className="font-medium cursor-text truncate"
-                style={{ color: textColor, fontSize: `${fontSize}px` }}
+                className="font-medium truncate"
+                style={{ 
+                  color: textColor, 
+                  fontSize: `${fontSize}px`,
+                  cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'text')
+                }}
                 title={rectangle.label}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  handleMouseDown(e);
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation();
+                  handleDoubleClick(e);
+                }}
               >
                 {rectangle.label}
               </div>
