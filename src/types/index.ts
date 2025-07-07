@@ -373,6 +373,7 @@ export interface UIStateHook {
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
   lockConfirmationModal: LockConfirmationModalState | null;
+  templatePageOpen: boolean;
   toggleSidebar: () => void;
   openSidebar: () => void;
   closeSidebar: () => void;
@@ -385,6 +386,8 @@ export interface UIStateHook {
   closeExportModal: () => void;
   showLockConfirmationModal: (rectangleId: string, rectangleLabel: string) => void;
   hideLockConfirmationModal: () => void;
+  openTemplatePage: () => void;
+  closeTemplatePage: () => void;
 }
 
 /**

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "enterprise-software",
+    "name": "Enterprise Software System",
+    "description": "Complete enterprise software solution with multiple components",
+    "parent": null
+  },
+  {
+    "id": "production-scheduling",
+    "name": "Production Scheduling Software",
+    "description": "Production scheduling and resource allocation system",
+    "parent": "enterprise-software"
+  },
+  {
+    "id": "inventory-management",
+    "name": "Inventory Management Software",
+    "description": "Inventory tracking and management system",
+    "parent": "enterprise-software"
+  },
+  {
+    "id": "quality-management",
+    "name": "Quality Management Software",
+    "description": "Quality control and assurance system",
+    "parent": "enterprise-software"
+  },
+  {
+    "id": "scheduling-engine",
+    "name": "Scheduling Engine",
+    "description": "Core scheduling algorithm and optimization engine",
+    "parent": "production-scheduling"
+  },
+  {
+    "id": "resource-planner",
+    "name": "Resource Planner",
+    "description": "Resource allocation and capacity planning module",
+    "parent": "production-scheduling"
+  },
+  {
+    "id": "stock-tracker",
+    "name": "Stock Tracker",
+    "description": "Real-time inventory level monitoring",
+    "parent": "inventory-management"
+  },
+  {
+    "id": "warehouse-manager",
+    "name": "Warehouse Manager",
+    "description": "Warehouse location and movement tracking",
+    "parent": "inventory-management"
+  },
+  {
+    "id": "inspection-module",
+    "name": "Inspection Module",
+    "description": "Quality inspection and testing workflows",
+    "parent": "quality-management"
+  },
+  {
+    "id": "compliance-tracker",
+    "name": "Compliance Tracker",
+    "description": "Regulatory compliance and audit trail system",
+    "parent": "quality-management"
+  },
+  {
+    "id": "procurement-system",
+    "name": "Procurement System",
+    "description": "Supplier management and purchasing workflows",
+    "parent": "enterprise-software"
+  },
+  {
+    "id": "supplier-portal",
+    "name": "Supplier Portal",
+    "description": "External supplier interface and communication platform",
+    "parent": "procurement-system"
+  },
+  {
+    "id": "purchase-orders",
+    "name": "Purchase Order Management",
+    "description": "Purchase order creation, approval, and tracking",
+    "parent": "procurement-system"
+  }
+]

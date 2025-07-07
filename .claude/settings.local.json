@@ -14,7 +14,9 @@
       "Bash(npm run lint)",
       "Bash(npm start)",
       "Bash(rg:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:rct.lukasbach.com)"
     ],
     "deny": []
   }

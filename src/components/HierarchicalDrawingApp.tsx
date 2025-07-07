@@ -18,6 +18,7 @@ import PropertyPanel from './PropertyPanel';
 import LeftMenu from './LeftMenu';
 import AboutModal from './AboutModal';
 import LockConfirmationModal from './LockConfirmationModal';
+import TemplatePage from './TemplatePage';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -173,6 +174,11 @@ const HierarchicalDrawingApp = () => {
     uiState.closeLeftMenu();
   }, [uiState]);
 
+  const handleTemplatesClick = useCallback(() => {
+    uiState.openTemplatePage();
+    uiState.closeLeftMenu();
+  }, [uiState]);
+
   const handleLockConfirmation = useCallback(() => {
     if (uiState.lockConfirmationModal) {
       rectangleManager.toggleManualPositioning(uiState.lockConfirmationModal.rectangleId);
@@ -230,6 +236,7 @@ const HierarchicalDrawingApp = () => {
           isOpen={uiState.leftMenuOpen}
           onClose={uiState.closeLeftMenu}
           onAboutClick={handleAboutClick}
+          onTemplatesClick={handleTemplatesClick}
         />
         
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -323,6 +330,20 @@ const HierarchicalDrawingApp = () => {
         onClose={uiState.hideLockConfirmationModal}
         onConfirm={handleLockConfirmation}
         rectangleLabel={uiState.lockConfirmationModal?.rectangleLabel || ''}
+      />
+
+      <TemplatePage
+        isOpen={uiState.templatePageOpen}
+        onClose={uiState.closeTemplatePage}
+        rectangles={rectangleManager.rectangles}
+        setRectangles={rectangleManager.setRectanglesWithHistory}
+        globalSettings={{
+          gridSize: appSettings.gridSize,
+          leafWidth: appSettings.leafWidth,
+          leafHeight: appSettings.leafHeight,
+          leafFixedWidth: appSettings.leafFixedWidth,
+          leafFixedHeight: appSettings.leafFixedHeight
+        }}
       />
     </div>
   );

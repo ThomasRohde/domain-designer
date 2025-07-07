@@ -7,6 +7,7 @@ export interface UIState {
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
   lockConfirmationModal: LockConfirmationModalState | null;
+  templatePageOpen: boolean;
 }
 
 export interface UIActions {
@@ -31,6 +32,10 @@ export interface UIActions {
   // Lock confirmation modal actions
   showLockConfirmationModal: (rectangleId: string, rectangleLabel: string) => void;
   hideLockConfirmationModal: () => void;
+  
+  // Template page actions
+  openTemplatePage: () => void;
+  closeTemplatePage: () => void;
 }
 
 export interface UseUIStateReturn extends UIState, UIActions {}
@@ -44,6 +49,7 @@ export const useUIState = (): UIStateHook => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [lockConfirmationModal, setLockConfirmationModal] = useState<LockConfirmationModalState | null>(null);
+  const [templatePageOpen, setTemplatePageOpen] = useState(false);
 
   // Sidebar actions
   const toggleSidebar = useCallback(() => {
@@ -98,6 +104,15 @@ export const useUIState = (): UIStateHook => {
     setLockConfirmationModal(null);
   }, []);
 
+  // Template page actions
+  const openTemplatePage = useCallback(() => {
+    setTemplatePageOpen(true);
+  }, []);
+
+  const closeTemplatePage = useCallback(() => {
+    setTemplatePageOpen(false);
+  }, []);
+
   // Handle responsive sidebar and left menu behavior - auto-close on mobile when clicking outside
   useEffect(() => {
     const handleResize = () => {
@@ -136,6 +151,7 @@ export const useUIState = (): UIStateHook => {
     contextMenu,
     exportModalOpen,
     lockConfirmationModal,
+    templatePageOpen,
     
     // Actions
     toggleSidebar,
@@ -150,5 +166,7 @@ export const useUIState = (): UIStateHook => {
     closeExportModal,
     showLockConfirmationModal,
     hideLockConfirmationModal,
+    openTemplatePage,
+    closeTemplatePage,
   };
 };

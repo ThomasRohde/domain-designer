@@ -265,13 +265,26 @@ export const calculateNewRectangleLayout = (
  */
 export const getAllDescendants = (parentId: string, rectangles: Rectangle[]): string[] => {
   const descendants: string[] = [];
-  const directChildren = rectangles.filter(rect => rect.parentId === parentId);
+  const visited = new Set<string>();
   
-  directChildren.forEach(child => {
-    descendants.push(child.id);
-    descendants.push(...getAllDescendants(child.id, rectangles));
-  });
+  const getDescendantsRecursive = (currentId: string) => {
+    if (visited.has(currentId)) {
+      console.warn(`Circular reference detected for rectangle ID: ${currentId}`);
+      return;
+    }
+    
+    visited.add(currentId);
+    const directChildren = rectangles.filter(rect => rect.parentId === currentId);
+    
+    directChildren.forEach(child => {
+      descendants.push(child.id);
+      getDescendantsRecursive(child.id);
+    });
+    
+    visited.delete(currentId);
+  };
   
+  getDescendantsRecursive(parentId);
   return descendants;
 };
 
