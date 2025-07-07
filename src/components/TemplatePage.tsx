@@ -9,7 +9,6 @@ import {
 } from '../types/template';
 import { loadTemplateFromFile } from '../utils/templateUtils';
 import TemplateTreeView from './TemplateTreeView';
-import { DEFAULT_RECTANGLE_SIZE } from '../utils/constants';
 
 interface TemplatePageProps {
   /** Whether the template page is open */
@@ -20,6 +19,8 @@ interface TemplatePageProps {
   rectangles: Rectangle[];
   /** Function to update rectangles */
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
+  /** Function to fit parent rectangles to their children */
+  fitToChildren: (id: string) => void;
   /** Global settings for layout calculations */
   globalSettings: {
     gridSize: number;
@@ -38,6 +39,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
   onClose,
   rectangles,
   setRectangles,
+  fitToChildren,
   globalSettings
 }) => {
   // Template loading state
@@ -102,7 +104,36 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     setInsertionResult(null); // Clear previous insertion result
   }, []);
   
-  // Direct template insertion implementation
+  // Sort template nodes by hierarchy level (parents before children)
+  const sortNodesByHierarchy = (nodes: TemplateNode[]): TemplateNode[] => {
+    const sorted: TemplateNode[] = [];
+    const remaining = [...nodes];
+    const processed = new Set<string>();
+    
+    while (remaining.length > 0) {
+      const beforeLength = remaining.length;
+      
+      for (let i = remaining.length - 1; i >= 0; i--) {
+        const node = remaining[i];
+        
+        if (!node.parent || processed.has(node.parent)) {
+          sorted.push(node);
+          processed.add(node.id);
+          remaining.splice(i, 1);
+        }
+      }
+      
+      if (remaining.length === beforeLength) {
+        // Prevent infinite loop
+        sorted.push(...remaining);
+        break;
+      }
+    }
+    
+    return sorted;
+  };
+  
+  // Direct template insertion using basic rectangles and fit-to-children
   const insertTemplateDirectly = useCallback(async (
     selectedNode: TemplateNode,
     templateData: TemplateNode[],
@@ -126,17 +157,10 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       ? [selectedNode, ...getDescendants(selectedNode.id)]
       : [selectedNode];
     
-    // Sort by hierarchy
-    const sortedNodes = sortNodesByHierarchy(nodesToInsert);
-    
     // Calculate starting position
     const startPosition = calculateInsertionPosition(rectangles, globalSettings);
     
-    // Create rectangles
-    const newRectangles: Rectangle[] = [];
-    const rectangleIdMap = new Map<string, string>();
-    
-    // Generate all IDs first to avoid duplicates
+    // Generate unique ID function
     let idCounter = 1;
     const generateUniqueId = () => {
       const id = `template-rect-${Date.now()}-${idCounter}`;
@@ -144,41 +168,45 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       return id;
     };
     
-    sortedNodes.forEach((node, index) => {
+    // Sort nodes by hierarchy (parents before children)
+    const sortedNodes = sortNodesByHierarchy(nodesToInsert);
+    
+    // Create basic rectangles with default sizes
+    const newRectangles: Rectangle[] = [];
+    const rectangleIdMap = new Map<string, string>();
+    
+    sortedNodes.forEach(node => {
+      const rectangleId = generateUniqueId();
+      rectangleIdMap.set(node.id, rectangleId);
+      
       const parentTemplateId = node.parent;
       const parentRectangleId = parentTemplateId ? rectangleIdMap.get(parentTemplateId) : undefined;
       
-      // Determine type and size
-      const hasChildren = nodesToInsert.some(n => n.parent === node.id);
-      const type = !node.parent ? 'root' : hasChildren ? 'parent' : 'leaf';
-      
-      // Use proper default sizes in grid units
-      let size = DEFAULT_RECTANGLE_SIZE[type];
-      
-      // For leaf nodes, respect global settings if fixed dimensions are enabled
-      if (type === 'leaf') {
-        size = {
-          w: globalSettings.leafFixedWidth ? globalSettings.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w,
-          h: globalSettings.leafFixedHeight ? globalSettings.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h
-        };
+      // Determine node type
+      let type: 'root' | 'parent' | 'leaf';
+      if (!node.parent) {
+        type = 'root';
+      } else {
+        const hasChildren = nodesToInsert.some(n => n.parent === node.id);
+        type = hasChildren ? 'parent' : 'leaf';
       }
       
-      // Calculate position
-      let position = startPosition;
-      if (!node.parent && index > 0) {
-        position = {
-          x: startPosition.x + (index * (size.w + globalSettings.gridSize * 2)),
-          y: startPosition.y
-        };
-      }
+      // Use basic default sizes
+      const defaultSizes = {
+        root: { w: 16, h: 10 },
+        parent: { w: 12, h: 8 },
+        leaf: { w: 8, h: 6 }
+      };
+      
+      const { w, h } = defaultSizes[type];
       
       const rectangle: Rectangle = {
-        id: generateUniqueId(),
+        id: rectangleId,
         parentId: parentRectangleId,
-        x: position.x,
-        y: position.y,
-        w: size.w,
-        h: size.h,
+        x: startPosition.x,
+        y: startPosition.y,
+        w,
+        h,
         label: node.name,
         color: options.color || '#3b82f6',
         type,
@@ -190,18 +218,42 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       };
       
       newRectangles.push(rectangle);
-      rectangleIdMap.set(node.id, rectangle.id);
     });
     
-    // Update rectangles
+    // Add rectangles to the canvas
     setRectangles(prev => [...prev, ...newRectangles]);
+    
+    // Apply fit-to-children to all parent rectangles (bottom-up)
+    const parentRectangles = newRectangles.filter(r => r.type === 'parent' || r.type === 'root');
+    
+    // Sort by hierarchy depth (deepest first) to ensure proper bottom-up fitting
+    const sortedParents = parentRectangles.sort((a, b) => {
+      const getDepth = (rect: Rectangle): number => {
+        let depth = 0;
+        let current = rect;
+        while (current.parentId) {
+          depth++;
+          current = newRectangles.find(r => r.id === current.parentId!)!;
+          if (!current) break;
+        }
+        return depth;
+      };
+      return getDepth(b) - getDepth(a); // Deepest first
+    });
+    
+    // Apply fit-to-children to each parent
+    setTimeout(() => {
+      sortedParents.forEach(parent => {
+        fitToChildren(parent.id);
+      });
+    }, 100);
     
     return {
       success: true,
       insertedRectangleIds: newRectangles.map(r => r.id),
       rootRectangleId: rectangleIdMap.get(selectedNode.id) || null
     };
-  }, [rectangles, setRectangles, globalSettings]);
+  }, [rectangles, setRectangles, globalSettings, fitToChildren]);
   
   // Insert selected template
   const handleInsertTemplate = useCallback(async () => {
@@ -256,34 +308,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     }
   }, [loadingState, selectedItems, onClose, insertTemplateDirectly]);
   
-  // Helper functions
-  const sortNodesByHierarchy = (nodes: TemplateNode[]): TemplateNode[] => {
-    const sorted: TemplateNode[] = [];
-    const remaining = [...nodes];
-    const processed = new Set<string>();
-    
-    while (remaining.length > 0) {
-      const beforeLength = remaining.length;
-      
-      for (let i = remaining.length - 1; i >= 0; i--) {
-        const node = remaining[i];
-        
-        if (!node.parent || processed.has(node.parent)) {
-          sorted.push(node);
-          processed.add(node.id);
-          remaining.splice(i, 1);
-        }
-      }
-      
-      if (remaining.length === beforeLength) {
-        sorted.push(...remaining);
-        break;
-      }
-    }
-    
-    return sorted;
-  };
-  
+  // Helper function to calculate insertion position
   const calculateInsertionPosition = (
     existingRects: Rectangle[],
     settings: { gridSize: number; leafWidth: number; leafHeight: number }

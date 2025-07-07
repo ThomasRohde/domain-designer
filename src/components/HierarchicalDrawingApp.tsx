@@ -337,6 +337,7 @@ const HierarchicalDrawingApp = () => {
         onClose={uiState.closeTemplatePage}
         rectangles={rectangleManager.rectangles}
         setRectangles={rectangleManager.setRectanglesWithHistory}
+        fitToChildren={rectangleManager.fitToChildren}
         globalSettings={{
           gridSize: appSettings.gridSize,
           leafWidth: appSettings.leafWidth,
