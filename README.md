@@ -2,6 +2,8 @@
 
 A React+TypeScript application for creating domain models and hierarchical diagrams with constraint-based layout.
 
+**🚀 Live Demo**: [https://thomasrohde.github.io/domain-designer/](https://thomasrohde.github.io/domain-designer/)
+
 ## Features
 
 - **Grid-based Drawing**: Rectangles snap to a grid for precise alignment
@@ -121,6 +123,26 @@ interface Rectangle {
 - Minimum/maximum size constraints per rectangle type
 - Grid-based positioning for alignment
 
+## Deployment
+
+This project is automatically deployed to GitHub Pages via GitHub Actions. Every push to the main branch triggers a deployment.
+
+- **Live Site**: [https://thomasrohde.github.io/domain-designer/](https://thomasrohde.github.io/domain-designer/)
+- **Deployment**: Automated via GitHub Actions
+- **Build**: Static files generated with Vite and served from GitHub Pages
+
+### Local Production Testing
+
+To test the production build locally:
+
+```bash
+# Build with GitHub Pages configuration
+GITHUB_PAGES=true npm run build
+
+# Preview the production build
+npm run preview
+```
+
 ## Contributing
 
 1. Fork the repository
@@ -128,6 +150,8 @@ interface Rectangle {
 3. Make your changes
 4. Run tests and linting
 5. Submit a pull request
+
+The site will be automatically deployed when changes are merged to the main branch.
 
 ## License
 

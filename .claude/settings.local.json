@@ -16,7 +16,11 @@
       "Bash(rg:*)",
       "Bash(find:*)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:rct.lukasbach.com)"
+      "WebFetch(domain:rct.lukasbach.com)",
+      "Bash(GITHUB_PAGES=true npm run build)",
+      "Bash(npm run preview:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
