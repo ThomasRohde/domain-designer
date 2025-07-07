@@ -22,6 +22,7 @@ interface RectangleComponentProps {
   isHierarchyDragActive?: boolean;
   isDragActive?: boolean;
   isResizeActive?: boolean;
+  isBeingResized?: boolean;
   isAtMinSize?: boolean;
   borderRadius?: number;
   borderColor?: string;
@@ -48,6 +49,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   isHierarchyDragActive = false,
   isDragActive = false,
   isResizeActive = false,
+  isBeingResized = false,
   isAtMinSize = false,
   borderRadius = 8,
   borderColor = '#374151',
@@ -104,14 +106,20 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   let boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
   let opacity = 1;
   
-  if (isSelected && !isHierarchyDragActive) {
-    finalBorderColor = '#3b82f6';
-    boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.04)';
+  if (isBeingResized) {
+    // Make rectangle semi-transparent during resize to show children underneath
+    opacity = 0.3;
+    finalBorderColor = '#8b5cf6';
+    finalBorderWidth = `${borderWidth + 2}px`;
+    boxShadow = '0 10px 25px -5px rgba(139, 92, 246, 0.5), 0 10px 10px -5px rgba(139, 92, 246, 0.2)';
   } else if (isBeingDragged) {
     finalBorderColor = '#6366f1';
     finalBorderWidth = `${borderWidth + 1}px`;
     opacity = 0.8;
     boxShadow = '0 20px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(99, 102, 241, 0.1)';
+  } else if (isSelected && !isHierarchyDragActive) {
+    finalBorderColor = '#3b82f6';
+    boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.04)';
   } else if (isCurrentDropTarget) {
     if (isValidDropTarget) {
       finalBorderColor = '#10b981';

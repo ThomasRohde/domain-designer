@@ -56,6 +56,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
         const isBeingDragged = hierarchyDragState?.draggedRectangleId === rect.id || false;
         const isDragActive = dragState !== null || hierarchyDragState !== null;
         const isResizeActive = resizeState !== null;
+        const isBeingResized = resizeState?.id === rect.id;
         const isAtMinSize = resizeConstraintState?.rectangleId === rect.id && 
                            (resizeConstraintState?.isAtMinWidth || resizeConstraintState?.isAtMinHeight);
         
@@ -81,6 +82,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             isHierarchyDragActive={hierarchyDragState !== null}
             isDragActive={isDragActive}
             isResizeActive={isResizeActive}
+            isBeingResized={isBeingResized}
             isAtMinSize={isAtMinSize}
             borderRadius={borderRadius}
             borderColor={borderColor}
