@@ -338,6 +338,7 @@ const HierarchicalDrawingApp = () => {
         rectangles={rectangleManager.rectangles}
         setRectangles={rectangleManager.setRectanglesWithHistory}
         fitToChildren={rectangleManager.fitToChildren}
+        predefinedColors={appSettings.predefinedColors}
         globalSettings={{
           gridSize: appSettings.gridSize,
           leafWidth: appSettings.leafWidth,

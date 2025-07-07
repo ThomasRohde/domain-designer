@@ -21,6 +21,8 @@ interface TemplatePageProps {
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
   /** Function to fit parent rectangles to their children */
   fitToChildren: (id: string) => void;
+  /** Available predefined colors */
+  predefinedColors: string[];
   /** Global settings for layout calculations */
   globalSettings: {
     gridSize: number;
@@ -40,6 +42,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
   rectangles,
   setRectangles,
   fitToChildren,
+  predefinedColors,
   globalSettings
 }) => {
   // Template loading state
@@ -55,6 +58,13 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isInserting, setIsInserting] = useState(false);
   const [insertionResult, setInsertionResult] = useState<TemplateInsertionResult | null>(null);
+  
+  // Color settings for hierarchy levels
+  const [hierarchyColors, setHierarchyColors] = useState({
+    root: predefinedColors[0] || '#3b82f6',
+    parent: predefinedColors[1] || '#10b981', 
+    leaf: predefinedColors[2] || '#f59e0b'
+  });
   
   // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -208,7 +218,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
         w,
         h,
         label: node.name,
-        color: options.color || '#3b82f6',
+        color: hierarchyColors[type],
         type,
         metadata: {
           description: node.description,
@@ -253,7 +263,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       insertedRectangleIds: newRectangles.map(r => r.id),
       rootRectangleId: rectangleIdMap.get(selectedNode.id) || null
     };
-  }, [rectangles, setRectangles, globalSettings, fitToChildren]);
+  }, [rectangles, setRectangles, globalSettings, fitToChildren, hierarchyColors]);
   
   // Insert selected template
   const handleInsertTemplate = useCallback(async () => {
@@ -417,6 +427,103 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
               )}
             </div>
             
+            {/* Color Settings */}
+            {loadingState.templateData && (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h4 className="text-sm font-medium text-gray-700 mb-3">Hierarchy Colors</h4>
+                
+                {/* Color Preview */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xs text-gray-600 mb-2">Preview:</div>
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-8 h-6 rounded border border-gray-300 flex items-center justify-center text-xs font-medium text-white shadow-sm"
+                      style={{ backgroundColor: hierarchyColors.root }}
+                      title="Root Level"
+                    >
+                      R
+                    </div>
+                    <div 
+                      className="w-8 h-6 rounded border border-gray-300 flex items-center justify-center text-xs font-medium text-white shadow-sm"
+                      style={{ backgroundColor: hierarchyColors.parent }}
+                      title="Parent Level"
+                    >
+                      P
+                    </div>
+                    <div 
+                      className="w-8 h-6 rounded border border-gray-300 flex items-center justify-center text-xs font-medium text-white shadow-sm"
+                      style={{ backgroundColor: hierarchyColors.leaf }}
+                      title="Leaf Level"
+                    >
+                      L
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  {/* Root Color */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 font-medium">Root</span>
+                    <div className="flex gap-1">
+                      {predefinedColors.slice(0, 6).map((color) => (
+                        <button
+                          key={`root-${color}`}
+                          onClick={() => setHierarchyColors(prev => ({ ...prev, root: color }))}
+                          className={`w-6 h-6 rounded border-2 transition-all hover:scale-105 ${
+                            hierarchyColors.root === color
+                              ? 'border-gray-800 ring-2 ring-gray-300'
+                              : 'border-gray-200 hover:border-gray-400'
+                          }`}
+                          style={{ backgroundColor: color }}
+                          title={`Root: ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Parent Color */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 font-medium">Parent</span>
+                    <div className="flex gap-1">
+                      {predefinedColors.slice(0, 6).map((color) => (
+                        <button
+                          key={`parent-${color}`}
+                          onClick={() => setHierarchyColors(prev => ({ ...prev, parent: color }))}
+                          className={`w-6 h-6 rounded border-2 transition-all hover:scale-105 ${
+                            hierarchyColors.parent === color
+                              ? 'border-gray-800 ring-2 ring-gray-300'
+                              : 'border-gray-200 hover:border-gray-400'
+                          }`}
+                          style={{ backgroundColor: color }}
+                          title={`Parent: ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Leaf Color */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600 font-medium">Leaf</span>
+                    <div className="flex gap-1">
+                      {predefinedColors.slice(0, 6).map((color) => (
+                        <button
+                          key={`leaf-${color}`}
+                          onClick={() => setHierarchyColors(prev => ({ ...prev, leaf: color }))}
+                          className={`w-6 h-6 rounded border-2 transition-all hover:scale-105 ${
+                            hierarchyColors.leaf === color
+                              ? 'border-gray-800 ring-2 ring-gray-300'
+                              : 'border-gray-200 hover:border-gray-400'
+                          }`}
+                          style={{ backgroundColor: color }}
+                          title={`Leaf: ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Insert Button */}
             {loadingState.templateData && (
               <div className="mt-6 pt-6 border-t border-gray-200">
@@ -450,8 +557,32 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Template Hierarchy</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Select any node to insert it and all its children onto the canvas
+                Select any node to insert it and all its children onto the canvas. 
+                Colors will be applied based on hierarchy level:
               </p>
+              <div className="flex items-center gap-4 mt-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div 
+                    className="w-3 h-3 rounded border"
+                    style={{ backgroundColor: hierarchyColors.root }}
+                  ></div>
+                  <span className="text-gray-600">Root</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div 
+                    className="w-3 h-3 rounded border"
+                    style={{ backgroundColor: hierarchyColors.parent }}
+                  ></div>
+                  <span className="text-gray-600">Parent</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div 
+                    className="w-3 h-3 rounded border"
+                    style={{ backgroundColor: hierarchyColors.leaf }}
+                  ></div>
+                  <span className="text-gray-600">Leaf</span>
+                </div>
+              </div>
             </div>
             
             <div className="flex-1 overflow-auto p-6">
