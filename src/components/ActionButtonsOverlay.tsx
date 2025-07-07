@@ -10,6 +10,7 @@ interface ActionButtonsOverlayProps {
   onRemove: (id: string) => void;
   onFitToChildren: (id: string) => void;
   onToggleManualPositioning: (id: string) => void;
+  onShowLockConfirmation: (rectangleId: string, rectangleLabel: string) => void;
   gridSize: number;
   panOffset: { x: number; y: number };
   isDragging?: boolean;
@@ -24,6 +25,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
   onRemove,
   onFitToChildren,
   onToggleManualPositioning,
+  onShowLockConfirmation,
   gridSize,
   panOffset,
   isDragging = false,
@@ -83,7 +85,14 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
             e.preventDefault();
             e.stopPropagation();
             console.log('Overlay Toggle Manual Positioning button clicked for:', rect.id);
-            onToggleManualPositioning(rect.id);
+            
+            if (isManualPositioningEnabled) {
+              // Show confirmation modal when locking (going from unlocked to locked)
+              onShowLockConfirmation(rect.id, rect.label);
+            } else {
+              // Allow unlocking without confirmation
+              onToggleManualPositioning(rect.id);
+            }
           }}
           onMouseDown={(e) => {
             e.preventDefault();

@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ContextMenuState, UIStateHook } from '../types';
+import { ContextMenuState, UIStateHook, LockConfirmationModalState } from '../types';
 
 export interface UIState {
   sidebarOpen: boolean;
   leftMenuOpen: boolean;
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
+  lockConfirmationModal: LockConfirmationModalState | null;
 }
 
 export interface UIActions {
@@ -26,6 +27,10 @@ export interface UIActions {
   // Export modal actions
   openExportModal: () => void;
   closeExportModal: () => void;
+  
+  // Lock confirmation modal actions
+  showLockConfirmationModal: (rectangleId: string, rectangleLabel: string) => void;
+  hideLockConfirmationModal: () => void;
 }
 
 export interface UseUIStateReturn extends UIState, UIActions {}
@@ -38,6 +43,7 @@ export const useUIState = (): UIStateHook => {
   const [leftMenuOpen, setLeftMenuOpen] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [lockConfirmationModal, setLockConfirmationModal] = useState<LockConfirmationModalState | null>(null);
 
   // Sidebar actions
   const toggleSidebar = useCallback(() => {
@@ -83,6 +89,15 @@ export const useUIState = (): UIStateHook => {
     setExportModalOpen(false);
   }, []);
 
+  // Lock confirmation modal actions
+  const showLockConfirmationModal = useCallback((rectangleId: string, rectangleLabel: string) => {
+    setLockConfirmationModal({ rectangleId, rectangleLabel });
+  }, []);
+
+  const hideLockConfirmationModal = useCallback(() => {
+    setLockConfirmationModal(null);
+  }, []);
+
   // Handle responsive sidebar and left menu behavior - auto-close on mobile when clicking outside
   useEffect(() => {
     const handleResize = () => {
@@ -120,6 +135,7 @@ export const useUIState = (): UIStateHook => {
     leftMenuOpen,
     contextMenu,
     exportModalOpen,
+    lockConfirmationModal,
     
     // Actions
     toggleSidebar,
@@ -132,5 +148,7 @@ export const useUIState = (): UIStateHook => {
     hideContextMenu,
     openExportModal,
     closeExportModal,
+    showLockConfirmationModal,
+    hideLockConfirmationModal,
   };
 };

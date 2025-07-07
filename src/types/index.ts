@@ -341,6 +341,14 @@ export interface AppSettingsHook {
 }
 
 /**
+ * Lock confirmation modal state
+ */
+export interface LockConfirmationModalState {
+  rectangleId: string;
+  rectangleLabel: string;
+}
+
+/**
  * Return type for useUIState hook
  */
 export interface UIStateHook {
@@ -348,6 +356,7 @@ export interface UIStateHook {
   leftMenuOpen: boolean;
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
+  lockConfirmationModal: LockConfirmationModalState | null;
   toggleSidebar: () => void;
   openSidebar: () => void;
   closeSidebar: () => void;
@@ -358,6 +367,8 @@ export interface UIStateHook {
   hideContextMenu: () => void;
   openExportModal: () => void;
   closeExportModal: () => void;
+  showLockConfirmationModal: (rectangleId: string, rectangleLabel: string) => void;
+  hideLockConfirmationModal: () => void;
 }
 
 /**

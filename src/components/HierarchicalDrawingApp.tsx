@@ -17,6 +17,7 @@ import Sidebar from './Sidebar';
 import PropertyPanel from './PropertyPanel';
 import LeftMenu from './LeftMenu';
 import AboutModal from './AboutModal';
+import LockConfirmationModal from './LockConfirmationModal';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -172,6 +173,12 @@ const HierarchicalDrawingApp = () => {
     uiState.closeLeftMenu();
   }, [uiState]);
 
+  const handleLockConfirmation = useCallback(() => {
+    if (uiState.lockConfirmationModal) {
+      rectangleManager.toggleManualPositioning(uiState.lockConfirmationModal.rectangleId);
+    }
+  }, [uiState.lockConfirmationModal, rectangleManager]);
+
   // Memoized calculations
   const selectedRectangle = useMemo(() => 
     rectangleManager.selectedId ? rectangleManager.findRectangle(rectangleManager.selectedId) || null : null,
@@ -243,6 +250,7 @@ const HierarchicalDrawingApp = () => {
                 onRemove={rectangleManager.removeRectangle}
                 onFitToChildren={rectangleManager.fitToChildren}
                 onToggleManualPositioning={rectangleManager.toggleManualPositioning}
+                onShowLockConfirmation={uiState.showLockConfirmationModal}
                 gridSize={appSettings.gridSize}
                 panOffset={canvasInteractions.panOffset}
                 isDragging={canvasInteractions.isDragging}
@@ -309,6 +317,13 @@ const HierarchicalDrawingApp = () => {
       <AboutModal
         isOpen={aboutModalOpen}
         onClose={() => setAboutModalOpen(false)}
+      />
+
+      <LockConfirmationModal
+        isOpen={!!uiState.lockConfirmationModal}
+        onClose={uiState.hideLockConfirmationModal}
+        onConfirm={handleLockConfirmation}
+        rectangleLabel={uiState.lockConfirmationModal?.rectangleLabel || ''}
       />
     </div>
   );
