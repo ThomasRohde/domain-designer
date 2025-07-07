@@ -102,7 +102,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
         </button>
       )}
       
-      {hasChildren && (
+      {hasChildren && !isManualPositioningEnabled && (
         <button
           className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors bg-white bg-opacity-80 shadow-sm"
           onClick={(e) => {
