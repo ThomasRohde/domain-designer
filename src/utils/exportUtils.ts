@@ -156,6 +156,48 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
   URL.revokeObjectURL(url);
 };
 
+const escapeXML = (text: string): string => {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+const wrapText = (text: string, maxWidth: number, fontSize: number): string[] => {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  // Approximate character width (rough estimation)
+  const charWidth = fontSize * 0.6;
+  const maxChars = Math.floor(maxWidth / charWidth);
+  
+  words.forEach(word => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    
+    if (testLine.length <= maxChars) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        // Single word is too long, truncate it
+        lines.push(word.substring(0, maxChars));
+        currentLine = '';
+      }
+    }
+  });
+  
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  
+  return lines;
+};
+
 const createSVGFromRectangles = (
   rectangles: Rectangle[],
   options: { scale: number; includeBackground: boolean },
@@ -166,23 +208,19 @@ const createSVGFromRectangles = (
 ): string => {
   if (rectangles.length === 0) return '';
 
+  // Calculate bounding box
+  const minX = Math.min(...rectangles.map(r => r.x));
+  const minY = Math.min(...rectangles.map(r => r.y));
   const maxX = Math.max(...rectangles.map(r => r.x + r.w));
   const maxY = Math.max(...rectangles.map(r => r.y + r.h));
-  const width = (maxX + 2) * gridSize * options.scale;
-  const height = (maxY + 2) * gridSize * options.scale;
+  
+  const width = (maxX - minX) * gridSize * options.scale;
+  const height = (maxY - minY) * gridSize * options.scale;
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
   
   if (options.includeBackground) {
     svg += `<rect width="100%" height="100%" fill="#f9fafb"/>`;
-    
-    // Add grid pattern
-    svg += `<defs>
-      <pattern id="grid" width="${gridSize * options.scale}" height="${gridSize * options.scale}" patternUnits="userSpaceOnUse">
-        <circle cx="${gridSize * options.scale / 2}" cy="${gridSize * options.scale / 2}" r="1" fill="#d1d5db"/>
-      </pattern>
-    </defs>`;
-    svg += `<rect width="100%" height="100%" fill="url(#grid)"/>`;
   }
 
   // Sort rectangles by hierarchy (parents first)
@@ -192,9 +230,18 @@ const createSVGFromRectangles = (
     return 0;
   });
 
+  // Check which rectangles have children
+  const hasChildren = new Set<string>();
+  rectangles.forEach(rect => {
+    if (rect.parentId) {
+      hasChildren.add(rect.parentId);
+    }
+  });
+
   sortedRectangles.forEach(rect => {
-    const x = rect.x * gridSize * options.scale;
-    const y = rect.y * gridSize * options.scale;
+    // Adjust coordinates to start from top-left
+    const x = (rect.x - minX) * gridSize * options.scale;
+    const y = (rect.y - minY) * gridSize * options.scale;
     const w = rect.w * gridSize * options.scale;
     const h = rect.h * gridSize * options.scale;
 
@@ -204,11 +251,36 @@ const createSVGFromRectangles = (
       stroke-width="${borderWidth}" 
       rx="${borderRadius}"/>`;
     
-    svg += `<text x="${x + 10}" y="${y + 20}" 
-      font-family="Arial, sans-serif" 
-      font-size="14" 
-      font-weight="bold" 
-      fill="#374151">${rect.label}</text>`;
+    // Calculate text positioning and wrapping
+    const fontSize = 14;
+    const padding = 10;
+    const textWidth = w - (padding * 2);
+    const lines = wrapText(rect.label, textWidth, fontSize);
+    
+    const lineHeight = fontSize * 1.2;
+    const isParent = hasChildren.has(rect.id);
+    
+    let textStartY: number;
+    if (isParent) {
+      // Top-align for rectangles with children
+      textStartY = y + padding + fontSize;
+    } else {
+      // Center-align for leaf rectangles
+      const totalTextHeight = lines.length * lineHeight;
+      textStartY = y + (h - totalTextHeight) / 2 + fontSize;
+    }
+    
+    lines.forEach((line, index) => {
+      const textY = textStartY + (index * lineHeight);
+      const textX = x + w / 2; // Center horizontally
+      
+      svg += `<text x="${textX}" y="${textY}" 
+        font-family="Arial, sans-serif" 
+        font-size="${fontSize}" 
+        font-weight="bold" 
+        fill="#374151"
+        text-anchor="middle">${escapeXML(line)}</text>`;
+    });
   });
 
   svg += '</svg>';
