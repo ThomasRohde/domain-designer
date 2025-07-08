@@ -228,8 +228,8 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
         label: node.name,
         color: hierarchyColors[type],
         type,
+        description: node.description,
         metadata: {
-          description: node.description,
           tags: ['template'],
           templateId: node.id
         }
