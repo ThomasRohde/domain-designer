@@ -21,7 +21,7 @@ const INITIAL_PREDEFINED_COLORS = [
   '#F8C471', // Orange
   '#82E0AA', // Light Green
 ];
-import { updateChildrenLayout } from '../utils/layoutUtils';
+import { updateChildrenLayout, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
 
 // Re-export from types for backward compatibility
 export type { AppSettings, FixedDimensions } from '../types';
@@ -79,12 +79,53 @@ export const useAppSettings = (): AppSettingsHook => {
   // Effect to handle layout updates when settings change
   useEffect(() => {
     if (needsLayoutUpdate && setRectanglesRef.current) {
-      setRectanglesRef.current(prev => updateChildrenLayout(prev, {
-        leafFixedWidth,
-        leafFixedHeight,
-        leafWidth,
-        leafHeight
-      }));
+      setRectanglesRef.current(prev => {
+        // First, update leaf dimensions
+        const updatedRectangles = prev.map(rect => {
+          if (rect.type === 'leaf') {
+            const newRect = { ...rect };
+            if (leafFixedWidth) {
+              newRect.w = leafWidth;
+            }
+            if (leafFixedHeight) {
+              newRect.h = leafHeight;
+            }
+            return newRect;
+          }
+          return rect;
+        });
+        
+        // Then, resize unlocked parents to fit their children
+        const withResizedParents = updatedRectangles.map(rect => {
+          if ((rect.type === 'parent' || rect.type === 'root') && !rect.isManualPositioningEnabled) {
+            const children = getChildren(rect.id, updatedRectangles);
+            if (children.length > 0) {
+              const minSize = calculateMinimumParentSize(rect.id, updatedRectangles, {
+                leafFixedWidth,
+                leafFixedHeight,
+                leafWidth,
+                leafHeight
+              });
+              
+              // Resize parent to fit children exactly (both grow and shrink)
+              return {
+                ...rect,
+                w: minSize.w,
+                h: minSize.h
+              };
+            }
+          }
+          return rect;
+        });
+        
+        // Finally, update children layout
+        return updateChildrenLayout(withResizedParents, {
+          leafFixedWidth,
+          leafFixedHeight,
+          leafWidth,
+          leafHeight
+        });
+      });
       setNeedsLayoutUpdate(false);
     }
   }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
