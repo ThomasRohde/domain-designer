@@ -91,7 +91,7 @@ const generateInteractiveHTML = (
            "
            data-id="${rect.id}"
            data-type="${rect.type}"
-           ${rect.description ? `title="${escapeHtml(rect.description)}"` : ''}>
+           ${rect.description ? `data-description="${escapeHtml(rect.description)}"` : ''}>
         <div class="label" style="
           font-family: Arial, sans-serif;
           font-size: 14px;
@@ -299,8 +299,8 @@ const generateInteractiveHTML = (
       
       // Handle tooltips
       const rect = e.target.closest('.rectangle');
-      if (rect && rect.hasAttribute('title')) {
-        const description = rect.getAttribute('title');
+      if (rect && rect.hasAttribute('data-description')) {
+        const description = rect.getAttribute('data-description');
         if (description) {
           tooltip.textContent = description;
           tooltip.style.display = 'block';
