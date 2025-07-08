@@ -195,8 +195,12 @@ const createSVGFromRectangles = (
   const maxX = Math.max(...rectangles.map(r => r.x + r.w));
   const maxY = Math.max(...rectangles.map(r => r.y + r.h));
   
-  const width = (maxX - minX) * gridSize * options.scale;
-  const height = (maxY - minY) * gridSize * options.scale;
+  // Add margin around the content
+  const margin = 20; // 20px margin
+  const contentWidth = (maxX - minX) * gridSize * options.scale;
+  const contentHeight = (maxY - minY) * gridSize * options.scale;
+  const width = contentWidth + (margin * 2);
+  const height = contentHeight + (margin * 2);
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
   
@@ -220,9 +224,9 @@ const createSVGFromRectangles = (
   });
 
   sortedRectangles.forEach(rect => {
-    // Adjust coordinates to start from top-left
-    const x = (rect.x - minX) * gridSize * options.scale;
-    const y = (rect.y - minY) * gridSize * options.scale;
+    // Adjust coordinates to start from top-left with margin offset
+    const x = (rect.x - minX) * gridSize * options.scale + margin;
+    const y = (rect.y - minY) * gridSize * options.scale + margin;
     const w = rect.w * gridSize * options.scale;
     const h = rect.h * gridSize * options.scale;
 
