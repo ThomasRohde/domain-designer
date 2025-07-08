@@ -31,7 +31,8 @@ const HierarchicalDrawingApp = () => {
     gridSize: appSettings.gridSize,
     panOffsetRef: { current: { x: 0, y: 0 } },
     containerRef,
-    getFixedDimensions: appSettings.getFixedDimensions
+    getFixedDimensions: appSettings.getFixedDimensions,
+    getMargins: () => ({ margin: appSettings.margin, labelMargin: appSettings.labelMargin })
   });
 
   // Canvas interactions with proper setSelectedId wrapper
@@ -55,6 +56,7 @@ const HierarchicalDrawingApp = () => {
     leafHeight: appSettings.leafHeight,
     containerRef,
     getFixedDimensions: appSettings.getFixedDimensions,
+    getMargins: () => ({ margin: appSettings.margin, labelMargin: appSettings.labelMargin }),
     reparentRectangle: rectangleManager.reparentRectangle,
     canReparent: rectangleManager.canReparent,
     saveToHistory: rectangleManager.saveToHistory
@@ -90,7 +92,9 @@ const HierarchicalDrawingApp = () => {
         borderRadius: appSettings.borderRadius,
         borderColor: appSettings.borderColor,
         borderWidth: appSettings.borderWidth,
-        predefinedColors: appSettings.predefinedColors
+        predefinedColors: appSettings.predefinedColors,
+        margin: appSettings.margin,
+        labelMargin: appSettings.labelMargin
       };
       
       await exportDiagram(
@@ -127,6 +131,8 @@ const HierarchicalDrawingApp = () => {
     if (settings.borderColor !== undefined) appSettings.handleBorderColorChange(settings.borderColor);
     if (settings.borderWidth !== undefined) appSettings.handleBorderWidthChange(settings.borderWidth);
     if (settings.predefinedColors !== undefined) appSettings.handlePredefinedColorsChange(settings.predefinedColors);
+    if (settings.margin !== undefined) appSettings.handleMarginChange(settings.margin);
+    if (settings.labelMargin !== undefined) appSettings.handleLabelMarginChange(settings.labelMargin);
   }, [appSettings]);
 
   const handleImport = useCallback(() => {
@@ -208,6 +214,8 @@ const HierarchicalDrawingApp = () => {
     borderColor: appSettings.borderColor,
     borderWidth: appSettings.borderWidth,
     predefinedColors: appSettings.predefinedColors,
+    margin: appSettings.margin,
+    labelMargin: appSettings.labelMargin,
   }), [appSettings]);
 
   // Keyboard shortcuts

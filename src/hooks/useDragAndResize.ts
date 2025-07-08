@@ -15,6 +15,7 @@ interface UseDragAndResizeProps {
   leafHeight: number;
   containerRef: React.RefObject<HTMLDivElement>;
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
+  getMargins: () => { margin: number; labelMargin: number };
   reparentRectangle?: (childId: string, newParentId: string | null) => boolean;
   canReparent?: (childId: string, newParentId: string | null) => boolean;
   saveToHistory?: (rectangles: Rectangle[]) => void;
@@ -47,6 +48,7 @@ export const useDragAndResize = ({
   leafHeight,
   containerRef,
   getFixedDimensions,
+  getMargins,
   reparentRectangle,
   canReparent,
   saveToHistory,
@@ -337,7 +339,7 @@ export const useDragAndResize = ({
     let minRequiredH = MIN_HEIGHT;
     
     if (children.length > 0 && !rect.isManualPositioningEnabled) {
-      const minSize = calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions());
+      const minSize = calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions(), getMargins());
       minRequiredW = minSize.w;
       minRequiredH = minSize.h;
       // Only enforce minimum if the new size would be too small

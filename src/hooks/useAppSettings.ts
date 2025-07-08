@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
-import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS } from '../utils/constants';
+import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS, DEFAULT_MARGIN_SETTINGS } from '../utils/constants';
 
 // Initial predefined color palette - prioritizing colors from the handdrawn model
 const INITIAL_PREDEFINED_COLORS = [
@@ -39,6 +39,8 @@ export interface UseAppSettingsReturn {
   borderColor: string;
   borderWidth: number;
   predefinedColors: string[];
+  margin: number;
+  labelMargin: number;
   
   // Functions
   getFixedDimensions: () => FixedDimensions;
@@ -52,6 +54,8 @@ export interface UseAppSettingsReturn {
   handleBorderRadiusChange: (radius: number) => void;
   handleBorderColorChange: (color: string) => void;
   handleBorderWidthChange: (width: number) => void;
+  handleMarginChange: (margin: number) => void;
+  handleLabelMarginChange: (labelMargin: number) => void;
   addCustomColor: (color: string) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
@@ -68,6 +72,8 @@ export const useAppSettings = (): AppSettingsHook => {
   const [borderRadius, setBorderRadius] = useState(DEFAULT_BORDER_SETTINGS.borderRadius);
   const [borderColor, setBorderColor] = useState(DEFAULT_BORDER_SETTINGS.borderColor);
   const [borderWidth, setBorderWidth] = useState(DEFAULT_BORDER_SETTINGS.borderWidth);
+  const [margin, setMargin] = useState(DEFAULT_MARGIN_SETTINGS.margin);
+  const [labelMargin, setLabelMargin] = useState(DEFAULT_MARGIN_SETTINGS.labelMargin);
   const [predefinedColors, setPredefinedColors] = useState(INITIAL_PREDEFINED_COLORS);
   
   // Store a reference to the setRectangles function from the rectangle manager
@@ -105,6 +111,9 @@ export const useAppSettings = (): AppSettingsHook => {
                 leafFixedHeight,
                 leafWidth,
                 leafHeight
+              }, {
+                margin,
+                labelMargin
               });
               
               // Resize parent to fit children exactly (both grow and shrink)
@@ -124,11 +133,14 @@ export const useAppSettings = (): AppSettingsHook => {
           leafFixedHeight,
           leafWidth,
           leafHeight
+        }, {
+          margin,
+          labelMargin
         });
       });
       setNeedsLayoutUpdate(false);
     }
-  }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
+  }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, margin, labelMargin]);
 
   // Helper function to get fixed dimensions settings
   const getFixedDimensions = useCallback((): FixedDimensions => ({
@@ -233,6 +245,23 @@ export const useAppSettings = (): AppSettingsHook => {
     setBorderWidth(width);
   }, []);
 
+  // Margin settings handlers
+  const handleMarginChange = useCallback((margin: number) => {
+    setMargin(margin);
+    // Trigger layout update for all rectangles
+    if (setRectanglesRef.current) {
+      setNeedsLayoutUpdate(true);
+    }
+  }, []);
+
+  const handleLabelMarginChange = useCallback((labelMargin: number) => {
+    setLabelMargin(labelMargin);
+    // Trigger layout update for all rectangles
+    if (setRectanglesRef.current) {
+      setNeedsLayoutUpdate(true);
+    }
+  }, []);
+
   // Track custom colors separately to manage replacement from bottom-right
   const [customColors, setCustomColors] = useState<string[]>([]);
 
@@ -294,6 +323,8 @@ export const useAppSettings = (): AppSettingsHook => {
     borderColor,
     borderWidth,
     predefinedColors,
+    margin,
+    labelMargin,
     
     // Functions
     getFixedDimensions,
@@ -307,6 +338,8 @@ export const useAppSettings = (): AppSettingsHook => {
     handleBorderRadiusChange,
     handleBorderColorChange,
     handleBorderWidthChange,
+    handleMarginChange,
+    handleLabelMarginChange,
     addCustomColor,
     handlePredefinedColorsChange,
     setGridSize,

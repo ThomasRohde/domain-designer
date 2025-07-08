@@ -22,6 +22,10 @@ interface GlobalSettingsProps {
   onBorderColorChange: (color: string) => void;
   borderWidth: number;
   onBorderWidthChange: (width: number) => void;
+  margin: number;
+  onMarginChange: (margin: number) => void;
+  labelMargin: number;
+  onLabelMarginChange: (labelMargin: number) => void;
 }
 
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
@@ -44,7 +48,11 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   borderColor,
   onBorderColorChange,
   borderWidth,
-  onBorderWidthChange
+  onBorderWidthChange,
+  margin,
+  onMarginChange,
+  labelMargin,
+  onLabelMarginChange
 }) => {
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
@@ -212,6 +220,61 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               </button>
             </div>
 
+          </div>
+        </div>
+
+        {/* Margin Settings */}
+        <div className="border-t pt-3 mt-3">
+          <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
+              <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
+            </svg>
+            Margin Settings
+          </h4>
+          
+          <div className="space-y-3">
+            {/* Margin */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Margin: {margin} grid units
+              </label>
+              <input
+                type="range"
+                min="0.1"
+                max="5"
+                step="0.1"
+                value={margin}
+                onChange={(e) => onMarginChange(parseFloat(e.target.value))}
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0.1 (Tight)</span>
+                <span>5.0 (Loose)</span>
+              </div>
+            </div>
+
+            {/* Label Margin */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Label Margin: {labelMargin} grid units
+              </label>
+              <input
+                type="range"
+                min="0.1"
+                max="8"
+                step="0.1"
+                value={labelMargin}
+                onChange={(e) => onLabelMarginChange(parseFloat(e.target.value))}
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0.1 (Tight)</span>
+                <span>8.0 (Spacious)</span>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -25,6 +25,7 @@ export interface UseRectangleManagerProps {
   panOffsetRef: React.RefObject<{ x: number; y: number }>;
   containerRef: React.RefObject<HTMLDivElement>;
   getFixedDimensions: () => FixedDimensions;
+  getMargins: () => { margin: number; labelMargin: number };
 }
 
 export interface UseRectangleManagerReturn {
@@ -68,7 +69,8 @@ export const useRectangleManager = ({
   gridSize,
   panOffsetRef,
   containerRef,
-  getFixedDimensions
+  getFixedDimensions,
+  getMargins
 }: UseRectangleManagerProps): UseRectangleManagerReturn => {
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -153,7 +155,7 @@ export const useRectangleManager = ({
   const addRectangle = useCallback((parentId: string | null = null) => {
     const id = generateId();
     
-    let { x, y, w, h } = calculateNewRectangleLayout(parentId, rectangles, DEFAULT_RECTANGLE_SIZE);
+    let { x, y, w, h } = calculateNewRectangleLayout(parentId, rectangles, DEFAULT_RECTANGLE_SIZE, getMargins());
     
     // If creating a root rectangle, ensure it's positioned in a visible and accessible area
     if (!parentId) {
@@ -219,7 +221,7 @@ export const useRectangleManager = ({
           // Always check if parent needs to be resized, especially for restrictive layout preferences
           if (allChildren.length > 0) {
             // Calculate minimum size needed for the parent to accommodate all children
-            const minParentSize = calculateMinimumParentSize(parentId, updated, getFixedDimensions());
+            const minParentSize = calculateMinimumParentSize(parentId, updated, getFixedDimensions(), getMargins());
             
             // Resize parent if it's too small to accommodate its children
             if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
@@ -235,7 +237,7 @@ export const useRectangleManager = ({
           if (allChildren.length > 0) {
             const updatedParent = updated.find(r => r.id === parentId);
             if (updatedParent) {
-              const newChildLayout = calculateChildLayout(updatedParent, allChildren, getFixedDimensions());
+              const newChildLayout = calculateChildLayout(updatedParent, allChildren, getFixedDimensions(), getMargins());
               
               // Apply the new layout to all children
               newChildLayout.forEach(layoutChild => {
@@ -315,7 +317,7 @@ export const useRectangleManager = ({
         const children = getChildren(id, updated);
         if (children.length > 0) {
           // Calculate minimum size needed for the new layout
-          const minParentSize = calculateMinimumParentSize(id, updated, getFixedDimensions());
+          const minParentSize = calculateMinimumParentSize(id, updated, getFixedDimensions(), getMargins());
           
           // Resize parent if it's too small to accommodate the new layout
           if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
@@ -326,13 +328,13 @@ export const useRectangleManager = ({
             );
             
             // Recalculate layout for all children after parent resize
-            return updateChildrenLayout(resizedUpdated, getFixedDimensions());
+            return updateChildrenLayout(resizedUpdated, getFixedDimensions(), getMargins());
           }
         }
       }
       
       // Recalculate layout for all children after preferences change
-      return updateChildrenLayout(updated, getFixedDimensions());
+      return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
     });
   }, [setRectanglesWithHistory, getFixedDimensions]);
 
@@ -349,7 +351,7 @@ export const useRectangleManager = ({
       // If we're re-enabling auto layout, recalculate children positions
       const parent = updated.find(rect => rect.id === id);
       if (parent && !parent.isManualPositioningEnabled) {
-        return updateChildrenLayout(updated, getFixedDimensions());
+        return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
       }
       
       return updated;
@@ -365,7 +367,7 @@ export const useRectangleManager = ({
       const children = getChildren(id, prev);
       if (children.length === 0) return prev;
 
-      const newSize = calculateMinimumParentSize(id, prev, getFixedDimensions());
+      const newSize = calculateMinimumParentSize(id, prev, getFixedDimensions(), getMargins());
 
       // Update parent size
       const updated = prev.map(rect => 
@@ -373,7 +375,7 @@ export const useRectangleManager = ({
       );
 
       // Recalculate children layout after parent resize
-      return updateChildrenLayout(updated, getFixedDimensions());
+      return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
     });
   }, [getFixedDimensions, setRectanglesWithHistory]);
 
@@ -457,7 +459,7 @@ export const useRectangleManager = ({
         // Always check if parent needs to be resized, especially for restrictive layout preferences
         if (newParentChildren.length > 0 && newParent) {
           // Calculate minimum size needed for the parent to accommodate all children
-          const minParentSize = calculateMinimumParentSize(newParentId, updated, getFixedDimensions());
+          const minParentSize = calculateMinimumParentSize(newParentId, updated, getFixedDimensions(), getMargins());
           
           // Resize parent if it's too small to accommodate its children
           if (newParent.w < minParentSize.w || newParent.h < minParentSize.h) {
@@ -471,7 +473,7 @@ export const useRectangleManager = ({
       }
       
       // Update layout for both old and new parents
-      return updateChildrenLayout(updated, getFixedDimensions());
+      return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
     });
     
     return true;

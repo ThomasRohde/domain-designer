@@ -207,6 +207,10 @@ export interface GlobalSettings {
   borderWidth: number;
   /** Predefined color palette for rectangles */
   predefinedColors: string[];
+  /** Margin around rectangles to prevent overlap */
+  margin: number;
+  /** Extra margin for nodes with children to accommodate labels */
+  labelMargin: number;
 }
 
 /**
@@ -339,6 +343,8 @@ export interface AppSettingsHook {
   borderColor: string;
   borderWidth: number;
   predefinedColors: string[];
+  margin: number;
+  labelMargin: number;
   getFixedDimensions: () => FixedDimensions;
   calculateFontSize: (rectangleId: string) => number;
   handleLeafFixedWidthChange: (enabled: boolean) => void;
@@ -350,6 +356,8 @@ export interface AppSettingsHook {
   handleBorderRadiusChange: (radius: number) => void;
   handleBorderColorChange: (color: string) => void;
   handleBorderWidthChange: (width: number) => void;
+  handleMarginChange: (margin: number) => void;
+  handleLabelMarginChange: (labelMargin: number) => void;
   addCustomColor: (color: string) => void;
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;

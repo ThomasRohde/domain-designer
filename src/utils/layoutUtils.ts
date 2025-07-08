@@ -41,13 +41,17 @@ export const calculateChildLayout = (
     leafFixedHeight: boolean;
     leafWidth: number;
     leafHeight: number;
+  },
+  margins?: {
+    margin: number;
+    labelMargin: number;
   }
 ): Rectangle[] => {
   if (!parentRect || children.length === 0) return [];
 
-  // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
-  const topMargin = LABEL_MARGIN;
-  const sideMargin = MARGIN;
+  // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
+  const topMargin = margins?.labelMargin ?? LABEL_MARGIN;
+  const sideMargin = margins?.margin ?? MARGIN;
   
   const availableWidth = parentRect.w - (sideMargin * 2);
   const availableHeight = parentRect.h - topMargin - sideMargin;
@@ -56,7 +60,7 @@ export const calculateChildLayout = (
   const { cols, rows } = calculateGridDimensions(children.length, parentRect.layoutPreferences);
 
   // Use consistent spacing between children (same as margin)
-  const childSpacing = MARGIN;
+  const childSpacing = margins?.margin ?? MARGIN;
   
   // Calculate dimensions for all children, considering fixed dimensions for leaves
   const childDimensions = children.map(child => {
@@ -127,6 +131,10 @@ export const updateChildrenLayout = (
     leafFixedHeight: boolean;
     leafWidth: number;
     leafHeight: number;
+  },
+  margins?: {
+    margin: number;
+    labelMargin: number;
   }
 ): Rectangle[] => {
   const updated = [...rectangles];
@@ -157,7 +165,7 @@ export const updateChildrenLayout = (
               });
               processedAny = true;
             } else {
-              const newLayout = calculateChildLayout(currentParent, siblings, fixedDimensions);
+              const newLayout = calculateChildLayout(currentParent, siblings, fixedDimensions, margins);
               
               newLayout.forEach(layoutRect => {
                 const index = updated.findIndex(r => r.id === layoutRect.id);
@@ -196,7 +204,11 @@ export const updateChildrenLayout = (
 export const calculateNewRectangleLayout = (
   parentId: string | null,
   rectangles: Rectangle[],
-  defaultSizes: { root: { w: number; h: number }, leaf: { w: number; h: number } }
+  defaultSizes: { root: { w: number; h: number }, leaf: { w: number; h: number } },
+  margins?: {
+    margin: number;
+    labelMargin: number;
+  }
 ): { x: number; y: number; w: number; h: number } => {
   let x = 0, y = 0;
   let { w, h } = parentId ? defaultSizes.leaf : defaultSizes.root;
@@ -207,9 +219,9 @@ export const calculateNewRectangleLayout = (
       const existingChildren = rectangles.filter(rect => rect.parentId === parentId);
       const totalChildren = existingChildren.length + 1; // +1 for the new child
       
-      // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
-      const topMargin = LABEL_MARGIN;
-      const sideMargin = MARGIN;
+      // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
+      const topMargin = margins?.labelMargin ?? LABEL_MARGIN;
+      const sideMargin = margins?.margin ?? MARGIN;
       
       const availableWidth = Math.max(MIN_WIDTH, parent.w - (sideMargin * 2));
       const availableHeight = Math.max(MIN_HEIGHT, parent.h - topMargin - sideMargin);
@@ -222,7 +234,7 @@ export const calculateNewRectangleLayout = (
       const childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
       
       // Use consistent spacing between children (same as margin)
-      const childSpacing = MARGIN;
+      const childSpacing = margins?.margin ?? MARGIN;
       
       // Calculate total space needed including spacing
       const totalSpacingWidth = (cols - 1) * childSpacing;
@@ -252,7 +264,7 @@ export const calculateNewRectangleLayout = (
     const rootRects = rectangles.filter(rect => !rect.parentId);
     if (rootRects.length > 0) {
       const lastRect = rootRects[rootRects.length - 1];
-      x = lastRect.x + lastRect.w + MARGIN;
+      x = lastRect.x + lastRect.w + (margins?.margin ?? MARGIN);
       y = lastRect.y;
     }
   }
@@ -374,14 +386,18 @@ export const calculateMinimumParentSize = (
     leafFixedHeight: boolean;
     leafWidth: number;
     leafHeight: number;
+  },
+  margins?: {
+    margin: number;
+    labelMargin: number;
   }
 ): { w: number; h: number } => {
   const children = getChildren(parentId, rectangles);
   if (children.length === 0) return { w: MIN_WIDTH, h: MIN_HEIGHT };
 
-  // Use LABEL_MARGIN for top spacing to accommodate labels, regular MARGIN for other sides
-  const topMargin = LABEL_MARGIN;
-  const sideMargin = MARGIN;
+  // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
+  const topMargin = margins?.labelMargin ?? LABEL_MARGIN;
+  const sideMargin = margins?.margin ?? MARGIN;
 
   // Get parent rectangle to access layout preferences
   const parent = rectangles.find(r => r.id === parentId);
@@ -389,7 +405,7 @@ export const calculateMinimumParentSize = (
 
   // Calculate theoretical optimal child dimensions (not actual current dimensions)
   // This ensures consistent sizing and prevents growth on repeated fit-to-children
-  const childSpacing = MARGIN;
+  const childSpacing = margins?.margin ?? MARGIN;
   
   // Calculate theoretical optimal child dimensions to avoid resize traps
   // Use default sizes rather than current expanded dimensions
@@ -402,7 +418,7 @@ export const calculateMinimumParentSize = (
     }
     // For parent rectangles, calculate their minimum size recursively
     if (child.type === 'parent') {
-      const childMinSize = calculateMinimumParentSize(child.id, rectangles, fixedDimensions);
+      const childMinSize = calculateMinimumParentSize(child.id, rectangles, fixedDimensions, margins);
       return { width: childMinSize.w, height: childMinSize.h };
     }
     // For leaf rectangles without fixed dimensions, use default leaf size

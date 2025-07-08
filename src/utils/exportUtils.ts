@@ -129,6 +129,8 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
     borderRadius: 8,
     borderColor: '#374151',
     borderWidth: 2,
+    margin: 1,
+    labelMargin: 2,
     predefinedColors
   } : undefined;
 

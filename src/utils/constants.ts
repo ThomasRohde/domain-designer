@@ -28,6 +28,11 @@ export const DEFAULT_BORDER_SETTINGS = {
   borderWidth: 2
 };
 
+export const DEFAULT_MARGIN_SETTINGS = {
+  margin: 1,
+  labelMargin: 2
+};
+
 export const KEYBOARD_SHORTCUTS = {
   SAVE: 'Ctrl+S',
   LOAD: 'Ctrl+O',

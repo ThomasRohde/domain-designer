@@ -15,6 +15,7 @@ interface UseCanvasInteractionsProps {
   leafHeight: number;
   containerRef: React.RefObject<HTMLDivElement>;
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
+  getMargins: () => { margin: number; labelMargin: number };
   reparentRectangle: (childId: string, newParentId: string | null) => boolean;
   canReparent: (childId: string, newParentId: string | null) => boolean;
   saveToHistory: (rectangles: Rectangle[]) => void;
@@ -33,6 +34,7 @@ export const useCanvasInteractions = ({
   leafHeight,
   containerRef,
   getFixedDimensions,
+  getMargins,
   reparentRectangle,
   canReparent,
   saveToHistory
@@ -81,6 +83,7 @@ export const useCanvasInteractions = ({
     leafHeight,
     containerRef,
     getFixedDimensions,
+    getMargins,
     reparentRectangle,
     canReparent,
     saveToHistory,

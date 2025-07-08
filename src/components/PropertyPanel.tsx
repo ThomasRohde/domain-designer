@@ -37,6 +37,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     borderColor,
     borderWidth,
     predefinedColors,
+    margin,
+    labelMargin,
   } = appSettings;
 
   if (selectedId && selectedRectangle) {
@@ -173,6 +175,10 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       onBorderColorChange={(color) => onSettingsChange({ borderColor: color })}
       borderWidth={borderWidth}
       onBorderWidthChange={(width) => onSettingsChange({ borderWidth: width })}
+      margin={margin}
+      onMarginChange={(margin) => onSettingsChange({ margin: margin })}
+      labelMargin={labelMargin}
+      onLabelMarginChange={(labelMargin) => onSettingsChange({ labelMargin: labelMargin })}
     />
   );
 };
