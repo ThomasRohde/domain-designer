@@ -38,6 +38,26 @@ export const useCanvasInteractions = ({
   saveToHistory
 }: UseCanvasInteractionsProps): CanvasInteractionsHook => {
   
+  // Initialize the canvas panning hook
+  const {
+    panState,
+    panOffset,
+    panOffsetRef,
+    isSpacePressed,
+    handleCanvasMouseDown: handlePanMouseDown,
+    handlePanMove,
+    handleMouseUp: handlePanMouseUp
+  } = useCanvasPanning({ containerRef });
+
+  // Initialize zoom state
+  const [zoomState, setZoomState] = useState<ZoomState>({
+    level: 1.0,
+    centerX: 0,
+    centerY: 0,
+    minLevel: 0.1,
+    maxLevel: 3.0
+  });
+
   // Initialize the drag and resize hook
   const {
     dragState,
@@ -63,27 +83,9 @@ export const useCanvasInteractions = ({
     getFixedDimensions,
     reparentRectangle,
     canReparent,
-    saveToHistory
-  });
-
-  // Initialize the canvas panning hook
-  const {
-    panState,
+    saveToHistory,
     panOffset,
-    panOffsetRef,
-    isSpacePressed,
-    handleCanvasMouseDown: handlePanMouseDown,
-    handlePanMove,
-    handleMouseUp: handlePanMouseUp
-  } = useCanvasPanning({ containerRef });
-
-  // Initialize zoom state
-  const [zoomState, setZoomState] = useState<ZoomState>({
-    level: 1.0,
-    centerX: 0,
-    centerY: 0,
-    minLevel: 0.1,
-    maxLevel: 3.0
+    zoomLevel: zoomState.level
   });
 
   // Handle wheel events for zooming with native event listener

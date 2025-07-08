@@ -18,6 +18,8 @@ interface UseDragAndResizeProps {
   reparentRectangle?: (childId: string, newParentId: string | null) => boolean;
   canReparent?: (childId: string, newParentId: string | null) => boolean;
   saveToHistory?: (rectangles: Rectangle[]) => void;
+  panOffset: { x: number; y: number };
+  zoomLevel: number;
 }
 
 
@@ -47,14 +49,16 @@ export const useDragAndResize = ({
   getFixedDimensions,
   reparentRectangle,
   canReparent,
-  saveToHistory
+  saveToHistory,
+  panOffset,
+  zoomLevel
 }: UseDragAndResizeProps): UseDragAndResizeReturn => {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
   const [hierarchyDragState, setHierarchyDragState] = useState<HierarchyDragState | null>(null);
   const [resizeConstraintState, setResizeConstraintState] = useState<ResizeConstraintState | null>(null);
   const [needsLayoutUpdate, setNeedsLayoutUpdate] = useState<{ type: 'reparent' | 'resize'; rectangleId?: string } | null>(null);
-  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
+  const mouseMoveHandlerRef = useRef<((e: MouseEvent, panOffset: { x: number; y: number }, zoomLevel: number) => void) | null>(null);
 
   // Handle mouse down for dragging and resizing
   const handleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' | 'hierarchy-drag' = 'drag') => {
@@ -115,7 +119,7 @@ export const useDragAndResize = ({
   }, [containerRef, rectangles, saveToHistory]);
 
   // Detect drop targets during hierarchy drag
-  const detectDropTargets = useCallback((mouseX: number, mouseY: number, draggedRectId: string): DropTarget[] => {
+  const detectDropTargets = useCallback((mouseX: number, mouseY: number, draggedRectId: string, panOffset: { x: number; y: number }, zoomLevel: number): DropTarget[] => {
     const targets: DropTarget[] = [];
     
     // Add canvas background as a potential drop target (makes rectangle a root)
@@ -126,13 +130,17 @@ export const useDragAndResize = ({
       bounds: { x: 0, y: 0, width: 0, height: 0 } // Canvas background bounds
     });
     
+    // Transform mouse coordinates to canvas space (accounting for pan and zoom)
+    const canvasMouseX = (mouseX - panOffset.x) / zoomLevel;
+    const canvasMouseY = (mouseY - panOffset.y) / zoomLevel;
+    
     // Find all rectangles that the mouse is over, sorted by z-index (deepest first)
     const mouseOverRects: Array<{ rect: Rectangle; bounds: { x: number; y: number; width: number; height: number }; zIndex: number }> = [];
     
     rectangles.forEach(rect => {
       if (rect.id === draggedRectId) return; // Can't drop on self
       
-      // Calculate rectangle bounds in screen coordinates
+      // Calculate rectangle bounds in canvas coordinates
       const rectBounds = {
         x: rect.x * gridSize,
         y: rect.y * gridSize,
@@ -140,11 +148,11 @@ export const useDragAndResize = ({
         height: rect.h * gridSize
       };
       
-      // Check if mouse is over this rectangle
-      const isMouseOver = mouseX >= rectBounds.x && 
-                         mouseX <= rectBounds.x + rectBounds.width &&
-                         mouseY >= rectBounds.y && 
-                         mouseY <= rectBounds.y + rectBounds.height;
+      // Check if mouse is over this rectangle using canvas-space coordinates
+      const isMouseOver = canvasMouseX >= rectBounds.x && 
+                         canvasMouseX <= rectBounds.x + rectBounds.width &&
+                         canvasMouseY >= rectBounds.y && 
+                         canvasMouseY <= rectBounds.y + rectBounds.height;
       
       if (isMouseOver) {
         // Calculate z-index for this rectangle to determine stacking order
@@ -240,7 +248,7 @@ export const useDragAndResize = ({
    * Regular drag: Moves only root rectangles and their descendants in real-time
    * Hierarchy drag: Moves any rectangle for reparenting, with drop target detection
    */
-  const handleDragMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
+  const handleDragMove = useCallback((e: MouseEvent, containerRect: DOMRect, panOffset: { x: number; y: number }, zoomLevel: number) => {
     if (!dragState) return;
 
     const { x: currentX, y: currentY } = getMousePosition(e, containerRect);
@@ -251,7 +259,7 @@ export const useDragAndResize = ({
       // Updates rectangle position AND detects potential drop targets
       
       // Detect all potential drop targets under the mouse cursor
-      const potentialTargets = detectDropTargets(currentX, currentY, dragState.id);
+      const potentialTargets = detectDropTargets(currentX, currentY, dragState.id, panOffset, zoomLevel);
       
       // Find the best drop target - prioritize valid rectangle targets over canvas
       let currentDropTarget: DropTarget | null = null;
@@ -357,14 +365,14 @@ export const useDragAndResize = ({
   }, [resizeState, rectangles, gridSize, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, setRectangles, getFixedDimensions]);
 
   // Handle mouse movement
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent, panOffset: { x: number; y: number }, zoomLevel: number) => {
     if (!dragState && !resizeState) return;
 
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
 
     if (dragState) {
-      handleDragMove(e, containerRect);
+      handleDragMove(e, containerRect, panOffset, zoomLevel);
     } else if (resizeState) {
       handleResizeMove(e, containerRect);
     }
@@ -451,18 +459,21 @@ export const useDragAndResize = ({
   // Add and remove global mouse event listeners
   useEffect(() => {
     if (dragState || resizeState) {
-      const currentHandler = mouseMoveHandlerRef.current;
-      if (currentHandler) {
-        document.addEventListener('mousemove', currentHandler);
-        document.addEventListener('mouseup', handleMouseUp);
-        
-        return () => {
-          document.removeEventListener('mousemove', currentHandler);
-          document.removeEventListener('mouseup', handleMouseUp);
-        };
-      }
+      const currentHandler = (e: MouseEvent) => {
+        if (mouseMoveHandlerRef.current) {
+          mouseMoveHandlerRef.current(e, panOffset, zoomLevel);
+        }
+      };
+      
+      document.addEventListener('mousemove', currentHandler);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', currentHandler);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
     }
-  }, [dragState, resizeState, handleMouseUp]);
+  }, [dragState, resizeState, handleMouseUp, panOffset, zoomLevel]);
 
   // Cancel drag operation - reset to original position without state changes
   const cancelDrag = useCallback(() => {
