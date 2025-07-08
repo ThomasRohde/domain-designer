@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Download, FileImage, FileType, File } from 'lucide-react';
+import { X, Download, Globe, FileType, File } from 'lucide-react';
 import { ExportOptions } from '../types';
 
 interface ExportModalProps {
@@ -9,8 +9,7 @@ interface ExportModalProps {
 }
 
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
-  const [format, setFormat] = useState<'png' | 'svg' | 'pdf' | 'json'>('png');
-  const [quality, setQuality] = useState(1);
+  const [format, setFormat] = useState<'html' | 'svg' | 'pdf' | 'json'>('html');
   const [scale, setScale] = useState(1);
   const [includeBackground, setIncludeBackground] = useState(true);
 
@@ -19,7 +18,6 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
   const handleExport = () => {
     onExport({
       format,
-      quality,
       scale,
       includeBackground
     });
@@ -46,13 +44,13 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setFormat('png')}
+                onClick={() => setFormat('html')}
                 className={`p-3 border rounded-lg flex items-center space-x-2 ${
-                  format === 'png' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                  format === 'html' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
                 }`}
               >
-                <FileImage size={16} />
-                <span>PNG</span>
+                <Globe size={16} />
+                <span>HTML</span>
               </button>
               <button
                 onClick={() => setFormat('svg')}
@@ -100,23 +98,6 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
                   className="w-full"
                 />
               </div>
-              
-              {format === 'png' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Quality: {Math.round(quality * 100)}%
-                  </label>
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="1"
-                    step="0.1"
-                    value={quality}
-                    onChange={(e) => setQuality(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-              )}
               
               <div className="flex items-center space-x-2">
                 <input

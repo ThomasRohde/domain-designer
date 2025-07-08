@@ -1,6 +1,7 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Rectangle, ExportOptions, GlobalSettings, ValidationResult } from '../types';
+import { exportToHTML } from './htmlExport';
 
 export const exportDiagram = async (
   containerElement: HTMLElement,
@@ -19,8 +20,8 @@ export const exportDiagram = async (
   const filename = `domain-model-${timestamp}`;
 
   switch (format) {
-    case 'png':
-      await exportToPNG(containerElement, filename, { quality, scale, includeBackground });
+    case 'html':
+      exportToHTML(rectangles, filename, { includeBackground, scale }, globalSettings);
       break;
     case 'svg':
       await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, gridSize, borderRadius, borderColor, borderWidth);
@@ -36,28 +37,6 @@ export const exportDiagram = async (
   }
 };
 
-const exportToPNG = async (
-  element: HTMLElement,
-  filename: string,
-  options: { quality: number; scale: number; includeBackground: boolean }
-): Promise<void> => {
-  try {
-    const canvas = await html2canvas(element, {
-      scale: options.scale,
-      backgroundColor: options.includeBackground ? '#f9fafb' : null,
-      useCORS: true,
-      allowTaint: true
-    });
-
-    const link = document.createElement('a');
-    link.download = `${filename}.png`;
-    link.href = canvas.toDataURL('image/png', options.quality);
-    link.click();
-  } catch (error) {
-    console.error('Error exporting to PNG:', error);
-    throw error;
-  }
-};
 
 const exportToSVG = async (
   _element: HTMLElement,

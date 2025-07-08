@@ -214,7 +214,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 style={{ color: textColor, fontSize: `${fontSize}px` }}
               />
             ) : (
-              <CustomTooltip content={rectangle.metadata?.description || rectangle.label}>
+              <CustomTooltip content={rectangle.description || rectangle.label}>
                 <div 
                   className="font-medium truncate"
                   style={{ 
@@ -255,7 +255,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
               style={{ color: textColor, fontSize: `${fontSize}px` }}
             />
           ) : (
-            <CustomTooltip content={rectangle.metadata?.description || rectangle.label}>
+            <CustomTooltip content={rectangle.description || rectangle.label}>
               <div 
                 className="font-medium cursor-text text-center break-words leading-tight"
                 style={{ 

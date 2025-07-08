@@ -60,9 +60,10 @@ export interface Rectangle {
   layoutPreferences?: LayoutPreferences;
   /** Whether manual positioning is enabled for direct children (unlocked padlock) */
   isManualPositioningEnabled?: boolean;
+  /** Optional description for tooltips and metadata */
+  description?: string;
   /** Optional metadata for extensibility */
   metadata?: {
-    description?: string;
     tags?: string[];
     [key: string]: unknown;
   };
@@ -283,7 +284,7 @@ export interface DiagramState {
  */
 export interface ExportOptions {
   /** Export format */
-  format: 'png' | 'svg' | 'pdf' | 'json';
+  format: 'html' | 'svg' | 'pdf' | 'json';
   /** Image quality (0-1) for raster formats */
   quality?: number;
   /** Scale factor for export */
