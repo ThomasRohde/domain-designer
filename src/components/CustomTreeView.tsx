@@ -88,11 +88,6 @@ const TreeNode: React.FC<TreeNodeProps> = ({
           <div className="font-medium text-sm truncate">
             {node.name}
           </div>
-          {node.description && (
-            <div className="text-xs text-gray-500 truncate mt-0.5">
-              {node.description}
-            </div>
-          )}
         </div>
 
         {/* Selection Indicator */}
@@ -140,13 +135,13 @@ const CustomTreeView: React.FC<CustomTreeViewProps> = ({
     });
   }, []);
 
-  // Handle node selection
+  // Handle node selection (single selection only)
   const handleSelect = useCallback((nodeId: string) => {
-    // Toggle selection
+    // Single selection: either select this node or deselect if already selected
     if (selectedItems.includes(nodeId)) {
-      onSelectionChange(selectedItems.filter(id => id !== nodeId));
+      onSelectionChange([]);
     } else {
-      onSelectionChange([...selectedItems, nodeId]);
+      onSelectionChange([nodeId]);
     }
   }, [selectedItems, onSelectionChange]);
 

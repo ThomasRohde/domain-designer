@@ -58,6 +58,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isInserting, setIsInserting] = useState(false);
   const [insertionResult, setInsertionResult] = useState<TemplateInsertionResult | null>(null);
+  const [includeDirectChildrenOnly, setIncludeDirectChildrenOnly] = useState(false);
   
   // Color settings for hierarchy levels
   const [hierarchyColors, setHierarchyColors] = useState({
@@ -162,9 +163,16 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       return descendants;
     };
     
-    // Get nodes to insert
+    // Get direct children only
+    const getDirectChildren = (nodeId: string): TemplateNode[] => {
+      return templateData.filter(node => node.parent === nodeId);
+    };
+    
+    // Get nodes to insert based on options
     const nodesToInsert = options.includeChildren
-      ? [selectedNode, ...getDescendants(selectedNode.id)]
+      ? options.directChildrenOnly
+        ? [selectedNode, ...getDirectChildren(selectedNode.id)]
+        : [selectedNode, ...getDescendants(selectedNode.id)]
       : [selectedNode];
     
     // Calculate starting position
@@ -287,6 +295,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       const options: TemplateInsertionOptions = {
         templateNodeId: selectedId,
         includeChildren: true, // Always include children for hierarchical templates
+        directChildrenOnly: includeDirectChildrenOnly,
         color: '#3b82f6' // Default blue color
       };
       
@@ -316,7 +325,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     } finally {
       setIsInserting(false);
     }
-  }, [loadingState, selectedItems, onClose, insertTemplateDirectly]);
+  }, [loadingState, selectedItems, onClose, insertTemplateDirectly, includeDirectChildrenOnly]);
   
   // Helper function to calculate insertion position
   const calculateInsertionPosition = (
@@ -344,7 +353,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Templates</h2>
             <p className="text-sm text-gray-600 mt-1">
-              Load hierarchical templates from JSON files and insert them onto the canvas
+              Load hierarchical templates from JSON files and insert a single node onto the canvas
             </p>
           </div>
           <button
@@ -527,6 +536,24 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
             {/* Insert Button */}
             {loadingState.templateData && (
               <div className="mt-6 pt-6 border-t border-gray-200">
+                {/* Direct Children Checkbox */}
+                <div className="mb-4">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeDirectChildrenOnly}
+                      onChange={(e) => setIncludeDirectChildrenOnly(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      Insert direct children only (not entire subtree)
+                    </span>
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1 ml-6">
+                    When checked, only the selected node and its immediate children will be inserted
+                  </p>
+                </div>
+
                 <button
                   onClick={handleInsertTemplate}
                   disabled={selectedItems.length === 0 || isInserting}
@@ -537,7 +564,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
                     {isInserting 
                       ? 'Inserting...' 
                       : selectedItems.length > 0 
-                        ? `Insert Selected (${selectedItems.length})` 
+                        ? `Insert Selected` 
                         : 'Select Template Node'
                     }
                   </span>
@@ -545,7 +572,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
                 
                 {selectedItems.length > 0 && (
                   <p className="text-xs text-gray-500 mt-2 text-center">
-                    This will insert the selected node and all its children
+                    This will insert the selected node and {includeDirectChildrenOnly ? 'its direct children' : 'all its children'}
                   </p>
                 )}
               </div>
@@ -557,7 +584,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Template Hierarchy</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Select any node to insert it and all its children onto the canvas. 
+                Select a single node to insert it onto the canvas. 
                 Colors will be applied based on hierarchy level:
               </p>
               <div className="flex items-center gap-4 mt-2 text-xs">

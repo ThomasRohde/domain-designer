@@ -61,6 +61,8 @@ export interface TemplateInsertionOptions {
   templateNodeId: string;
   /** Whether to include all children */
   includeChildren: boolean;
+  /** Whether to include only direct children (not the entire subtree) */
+  directChildrenOnly?: boolean;
   /** Starting position for insertion */
   startPosition?: {
     x: number;
