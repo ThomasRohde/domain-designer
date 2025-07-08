@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Rectangle } from '../types';
 import { GRID_SIZE, LABEL_MARGIN } from '../utils/constants';
+import CustomTooltip from './CustomTooltip';
 
 interface RectangleComponentProps {
   rectangle: Rectangle;
@@ -213,25 +214,26 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 style={{ color: textColor, fontSize: `${fontSize}px` }}
               />
             ) : (
-              <div 
-                className="font-medium truncate"
-                style={{ 
-                  color: textColor, 
-                  fontSize: `${fontSize}px`,
-                  cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'text')
-                }}
-                title={rectangle.label}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  handleMouseDown(e);
-                }}
-                onDoubleClick={(e) => {
-                  e.stopPropagation();
-                  handleDoubleClick(e);
-                }}
-              >
-                {rectangle.label}
-              </div>
+              <CustomTooltip content={rectangle.metadata?.description || rectangle.label}>
+                <div 
+                  className="font-medium truncate"
+                  style={{ 
+                    color: textColor, 
+                    fontSize: `${fontSize}px`,
+                    cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'text')
+                  }}
+                  onMouseDown={(e) => {
+                    e.stopPropagation();
+                    handleMouseDown(e);
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    handleDoubleClick(e);
+                  }}
+                >
+                  {rectangle.label}
+                </div>
+              </CustomTooltip>
             )}
           </div>
           
@@ -253,19 +255,20 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
               style={{ color: textColor, fontSize: `${fontSize}px` }}
             />
           ) : (
-            <div 
-              className="font-medium cursor-text text-center break-words leading-tight"
-              style={{ 
-                color: textColor,
-                fontSize: `${fontSize}px`,
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                hyphens: 'auto'
-              }}
-              title={rectangle.label}
-            >
-              {rectangle.label}
-            </div>
+            <CustomTooltip content={rectangle.metadata?.description || rectangle.label}>
+              <div 
+                className="font-medium cursor-text text-center break-words leading-tight"
+                style={{ 
+                  color: textColor,
+                  fontSize: `${fontSize}px`,
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word',
+                  hyphens: 'auto'
+                }}
+              >
+                {rectangle.label}
+              </div>
+            </CustomTooltip>
           )}
           
           {/* Action buttons for selected leaf rectangles */}
