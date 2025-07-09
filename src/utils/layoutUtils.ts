@@ -165,22 +165,42 @@ export const updateChildrenLayout = (
               });
               processedAny = true;
             } else {
-              const newLayout = calculateChildLayout(currentParent, siblings, fixedDimensions, margins);
+              // Check if parent needs to be resized to fit children properly
+              const minParentSize = calculateMinimumParentSize(rect.parentId, updated, fixedDimensions, margins);
               
-              newLayout.forEach(layoutRect => {
-                const index = updated.findIndex(r => r.id === layoutRect.id);
-                if (index !== -1) {
-                  updated[index] = { 
-                    ...updated[index], 
-                    x: layoutRect.x, 
-                    y: layoutRect.y, 
-                    w: layoutRect.w, 
-                    h: layoutRect.h 
+              // Find parent index to update if needed
+              const parentIndex = updated.findIndex(r => r.id === rect.parentId);
+              if (parentIndex !== -1) {
+                const currentParentRect = updated[parentIndex];
+                if (currentParentRect.w < minParentSize.w || currentParentRect.h < minParentSize.h) {
+                  updated[parentIndex] = {
+                    ...currentParentRect,
+                    w: Math.max(currentParentRect.w, minParentSize.w),
+                    h: Math.max(currentParentRect.h, minParentSize.h)
                   };
-                  processedIds.add(layoutRect.id);
-                  processedAny = true;
                 }
-              });
+              }
+              
+              // Get the updated parent after potential resize
+              const updatedParent = updated.find(p => p.id === rect.parentId);
+              if (updatedParent) {
+                const newLayout = calculateChildLayout(updatedParent, siblings, fixedDimensions, margins);
+                
+                newLayout.forEach(layoutRect => {
+                  const index = updated.findIndex(r => r.id === layoutRect.id);
+                  if (index !== -1) {
+                    updated[index] = { 
+                      ...updated[index], 
+                      x: layoutRect.x, 
+                      y: layoutRect.y, 
+                      w: layoutRect.w, 
+                      h: layoutRect.h 
+                    };
+                    processedIds.add(layoutRect.id);
+                    processedAny = true;
+                  }
+                });
+              }
             }
           }
         }
@@ -190,7 +210,8 @@ export const updateChildrenLayout = (
     return processedAny;
   };
   
-  let maxIterations = 10;
+  // Increase max iterations to handle deeper hierarchies
+  let maxIterations = 20;
   while (processLevel() && maxIterations > 0) {
     maxIterations--;
   }

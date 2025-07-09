@@ -366,7 +366,7 @@ export const useDragAndResize = ({
     setRectangles(prev => prev.map(r => 
       r.id === resizeState.id ? { ...r, w: newW, h: newH } : r
     ));
-  }, [resizeState, rectangles, gridSize, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, setRectangles, getFixedDimensions]);
+  }, [resizeState, rectangles, gridSize, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, setRectangles, getFixedDimensions, getMargins]);
 
   // Handle mouse movement
   const handleMouseMove = useCallback((e: MouseEvent, panOffset: { x: number; y: number }, zoomLevel: number) => {
@@ -447,8 +447,23 @@ export const useDragAndResize = ({
         if (rect) {
           const hasDescendants = getAllDescendants(rect.id, rectangles).length > 0;
           if (hasDescendants) {
+            // For deep hierarchies, we need to trigger layout updates to ensure proper containment
             // Schedule layout update after resize operation
             setNeedsLayoutUpdate({ type: 'resize', rectangleId: rectId });
+          }
+          
+          // Additionally, if this rectangle has a parent, we should check if the parent
+          // needs to be resized to accommodate the resized child
+          if (rect.parentId) {
+            const parent = rectangles.find(r => r.id === rect.parentId);
+            if (parent) {
+              // Check if parent needs to grow to accommodate the resized child
+              const minParentSize = calculateMinimumParentSize(rect.parentId, rectangles, getFixedDimensions(), getMargins());
+              if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
+                // Parent needs to be resized too, trigger a broader layout update
+                setNeedsLayoutUpdate({ type: 'resize', rectangleId: rect.parentId });
+              }
+            }
           }
         }
       }
@@ -456,7 +471,7 @@ export const useDragAndResize = ({
     
     // Trigger save after any drag/resize completion
     triggerSave?.();
-  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle, triggerSave]);
+  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle, triggerSave, getFixedDimensions, getMargins]);
 
   // Store the mouse move handler in a ref to ensure proper cleanup
   React.useEffect(() => {
@@ -526,11 +541,11 @@ export const useDragAndResize = ({
     if (needsLayoutUpdate) {
       // Use a microtask to ensure state has settled
       Promise.resolve().then(() => {
-        setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions()));
+        setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions(), getMargins()));
         setNeedsLayoutUpdate(null);
       });
     }
-  }, [needsLayoutUpdate, setRectangles, getFixedDimensions]);
+  }, [needsLayoutUpdate, setRectangles, getFixedDimensions, getMargins]);
 
   return {
     dragState,

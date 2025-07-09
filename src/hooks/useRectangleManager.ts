@@ -266,7 +266,7 @@ export const useRectangleManager = ({
     setSelectedId(id);
     
     // Remove the setTimeout since we're doing the layout update immediately above
-  }, [generateId, rectangles, gridSize, panOffsetRef, containerRef, getFixedDimensions, setRectanglesWithHistory]);
+  }, [generateId, rectangles, gridSize, panOffsetRef, containerRef, getFixedDimensions, getMargins, setRectanglesWithHistory]);
 
   // Get all descendants of a rectangle (recursive)
   const getAllDescendantsWrapper = useCallback((parentId: string): Rectangle[] => {
@@ -340,7 +340,7 @@ export const useRectangleManager = ({
       // Recalculate layout for all children after preferences change
       return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
     });
-  }, [setRectanglesWithHistory, getFixedDimensions]);
+  }, [setRectanglesWithHistory, getFixedDimensions, getMargins]);
 
   // Toggle manual positioning for a rectangle
   const toggleManualPositioning = useCallback((id: string) => {
@@ -360,7 +360,7 @@ export const useRectangleManager = ({
       
       return updated;
     });
-  }, [setRectanglesWithHistory, getFixedDimensions]);
+  }, [setRectanglesWithHistory, getFixedDimensions, getMargins]);
 
   // Fit rectangle to children
   const fitToChildren = useCallback((id: string) => {
@@ -381,7 +381,7 @@ export const useRectangleManager = ({
       // Recalculate children layout after parent resize
       return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
     });
-  }, [getFixedDimensions, setRectanglesWithHistory]);
+  }, [getFixedDimensions, getMargins, setRectanglesWithHistory]);
 
   // Check if reparenting is allowed (prevents circular hierarchies)
   const canReparent = useCallback((childId: string, newParentId: string | null): boolean => {
@@ -481,7 +481,7 @@ export const useRectangleManager = ({
     });
     
     return true;
-  }, [canReparent, setRectanglesWithHistory, getFixedDimensions]);
+  }, [canReparent, setRectanglesWithHistory, getFixedDimensions, getMargins]);
 
   // Recalculate z-order after hierarchy changes
   const recalculateZOrder = useCallback(() => {
