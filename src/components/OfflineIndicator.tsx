@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WifiOff, Wifi, Save, Check } from 'lucide-react';
 
 interface OfflineIndicatorProps {
-  lastSaved?: Date | null;
+  lastSaved?: number | null;
   autoSaveEnabled?: boolean;
 }
 
@@ -33,12 +33,14 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
         setShowSavedIndicator(false);
       }, 2000);
       return () => clearTimeout(timer);
+    } else {
+      setShowSavedIndicator(false);
     }
   }, [lastSaved]);
 
-  const formatLastSaved = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+  const formatLastSaved = (timestamp: number) => {
+    const now = Date.now();
+    const diffMs = now - timestamp;
     const diffMins = Math.floor(diffMs / 60000);
     
     if (diffMins < 1) return 'just now';
@@ -47,7 +49,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
     const diffHours = Math.floor(diffMins / 60);
     if (diffHours < 24) return `${diffHours}h ago`;
     
-    return date.toLocaleDateString();
+    return new Date(timestamp).toLocaleDateString();
   };
 
   return (

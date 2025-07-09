@@ -192,6 +192,7 @@ const HierarchicalDrawingApp = () => {
     }
   }, [uiState.lockConfirmationModal, rectangleManager]);
 
+
   // Memoized calculations
   const selectedRectangle = useMemo(() => 
     rectangleManager.selectedId ? rectangleManager.findRectangle(rectangleManager.selectedId) || null : null,
@@ -224,10 +225,68 @@ const HierarchicalDrawingApp = () => {
     rectangles: rectangleManager.rectangles,
     appSettings: appSettingsObject,
     onRestore: useCallback((rectangles, settings) => {
+      console.log('Restoring', rectangles.length, 'rectangles');
+      // Clear selection first to avoid issues
+      rectangleManager.setSelectedId(null);
+      // Replace all rectangles with restored data
       rectangleManager.setRectangles(rectangles);
       handleSettingsChange(settings);
     }, [rectangleManager, handleSettingsChange])
   });
+
+  const handleClearSavedData = useCallback(async () => {
+    if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
+      await autoSaveManager.clearSavedState();
+    }
+  }, [autoSaveManager]);
+
+  // Debug function for testing IndexedDB directly
+  const testIndexedDB = useCallback(async () => {
+    try {
+      console.log('Testing IndexedDB directly...');
+      const request = indexedDB.open('TestDB', 1);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains('test')) {
+          db.createObjectStore('test');
+        }
+      };
+      
+      request.onsuccess = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        const transaction = db.transaction(['test'], 'readwrite');
+        const store = transaction.objectStore('test');
+        
+        store.put({ test: 'data', timestamp: Date.now() }, 'testKey');
+        
+        transaction.oncomplete = () => {
+          console.log('Test data saved to IndexedDB');
+          
+          // Read it back
+          const readTransaction = db.transaction(['test'], 'readonly');
+          const readStore = readTransaction.objectStore('test');
+          const getRequest = readStore.get('testKey');
+          
+          getRequest.onsuccess = () => {
+            console.log('Test data retrieved:', getRequest.result);
+          };
+        };
+      };
+      
+      request.onerror = (event) => {
+        console.error('IndexedDB test failed:', event);
+      };
+    } catch (error) {
+      console.error('IndexedDB not available:', error);
+    }
+  }, []);
+
+  // Add this to window for debugging
+  React.useEffect(() => {
+    (window as any).testIndexedDB = testIndexedDB;
+    (window as any).autoSaveManager = autoSaveManager;
+  }, [testIndexedDB, autoSaveManager]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts(useMemo(() => ({
@@ -258,6 +317,7 @@ const HierarchicalDrawingApp = () => {
           onClose={uiState.closeLeftMenu}
           onAboutClick={handleAboutClick}
           onTemplatesClick={handleTemplatesClick}
+          onClearSavedData={handleClearSavedData}
         />
         
         <div className="flex-1 flex flex-col overflow-hidden">

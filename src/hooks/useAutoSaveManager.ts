@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useAutoSave } from './useAutoSave';
 import { Rectangle, AppSettings } from '../types';
 
@@ -15,57 +15,96 @@ export const useAutoSaveManager = ({
 }: AutoSaveManagerProps) => {
   const { saveData, loadData, clearData } = useAutoSave();
   const [isRestoring, setIsRestoring] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [lastSaved, setLastSaved] = useState<number | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [justRestored, setJustRestored] = useState(false);
+  
+  // Use refs to store stable references to avoid dependency issues
+  const saveDataRef = useRef(saveData);
+  const loadDataRef = useRef(loadData);
+  const clearDataRef = useRef(clearData);
+  const onRestoreRef = useRef(onRestore);
+  
+  // Keep refs updated
+  useEffect(() => {
+    saveDataRef.current = saveData;
+    loadDataRef.current = loadData;
+    clearDataRef.current = clearData;
+    onRestoreRef.current = onRestore;
+  });
 
-  // Save current state
-  const saveCurrentState = useCallback(() => {
-    if (!autoSaveEnabled || isRestoring) return;
-
-    const data = {
-      rectangles,
-      appSettings,
-      timestamp: Date.now()
-    };
-
-    saveData(data);
-    setLastSaved(new Date());
-  }, [rectangles, appSettings, saveData, autoSaveEnabled, isRestoring]);
 
   // Restore from saved state
   const restoreFromSave = useCallback(async () => {
     setIsRestoring(true);
+    setJustRestored(true);
     try {
       const savedData = await loadData();
       if (savedData) {
         console.log('Restoring from auto-save:', new Date(savedData.timestamp));
         onRestore(savedData.rectangles, savedData.appSettings);
-        setLastSaved(new Date(savedData.timestamp));
+        setLastSaved(savedData.timestamp);
       }
     } catch (error) {
       console.error('Failed to restore from auto-save:', error);
     } finally {
       setIsRestoring(false);
+      // Reset justRestored flag after a delay to prevent immediate auto-save
+      setTimeout(() => {
+        setJustRestored(false);
+      }, 1000);
     }
   }, [loadData, onRestore]);
 
   // Clear saved state
   const clearSavedState = useCallback(async () => {
-    await clearData();
+    await clearDataRef.current();
     setLastSaved(null);
-  }, [clearData]);
+  }, []);
 
-  // Auto-save when state changes
+  // Auto-save when state changes (but not during initial restore)
   useEffect(() => {
-    if (rectangles.length > 0 || Object.keys(appSettings).length > 0) {
-      saveCurrentState();
+    if (!isRestoring && !justRestored && rectangles.length > 0) {
+      console.log('Auto-saving', rectangles.length, 'rectangles');
+      
+      // Call saveData directly to avoid dependency issues
+      const data = {
+        rectangles,
+        appSettings,
+        timestamp: Date.now()
+      };
+      
+      saveDataRef.current(data, () => {
+        setLastSaved(Date.now());
+      });
     }
-  }, [rectangles, appSettings, saveCurrentState]);
+  }, [rectangles, appSettings, isRestoring, justRestored]); // Clean dependencies
 
   // Initial restore on mount
   useEffect(() => {
-    restoreFromSave();
-  }, [restoreFromSave]);
+    const performRestore = async () => {
+      setIsRestoring(true);
+      setJustRestored(true);
+      try {
+        const savedData = await loadDataRef.current();
+        if (savedData) {
+          console.log('About to restore data:', savedData.rectangles.length, 'rectangles');
+          onRestoreRef.current(savedData.rectangles, savedData.appSettings);
+          setLastSaved(savedData.timestamp);
+        }
+      } catch (error) {
+        console.error('Failed to restore from auto-save:', error);
+      } finally {
+        setIsRestoring(false);
+        // Reset justRestored flag after a delay to prevent immediate auto-save
+        setTimeout(() => {
+          setJustRestored(false);
+        }, 1000);
+      }
+    };
+    
+    performRestore();
+  }, []); // Empty dependency array - only run once on mount
 
   return {
     lastSaved,

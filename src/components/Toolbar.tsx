@@ -11,7 +11,7 @@ interface ToolbarProps {
   sidebarOpen?: boolean;
   onToggleLeftMenu?: () => void;
   leftMenuOpen?: boolean;
-  lastSaved?: Date | null;
+  lastSaved?: number | null;
   autoSaveEnabled?: boolean;
 }
 

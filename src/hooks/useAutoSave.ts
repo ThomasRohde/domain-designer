@@ -15,11 +15,11 @@ interface DomainDesignerDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'DomainDesignerDB';
+const DB_NAME = 'DomainDesigner_v2_DB';
 const DB_VERSION = 1;
 const STORE_NAME = 'diagrams';
-const AUTOSAVE_KEY = 'autosave';
-const SAVE_DELAY = 1000; // 1 second debounce
+const AUTOSAVE_KEY = 'current_diagram';
+const SAVE_DELAY = 2000; // 2 second debounce
 
 export const useAutoSave = () => {
   const dbRef = useRef<IDBPDatabase<DomainDesignerDB> | null>(null);
@@ -48,10 +48,13 @@ export const useAutoSave = () => {
   const saveData = useCallback(async (data: AutoSaveData) => {
     try {
       const db = await initDB();
-      if (!db) return;
+      if (!db) {
+        console.warn('IndexedDB not available for auto-save');
+        return;
+      }
 
       await db.put(STORE_NAME, data, AUTOSAVE_KEY);
-      console.log('Auto-save completed');
+      console.log('Auto-save complete:', data.rectangles.length, 'rectangles');
     } catch (error) {
       console.error('Failed to save data:', error);
     }
@@ -61,9 +64,15 @@ export const useAutoSave = () => {
   const loadData = useCallback(async (): Promise<AutoSaveData | null> => {
     try {
       const db = await initDB();
-      if (!db) return null;
+      if (!db) {
+        console.warn('IndexedDB not available for auto-restore');
+        return null;
+      }
 
       const data = await db.get(STORE_NAME, AUTOSAVE_KEY);
+      if (data) {
+        console.log('Loaded saved data:', data.rectangles.length, 'rectangles from', new Date(data.timestamp).toLocaleString());
+      }
       return data || null;
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -78,20 +87,20 @@ export const useAutoSave = () => {
       if (!db) return;
 
       await db.delete(STORE_NAME, AUTOSAVE_KEY);
-      console.log('Auto-save data cleared');
     } catch (error) {
       console.error('Failed to clear data:', error);
     }
   }, [initDB]);
 
   // Debounced save function
-  const debouncedSave = useCallback((data: AutoSaveData) => {
+  const debouncedSave = useCallback((data: AutoSaveData, onComplete?: () => void) => {
     if (saveTimeoutRef.current) {
       window.clearTimeout(saveTimeoutRef.current);
     }
 
-    saveTimeoutRef.current = window.setTimeout(() => {
-      saveData(data);
+    saveTimeoutRef.current = window.setTimeout(async () => {
+      await saveData(data);
+      onComplete?.();
     }, SAVE_DELAY);
   }, [saveData]);
 
@@ -107,7 +116,7 @@ export const useAutoSave = () => {
   // Initialize DB on mount
   useEffect(() => {
     initDB();
-  }, [initDB]);
+  }, []); // Empty dependency - only run once
 
   return {
     saveData: debouncedSave,
