@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useMemo, useState } from 'react';
+import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
 import { ExportOptions, AppSettings } from '../types';
 import { exportDiagram, importDiagramFromJSON, ImportedDiagramData, processImportedDiagram } from '../utils/exportUtils';
 import { getChildren } from '../utils/layoutUtils';
@@ -28,12 +28,17 @@ const HierarchicalDrawingApp = () => {
   const uiState = useUIState();
   const appSettings = useAppSettings();
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  
+  // Create a ref for triggerSave to avoid circular dependency
+  const triggerSaveRef = useRef<(() => void) | null>(null);
+  
   const rectangleManager = useRectangleManager({
     gridSize: appSettings.gridSize,
     panOffsetRef: { current: { x: 0, y: 0 } },
     containerRef,
     getFixedDimensions: appSettings.getFixedDimensions,
-    getMargins: () => ({ margin: appSettings.margin, labelMargin: appSettings.labelMargin })
+    getMargins: () => ({ margin: appSettings.margin, labelMargin: appSettings.labelMargin }),
+    triggerSave: () => triggerSaveRef.current?.()
   });
 
   // Canvas interactions with proper setSelectedId wrapper
@@ -60,7 +65,8 @@ const HierarchicalDrawingApp = () => {
     getMargins: () => ({ margin: appSettings.margin, labelMargin: appSettings.labelMargin }),
     reparentRectangle: rectangleManager.reparentRectangle,
     canReparent: rectangleManager.canReparent,
-    saveToHistory: rectangleManager.saveToHistory
+    saveToHistory: rectangleManager.saveToHistory,
+    triggerSave: () => triggerSaveRef.current?.()
   });
 
   // Connect app settings to rectangle manager
@@ -233,6 +239,11 @@ const HierarchicalDrawingApp = () => {
       handleSettingsChange(settings);
     }, [rectangleManager, handleSettingsChange])
   });
+  
+  // Set the triggerSave ref
+  useEffect(() => {
+    triggerSaveRef.current = autoSaveManager.triggerSave;
+  }, [autoSaveManager.triggerSave]);
 
   const handleClearSavedData = useCallback(async () => {
     if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {

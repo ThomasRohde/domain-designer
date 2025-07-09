@@ -26,6 +26,7 @@ export interface UseRectangleManagerProps {
   containerRef: React.RefObject<HTMLDivElement>;
   getFixedDimensions: () => FixedDimensions;
   getMargins: () => { margin: number; labelMargin: number };
+  triggerSave?: () => void;
 }
 
 export interface UseRectangleManagerReturn {
@@ -70,7 +71,8 @@ export const useRectangleManager = ({
   panOffsetRef,
   containerRef,
   getFixedDimensions,
-  getMargins
+  getMargins,
+  triggerSave
 }: UseRectangleManagerProps): UseRectangleManagerReturn => {
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -93,7 +95,9 @@ export const useRectangleManager = ({
       const newRectangles = typeof value === 'function' ? value(prev) : value;
       return newRectangles;
     });
-  }, [history]);
+    // Trigger save after the state change
+    triggerSave?.();
+  }, [history, triggerSave]);
   
   // Track undo/redo operations for proper cleanup
   const [undoRedoInProgress, setUndoRedoInProgress] = useState(false);

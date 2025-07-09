@@ -62,12 +62,11 @@ export const useAutoSaveManager = ({
     setLastSaved(null);
   }, []);
 
-  // Auto-save when state changes (but not during initial restore)
-  useEffect(() => {
-    if (!isRestoring && !justRestored && rectangles.length > 0) {
-      console.log('Auto-saving', rectangles.length, 'rectangles');
+  // Manual save function that can be called when actual changes occur
+  const triggerSave = useCallback(() => {
+    if (!isRestoring && !justRestored) {
+      console.log('Manually triggering save for', rectangles.length, 'rectangles');
       
-      // Call saveData directly to avoid dependency issues
       const data = {
         rectangles,
         appSettings,
@@ -78,7 +77,7 @@ export const useAutoSaveManager = ({
         setLastSaved(Date.now());
       });
     }
-  }, [rectangles, appSettings, isRestoring, justRestored]); // Clean dependencies
+  }, [rectangles, appSettings, isRestoring, justRestored]);
 
   // Initial restore on mount
   useEffect(() => {
@@ -112,6 +111,7 @@ export const useAutoSaveManager = ({
     setAutoSaveEnabled,
     clearSavedState,
     isRestoring,
-    restoreFromSave
+    restoreFromSave,
+    triggerSave
   };
 };

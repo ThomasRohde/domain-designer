@@ -21,6 +21,7 @@ interface UseDragAndResizeProps {
   saveToHistory?: (rectangles: Rectangle[]) => void;
   panOffset: { x: number; y: number };
   zoomLevel: number;
+  triggerSave?: () => void;
 }
 
 
@@ -53,7 +54,8 @@ export const useDragAndResize = ({
   canReparent,
   saveToHistory,
   panOffset,
-  zoomLevel
+  zoomLevel,
+  triggerSave
 }: UseDragAndResizeProps): UseDragAndResizeReturn => {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [resizeState, setResizeState] = useState<ResizeState | null>(null);
@@ -451,7 +453,10 @@ export const useDragAndResize = ({
         }
       }
     }
-  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle]);
+    
+    // Trigger save after any drag/resize completion
+    triggerSave?.();
+  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle, triggerSave]);
 
   // Store the mouse move handler in a ref to ensure proper cleanup
   React.useEffect(() => {
@@ -511,7 +516,10 @@ export const useDragAndResize = ({
     setResizeState(null);
     setHierarchyDragState(null);
     setResizeConstraintState(null);
-  }, [dragState, setRectangles]);
+    
+    // Trigger save after cancel (position reset)
+    triggerSave?.();
+  }, [dragState, setRectangles, triggerSave]);
 
   // Handle layout updates after reparenting or resize operations
   useEffect(() => {

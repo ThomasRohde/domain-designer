@@ -19,6 +19,7 @@ interface UseCanvasInteractionsProps {
   reparentRectangle: (childId: string, newParentId: string | null) => boolean;
   canReparent: (childId: string, newParentId: string | null) => boolean;
   saveToHistory: (rectangles: Rectangle[]) => void;
+  triggerSave?: () => void;
 }
 
 
@@ -37,7 +38,8 @@ export const useCanvasInteractions = ({
   getMargins,
   reparentRectangle,
   canReparent,
-  saveToHistory
+  saveToHistory,
+  triggerSave
 }: UseCanvasInteractionsProps): CanvasInteractionsHook => {
   
   // Initialize the canvas panning hook
@@ -88,7 +90,8 @@ export const useCanvasInteractions = ({
     canReparent,
     saveToHistory,
     panOffset,
-    zoomLevel: zoomState.level
+    zoomLevel: zoomState.level,
+    triggerSave
   });
 
   // Handle wheel events for zooming with native event listener
