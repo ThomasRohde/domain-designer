@@ -160,7 +160,7 @@ const HierarchicalDrawingApp = () => {
         );
         
         // Update rectangles with processed data
-        rectangleManager.setRectangles(processedRectangles);
+        rectangleManager.setRectanglesWithHistory(processedRectangles);
         
         // Update the nextId counter to prevent ID conflicts
         rectangleManager.updateNextId(newNextId);
