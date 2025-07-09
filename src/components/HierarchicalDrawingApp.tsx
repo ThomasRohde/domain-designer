@@ -7,6 +7,7 @@ import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useAutoSaveManager } from '../hooks/useAutoSaveManager';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -218,6 +219,16 @@ const HierarchicalDrawingApp = () => {
     labelMargin: appSettings.labelMargin,
   }), [appSettings]);
 
+  // Auto-save manager
+  const autoSaveManager = useAutoSaveManager({
+    rectangles: rectangleManager.rectangles,
+    appSettings: appSettingsObject,
+    onRestore: useCallback((rectangles, settings) => {
+      rectangleManager.setRectangles(rectangles);
+      handleSettingsChange(settings);
+    }, [rectangleManager, handleSettingsChange])
+  });
+
   // Keyboard shortcuts
   useKeyboardShortcuts(useMemo(() => ({
     onUndo: rectangleManager.undo,
@@ -237,6 +248,8 @@ const HierarchicalDrawingApp = () => {
         sidebarOpen={uiState.sidebarOpen}
         onToggleLeftMenu={uiState.toggleLeftMenu}
         leftMenuOpen={uiState.leftMenuOpen}
+        lastSaved={autoSaveManager.lastSaved}
+        autoSaveEnabled={autoSaveManager.autoSaveEnabled}
       />
 
       <div className="flex-1 flex overflow-hidden relative">

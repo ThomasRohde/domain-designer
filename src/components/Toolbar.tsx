@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, Menu, Download, Upload, Settings } from 'lucide-react';
+import OfflineIndicator from './OfflineIndicator';
 
 interface ToolbarProps {
   onAddRectangle: (parentId: string | null) => void;
@@ -10,6 +11,8 @@ interface ToolbarProps {
   sidebarOpen?: boolean;
   onToggleLeftMenu?: () => void;
   leftMenuOpen?: boolean;
+  lastSaved?: Date | null;
+  autoSaveEnabled?: boolean;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -20,7 +23,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onToggleSidebar,
   sidebarOpen,
   onToggleLeftMenu,
-  leftMenuOpen
+  leftMenuOpen,
+  lastSaved,
+  autoSaveEnabled
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-3">
@@ -35,6 +40,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
           </button>
           <h1 className="text-lg sm:text-xl font-bold text-gray-800 hidden sm:block">Domain Modeling Tool</h1>
           <h1 className="text-sm font-bold text-gray-800 sm:hidden">Domain Tool</h1>
+          <div className="hidden sm:block">
+            <OfflineIndicator lastSaved={lastSaved} autoSaveEnabled={autoSaveEnabled} />
+          </div>
         </div>
         
         <div className="flex items-center space-x-1 sm:space-x-2">

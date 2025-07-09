@@ -19,6 +19,7 @@ A React+TypeScript application for creating domain models and hierarchical diagr
 - **Export**: Export to PNG, SVG, PDF, or JSON formats
 - **Undo/Redo**: Full history management
 - **Professional Styling**: Color-coded categories with professional appearance
+- **Progressive Web App**: Installable on desktop, works offline with auto-save
 
 ## Getting Started
 
@@ -87,6 +88,33 @@ npm run lint
 - **SVG**: Scalable vector graphics
 - **PDF**: Print-ready document format
 - **JSON**: Raw diagram data for backup/sharing
+
+## Progressive Web App Features
+
+This application is built as a Progressive Web App (PWA) with the following capabilities:
+
+### Installation
+- **Desktop Installation**: Install the app on Windows, macOS, or Linux
+- **App-like Experience**: Runs in its own window without browser UI
+- **Easy Access**: Launch from desktop or start menu like any native app
+
+### Offline Capabilities
+- **Offline Support**: Continue working even without internet connection
+- **Auto-save**: Your work is automatically saved to local storage as you edit
+- **Instant Loading**: App loads instantly after first visit, even offline
+- **Data Persistence**: All diagrams are saved locally and restored on app restart
+
+### How to Install
+1. Open the app in Chrome, Edge, or similar browser
+2. Look for the "Install" button in the address bar or menu
+3. Click "Install Domain Designer" to add it to your system
+4. Launch the app from your desktop or start menu
+
+### Offline Status
+The app displays your connection status and auto-save information in the toolbar:
+- **Online/Offline indicator**: Shows current network status
+- **Auto-save status**: Displays when your work was last saved
+- **Save confirmation**: Shows "Saved" message when changes are persisted
 
 ## Technical Architecture
 
