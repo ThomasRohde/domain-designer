@@ -93,10 +93,10 @@ export const useRectangleManager = ({
         history.pushState(prev);
       }
       const newRectangles = typeof value === 'function' ? value(prev) : value;
+      // Schedule save after state update completes
+      setTimeout(() => triggerSave?.(), 0);
       return newRectangles;
     });
-    // Trigger save after the state change
-    triggerSave?.();
   }, [history, triggerSave]);
   
   // Track undo/redo operations for proper cleanup
