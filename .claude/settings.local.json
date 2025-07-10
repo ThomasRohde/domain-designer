@@ -22,7 +22,8 @@
       "Bash(curl:*)",
       "Bash(ls:*)",
       "Bash(node:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "WebFetch(domain:mermaid.ink)"
     ],
     "deny": []
   }

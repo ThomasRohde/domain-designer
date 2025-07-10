@@ -1,5 +1,6 @@
 import { Rectangle, ExportOptions, GlobalSettings, ValidationResult } from '../types';
 import { exportToHTML } from './htmlExport';
+import pako from 'pako';
 
 export const exportDiagram = async (
   containerElement: HTMLElement,
@@ -110,6 +111,8 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
 
 const exportToMermaid = (rectangles: Rectangle[], filename: string): void => {
   const mermaidDiagram = generateMermaidDiagram(rectangles);
+  
+  // Save the file
   const blob = new Blob([mermaidDiagram], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   
@@ -119,6 +122,68 @@ const exportToMermaid = (rectangles: Rectangle[], filename: string): void => {
   link.click();
   
   URL.revokeObjectURL(url);
+  
+  // Open preview in new window and generate SVG link
+  openMermaidPreview(mermaidDiagram);
+};
+
+const openMermaidPreview = (mermaidDiagram: string): void => {
+  try {
+    // Create the JSON structure that Mermaid Live Editor expects
+    const jGraph = {
+      code: mermaidDiagram,
+      mermaid: { theme: "default" }
+    };
+    
+    // Convert to JSON string
+    const jsonString = JSON.stringify(jGraph);
+    
+    // Convert to bytes (UTF-8 encoded)
+    const encoder = new TextEncoder();
+    const byteArray = encoder.encode(jsonString);
+    
+    // Compress with pako (deflate)
+    const compressed = pako.deflate(byteArray);
+    
+    // Convert to base64
+    let binary = '';
+    for (let i = 0; i < compressed.length; i++) {
+      binary += String.fromCharCode(compressed[i]);
+    }
+    const base64 = btoa(binary);
+    
+    // Make URL-safe by replacing + with - and / with _
+    const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_');
+    
+    // Create Mermaid Ink SVG URL
+    const svgUrl = `https://mermaid.ink/svg/pako:${urlSafeBase64}`;
+    
+    console.log('Opening Mermaid SVG with pako encoding:', svgUrl);
+    
+    // Open SVG directly in new window
+    window.open(svgUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+  } catch (error) {
+    console.error('Error with pako encoding:', error);
+    
+    // Fallback: use simple base64 encoding with JSON structure
+    try {
+      const jGraph = {
+        code: mermaidDiagram,
+        mermaid: { theme: "default" }
+      };
+      const jsonString = JSON.stringify(jGraph);
+      const base64 = btoa(jsonString);
+      const fallbackSvgUrl = `https://mermaid.ink/svg/base64:${base64}`;
+      
+      console.log('Opening Mermaid SVG with base64 encoding (fallback):', fallbackSvgUrl);
+      
+      // Open SVG directly in new window
+      window.open(fallbackSvgUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    } catch (fallbackError) {
+      console.error('Error with base64 encoding:', fallbackError);
+      alert('Unable to open Mermaid preview. The diagram has been saved to your downloads folder.');
+    }
+  }
 };
 
 const generateMermaidDiagram = (rectangles: Rectangle[]): string => {
