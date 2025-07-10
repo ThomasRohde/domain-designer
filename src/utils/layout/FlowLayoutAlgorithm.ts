@@ -59,14 +59,14 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
    * Calculate layout for children within a parent rectangle using flow algorithm
    */
   calculateLayout(input: LayoutInput): LayoutResult {
-    const { parentRect, children, fixedDimensions, margins } = input;
+    const { parentRect, children, fixedDimensions, margins, depth, allRectangles } = input;
     
     if (children.length === 0) {
       return { rectangles: [] };
     }
 
     // Convert rectangles to flow rectangles with orientation
-    const flowChildren = this.prepareFlowRectangles(children, parentRect);
+    const flowChildren = this.prepareFlowRectangles(children, parentRect, allRectangles, depth);
     
     // Calculate text measurements and set minimum sizes
     this.calculateMinimumSizes(flowChildren, fixedDimensions);
@@ -79,12 +79,12 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
     // Create a virtual parent for packing if needed
     const virtualParent: FlowRectangle = {
       ...parentRect,
-      orient: this.determineOrientation(this.calculateDepth(parentRect)),
+      orient: this.determineOrientation(this.calculateDepth(parentRect, allRectangles, depth)),
       minW: 0,
       minH: 0
     };
     
-    const packedSize = this.pack(virtualParent, flowChildren, maxW, maxH, margins);
+    const packedSize = this.pack(virtualParent, flowChildren, maxW, maxH, margins, allRectangles);
     
     // Convert back to regular rectangles and adjust positions relative to parent
     const result = this.convertToRectangles(flowChildren, parentRect, margins);
@@ -99,7 +99,7 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
    * Calculate minimum dimensions needed for parent to fit children
    */
   calculateMinimumParentSize(input: LayoutInput): { w: number; h: number } {
-    const { children, fixedDimensions, margins } = input;
+    const { children, fixedDimensions, margins, depth, allRectangles } = input;
     
     if (children.length === 0) {
       return { w: 100, h: 60 };
@@ -110,13 +110,13 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
       id: 'temp',
       x: 0, y: 0, w: 0, h: 0,
       label: '', color: '', type: 'parent',
-      orient: this.determineOrientation(0)
+      orient: this.determineOrientation(depth || 0)
     };
 
-    const flowChildren = this.prepareFlowRectangles(children, tempParent);
+    const flowChildren = this.prepareFlowRectangles(children, tempParent, allRectangles, depth);
     this.calculateMinimumSizes(flowChildren, fixedDimensions);
     
-    const packedSize = this.pack(tempParent, flowChildren, Infinity, Infinity);
+    const packedSize = this.pack(tempParent, flowChildren, Infinity, Infinity, margins, allRectangles);
     
     // Add margins using consistent calculations
     const marginH = 2 * (margins?.margin || 1);
@@ -138,12 +138,12 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Prepare rectangles for flow layout by adding orientation data
    */
-  private prepareFlowRectangles(children: Rectangle[], parent: Rectangle): FlowRectangle[] {
-    const parentDepth = this.calculateDepth(parent);
+  private prepareFlowRectangles(children: Rectangle[], parent: Rectangle, allRectangles?: Rectangle[], parentDepth?: number): FlowRectangle[] {
+    const actualParentDepth = this.calculateDepth(parent, allRectangles, parentDepth);
     
     return children.map(child => ({
       ...child,
-      orient: child.layoutPreferences?.orientation || this.determineOrientation(parentDepth + 1),
+      orient: child.layoutPreferences?.orientation || this.determineOrientation(actualParentDepth + 1),
       weight: 1
     }));
   }
@@ -151,11 +151,36 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Calculate the depth of a rectangle in the hierarchy
    */
-  private calculateDepth(rect: Rectangle): number {
-    // For this implementation, we'll use a simple heuristic
-    // In a full implementation, this would traverse up the parent chain
-    if (!rect.parentId) return 0;
-    return 1; // Simplified for now
+  private calculateDepth(rect: Rectangle, allRectangles?: Rectangle[], providedDepth?: number): number {
+    // Use provided depth if available
+    if (providedDepth !== undefined) {
+      return providedDepth;
+    }
+    
+    // If no parent, this is a root rectangle
+    if (!rect.parentId) {
+      return 0;
+    }
+    
+    // If we have all rectangles, traverse up the parent chain
+    if (allRectangles) {
+      let currentRect = rect;
+      let depth = 0;
+      
+      while (currentRect.parentId) {
+        depth++;
+        const parent = allRectangles.find(r => r.id === currentRect.parentId);
+        if (!parent) {
+          break; // Parent not found, stop traversal
+        }
+        currentRect = parent;
+      }
+      
+      return depth;
+    }
+    
+    // Fallback to simple heuristic
+    return 1;
   }
 
   /**
@@ -169,7 +194,12 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Calculate minimum sizes for rectangles based on text content and fixed dimensions
    */
-  private calculateMinimumSizes(rectangles: FlowRectangle[], fixedDimensions?: any): void {
+  private calculateMinimumSizes(rectangles: FlowRectangle[], fixedDimensions?: {
+    leafFixedWidth: boolean;
+    leafFixedHeight: boolean;
+    leafWidth: number;
+    leafHeight: number;
+  }): void {
     rectangles.forEach(rect => {
       if (rect.type === 'leaf') {
         // For leaves, use fixed dimensions if available, otherwise use current size or minimum
@@ -196,17 +226,24 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Pack rectangles using the flow algorithm
    */
-  private pack(parent: FlowRectangle, children: FlowRectangle[], maxW: number, _maxH: number, margins?: MarginsLike): { w: number; h: number } {
+  private pack(parent: FlowRectangle, children: FlowRectangle[], maxW: number, _maxH: number, margins?: MarginsLike, allRectangles?: Rectangle[]): { w: number; h: number } {
     if (children.length === 0) {
       return { w: parent.minW || 100, h: parent.minH || 60 };
     }
 
     // Pack children first (bottom-up)
     children.forEach(child => {
+      // Ensure child has proper orientation before recursive packing
+      if (!child.orient) {
+        // Calculate the current depth of this child
+        const childDepth = this.calculateDepth(child, allRectangles, undefined);
+        child.orient = this.determineOrientation(childDepth);
+      }
+      
       // FlowRectangle already carries a `children?: FlowRectangle[]` in most layouts.
       // If your Rectangle type doesn't expose children, add it or build a lookup map.
-      const kids = (child as any).children ?? [];
-      this.pack(child, kids, Infinity, Infinity, margins);   // real recursive pack
+      const kids = (child as FlowRectangle & { children?: FlowRectangle[] }).children ?? [];
+      this.pack(child, kids, Infinity, Infinity, margins, allRectangles);   // real recursive pack
     });
 
     const orient = parent.orient || 'COL';
@@ -294,7 +331,10 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Convert flow rectangles back to regular rectangles with proper positioning
    */
-  private convertToRectangles(flowChildren: FlowRectangle[], parent: Rectangle, margins?: any): Rectangle[] {
+  private convertToRectangles(flowChildren: FlowRectangle[], parent: Rectangle, margins?: {
+    margin: number;
+    labelMargin: number;
+  }): Rectangle[] {
     const offset = outerOffset(parent, margins || {});
 
     return flowChildren.map(flowRect => {

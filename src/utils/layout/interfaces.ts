@@ -22,6 +22,8 @@ export interface LayoutInput {
   };
   /** All rectangles in the diagram (for parent size calculations) */
   allRectangles?: Rectangle[];
+  /** Depth of the parent rectangle in the hierarchy (for orientation alternation) */
+  depth?: number;
 }
 
 /**

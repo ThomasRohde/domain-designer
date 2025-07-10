@@ -58,12 +58,16 @@ export class LayoutManager {
     },
     allRectangles?: Rectangle[]
   ): Rectangle[] {
+    // Calculate depth of parent for proper orientation alternation
+    const depth = this.calculateDepth(parentRect, allRectangles);
+    
     const input: LayoutInput = {
       parentRect,
       children,
       fixedDimensions,
       margins,
-      allRectangles
+      allRectangles,
+      depth
     };
 
     const result = this.currentAlgorithm.calculateLayout(input);
@@ -94,12 +98,16 @@ export class LayoutManager {
       return { w: MIN_WIDTH, h: MIN_HEIGHT };
     }
 
+    // Calculate depth of parent for proper orientation alternation
+    const depth = this.calculateDepth(parent, rectangles);
+
     const input: LayoutInput = {
       parentRect: parent,
       children,
       fixedDimensions,
       margins,
-      allRectangles: rectangles
+      allRectangles: rectangles,
+      depth
     };
 
     return this.currentAlgorithm.calculateMinimumParentSize(input);
@@ -211,6 +219,36 @@ export class LayoutManager {
         description: info?.description || `${type} layout algorithm`
       };
     });
+  }
+
+  /**
+   * Calculate the depth of a rectangle in the hierarchy
+   */
+  private calculateDepth(rect: Rectangle, allRectangles?: Rectangle[]): number {
+    // If no parent, this is a root rectangle
+    if (!rect.parentId) {
+      return 0;
+    }
+    
+    // If we have all rectangles, traverse up the parent chain
+    if (allRectangles) {
+      let currentRect = rect;
+      let depth = 0;
+      
+      while (currentRect.parentId) {
+        depth++;
+        const parent = allRectangles.find(r => r.id === currentRect.parentId);
+        if (!parent) {
+          break; // Parent not found, stop traversal
+        }
+        currentRect = parent;
+      }
+      
+      return depth;
+    }
+    
+    // Fallback to simple heuristic
+    return 1;
   }
 }
 
