@@ -299,8 +299,8 @@ const HierarchicalDrawingApp = () => {
 
   // Add this to window for debugging
   React.useEffect(() => {
-    (window as any).testIndexedDB = testIndexedDB;
-    (window as any).autoSaveManager = autoSaveManager;
+    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveManager?: typeof autoSaveManager }).testIndexedDB = testIndexedDB;
+    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveManager?: typeof autoSaveManager }).autoSaveManager = autoSaveManager;
   }, [testIndexedDB, autoSaveManager]);
 
   // Keyboard shortcuts

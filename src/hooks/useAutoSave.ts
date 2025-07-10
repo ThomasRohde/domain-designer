@@ -116,7 +116,7 @@ export const useAutoSave = () => {
   // Initialize DB on mount
   useEffect(() => {
     initDB();
-  }, []); // Empty dependency - only run once
+  }, [initDB]); // Include initDB dependency
 
   return {
     saveData: debouncedSave,
