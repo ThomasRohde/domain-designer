@@ -21,7 +21,8 @@
       "Bash(npm run preview:*)",
       "Bash(curl:*)",
       "Bash(ls:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": []
   }

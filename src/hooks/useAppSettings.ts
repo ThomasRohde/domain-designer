@@ -21,7 +21,7 @@ const INITIAL_PREDEFINED_COLORS = [
   '#F8C471', // Orange
   '#82E0AA', // Light Green
 ];
-import { updateChildrenLayout, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
+import { getChildren } from '../utils/layoutUtils';
 import { layoutManager } from '../utils/layout';
 
 // Re-export from types for backward compatibility
@@ -86,14 +86,18 @@ export const useAppSettings = (): AppSettingsHook => {
   // Store a reference to the setRectangles function from the rectangle manager
   const setRectanglesRef = useRef<React.Dispatch<React.SetStateAction<Rectangle[]>> | null>(null);
   
+  // Store a reference to the fitToChildren function from the rectangle manager
+  const fitToChildrenRef = useRef<((id: string) => void) | null>(null);
+  
   // Track when layout update is needed
   const [needsLayoutUpdate, setNeedsLayoutUpdate] = useState(false);
+  const [parentsToFit, setParentsToFit] = useState<Rectangle[]>([]);
   
   // Effect to handle layout updates when settings change
   useEffect(() => {
     if (needsLayoutUpdate && setRectanglesRef.current) {
+      // First, update leaf dimensions and identify parents that need fitting
       setRectanglesRef.current(prev => {
-        // First, update leaf dimensions
         const updatedRectangles = prev.map(rect => {
           if (rect.type === 'leaf') {
             const newRect = { ...rect };
@@ -108,46 +112,48 @@ export const useAppSettings = (): AppSettingsHook => {
           return rect;
         });
         
-        // Then, resize unlocked parents to fit their children
-        const withResizedParents = updatedRectangles.map(rect => {
-          if ((rect.type === 'parent' || rect.type === 'root') && !rect.isManualPositioningEnabled) {
-            const children = getChildren(rect.id, updatedRectangles);
-            if (children.length > 0) {
-              const minSize = calculateMinimumParentSize(rect.id, updatedRectangles, {
-                leafFixedWidth,
-                leafFixedHeight,
-                leafWidth,
-                leafHeight
-              }, {
-                margin,
-                labelMargin
-              });
-              
-              // Resize parent to fit children exactly (both grow and shrink)
-              return {
-                ...rect,
-                w: minSize.w,
-                h: minSize.h
-              };
+        // Identify parents that need layout updates
+        const parentsToUpdate = updatedRectangles.filter(rect => 
+          (rect.type === 'parent' || rect.type === 'root') && 
+          !rect.isManualPositioningEnabled &&
+          getChildren(rect.id, updatedRectangles).length > 0
+        );
+        
+        // Sort parents by depth (deepest first)
+        const sortedParents = parentsToUpdate.sort((a, b) => {
+          const getDepth = (rect: Rectangle): number => {
+            let depth = 0;
+            let current = rect;
+            while (current.parentId) {
+              depth++;
+              current = updatedRectangles.find(r => r.id === current.parentId) || current;
+              if (depth > 10) break; // Prevent infinite loops
             }
-          }
-          return rect;
+            return depth;
+          };
+          return getDepth(b) - getDepth(a); // Deepest first
         });
         
-        // Finally, update children layout
-        return updateChildrenLayout(withResizedParents, {
-          leafFixedWidth,
-          leafFixedHeight,
-          leafWidth,
-          leafHeight
-        }, {
-          margin,
-          labelMargin
-        });
+        setParentsToFit(sortedParents);
+        
+        return updatedRectangles;
       });
+      
       setNeedsLayoutUpdate(false);
     }
-  }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, margin, labelMargin]);
+  }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, margin, labelMargin, layoutAlgorithm]);
+  
+  // Effect to call fitToChildren for each parent after leaf dimensions are updated
+  useEffect(() => {
+    if (parentsToFit.length > 0 && fitToChildrenRef.current) {
+      // Call fitToChildren for each parent (exactly like template insertion)
+      parentsToFit.forEach(parent => {
+        fitToChildrenRef.current!(parent.id);
+      });
+      
+      setParentsToFit([]);
+    }
+  }, [parentsToFit]);
 
   // Helper function to get fixed dimensions settings
   const getFixedDimensions = useCallback((): FixedDimensions => ({
@@ -278,7 +284,7 @@ export const useAppSettings = (): AppSettingsHook => {
     if (setRectanglesRef.current) {
       setNeedsLayoutUpdate(true);
     }
-  }, [layoutAlgorithm]);
+  }, []);
 
   // Track custom colors separately to manage replacement from bottom-right
   const [customColors, setCustomColors] = useState<string[]>([]);
@@ -327,6 +333,11 @@ export const useAppSettings = (): AppSettingsHook => {
   const setRectanglesRefHandler = useCallback((setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => {
     setRectanglesRef.current = setRectangles;
   }, []);
+  
+  // Function to set the fitToChildren function reference
+  const setFitToChildrenRefHandler = useCallback((fitToChildren: (id: string) => void) => {
+    fitToChildrenRef.current = fitToChildren;
+  }, []);
 
   return {
     // State
@@ -364,5 +375,6 @@ export const useAppSettings = (): AppSettingsHook => {
     handlePredefinedColorsChange,
     setGridSize,
     setRectanglesRef: setRectanglesRefHandler,
+    setFitToChildrenRef: setFitToChildrenRefHandler,
   };
 };

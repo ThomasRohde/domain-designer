@@ -72,7 +72,8 @@ const HierarchicalDrawingApp = () => {
   // Connect app settings to rectangle manager
   React.useEffect(() => {
     appSettings.setRectanglesRef(rectangleManager.setRectangles);
-  }, [rectangleManager.setRectangles, appSettings]);
+    appSettings.setFitToChildrenRef(rectangleManager.fitToChildren);
+  }, [rectangleManager.setRectangles, rectangleManager.fitToChildren, appSettings]);
 
   // Event handlers
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -119,7 +120,7 @@ const HierarchicalDrawingApp = () => {
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors]);
+  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors, appSettings.layoutAlgorithm, appSettings.margin, appSettings.labelMargin]);
 
   const handleDeleteSelected = useCallback(() => {
     if (rectangleManager.selectedId) {

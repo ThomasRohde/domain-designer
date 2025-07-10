@@ -374,6 +374,7 @@ export interface AppSettingsHook {
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
+  setFitToChildrenRef: (fitToChildren: (id: string) => void) => void;
 }
 
 /**

@@ -11,6 +11,33 @@ const V_GUTTER = 0.5; // Vertical spacing between elements in grid units
 const PADDING = 0.5;  // Container padding in grid units
 
 /**
+ * Type for margin-like objects
+ */
+interface MarginsLike {
+  margin?: number;
+  labelMargin?: number;
+}
+
+/**
+ * Calculate inner box size after removing margins and padding
+ */
+function innerBoxSize(maxW: number, maxH: number, m: MarginsLike) {
+  const hori = 2 * (m.margin ?? 1) + 2 * PADDING;
+  const vert = 2 * (m.margin ?? 1) + (m.labelMargin ?? 2) + 2 * PADDING;
+  return { innerW: Math.max(maxW - hori, 0), innerH: Math.max(maxH - vert, 0) };
+}
+
+/**
+ * Calculate outer offset for positioning children
+ */
+function outerOffset(parent: Rectangle, m: MarginsLike) {
+  return {
+    x: parent.x + (m.margin ?? 1) + PADDING,
+    y: parent.y + (m.labelMargin ?? 2) + (m.margin ?? 1) + PADDING,
+  };
+}
+
+/**
  * Extended rectangle interface for flow layout with orientation
  */
 interface FlowRectangle extends Rectangle {
@@ -44,9 +71,10 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
     // Calculate text measurements and set minimum sizes
     this.calculateMinimumSizes(flowChildren, fixedDimensions);
     
-    // Pack children using flow algorithm with realistic constraints
-    const maxW = Math.max(parentRect.w - (margins?.margin || 1) * 2, 10); // Minimum viable width
-    const maxH = Math.max(parentRect.h - (margins?.labelMargin || 2) - (margins?.margin || 1) * 2, 6); // Minimum viable height
+    // Calculate inner box size using helper function
+    const innerBox = innerBoxSize(parentRect.w, parentRect.h, margins || {});
+    const maxW = Math.max(innerBox.innerW, 10); // Minimum viable width
+    const maxH = Math.max(innerBox.innerH, 6); // Minimum viable height
     
     // Create a virtual parent for packing if needed
     const virtualParent: FlowRectangle = {
@@ -56,7 +84,7 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
       minH: 0
     };
     
-    const packedSize = this.pack(virtualParent, flowChildren, maxW, maxH);
+    const packedSize = this.pack(virtualParent, flowChildren, maxW, maxH, margins);
     
     // Convert back to regular rectangles and adjust positions relative to parent
     const result = this.convertToRectangles(flowChildren, parentRect, margins);
@@ -90,9 +118,9 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
     
     const packedSize = this.pack(tempParent, flowChildren, Infinity, Infinity);
     
-    // Add margins
-    const marginH = (margins?.margin || 1) * 2;
-    const marginV = (margins?.labelMargin || 2) + (margins?.margin || 1) * 2;
+    // Add margins using consistent calculations
+    const marginH = 2 * (margins?.margin || 1);
+    const marginV = (margins?.labelMargin || 2) + 2 * (margins?.margin || 1);
     
     return {
       w: packedSize.w + marginH,
@@ -168,15 +196,17 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Pack rectangles using the flow algorithm
    */
-  private pack(parent: FlowRectangle, children: FlowRectangle[], maxW: number, _maxH: number): { w: number; h: number } {
+  private pack(parent: FlowRectangle, children: FlowRectangle[], maxW: number, _maxH: number, margins?: MarginsLike): { w: number; h: number } {
     if (children.length === 0) {
       return { w: parent.minW || 100, h: parent.minH || 60 };
     }
 
     // Pack children first (bottom-up)
     children.forEach(child => {
-      const childrenOfChild: FlowRectangle[] = []; // In full implementation, would get actual children
-      this.pack(child, childrenOfChild, Infinity, Infinity);
+      // FlowRectangle already carries a `children?: FlowRectangle[]` in most layouts.
+      // If your Rectangle type doesn't expose children, add it or build a lookup map.
+      const kids = (child as any).children ?? [];
+      this.pack(child, kids, Infinity, Infinity, margins);   // real recursive pack
     });
 
     const orient = parent.orient || 'COL';
@@ -192,20 +222,21 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
    * Pack children in a row with wrapping (horizontal flow)
    */
   private packRow(parent: FlowRectangle, children: FlowRectangle[], maxW: number): { w: number; h: number } {
-    let currentX = 0;
-    let currentY = 0;
+    let currentX = PADDING;
+    let currentY = PADDING;
     let rowH = 0;
     let maxRowW = 0;
 
     children.forEach(child => {
-      const childW = child.minW || LEAF_W;
+      const usableW = maxW - 2 * PADDING;
+      const childW = Math.min(child.minW || LEAF_W, usableW);
       const childH = child.minH || LEAF_H;
 
       // Check if we need to wrap to next row
-      if (currentX + childW > maxW && currentX > 0) {
-        maxRowW = Math.max(maxRowW, currentX);
+      if (currentX + childW > maxW && currentX > PADDING) {
+        maxRowW = Math.max(maxRowW, currentX - H_GUTTER); // drop last gutter
         currentY += rowH + V_GUTTER;
-        currentX = 0;
+        currentX = PADDING;
         rowH = 0;
       }
 
@@ -220,12 +251,12 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
     });
 
     // Remove the last gutter from width calculation
-    maxRowW = Math.max(maxRowW, currentX - H_GUTTER);
+    maxRowW = Math.max(maxRowW, currentX - H_GUTTER);   // same trick at the very end
     const totalH = currentY + rowH;
 
-    // Update parent size with minimal padding
-    parent.w = maxRowW + PADDING * 2;
-    parent.h = totalH + PADDING * 2;
+    // Update parent size with padding only (margins are applied in convertToRectangles)
+    parent.w = maxRowW + 2 * PADDING;
+    parent.h = totalH + 2 * PADDING;
 
     return { w: parent.w, h: parent.h };
   }
@@ -234,14 +265,14 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
    * Pack children in a column (vertical stack)
    */
   private packColumn(parent: FlowRectangle, children: FlowRectangle[]): { w: number; h: number } {
-    let currentY = 0;
+    let currentY = PADDING;
     let colW = 0;
 
     children.forEach(child => {
       const childW = child.minW || LEAF_W;
       const childH = child.minH || LEAF_H;
 
-      child.x = 0;
+      child.x = PADDING;
       child.y = currentY;
       child.w = childW;
       child.h = childH;
@@ -253,9 +284,9 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
     // Remove the last gutter from height calculation
     const totalH = Math.max(0, currentY - V_GUTTER);
 
-    // Update parent size with minimal padding
-    parent.w = colW + PADDING * 2;
-    parent.h = totalH + PADDING * 2;
+    // Update parent size with padding only (margins are applied in convertToRectangles)
+    parent.w = colW + 2 * PADDING;
+    parent.h = totalH + 2 * PADDING;
 
     return { w: parent.w, h: parent.h };
   }
@@ -264,15 +295,16 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
    * Convert flow rectangles back to regular rectangles with proper positioning
    */
   private convertToRectangles(flowChildren: FlowRectangle[], parent: Rectangle, margins?: any): Rectangle[] {
-    const offsetX = parent.x + (margins?.margin || 1);
-    const offsetY = parent.y + (margins?.labelMargin || 2) + (margins?.margin || 1);
+    const offset = outerOffset(parent, margins || {});
 
     return flowChildren.map(flowRect => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { orient, minW, minH, weight, ...rect } = flowRect;
+      // Remove flow-specific properties and convert to regular rectangles
       return {
         ...rect,
-        x: rect.x + offsetX + PADDING,
-        y: rect.y + offsetY + PADDING,
+        x: rect.x + offset.x,
+        y: rect.y + offset.y,
         w: rect.w, // Already in grid units
         h: rect.h  // Already in grid units
       };
