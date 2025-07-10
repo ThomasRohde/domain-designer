@@ -27,6 +27,9 @@ export const exportDiagram = async (
     case 'json':
       exportToJSON(rectangles, globalSettings, filename, predefinedColors);
       break;
+    case 'mermaid':
+      exportToMermaid(rectangles, filename);
+      break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
   }
@@ -103,6 +106,79 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
   link.click();
   
   URL.revokeObjectURL(url);
+};
+
+const exportToMermaid = (rectangles: Rectangle[], filename: string): void => {
+  const mermaidDiagram = generateMermaidDiagram(rectangles);
+  const blob = new Blob([mermaidDiagram], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.download = `${filename}.mmd`;
+  link.href = url;
+  link.click();
+  
+  URL.revokeObjectURL(url);
+};
+
+const generateMermaidDiagram = (rectangles: Rectangle[]): string => {
+
+  let mermaidContent = 'graph TD\n';
+  
+  // Function to sanitize labels for Mermaid
+  const sanitizeLabel = (label: string): string => {
+    return label.replace(/["\n\r]/g, ' ').trim();
+  };
+  
+  // Function to generate a valid Mermaid node ID
+  const getNodeId = (rect: Rectangle): string => {
+    return `node_${rect.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  };
+  
+  // Add all nodes with their labels
+  rectangles.forEach(rect => {
+    const nodeId = getNodeId(rect);
+    const sanitizedLabel = sanitizeLabel(rect.label);
+    
+    // Choose node shape based on type
+    let nodeShape: string;
+    switch (rect.type) {
+      case 'root':
+        nodeShape = `${nodeId}["${sanitizedLabel}"]`;
+        break;
+      case 'parent':
+        nodeShape = `${nodeId}["${sanitizedLabel}"]`;
+        break;
+      case 'leaf':
+        nodeShape = `${nodeId}("${sanitizedLabel}")`;
+        break;
+      default:
+        nodeShape = `${nodeId}["${sanitizedLabel}"]`;
+    }
+    
+    mermaidContent += `    ${nodeShape}\n`;
+  });
+  
+  // Add relationships
+  rectangles.forEach(rect => {
+    if (rect.parentId) {
+      const parentRect = rectangles.find(r => r.id === rect.parentId);
+      if (parentRect) {
+        const parentNodeId = getNodeId(parentRect);
+        const childNodeId = getNodeId(rect);
+        mermaidContent += `    ${parentNodeId} --> ${childNodeId}\n`;
+      }
+    }
+  });
+  
+  // Add styling
+  mermaidContent += '\n';
+  rectangles.forEach(rect => {
+    const nodeId = getNodeId(rect);
+    mermaidContent += `    style ${nodeId} fill:${rect.color},stroke:#333,stroke-width:2px\n`;
+  });
+  
+  return mermaidContent;
 };
 
 const escapeXML = (text: string): string => {

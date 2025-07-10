@@ -9,7 +9,7 @@ interface ExportModalProps {
 }
 
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
-  const [format, setFormat] = useState<'html' | 'svg' | 'json'>('html');
+  const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'mermaid'>('html');
   const [scale, setScale] = useState(1);
   const [includeBackground, setIncludeBackground] = useState(true);
 
@@ -70,10 +70,19 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
                 <File size={16} />
                 <span>JSON</span>
               </button>
+              <button
+                onClick={() => setFormat('mermaid')}
+                className={`p-3 border rounded-lg flex items-center space-x-2 ${
+                  format === 'mermaid' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
+              >
+                <FileType size={16} />
+                <span>Mermaid</span>
+              </button>
             </div>
           </div>
           
-          {format !== 'json' && (
+          {format !== 'json' && format !== 'mermaid' && (
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

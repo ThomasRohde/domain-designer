@@ -35,7 +35,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <ul className="text-sm space-y-1">
               <li>• Hierarchical rectangle modeling</li>
               <li>• Automatic layout and sizing</li>
-              <li>• Export to HTML, SVG, and JSON</li>
+              <li>• Export to HTML, SVG, JSON, and Mermaid</li>
               <li>• Responsive design</li>
               <li>• Keyboard shortcuts</li>
             </ul>
