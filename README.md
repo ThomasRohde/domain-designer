@@ -6,9 +6,14 @@ A React+TypeScript application for creating domain models and hierarchical diagr
 
 ## Features
 
+- **Multiple Layout Algorithms**: Choose between Grid and Flow layout algorithms for different diagram styles
 - **Grid-based Drawing**: Rectangles snap to a grid for precise alignment
 - **Hierarchical Structure**: Create parent-child relationships between rectangles
-- **Auto-sizing**: Child rectangles automatically resize to fit within their parents
+- **Advanced Layout System**: 
+  - Flow layout with depth-based alternating orientations
+  - Grid layout with consistent spacing and alignment
+  - Auto-sizing with intelligent parent-child constraints
+- **Advanced Global Settings**: Configure layout algorithms, margins, fonts, and sizing preferences
 - **Categories**: Different rectangle types for domain modeling (Channels, Business Support, Products, etc.)
 - **Interactive Editing**: 
   - Drag and drop for root rectangles
@@ -47,6 +52,17 @@ npm run typecheck
 npm run lint
 ```
 
+### Technology Stack
+
+- **React 18** with TypeScript
+- **Vite** for development and building
+- **Tailwind CSS** for styling
+- **Lucide React** for icons
+- **html2canvas** + **jsPDF** for export functionality
+- **ESLint** with TypeScript rules and React hooks plugin
+- **Progressive Web App**: `vite-plugin-pwa` + `workbox-window`
+- **Local Storage**: `idb` for IndexedDB-based persistence
+
 ## Usage
 
 ### Creating Rectangles
@@ -54,6 +70,16 @@ npm run lint
 1. Click "Add Root" to create a top-level rectangle
 2. Select a rectangle and click "Add Child" to create nested rectangles
 3. Use the category selector to change rectangle types
+
+### Layout Algorithm Selection
+
+- **Open Settings**: Click the settings icon in the toolbar to access global settings
+- **Choose Algorithm**: Select between "Grid" and "Flow" layout algorithms
+- **Configure Settings**: 
+  - Adjust margin and label margin values
+  - Set fixed dimensions for leaf nodes
+  - Customize font sizes and border styles
+- **Live Updates**: Changes apply immediately to your diagram
 
 ### Editing
 
@@ -99,10 +125,11 @@ This application is built as a Progressive Web App (PWA) with the following capa
 - **Easy Access**: Launch from desktop or start menu like any native app
 
 ### Offline Capabilities
-- **Offline Support**: Continue working even without internet connection
-- **Auto-save**: Your work is automatically saved to local storage as you edit
+- **Offline Support**: Continue working even without internet connection using service worker caching
+- **Auto-save**: Your work is automatically saved to IndexedDB as you edit
 - **Instant Loading**: App loads instantly after first visit, even offline
-- **Data Persistence**: All diagrams are saved locally and restored on app restart
+- **Data Persistence**: All diagrams are saved locally using IndexedDB and restored on app restart
+- **Background Sync**: Seamless data synchronization when connection is restored
 
 ### How to Install
 1. Open the app in Chrome, Edge, or similar browser
@@ -113,19 +140,39 @@ This application is built as a Progressive Web App (PWA) with the following capa
 ### Offline Status
 The app displays your connection status and auto-save information in the toolbar:
 - **Online/Offline indicator**: Shows current network status
-- **Auto-save status**: Displays when your work was last saved
-- **Save confirmation**: Shows "Saved" message when changes are persisted
+- **Auto-save status**: Displays when your work was last saved to IndexedDB
+- **Save confirmation**: Shows "Saved" message when changes are persisted locally
 
 ## Technical Architecture
 
 ### Core Components
 
-- `HierarchicalDrawingApp`: Main application component
-- `RectangleComponent`: Individual rectangle rendering
+- `HierarchicalDrawingApp`: Main application component and orchestrator
+- `RectangleRenderer`: Handles rendering of all rectangles with proper z-indexing
+- `Canvas`: Manages the drawing canvas with pan/zoom capabilities
+- `Sidebar` + `PropertyPanel`: Settings and properties management
 - `Toolbar`: Top navigation and actions
 - `CategorySelector`: Rectangle category management
 - `ContextMenu`: Right-click menu
 - `ExportModal`: Export configuration dialog
+
+### Layout System Architecture
+
+The application uses a **Factory Pattern** for pluggable layout algorithms:
+
+- **`LayoutManager`**: Central orchestrator for all layout operations
+- **`ILayoutAlgorithm`**: Interface defining the contract for layout algorithms
+- **`LayoutAlgorithmFactory`**: Creates algorithm instances based on user selection
+- **`GridLayoutAlgorithm`**: Grid-based layout with consistent spacing
+- **`FlowLayoutAlgorithm`**: Hierarchical flow layout with depth-based alternating orientations
+
+### Hook-Based Architecture
+
+The application uses custom hooks to separate concerns:
+- `useRectangleManager` - Manages rectangle state and CRUD operations
+- `useCanvasInteractions` - Handles drag/drop, resize, and pan operations
+- `useAppSettings` - Manages global app settings and layout preferences
+- `useUIState` - Manages UI state (sidebar, modals, context menus)
 
 ### Data Structure
 
@@ -144,12 +191,42 @@ interface Rectangle {
 }
 ```
 
-### Constraint System
+### Layout Algorithms
 
-- Parent rectangles auto-resize to contain children
-- Child rectangles auto-size to fit within parent minus margins
-- Minimum/maximum size constraints per rectangle type
-- Grid-based positioning for alignment
+**Grid Layout**: Traditional grid-based positioning with consistent spacing and alignment
+**Flow Layout**: Hierarchical flow layout using:
+- Depth-based calculations for parent-child relationships
+- Alternating row/column orientation based on tree depth
+- Dynamic size calculations based on content and hierarchy
+- Intelligent margin and spacing management
+
+## Layout System
+
+The layout system provides two distinct algorithms optimized for different use cases:
+
+### Grid Layout Algorithm (`GridLayoutAlgorithm`)
+- **Purpose**: Traditional grid-based positioning with consistent spacing
+- **Features**:
+  - Arranges children in a grid pattern within parent bounds
+  - Uses consistent margin system: `LABEL_MARGIN` for top spacing, `MARGIN` for other sides
+  - Calculates minimum parent size based on child requirements
+  - Provides `calculateChildLayout` and `updateChildrenLayout` methods
+- **Best for**: Structured diagrams with regular spacing requirements
+
+### Flow Layout Algorithm (`FlowLayoutAlgorithm`)
+- **Purpose**: Hierarchical flow layout with depth-based alternating orientations
+- **Features**:
+  - Alternates between ROW and COLUMN orientations based on tree depth
+  - Calculates optimal positions using hierarchical flow principles
+  - Supports both horizontal and vertical flow directions
+  - Implements intelligent size calculations based on content hierarchy
+- **Best for**: Organizational charts, process flows, and hierarchical structures
+
+### Layout Management
+- **`LayoutManager`**: Central orchestrator that coordinates layout operations
+- **`LayoutAlgorithmFactory`**: Factory for creating algorithm instances
+- **Dynamic Switching**: Users can change algorithms via global settings
+- **Consistent Interface**: All algorithms implement `ILayoutAlgorithm` for seamless switching
 
 ## Deployment
 
