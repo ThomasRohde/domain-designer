@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Edit3 } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;
@@ -7,6 +7,7 @@ interface ContextMenuProps {
   rectangleId: string;
   onAddChild: (parentId: string) => void;
   onRemove: (id: string) => void;
+  onEditDescription: (id: string) => void;
   onClose: () => void;
 }
 
@@ -16,6 +17,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   rectangleId,
   onAddChild,
   onRemove,
+  onEditDescription,
   onClose
 }) => {
   const handleAddChild = () => {
@@ -28,8 +30,14 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     onClose();
   };
 
+  const handleEditDescription = () => {
+    onEditDescription(rectangleId);
+    onClose();
+  };
+
   return (
     <div
+      data-context-menu
       className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[9999] min-w-48 animate-in"
       style={{ left: x, top: y }}
       onClick={(e) => e.stopPropagation()}
@@ -45,6 +53,14 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         >
           <Plus size={14} />
           <span>Add Child</span>
+        </button>
+        
+        <button
+          onClick={handleEditDescription}
+          className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+        >
+          <Edit3 size={14} />
+          <span>Edit Description</span>
         </button>
       </div>
       

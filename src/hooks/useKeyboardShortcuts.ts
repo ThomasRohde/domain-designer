@@ -18,8 +18,12 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
       const { ctrlKey, metaKey, key } = event;
       const isCtrlOrCmd = ctrlKey || metaKey;
 
+      // Check if user is typing in an input field or modal
+      const isTyping = (event.target as Element)?.matches('input, textarea, [contenteditable="true"]');
+      const isInModal = (event.target as Element)?.closest('[role="dialog"], .modal, [data-modal]');
+
       if (!isCtrlOrCmd) {
-        if (key === 'Delete' && shortcuts.onDelete) {
+        if (key === 'Delete' && shortcuts.onDelete && !isTyping && !isInModal) {
           event.preventDefault();
           shortcuts.onDelete();
         } else if (key === 'Escape' && shortcuts.onCancel) {

@@ -386,6 +386,15 @@ export interface LockConfirmationModalState {
 }
 
 /**
+ * Description edit modal state
+ */
+export interface DescriptionEditModalState {
+  rectangleId: string;
+  rectangleLabel: string;
+  currentDescription: string;
+}
+
+/**
  * Return type for useUIState hook
  */
 export interface UIStateHook {
@@ -394,6 +403,7 @@ export interface UIStateHook {
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
   lockConfirmationModal: LockConfirmationModalState | null;
+  descriptionEditModal: DescriptionEditModalState | null;
   templatePageOpen: boolean;
   toggleSidebar: () => void;
   openSidebar: () => void;
@@ -407,6 +417,8 @@ export interface UIStateHook {
   closeExportModal: () => void;
   showLockConfirmationModal: (rectangleId: string, rectangleLabel: string) => void;
   hideLockConfirmationModal: () => void;
+  showDescriptionEditModal: (rectangleId: string, rectangleLabel: string, currentDescription: string) => void;
+  hideDescriptionEditModal: () => void;
   openTemplatePage: () => void;
   closeTemplatePage: () => void;
 }

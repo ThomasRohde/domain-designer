@@ -43,6 +43,7 @@ export interface UseRectangleManagerReturn {
   addRectangle: (parentId?: string) => void;
   removeRectangle: (id: string) => void;
   updateRectangleLabel: (id: string, label: string) => void;
+  updateRectangleDescription: (id: string, description: string) => void;
   updateRectangleColor: (id: string, color: string) => void;
   updateRectangleLayoutPreferences: (id: string, preferences: LayoutPreferences) => void;
   toggleManualPositioning: (id: string) => void;
@@ -292,6 +293,15 @@ export const useRectangleManager = ({
     );
   }, [setRectanglesWithHistory]);
 
+  // Update rectangle description
+  const updateRectangleDescription = useCallback((id: string, description: string) => {
+    setRectanglesWithHistory(prev => 
+      prev.map(rect => 
+        rect.id === id ? { ...rect, description } : rect
+      )
+    );
+  }, [setRectanglesWithHistory]);
+
   // Update rectangle color
   const updateRectangleColor = useCallback((id: string, color: string) => {
     setRectanglesWithHistory(prev => {
@@ -504,6 +514,7 @@ export const useRectangleManager = ({
     addRectangle,
     removeRectangle,
     updateRectangleLabel,
+    updateRectangleDescription,
     updateRectangleColor,
     updateRectangleLayoutPreferences,
     toggleManualPositioning,

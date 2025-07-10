@@ -19,6 +19,7 @@ import PropertyPanel from './PropertyPanel';
 import LeftMenu from './LeftMenu';
 import AboutModal from './AboutModal';
 import LockConfirmationModal from './LockConfirmationModal';
+import DescriptionEditModal from './DescriptionEditModal';
 import TemplatePage from './TemplatePage';
 
 const HierarchicalDrawingApp = () => {
@@ -200,6 +201,19 @@ const HierarchicalDrawingApp = () => {
       rectangleManager.toggleManualPositioning(uiState.lockConfirmationModal.rectangleId);
     }
   }, [uiState.lockConfirmationModal, rectangleManager]);
+
+  const handleEditDescription = useCallback((rectangleId: string) => {
+    const rectangle = rectangleManager.findRectangle(rectangleId);
+    if (rectangle) {
+      uiState.showDescriptionEditModal(rectangleId, rectangle.label, rectangle.description || '');
+    }
+  }, [rectangleManager, uiState]);
+
+  const handleSaveDescription = useCallback((description: string) => {
+    if (uiState.descriptionEditModal) {
+      rectangleManager.updateRectangleDescription(uiState.descriptionEditModal.rectangleId, description);
+    }
+  }, [rectangleManager, uiState.descriptionEditModal]);
 
 
   // Memoized calculations
@@ -406,6 +420,7 @@ const HierarchicalDrawingApp = () => {
           rectangleId={uiState.contextMenu.rectangleId}
           onAddChild={rectangleManager.addRectangle}
           onRemove={rectangleManager.removeRectangle}
+          onEditDescription={handleEditDescription}
           onClose={uiState.hideContextMenu}
         />
       )}
@@ -426,6 +441,15 @@ const HierarchicalDrawingApp = () => {
         onClose={uiState.hideLockConfirmationModal}
         onConfirm={handleLockConfirmation}
         rectangleLabel={uiState.lockConfirmationModal?.rectangleLabel || ''}
+      />
+
+      <DescriptionEditModal
+        isOpen={!!uiState.descriptionEditModal}
+        onClose={uiState.hideDescriptionEditModal}
+        onSave={handleSaveDescription}
+        rectangleId={uiState.descriptionEditModal?.rectangleId || ''}
+        rectangleLabel={uiState.descriptionEditModal?.rectangleLabel || ''}
+        currentDescription={uiState.descriptionEditModal?.currentDescription || ''}
       />
 
       <TemplatePage

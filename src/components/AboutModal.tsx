@@ -11,7 +11,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6">
+      <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6" role="dialog">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-800">About</h2>
           <button

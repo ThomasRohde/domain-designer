@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ContextMenuState, UIStateHook, LockConfirmationModalState } from '../types';
+import { ContextMenuState, UIStateHook, LockConfirmationModalState, DescriptionEditModalState } from '../types';
 
 export interface UIState {
   sidebarOpen: boolean;
@@ -7,6 +7,7 @@ export interface UIState {
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
   lockConfirmationModal: LockConfirmationModalState | null;
+  descriptionEditModal: DescriptionEditModalState | null;
   templatePageOpen: boolean;
 }
 
@@ -33,6 +34,10 @@ export interface UIActions {
   showLockConfirmationModal: (rectangleId: string, rectangleLabel: string) => void;
   hideLockConfirmationModal: () => void;
   
+  // Description edit modal actions
+  showDescriptionEditModal: (rectangleId: string, rectangleLabel: string, currentDescription: string) => void;
+  hideDescriptionEditModal: () => void;
+  
   // Template page actions
   openTemplatePage: () => void;
   closeTemplatePage: () => void;
@@ -49,6 +54,7 @@ export const useUIState = (): UIStateHook => {
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [lockConfirmationModal, setLockConfirmationModal] = useState<LockConfirmationModalState | null>(null);
+  const [descriptionEditModal, setDescriptionEditModal] = useState<DescriptionEditModalState | null>(null);
   const [templatePageOpen, setTemplatePageOpen] = useState(false);
 
   // Sidebar actions
@@ -104,6 +110,15 @@ export const useUIState = (): UIStateHook => {
     setLockConfirmationModal(null);
   }, []);
 
+  // Description edit modal actions
+  const showDescriptionEditModal = useCallback((rectangleId: string, rectangleLabel: string, currentDescription: string) => {
+    setDescriptionEditModal({ rectangleId, rectangleLabel, currentDescription });
+  }, []);
+
+  const hideDescriptionEditModal = useCallback(() => {
+    setDescriptionEditModal(null);
+  }, []);
+
   // Template page actions
   const openTemplatePage = useCallback(() => {
     setTemplatePageOpen(true);
@@ -137,10 +152,24 @@ export const useUIState = (): UIStateHook => {
 
   // Handle context menu click outside to close
   useEffect(() => {
-    const handleClick = () => setContextMenu(null);
+    const handleClick = (e: MouseEvent) => {
+      // Check if the click is outside the context menu
+      const target = e.target as Element;
+      if (!target.closest('[data-context-menu]')) {
+        setContextMenu(null);
+      }
+    };
+    
     if (contextMenu) {
-      document.addEventListener('click', handleClick);
-      return () => document.removeEventListener('click', handleClick);
+      // Add a small delay to prevent the right-click event from immediately closing the menu
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClick);
+      }, 10);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClick);
+      };
     }
   }, [contextMenu]);
 
@@ -151,6 +180,7 @@ export const useUIState = (): UIStateHook => {
     contextMenu,
     exportModalOpen,
     lockConfirmationModal,
+    descriptionEditModal,
     templatePageOpen,
     
     // Actions
@@ -166,6 +196,8 @@ export const useUIState = (): UIStateHook => {
     closeExportModal,
     showLockConfirmationModal,
     hideLockConfirmationModal,
+    showDescriptionEditModal,
+    hideDescriptionEditModal,
     openTemplatePage,
     closeTemplatePage,
   };
