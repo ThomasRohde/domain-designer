@@ -163,12 +163,12 @@ export const useUIState = (): UIStateHook => {
     if (contextMenu) {
       // Add a small delay to prevent the right-click event from immediately closing the menu
       const timeoutId = setTimeout(() => {
-        document.addEventListener('mousedown', handleClick);
+        document.addEventListener('mousedown', handleClick, true);
       }, 10);
       
       return () => {
         clearTimeout(timeoutId);
-        document.removeEventListener('mousedown', handleClick);
+        document.removeEventListener('mousedown', handleClick, true);
       };
     }
   }, [contextMenu]);
