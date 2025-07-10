@@ -1,5 +1,6 @@
 import { ILayoutAlgorithm, ILayoutAlgorithmFactory, LayoutAlgorithmType } from './interfaces';
 import { GridLayoutAlgorithm } from './GridLayoutAlgorithm';
+import { FlowLayoutAlgorithm } from './FlowLayoutAlgorithm';
 
 /**
  * Factory for creating layout algorithms using the Factory pattern
@@ -11,6 +12,7 @@ export class LayoutAlgorithmFactory implements ILayoutAlgorithmFactory {
   constructor() {
     // Register default algorithms
     this.registerAlgorithm('grid', GridLayoutAlgorithm);
+    this.registerAlgorithm('flow', FlowLayoutAlgorithm);
   }
 
   /**

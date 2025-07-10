@@ -21,6 +21,11 @@ export type ResizeHandle = 'se' | 'sw' | 'ne' | 'nw' | 'n' | 's' | 'e' | 'w';
 export type LayoutFillStrategy = 'fill-columns-first' | 'fill-rows-first';
 
 /**
+ * Orientation for flow-based layouts
+ */
+export type FlowOrientation = 'ROW' | 'COL';
+
+/**
  * Layout preferences for a rectangle's children
  */
 export interface LayoutPreferences {
@@ -30,6 +35,8 @@ export interface LayoutPreferences {
   maxColumns?: number;
   /** Maximum number of rows (only used when fillStrategy is 'fill-columns-first') */
   maxRows?: number;
+  /** Flow orientation for flow-based layouts */
+  orientation?: FlowOrientation;
 }
 
 /**
@@ -212,6 +219,8 @@ export interface GlobalSettings {
   margin: number;
   /** Extra margin for nodes with children to accommodate labels */
   labelMargin: number;
+  /** Layout algorithm type to use */
+  layoutAlgorithm: 'grid' | 'flow';
 }
 
 /**
@@ -346,6 +355,7 @@ export interface AppSettingsHook {
   predefinedColors: string[];
   margin: number;
   labelMargin: number;
+  layoutAlgorithm: 'grid' | 'flow';
   getFixedDimensions: () => FixedDimensions;
   calculateFontSize: (rectangleId: string) => number;
   handleLeafFixedWidthChange: (enabled: boolean) => void;
@@ -359,6 +369,7 @@ export interface AppSettingsHook {
   handleBorderWidthChange: (width: number) => void;
   handleMarginChange: (margin: number) => void;
   handleLabelMarginChange: (labelMargin: number) => void;
+  handleLayoutAlgorithmChange: (algorithm: 'grid' | 'flow') => void;
   addCustomColor: (color: string) => void;
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;

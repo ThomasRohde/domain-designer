@@ -39,6 +39,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     predefinedColors,
     margin,
     labelMargin,
+    layoutAlgorithm,
   } = appSettings;
 
   if (selectedId && selectedRectangle) {
@@ -179,6 +180,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       onMarginChange={(margin) => onSettingsChange({ margin: margin })}
       labelMargin={labelMargin}
       onLabelMarginChange={(labelMargin) => onSettingsChange({ labelMargin: labelMargin })}
+      layoutAlgorithm={layoutAlgorithm}
+      onLayoutAlgorithmChange={(algorithm) => onSettingsChange({ layoutAlgorithm: algorithm })}
     />
   );
 };

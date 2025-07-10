@@ -22,6 +22,7 @@ const INITIAL_PREDEFINED_COLORS = [
   '#82E0AA', // Light Green
 ];
 import { updateChildrenLayout, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
+import { layoutManager } from '../utils/layout';
 
 // Re-export from types for backward compatibility
 export type { AppSettings, FixedDimensions } from '../types';
@@ -75,6 +76,12 @@ export const useAppSettings = (): AppSettingsHook => {
   const [margin, setMargin] = useState(DEFAULT_MARGIN_SETTINGS.margin);
   const [labelMargin, setLabelMargin] = useState(DEFAULT_MARGIN_SETTINGS.labelMargin);
   const [predefinedColors, setPredefinedColors] = useState(INITIAL_PREDEFINED_COLORS);
+  const [layoutAlgorithm, setLayoutAlgorithm] = useState<'grid' | 'flow'>('grid');
+  
+  // Initialize and update layout manager with the current algorithm
+  useEffect(() => {
+    layoutManager.setAlgorithm(layoutAlgorithm);
+  }, [layoutAlgorithm]);
   
   // Store a reference to the setRectangles function from the rectangle manager
   const setRectanglesRef = useRef<React.Dispatch<React.SetStateAction<Rectangle[]>> | null>(null);
@@ -262,6 +269,17 @@ export const useAppSettings = (): AppSettingsHook => {
     }
   }, []);
 
+  // Layout algorithm handler
+  const handleLayoutAlgorithmChange = useCallback((algorithm: 'grid' | 'flow') => {
+    setLayoutAlgorithm(algorithm);
+    // Update the layout manager to use the new algorithm
+    layoutManager.setAlgorithm(algorithm);
+    // Trigger layout update since changing algorithm affects layout
+    if (setRectanglesRef.current) {
+      setNeedsLayoutUpdate(true);
+    }
+  }, [layoutAlgorithm]);
+
   // Track custom colors separately to manage replacement from bottom-right
   const [customColors, setCustomColors] = useState<string[]>([]);
 
@@ -325,6 +343,7 @@ export const useAppSettings = (): AppSettingsHook => {
     predefinedColors,
     margin,
     labelMargin,
+    layoutAlgorithm,
     
     // Functions
     getFixedDimensions,
@@ -340,6 +359,7 @@ export const useAppSettings = (): AppSettingsHook => {
     handleBorderWidthChange,
     handleMarginChange,
     handleLabelMarginChange,
+    handleLayoutAlgorithmChange,
     addCustomColor,
     handlePredefinedColorsChange,
     setGridSize,

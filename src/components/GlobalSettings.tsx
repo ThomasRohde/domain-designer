@@ -26,6 +26,8 @@ interface GlobalSettingsProps {
   onMarginChange: (margin: number) => void;
   labelMargin: number;
   onLabelMarginChange: (labelMargin: number) => void;
+  layoutAlgorithm: 'grid' | 'flow';
+  onLayoutAlgorithmChange: (algorithm: 'grid' | 'flow') => void;
 }
 
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
@@ -52,7 +54,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   margin,
   onMarginChange,
   labelMargin,
-  onLabelMarginChange
+  onLabelMarginChange,
+  layoutAlgorithm,
+  onLayoutAlgorithmChange
 }) => {
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
@@ -64,8 +68,29 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
         </h3>
       </div>
 
-      {/* Grid Size Control */}
+      {/* Layout Algorithm Control */}
       <div className="space-y-3">
+        {/* Layout Algorithm Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Layout Algorithm
+          </label>
+          <select
+            value={layoutAlgorithm}
+            onChange={(e) => onLayoutAlgorithmChange(e.target.value as 'grid' | 'flow')}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="grid">Grid Layout</option>
+            <option value="flow">Flow Layout</option>
+          </select>
+          <div className="text-xs text-gray-500 mt-1">
+            {layoutAlgorithm === 'grid' ? 
+              'Traditional grid-based layout with fixed positioning' : 
+              'Flow-based layout with alternating row/column orientation'
+            }
+          </div>
+        </div>
+
         {/* Grid Size Slider */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

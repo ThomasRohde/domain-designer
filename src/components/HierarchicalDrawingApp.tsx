@@ -101,7 +101,8 @@ const HierarchicalDrawingApp = () => {
         borderWidth: appSettings.borderWidth,
         predefinedColors: appSettings.predefinedColors,
         margin: appSettings.margin,
-        labelMargin: appSettings.labelMargin
+        labelMargin: appSettings.labelMargin,
+        layoutAlgorithm: appSettings.layoutAlgorithm
       };
       
       await exportDiagram(
@@ -140,6 +141,7 @@ const HierarchicalDrawingApp = () => {
     if (settings.predefinedColors !== undefined) appSettings.handlePredefinedColorsChange(settings.predefinedColors);
     if (settings.margin !== undefined) appSettings.handleMarginChange(settings.margin);
     if (settings.labelMargin !== undefined) appSettings.handleLabelMarginChange(settings.labelMargin);
+    if (settings.layoutAlgorithm !== undefined) appSettings.handleLayoutAlgorithmChange(settings.layoutAlgorithm);
   }, [appSettings]);
 
   const handleImport = useCallback(() => {
@@ -224,6 +226,7 @@ const HierarchicalDrawingApp = () => {
     predefinedColors: appSettings.predefinedColors,
     margin: appSettings.margin,
     labelMargin: appSettings.labelMargin,
+    layoutAlgorithm: appSettings.layoutAlgorithm,
   }), [appSettings]);
 
   // Auto-save manager
