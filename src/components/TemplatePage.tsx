@@ -202,7 +202,8 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       
       // Determine node type
       let type: 'root' | 'parent' | 'leaf';
-      if (!node.parent) {
+      // The first node in the insertion (selected node) should be treated as root
+      if (node.id === selectedNode.id) {
         type = 'root';
       } else {
         const hasChildren = nodesToInsert.some(n => n.parent === node.id);
@@ -226,7 +227,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
         w,
         h,
         label: node.name,
-        color: hierarchyColors[type],
+        color: hierarchyColors[type] || hierarchyColors.root,
         type,
         description: node.description,
         metadata: {
