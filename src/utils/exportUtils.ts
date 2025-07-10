@@ -1,5 +1,3 @@
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Rectangle, ExportOptions, GlobalSettings, ValidationResult } from '../types';
 import { exportToHTML } from './htmlExport';
 
@@ -14,7 +12,7 @@ export const exportDiagram = async (
   borderWidth: number = 2,
   predefinedColors?: string[]
 ): Promise<void> => {
-  const { format, quality = 1, scale = 1, includeBackground = true } = options;
+  const { format, scale = 1, includeBackground = true } = options;
   
   const timestamp = new Date().toISOString().split('T')[0];
   const filename = `domain-model-${timestamp}`;
@@ -25,9 +23,6 @@ export const exportDiagram = async (
       break;
     case 'svg':
       await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, gridSize, borderRadius, borderColor, borderWidth);
-      break;
-    case 'pdf':
-      await exportToPDF(containerElement, filename, { quality, scale, includeBackground });
       break;
     case 'json':
       exportToJSON(rectangles, globalSettings, filename, predefinedColors);
@@ -65,33 +60,6 @@ const exportToSVG = async (
   }
 };
 
-const exportToPDF = async (
-  element: HTMLElement,
-  filename: string,
-  options: { quality: number; scale: number; includeBackground: boolean }
-): Promise<void> => {
-  try {
-    const canvas = await html2canvas(element, {
-      scale: options.scale,
-      backgroundColor: options.includeBackground ? '#f9fafb' : null,
-      useCORS: true,
-      allowTaint: true
-    });
-
-    const imgData = canvas.toDataURL('image/png', options.quality);
-    const pdf = new jsPDF({
-      orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-      unit: 'px',
-      format: [canvas.width, canvas.height]
-    });
-
-    pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-    pdf.save(`${filename}.pdf`);
-  } catch (error) {
-    console.error('Error exporting to PDF:', error);
-    throw error;
-  }
-};
 
 const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[]): void => {
   const enhancedGlobalSettings = globalSettings ? {

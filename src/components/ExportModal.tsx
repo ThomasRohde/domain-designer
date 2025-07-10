@@ -9,7 +9,7 @@ interface ExportModalProps {
 }
 
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
-  const [format, setFormat] = useState<'html' | 'svg' | 'pdf' | 'json'>('html');
+  const [format, setFormat] = useState<'html' | 'svg' | 'json'>('html');
   const [scale, setScale] = useState(1);
   const [includeBackground, setIncludeBackground] = useState(true);
 
@@ -60,15 +60,6 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
               >
                 <FileType size={16} />
                 <span>SVG</span>
-              </button>
-              <button
-                onClick={() => setFormat('pdf')}
-                className={`p-3 border rounded-lg flex items-center space-x-2 ${
-                  format === 'pdf' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-                }`}
-              >
-                <File size={16} />
-                <span>PDF</span>
               </button>
               <button
                 onClick={() => setFormat('json')}
