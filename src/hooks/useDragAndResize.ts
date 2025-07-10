@@ -238,13 +238,17 @@ export const useDragAndResize = ({
     const deltaX = currentX - dragState.startX;
     const deltaY = currentY - dragState.startY;
     
-    const gridDeltaX = deltaX / gridSize;
-    const gridDeltaY = deltaY / gridSize;
+    // Account for zoom level - at lower zoom levels, screen movement needs to be scaled
+    const zoomAdjustedDeltaX = deltaX / zoomLevel;
+    const zoomAdjustedDeltaY = deltaY / zoomLevel;
+    
+    const gridDeltaX = zoomAdjustedDeltaX / gridSize;
+    const gridDeltaY = zoomAdjustedDeltaY / gridSize;
     const newX = Math.max(0, Math.round(dragState.initialX + gridDeltaX));
     const newY = Math.max(0, Math.round(dragState.initialY + gridDeltaY));
     
     return { newX, newY };
-  }, [gridSize]);
+  }, [gridSize, zoomLevel]);
 
   /**
    * Handle drag movement for both regular and hierarchy drag operations
