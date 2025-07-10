@@ -32,8 +32,8 @@ function innerBoxSize(maxW: number, maxH: number, m: MarginsLike) {
  */
 function outerOffset(parent: Rectangle, m: MarginsLike) {
   return {
-    x: parent.x + (m.margin ?? 1) + PADDING,
-    y: parent.y + (m.labelMargin ?? 2) + (m.margin ?? 1) + PADDING,
+    x: parent.x + (m.margin ?? 1),
+    y: parent.y + (m.labelMargin ?? 2) + (m.margin ?? 1),
   };
 }
 
