@@ -1,0 +1,239 @@
+{
+  "testCase": "Complex Hierarchy with Mixed Sizing Issue",
+  "description": "A realistic enterprise software architecture example that demonstrates the mixed leaf/parent sizing problem",
+  "hierarchyLevels": 4,
+  "totalRectangles": 15,
+  "rectangles": [
+    {
+      "id": "enterprise-root",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 18,
+      "label": "E-Commerce Platform",
+      "color": "#4ECDC4",
+      "type": "root",
+      "description": "Main enterprise system containing various subsystems"
+    },
+    {
+      "id": "auth-service",
+      "parentId": "enterprise-root",
+      "x": 2,
+      "y": 4,
+      "w": 4,
+      "h": 3,
+      "label": "Authentication Service",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "Simple microservice for user authentication"
+    },
+    {
+      "id": "user-management",
+      "parentId": "enterprise-root",
+      "x": 8,
+      "y": 4,
+      "w": 10,
+      "h": 8,
+      "label": "User Management System",
+      "color": "#45B7D1",
+      "type": "parent",
+      "description": "Complex subsystem with multiple components"
+    },
+    {
+      "id": "user-profiles",
+      "parentId": "user-management",
+      "x": 9,
+      "y": 6,
+      "w": 4,
+      "h": 3,
+      "label": "User Profiles",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "User profile management"
+    },
+    {
+      "id": "permissions-engine",
+      "parentId": "user-management",
+      "x": 14,
+      "y": 6,
+      "w": 3,
+      "h": 5,
+      "label": "Permissions Engine",
+      "color": "#45B7D1",
+      "type": "parent",
+      "description": "Complex permissions system with sub-components"
+    },
+    {
+      "id": "role-manager",
+      "parentId": "permissions-engine",
+      "x": 14.5,
+      "y": 7,
+      "w": 2,
+      "h": 1.5,
+      "label": "Role Manager",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "Role-based access control"
+    },
+    {
+      "id": "policy-engine",
+      "parentId": "permissions-engine",
+      "x": 14.5,
+      "y": 9,
+      "w": 2,
+      "h": 1.5,
+      "label": "Policy Engine",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "Policy evaluation engine"
+    },
+    {
+      "id": "notification-service",
+      "parentId": "enterprise-root",
+      "x": 2,
+      "y": 8,
+      "w": 4,
+      "h": 3,
+      "label": "Notification Service",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "Simple notification microservice"
+    },
+    {
+      "id": "payment-system",
+      "parentId": "enterprise-root",
+      "x": 8,
+      "y": 13,
+      "w": 8,
+      "h": 4,
+      "label": "Payment Processing",
+      "color": "#45B7D1",
+      "type": "parent",
+      "description": "Payment processing subsystem"
+    },
+    {
+      "id": "payment-gateway",
+      "parentId": "payment-system",
+      "x": 9,
+      "y": 14,
+      "w": 3,
+      "h": 2,
+      "label": "Payment Gateway",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "External payment gateway integration"
+    },
+    {
+      "id": "fraud-detection",
+      "parentId": "payment-system",
+      "x": 13,
+      "y": 14,
+      "w": 3,
+      "h": 2,
+      "label": "Fraud Detection",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "Fraud detection algorithms"
+    },
+    {
+      "id": "logging-service",
+      "parentId": "enterprise-root",
+      "x": 20,
+      "y": 4,
+      "w": 3,
+      "h": 2,
+      "label": "Logging",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "Centralized logging service"
+    },
+    {
+      "id": "monitoring-service",
+      "parentId": "enterprise-root",
+      "x": 20,
+      "y": 7,
+      "w": 3,
+      "h": 2,
+      "label": "Monitoring",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "System monitoring and metrics"
+    },
+    {
+      "id": "config-service",
+      "parentId": "enterprise-root",
+      "x": 20,
+      "y": 10,
+      "w": 3,
+      "h": 2,
+      "label": "Configuration",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "Configuration management"
+    },
+    {
+      "id": "api-gateway",
+      "parentId": "enterprise-root",
+      "x": 20,
+      "y": 13,
+      "w": 3,
+      "h": 2,
+      "label": "API Gateway",
+      "color": "#96CEB4",
+      "type": "leaf",
+      "description": "API gateway and routing"
+    }
+  ],
+  "problemManifestations": [
+    {
+      "level": "Root Level (enterprise-root)",
+      "children": [
+        "auth-service (leaf)",
+        "user-management (parent)",
+        "notification-service (leaf)",
+        "payment-system (parent)",
+        "logging-service (leaf)",
+        "monitoring-service (leaf)",
+        "config-service (leaf)",
+        "api-gateway (leaf)"
+      ],
+      "issue": "When fitToChildren is applied, all children are sized uniformly based on the largest child (user-management system). This causes 6 leaf services to become oversized while the 2 parent systems may become undersized."
+    },
+    {
+      "level": "Second Level (user-management)",
+      "children": [
+        "user-profiles (leaf)",
+        "permissions-engine (parent)"
+      ],
+      "issue": "The permissions-engine (parent) and user-profiles (leaf) get uniform sizing, making the leaf oversized and potentially undersizing the parent."
+    },
+    {
+      "level": "Third Level (permissions-engine)",
+      "children": [
+        "role-manager (leaf)",
+        "policy-engine (leaf)"
+      ],
+      "issue": "Less problematic as both children are leaves, but still demonstrates the uniform sizing approach."
+    }
+  ],
+  "testingInstructions": [
+    "1. Load this test data into the application",
+    "2. Apply fitToChildren to 'enterprise-root' and observe oversized leaf services",
+    "3. Apply fitToChildren to 'user-management' and observe the mixed sizing issue",
+    "4. Try enabling fixed leaf dimensions in global settings",
+    "5. Repeat steps 2-3 and observe that the issue persists",
+    "6. Note how the visual hierarchy is compromised"
+  ],
+  "expectedOptimalSizes": {
+    "leafServices": { "w": 4, "h": 3 },
+    "parentSystems": {
+      "user-management": { "w": 10, "h": 8 },
+      "payment-system": { "w": 8, "h": 4 },
+      "permissions-engine": { "w": 6, "h": 4 }
+    }
+  },
+  "currentUniformSizing": {
+    "allChildrenAtRootLevel": { "w": 10, "h": 8 },
+    "problem": "Simple leaf services become 2.5x wider and 2.67x taller than needed"
+  }
+}

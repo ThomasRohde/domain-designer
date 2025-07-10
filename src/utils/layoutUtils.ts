@@ -45,7 +45,8 @@ export const calculateChildLayout = (
   margins?: {
     margin: number;
     labelMargin: number;
-  }
+  },
+  allRectangles?: Rectangle[]
 ): Rectangle[] => {
   if (!parentRect || children.length === 0) return [];
 
@@ -62,24 +63,27 @@ export const calculateChildLayout = (
   // Use consistent spacing between children (same as margin)
   const childSpacing = margins?.margin ?? MARGIN;
   
-  // Calculate dimensions for all children, considering fixed dimensions for leaves
+  // Calculate dimensions for all children, considering their actual requirements
   const childDimensions = children.map(child => {
-    let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - (cols - 1) * childSpacing) / cols));
-    let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - (rows - 1) * childSpacing) / rows));
-    
     if (child.type === 'leaf' && fixedDimensions) {
-      if (fixedDimensions.leafFixedWidth) {
-        childWidth = fixedDimensions.leafWidth;
-      }
-      if (fixedDimensions.leafFixedHeight) {
-        childHeight = fixedDimensions.leafHeight;
-      }
+      // For leaf nodes, use fixed dimensions if specified
+      let childWidth = fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w;
+      let childHeight = fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h;
+      return { width: childWidth, height: childHeight };
+    } else if (child.type === 'parent') {
+      // For parent rectangles, calculate their minimum required size including margins
+      const rectanglesToUse = allRectangles || children;
+      const childMinSize = calculateMinimumParentSize(child.id, rectanglesToUse, fixedDimensions, margins);
+      return { width: childMinSize.w, height: childMinSize.h };
+    } else {
+      // For other cases (root becoming child, etc.), use available space calculation
+      let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - (cols - 1) * childSpacing) / cols));
+      let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - (rows - 1) * childSpacing) / rows));
+      return { width: childWidth, height: childHeight };
     }
-    
-    return { width: childWidth, height: childHeight };
   });
 
-  // Calculate maximum dimensions needed
+  // Calculate maximum dimensions needed (for layout grid calculations)
   const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
   const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
   
@@ -101,15 +105,22 @@ export const calculateChildLayout = (
     const col = index % cols;
     const row = Math.floor(index / cols);
 
-    // Use consistent dimensions for all children based on maximum size
-    const childWidth = maxChildWidth;
-    const childHeight = maxChildHeight;
+    // Use individual child dimensions instead of uniform sizing
+    const childWidth = childDimensions[index].width;
+    const childHeight = childDimensions[index].height;
 
-    // Calculate position with consistent spacing between children
-    // For columns: start position + (column index * (child width + spacing))
-    // For rows: start position + (row index * (child height + spacing))
-    const x = parentRect.x + sideMargin + horizontalOffset + (col * (maxChildWidth + childSpacing));
-    const y = parentRect.y + topMargin + verticalOffset + (row * (maxChildHeight + childSpacing));
+    // Calculate grid cell position with proper spacing
+    const gridCellX = parentRect.x + sideMargin + horizontalOffset + (col * (maxChildWidth + childSpacing));
+    const gridCellY = parentRect.y + topMargin + verticalOffset + (row * (maxChildHeight + childSpacing));
+    
+    // Center the individual rectangle within its grid cell, ensuring minimum margins
+    const availableCellWidth = maxChildWidth;
+    const availableCellHeight = maxChildHeight;
+    const centerOffsetX = Math.max(0, (availableCellWidth - childWidth) / 2);
+    const centerOffsetY = Math.max(0, (availableCellHeight - childHeight) / 2);
+    
+    const x = gridCellX + centerOffsetX;
+    const y = gridCellY + centerOffsetY;
 
     return {
       ...child,
@@ -184,7 +195,7 @@ export const updateChildrenLayout = (
               // Get the updated parent after potential resize
               const updatedParent = updated.find(p => p.id === rect.parentId);
               if (updatedParent) {
-                const newLayout = calculateChildLayout(updatedParent, siblings, fixedDimensions, margins);
+                const newLayout = calculateChildLayout(updatedParent, siblings, fixedDimensions, margins, updated);
                 
                 newLayout.forEach(layoutRect => {
                   const index = updated.findIndex(r => r.id === layoutRect.id);
@@ -453,11 +464,12 @@ export const calculateMinimumParentSize = (
   // Use the actual child dimensions we calculated above
   const childDimensions = actualChildDimensions;
 
-  // Calculate maximum dimensions needed
+  // Calculate maximum dimensions needed for grid cell size (for proper spacing)
   const maxChildWidth = Math.max(...childDimensions.map(d => d.width));
   const maxChildHeight = Math.max(...childDimensions.map(d => d.height));
 
-  // Calculate total space needed for all children with consistent spacing
+  // Calculate total space needed using max dimensions for grid layout
+  // This ensures all children fit within their grid cells
   const totalChildrenWidth = cols * maxChildWidth;
   const totalChildrenHeight = rows * maxChildHeight;
 

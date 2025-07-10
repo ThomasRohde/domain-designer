@@ -241,7 +241,7 @@ export const useRectangleManager = ({
           if (allChildren.length > 0) {
             const updatedParent = updated.find(r => r.id === parentId);
             if (updatedParent) {
-              const newChildLayout = calculateChildLayout(updatedParent, allChildren, getFixedDimensions(), getMargins());
+              const newChildLayout = calculateChildLayout(updatedParent, allChildren, getFixedDimensions(), getMargins(), updated);
               
               // Apply the new layout to all children
               newChildLayout.forEach(layoutChild => {
