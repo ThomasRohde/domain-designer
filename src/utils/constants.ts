@@ -1,7 +1,7 @@
-export const GRID_SIZE = 20;
+export const GRID_SIZE = 10;
 export const MARGIN = 1; // Margin around rectangles to prevent overlap
-export const LABEL_MARGIN = 2; // Extra margin for nodes with children to accommodate labels
-export const MIN_WIDTH = 3;
+export const LABEL_MARGIN = 1.5; // Extra margin for nodes with children to accommodate labels
+export const MIN_WIDTH = 5;
 export const MIN_HEIGHT = 3;
 export const MAX_HISTORY_SIZE = 50;
 
@@ -18,8 +18,8 @@ export const DEFAULT_RECTANGLE_SIZE = {
 };
 
 export const DEFAULT_FONT_SETTINGS = {
-  rootFontSize: 16,
-  dynamicFontSizing: false
+  rootFontSize: 12,
+  dynamicFontSizing: true
 };
 
 export const DEFAULT_BORDER_SETTINGS = {

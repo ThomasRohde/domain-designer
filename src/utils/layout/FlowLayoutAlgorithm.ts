@@ -18,20 +18,37 @@ interface MarginsLike {
 
 /**
  * Calculate inner box size after removing margins and padding
+ * Enhanced to handle sub-unit margins properly
  */
 function innerBoxSize(maxW: number, maxH: number, m: MarginsLike) {
-  const hori = 2 * (m.margin ?? 1);
-  const vert = 2 * (m.margin ?? 1) + (m.labelMargin ?? 2);
-  return { innerW: Math.max(maxW - hori, 0), innerH: Math.max(maxH - vert, 0) };
+  const margin = m.margin ?? 1;
+  const labelMargin = m.labelMargin ?? 2;
+  
+  // Use precise calculations for sub-unit margins
+  const hori = 2 * margin;
+  const vert = 2 * margin + labelMargin;
+  
+  // Ensure we don't go below minimum viable dimensions
+  const minViableW = margin > 0 ? Math.max(margin * 2, 1) : 1;
+  const minViableH = margin > 0 ? Math.max(margin * 2, 1) : 1;
+  
+  return { 
+    innerW: Math.max(maxW - hori, minViableW), 
+    innerH: Math.max(maxH - vert, minViableH) 
+  };
 }
 
 /**
  * Calculate outer offset for positioning children
+ * Enhanced to handle sub-unit margins properly
  */
 function outerOffset(parent: Rectangle, m: MarginsLike) {
+  const margin = m.margin ?? 1;
+  const labelMargin = m.labelMargin ?? 2;
+  
   return {
-    x: parent.x + (m.margin ?? 1),
-    y: parent.y + (m.labelMargin ?? 2) + (m.margin ?? 1),
+    x: parent.x + margin,
+    y: parent.y + labelMargin + margin,
   };
 }
 
@@ -54,15 +71,20 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   readonly description = 'Flow-based hierarchical layout with alternating row/column orientation';
 
   /**
-   * Snap a value to the nearest grid unit (integer)
+   * Snap a value to the nearest grid unit, handling sub-unit values properly
    */
   private snapToGrid(value: number): number {
+    // For very small values, preserve precision to avoid layout collapse
+    if (Math.abs(value) < 0.001) return 0;
+    // For small margins, use higher precision
+    if (Math.abs(value) < 1) return Math.round(value * 100) / 100;
     return Math.round(value);
   }
 
 
   /**
    * Center children within parent for more pleasing, symmetric layouts
+   * Enhanced to handle sub-unit margins properly
    */
   private centerChildrenInParent(children: FlowRectangle[], parentW: number, parentH: number): void {
     if (children.length === 0) return;
@@ -76,25 +98,41 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
     const childrenWidth = maxX - minX;
     const childrenHeight = maxY - minY;
     
-    // Calculate centering offset (ensure grid-aligned)
+    // Calculate centering offset with enhanced precision
     const centerOffsetX = this.snapToGrid((parentW - childrenWidth) / 2);
     const centerOffsetY = this.snapToGrid((parentH - childrenHeight) / 2);
     
+    // Only center if the offset is significant (avoid micro-adjustments)
+    const shouldCenterX = Math.abs(centerOffsetX) > 0.01;
+    const shouldCenterY = Math.abs(centerOffsetY) > 0.01;
+    
     // Apply centering to all children
     children.forEach(child => {
-      child.x = this.snapToGrid(child.x - minX + centerOffsetX);
-      child.y = this.snapToGrid(child.y - minY + centerOffsetY);
+      child.x = this.snapToGrid(child.x - minX + (shouldCenterX ? centerOffsetX : 0));
+      child.y = this.snapToGrid(child.y - minY + (shouldCenterY ? centerOffsetY : 0));
     });
   }
 
   /**
-   * Validate that all coordinates are integers (grid-aligned)
+   * Validate that all coordinates are properly aligned
+   * Updated to handle sub-unit margins appropriately
    */
   private validateGridAlignment(rectangles: { x: number; y: number; w: number; h: number; id?: string }[]): void {
     rectangles.forEach(rect => {
-      if (!Number.isInteger(rect.x) || !Number.isInteger(rect.y) || 
-          !Number.isInteger(rect.w) || !Number.isInteger(rect.h)) {
-        console.warn(`Non-integer coordinates detected: ${rect.id || 'unknown'}`, rect);
+      const hasSubunitValues = [rect.x, rect.y, rect.w, rect.h].some(val => 
+        !Number.isInteger(val) && Math.abs(val - Math.round(val)) > 0.01
+      );
+      
+      if (hasSubunitValues) {
+        // Only warn for significantly non-aligned values
+        const precision = 100;
+        const isWellAligned = [rect.x, rect.y, rect.w, rect.h].every(val => 
+          Math.abs(val - Math.round(val * precision) / precision) < 0.001
+        );
+        
+        if (!isWellAligned) {
+          console.warn(`Poorly aligned coordinates detected: ${rect.id || 'unknown'}`, rect);
+        }
       }
     });
   }
@@ -302,7 +340,7 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
 
   /**
    * Pack children in a row with wrapping (horizontal flow)
-   * Updated to ensure grid-aligned positioning
+   * Enhanced to handle sub-unit margins and ensure proper parent sizing
    */
   private packRow(parent: FlowRectangle, children: FlowRectangle[], maxW: number, margins?: MarginsLike): { w: number; h: number } {
     const gap = margins?.margin || 1;
@@ -311,35 +349,46 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
     let rowH = 0;
     let maxRowW = 0;
 
-    children.forEach(child => {
+    children.forEach((child, index) => {
       const childW = child.minW || LEAF_W;
       const childH = child.minH || LEAF_H;
 
       // Check if we need to wrap to next row
-      if (currentX + childW > maxW && currentX > 0) {
-        maxRowW = Math.max(maxRowW, currentX - gap); // drop last gap
+      // Use a small epsilon to handle floating point precision issues
+      const wouldExceedWidth = (currentX + childW) > (maxW + 0.001);
+      const hasRoomForChild = currentX > 0; // Only wrap if we have at least one child in current row
+      
+      if (wouldExceedWidth && hasRoomForChild) {
+        // Complete current row
+        maxRowW = Math.max(maxRowW, currentX - gap); // Remove trailing gap
         currentY += rowH + gap;
         currentX = 0;
         rowH = 0;
       }
 
-      // Position child with grid snapping
+      // Position child with enhanced grid snapping
       child.x = this.snapToGrid(currentX);
       child.y = this.snapToGrid(currentY);
       child.w = this.snapToGrid(childW);
       child.h = this.snapToGrid(childH);
 
+      // Update row tracking
       currentX += childW + gap;
       rowH = Math.max(rowH, childH);
+      
+      // For last child, ensure we capture the final row width
+      if (index === children.length - 1) {
+        maxRowW = Math.max(maxRowW, currentX - gap);
+      }
     });
 
-    // Remove the last gap from width calculation and ensure grid alignment
-    maxRowW = this.snapToGrid(Math.max(maxRowW, currentX - gap));
-    const totalH = this.snapToGrid(currentY + rowH);
+    // Calculate final dimensions with proper precision
+    const finalWidth = this.snapToGrid(maxRowW);
+    const finalHeight = this.snapToGrid(currentY + rowH);
 
-    // Update parent size (margins are applied in convertToRectangles)
-    parent.w = this.snapToGrid(maxRowW);
-    parent.h = this.snapToGrid(totalH);
+    // Update parent size with validation
+    parent.w = Math.max(finalWidth, 0);
+    parent.h = Math.max(finalHeight, 0);
 
     // Center children for more pleasing layout
     this.centerChildrenInParent(children, parent.w, parent.h);
@@ -349,33 +398,39 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
 
   /**
    * Pack children in a column (vertical stack)
-   * Updated to ensure grid-aligned positioning
+   * Enhanced to handle sub-unit margins and ensure proper sizing
    */
   private packColumn(parent: FlowRectangle, children: FlowRectangle[], margins?: MarginsLike): { w: number; h: number } {
     const gap = margins?.margin || 1;
     let currentY = 0;
     let colW = 0;
 
-    children.forEach(child => {
+    children.forEach((child, index) => {
       const childW = child.minW || LEAF_W;
       const childH = child.minH || LEAF_H;
 
-      // Position child with grid snapping
+      // Position child with enhanced grid snapping
       child.x = this.snapToGrid(0);
       child.y = this.snapToGrid(currentY);
       child.w = this.snapToGrid(childW);
       child.h = this.snapToGrid(childH);
 
-      currentY += childH + gap;
+      // Update column tracking
+      if (index < children.length - 1) {
+        currentY += childH + gap;
+      } else {
+        currentY += childH; // No gap after last child
+      }
       colW = Math.max(colW, childW);
     });
 
-    // Remove the last gap from height calculation and ensure grid alignment
-    const totalH = this.snapToGrid(Math.max(0, currentY - gap));
+    // Calculate final dimensions with proper precision
+    const finalWidth = this.snapToGrid(colW);
+    const finalHeight = this.snapToGrid(currentY);
 
-    // Update parent size (margins are applied in convertToRectangles)
-    parent.w = this.snapToGrid(colW);
-    parent.h = this.snapToGrid(totalH);
+    // Update parent size with validation
+    parent.w = Math.max(finalWidth, 0);
+    parent.h = Math.max(finalHeight, 0);
 
     // Center children for more pleasing layout
     this.centerChildrenInParent(children, parent.w, parent.h);
