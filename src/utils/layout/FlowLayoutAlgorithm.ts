@@ -3,12 +3,13 @@ import { Rectangle, LayoutPreferences, FlowOrientation } from '../../types';
 
 /**
  * Constants for flow layout calculations (in grid units)
+ * Updated to use integer values for perfect grid alignment
  */
 const LEAF_W = 6;   // Minimum width for leaf nodes in grid units
 const LEAF_H = 4;   // Minimum height for leaf nodes in grid units  
-const H_GUTTER = 0.5; // Horizontal spacing between elements in grid units
-const V_GUTTER = 0.5; // Vertical spacing between elements in grid units
-const PADDING = 0.5;  // Container padding in grid units
+const H_GUTTER = 1; // Horizontal spacing between elements in grid units (changed from 0.5 for grid alignment)
+const V_GUTTER = 1; // Vertical spacing between elements in grid units (changed from 0.5 for grid alignment)
+const PADDING = 1;  // Container padding in grid units (changed from 0.5 for grid alignment)
 
 /**
  * Type for margin-like objects
@@ -54,6 +55,55 @@ interface FlowRectangle extends Rectangle {
 export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   readonly name = 'Flow Layout';
   readonly description = 'Flow-based hierarchical layout with alternating row/column orientation';
+
+  /**
+   * Snap a value to the nearest grid unit (integer)
+   */
+  private snapToGrid(value: number): number {
+    return Math.round(value);
+  }
+
+
+  /**
+   * Center children within parent for more pleasing, symmetric layouts
+   */
+  private centerChildrenInParent(children: FlowRectangle[], parentW: number, parentH: number, padding: number): void {
+    if (children.length === 0) return;
+    
+    // Calculate actual bounds of all children
+    const minX = Math.min(...children.map(c => c.x));
+    const maxX = Math.max(...children.map(c => c.x + c.w));
+    const minY = Math.min(...children.map(c => c.y));
+    const maxY = Math.max(...children.map(c => c.y + c.h));
+    
+    const childrenWidth = maxX - minX;
+    const childrenHeight = maxY - minY;
+    
+    // Calculate centering offset (ensure grid-aligned)
+    const availableWidth = parentW - 2 * padding;
+    const availableHeight = parentH - 2 * padding;
+    
+    const centerOffsetX = this.snapToGrid((availableWidth - childrenWidth) / 2);
+    const centerOffsetY = this.snapToGrid((availableHeight - childrenHeight) / 2);
+    
+    // Apply centering to all children
+    children.forEach(child => {
+      child.x = this.snapToGrid(child.x - minX + padding + centerOffsetX);
+      child.y = this.snapToGrid(child.y - minY + padding + centerOffsetY);
+    });
+  }
+
+  /**
+   * Validate that all coordinates are integers (grid-aligned)
+   */
+  private validateGridAlignment(rectangles: { x: number; y: number; w: number; h: number; id?: string }[]): void {
+    rectangles.forEach(rect => {
+      if (!Number.isInteger(rect.x) || !Number.isInteger(rect.y) || 
+          !Number.isInteger(rect.w) || !Number.isInteger(rect.h)) {
+        console.warn(`Non-integer coordinates detected: ${rect.id || 'unknown'}`, rect);
+      }
+    });
+  }
 
   /**
    * Calculate layout for children within a parent rectangle using flow algorithm
@@ -193,6 +243,7 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
 
   /**
    * Calculate minimum sizes for rectangles based on text content and fixed dimensions
+   * Updated to ensure grid-aligned dimensions
    */
   private calculateMinimumSizes(rectangles: FlowRectangle[], fixedDimensions?: {
     leafFixedWidth: boolean;
@@ -206,19 +257,19 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
         if (fixedDimensions?.leafFixedWidth) {
           rect.minW = fixedDimensions.leafWidth;
         } else {
-          rect.minW = Math.max(rect.w, LEAF_W);
+          rect.minW = Math.max(this.snapToGrid(rect.w), LEAF_W);
         }
         
         if (fixedDimensions?.leafFixedHeight) {
           rect.minH = fixedDimensions.leafHeight;
         } else {
-          rect.minH = Math.max(rect.h, LEAF_H);
+          rect.minH = Math.max(this.snapToGrid(rect.h), LEAF_H);
         }
       } else {
-        // For containers, use current dimensions or calculate based on text
-        const textWidth = Math.max(rect.label.length * 0.5, 2); // Rough estimate in grid units
-        rect.minW = Math.max(rect.w, textWidth + 1); // Current width or text width + padding
-        rect.minH = Math.max(rect.h, 2); // Current height or minimum
+        // For containers, ensure grid-aligned text-based sizing
+        const textWidth = Math.max(Math.ceil(rect.label.length * 0.6), 2); // Round up for grid alignment
+        rect.minW = Math.max(this.snapToGrid(rect.w), textWidth + 1); // Current width or text width + padding
+        rect.minH = Math.max(this.snapToGrid(rect.h), 2); // Current height or minimum
       }
     });
   }
@@ -257,6 +308,7 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
 
   /**
    * Pack children in a row with wrapping (horizontal flow)
+   * Updated to ensure grid-aligned positioning
    */
   private packRow(parent: FlowRectangle, children: FlowRectangle[], maxW: number): { w: number; h: number } {
     let currentX = PADDING;
@@ -277,29 +329,33 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
         rowH = 0;
       }
 
-      // Position child
-      child.x = currentX;
-      child.y = currentY;
-      child.w = childW;
-      child.h = childH;
+      // Position child with grid snapping
+      child.x = this.snapToGrid(currentX);
+      child.y = this.snapToGrid(currentY);
+      child.w = this.snapToGrid(childW);
+      child.h = this.snapToGrid(childH);
 
       currentX += childW + H_GUTTER;
       rowH = Math.max(rowH, childH);
     });
 
-    // Remove the last gutter from width calculation
-    maxRowW = Math.max(maxRowW, currentX - H_GUTTER);   // same trick at the very end
-    const totalH = currentY + rowH;
+    // Remove the last gutter from width calculation and ensure grid alignment
+    maxRowW = this.snapToGrid(Math.max(maxRowW, currentX - H_GUTTER));
+    const totalH = this.snapToGrid(currentY + rowH);
 
     // Update parent size with padding only (margins are applied in convertToRectangles)
-    parent.w = maxRowW + 2 * PADDING;
-    parent.h = totalH + 2 * PADDING;
+    parent.w = this.snapToGrid(maxRowW + 2 * PADDING);
+    parent.h = this.snapToGrid(totalH + 2 * PADDING);
+
+    // Center children for more pleasing layout
+    this.centerChildrenInParent(children, parent.w, parent.h, PADDING);
 
     return { w: parent.w, h: parent.h };
   }
 
   /**
    * Pack children in a column (vertical stack)
+   * Updated to ensure grid-aligned positioning
    */
   private packColumn(parent: FlowRectangle, children: FlowRectangle[]): { w: number; h: number } {
     let currentY = PADDING;
@@ -309,27 +365,32 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
       const childW = child.minW || LEAF_W;
       const childH = child.minH || LEAF_H;
 
-      child.x = PADDING;
-      child.y = currentY;
-      child.w = childW;
-      child.h = childH;
+      // Position child with grid snapping
+      child.x = this.snapToGrid(PADDING);
+      child.y = this.snapToGrid(currentY);
+      child.w = this.snapToGrid(childW);
+      child.h = this.snapToGrid(childH);
 
       currentY += childH + V_GUTTER;
       colW = Math.max(colW, childW);
     });
 
-    // Remove the last gutter from height calculation
-    const totalH = Math.max(0, currentY - V_GUTTER);
+    // Remove the last gutter from height calculation and ensure grid alignment
+    const totalH = this.snapToGrid(Math.max(0, currentY - V_GUTTER));
 
     // Update parent size with padding only (margins are applied in convertToRectangles)
-    parent.w = colW + 2 * PADDING;
-    parent.h = totalH + 2 * PADDING;
+    parent.w = this.snapToGrid(colW + 2 * PADDING);
+    parent.h = this.snapToGrid(totalH + 2 * PADDING);
+
+    // Center children for more pleasing layout
+    this.centerChildrenInParent(children, parent.w, parent.h, PADDING);
 
     return { w: parent.w, h: parent.h };
   }
 
   /**
    * Convert flow rectangles back to regular rectangles with proper positioning
+   * Updated to include final grid alignment check
    */
   private convertToRectangles(flowChildren: FlowRectangle[], parent: Rectangle, margins?: {
     margin: number;
@@ -337,17 +398,25 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   }): Rectangle[] {
     const offset = outerOffset(parent, margins || {});
 
-    return flowChildren.map(flowRect => {
+    const result = flowChildren.map(flowRect => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { orient, minW, minH, weight, ...rect } = flowRect;
-      // Remove flow-specific properties and convert to regular rectangles
-      return {
+      
+      // Apply offset and ensure final grid alignment
+      const finalRect = {
         ...rect,
-        x: rect.x + offset.x,
-        y: rect.y + offset.y,
-        w: rect.w, // Already in grid units
-        h: rect.h  // Already in grid units
+        x: this.snapToGrid(rect.x + offset.x),
+        y: this.snapToGrid(rect.y + offset.y),
+        w: this.snapToGrid(rect.w),
+        h: this.snapToGrid(rect.h)
       };
+      
+      return finalRect;
     });
+
+    // Validate grid alignment of final result
+    this.validateGridAlignment(result);
+
+    return result;
   }
 }
