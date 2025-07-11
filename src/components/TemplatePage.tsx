@@ -58,7 +58,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isInserting, setIsInserting] = useState(false);
   const [insertionResult, setInsertionResult] = useState<TemplateInsertionResult | null>(null);
-  const [includeDirectChildrenOnly, setIncludeDirectChildrenOnly] = useState(false);
+  const [insertionLevels, setInsertionLevels] = useState(1);
   
   // Color settings for hierarchy levels
   const [hierarchyColors, setHierarchyColors] = useState({
@@ -163,17 +163,30 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       return descendants;
     };
     
-    // Get direct children only
-    const getDirectChildren = (nodeId: string): TemplateNode[] => {
-      return templateData.filter(node => node.parent === nodeId);
+    
+    // Get nodes to insert based on levels (0 = root only, 1 = root + direct children, etc.)
+    const getNodesUpToLevel = (rootNode: TemplateNode, maxLevels: number): TemplateNode[] => {
+      const result: TemplateNode[] = [rootNode];
+      
+      if (maxLevels === 0) {
+        return result;
+      }
+      
+      const addChildrenAtLevel = (parentId: string, currentLevel: number) => {
+        if (currentLevel >= maxLevels) return;
+        
+        const children = templateData.filter(node => node.parent === parentId);
+        children.forEach(child => {
+          result.push(child);
+          addChildrenAtLevel(child.id, currentLevel + 1);
+        });
+      };
+      
+      addChildrenAtLevel(rootNode.id, 0);
+      return result;
     };
     
-    // Get nodes to insert based on options
-    const nodesToInsert = options.includeChildren
-      ? options.directChildrenOnly
-        ? [selectedNode, ...getDirectChildren(selectedNode.id)]
-        : [selectedNode, ...getDescendants(selectedNode.id)]
-      : [selectedNode];
+    const nodesToInsert = getNodesUpToLevel(selectedNode, options.insertionLevels);
     
     // Calculate starting position
     const startPosition = calculateInsertionPosition(rectangles, globalSettings);
@@ -295,8 +308,8 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       // Prepare insertion options
       const options: TemplateInsertionOptions = {
         templateNodeId: selectedId,
-        includeChildren: true, // Always include children for hierarchical templates
-        directChildrenOnly: includeDirectChildrenOnly,
+        includeChildren: insertionLevels > 0,
+        insertionLevels: insertionLevels,
         color: '#3b82f6' // Default blue color
       };
       
@@ -326,7 +339,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     } finally {
       setIsInserting(false);
     }
-  }, [loadingState, selectedItems, onClose, insertTemplateDirectly, includeDirectChildrenOnly]);
+  }, [loadingState, selectedItems, onClose, insertTemplateDirectly, insertionLevels]);
   
   // Helper function to calculate insertion position
   const calculateInsertionPosition = (
@@ -537,21 +550,28 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
             {/* Insert Button */}
             {loadingState.templateData && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                {/* Direct Children Checkbox */}
+                {/* Insertion Levels */}
                 <div className="mb-4">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={includeDirectChildrenOnly}
-                      onChange={(e) => setIncludeDirectChildrenOnly(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">
-                      Insert direct children only (not entire subtree)
-                    </span>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Insertion Levels
                   </label>
-                  <p className="text-xs text-gray-500 mt-1 ml-6">
-                    When checked, only the selected node and its immediate children will be inserted
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={insertionLevels}
+                      onChange={(e) => setInsertionLevels(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <span className="text-sm text-gray-600">
+                      {insertionLevels === 0 ? 'Root only' : 
+                       insertionLevels === 1 ? 'Root + direct children' :
+                       `Root + ${insertionLevels} levels deep`}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    0 = Insert only the selected node, 1 = Include direct children, 2+ = Include deeper levels
                   </p>
                 </div>
 
@@ -573,7 +593,9 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
                 
                 {selectedItems.length > 0 && (
                   <p className="text-xs text-gray-500 mt-2 text-center">
-                    This will insert the selected node and {includeDirectChildrenOnly ? 'its direct children' : 'all its children'}
+                    This will insert the selected node{insertionLevels === 0 ? ' only' : 
+                    insertionLevels === 1 ? ' and its direct children' :
+                    ` and ${insertionLevels} levels of children`}
                   </p>
                 )}
               </div>
