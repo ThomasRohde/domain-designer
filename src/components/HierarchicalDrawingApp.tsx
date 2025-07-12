@@ -204,6 +204,12 @@ const HierarchicalDrawingApp = () => {
     }
   }, [uiState.lockConfirmationModal, rectangleManager]);
 
+  const handleLockAsIs = useCallback(() => {
+    if (uiState.lockConfirmationModal) {
+      rectangleManager.lockAsIs(uiState.lockConfirmationModal.rectangleId);
+    }
+  }, [uiState.lockConfirmationModal, rectangleManager]);
+
   const handleEditDescription = useCallback((rectangleId: string) => {
     const rectangle = rectangleManager.findRectangle(rectangleId);
     if (rectangle) {
@@ -446,6 +452,7 @@ const HierarchicalDrawingApp = () => {
         isOpen={!!uiState.lockConfirmationModal}
         onClose={uiState.hideLockConfirmationModal}
         onConfirm={handleLockConfirmation}
+        onConfirmLockAsIs={handleLockAsIs}
         rectangleLabel={uiState.lockConfirmationModal?.rectangleLabel || ''}
       />
 

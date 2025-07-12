@@ -1,10 +1,11 @@
-import React from 'react';
-import { X, Lock, AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Lock, AlertTriangle, Archive } from 'lucide-react';
 
 interface LockConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onConfirmLockAsIs: () => void;
   rectangleLabel: string;
 }
 
@@ -12,12 +13,19 @@ const LockConfirmationModal: React.FC<LockConfirmationModalProps> = ({
   isOpen, 
   onClose, 
   onConfirm, 
+  onConfirmLockAsIs,
   rectangleLabel 
 }) => {
+  const [lockType, setLockType] = useState<'lock-as-is' | 'lock-and-relayout'>('lock-and-relayout');
+
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    onConfirm();
+    if (lockType === 'lock-as-is') {
+      onConfirmLockAsIs();
+    } else {
+      onConfirm();
+    }
     onClose();
   };
 
@@ -40,17 +48,62 @@ const LockConfirmationModal: React.FC<LockConfirmationModalProps> = ({
         <div className="p-4 space-y-4">
           <div className="space-y-3">
             <p className="text-gray-700">
-              You are about to lock the automatic layout for <strong>"{rectangleLabel}"</strong>.
+              Choose how to lock the automatic layout for <strong>"{rectangleLabel}"</strong>:
             </p>
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <div className="flex items-start space-x-2">
-                <AlertTriangle className="text-amber-600 mt-0.5 flex-shrink-0" size={16} />
-                <div className="text-sm text-amber-800">
-                  <p className="font-medium mb-1">This will reset all manual positioning!</p>
-                  <p>All children will be automatically repositioned using the grid layout system. Any manual positioning you've done will be lost.</p>
+            
+            <div className="space-y-3">
+              <label className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="lockType"
+                  value="lock-as-is"
+                  checked={lockType === 'lock-as-is'}
+                  onChange={(e) => setLockType(e.target.value as 'lock-as-is' | 'lock-and-relayout')}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Archive size={16} className="text-blue-600" />
+                    <span className="font-medium text-gray-900">Lock as-is</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Preserve current positions. Children stay exactly where they are now.
+                  </p>
+                </div>
+              </label>
+              
+              <label className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="radio"
+                  name="lockType"
+                  value="lock-and-relayout"
+                  checked={lockType === 'lock-and-relayout'}
+                  onChange={(e) => setLockType(e.target.value as 'lock-as-is' | 'lock-and-relayout')}
+                  className="mt-0.5"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Lock size={16} className="text-gray-600" />
+                    <span className="font-medium text-gray-900">Lock and re-layout</span>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Apply automatic layout. All children will be repositioned using the grid system.
+                  </p>
+                </div>
+              </label>
+            </div>
+            
+            {lockType === 'lock-and-relayout' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="text-amber-600 mt-0.5 flex-shrink-0" size={16} />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium mb-1">This will reset all manual positioning!</p>
+                    <p>Any manual positioning you've done will be lost.</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -65,8 +118,8 @@ const LockConfirmationModal: React.FC<LockConfirmationModalProps> = ({
             onClick={handleConfirm}
             className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors flex items-center space-x-2"
           >
-            <Lock size={16} />
-            <span>Lock Layout</span>
+            {lockType === 'lock-as-is' ? <Archive size={16} /> : <Lock size={16} />}
+            <span>{lockType === 'lock-as-is' ? 'Lock as-is' : 'Lock and Re-layout'}</span>
           </button>
         </div>
       </div>

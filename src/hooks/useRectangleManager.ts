@@ -47,6 +47,7 @@ export interface UseRectangleManagerReturn {
   updateRectangleColor: (id: string, color: string) => void;
   updateRectangleLayoutPreferences: (id: string, preferences: LayoutPreferences) => void;
   toggleManualPositioning: (id: string) => void;
+  lockAsIs: (id: string) => void;
   fitToChildren: (id: string) => void;
   getAllDescendantsWrapper: (parentId: string) => Rectangle[];
   
@@ -370,6 +371,18 @@ export const useRectangleManager = ({
     });
   }, [setRectanglesWithHistory, getFixedDimensions, getMargins]);
 
+  // Lock as-is - disable manual positioning without re-layouting
+  const lockAsIs = useCallback((id: string) => {
+    setRectanglesWithHistory(prev => {
+      return prev.map(rect => 
+        rect.id === id ? { 
+          ...rect, 
+          isManualPositioningEnabled: false
+        } : rect
+      );
+    });
+  }, [setRectanglesWithHistory]);
+
   // Fit rectangle to children
   const fitToChildren = useCallback((id: string) => {
     setRectanglesWithHistory(prev => {
@@ -516,6 +529,7 @@ export const useRectangleManager = ({
     updateRectangleColor,
     updateRectangleLayoutPreferences,
     toggleManualPositioning,
+    lockAsIs,
     fitToChildren,
     getAllDescendantsWrapper,
     
