@@ -450,9 +450,9 @@ export const useDragAndResize = ({
         const rect = rectangles.find(r => r.id === rectId);
         if (rect) {
           const hasDescendants = getAllDescendants(rect.id, rectangles).length > 0;
-          if (hasDescendants) {
+          if (hasDescendants && !rect.isManualPositioningEnabled) {
             // For deep hierarchies, we need to trigger layout updates to ensure proper containment
-            // Schedule layout update after resize operation
+            // But only if manual positioning is not enabled
             setNeedsLayoutUpdate({ type: 'resize', rectangleId: rectId });
           }
           
@@ -460,8 +460,8 @@ export const useDragAndResize = ({
           // needs to be resized to accommodate the resized child
           if (rect.parentId) {
             const parent = rectangles.find(r => r.id === rect.parentId);
-            if (parent) {
-              // Check if parent needs to grow to accommodate the resized child
+            if (parent && !parent.isManualPositioningEnabled) {
+              // Only auto-resize parent if manual positioning is not enabled
               const minParentSize = calculateMinimumParentSize(rect.parentId, rectangles, getFixedDimensions(), getMargins());
               if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
                 // Parent needs to be resized too, trigger a broader layout update
