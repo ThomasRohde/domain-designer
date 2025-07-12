@@ -1,4 +1,5 @@
 import React from 'react';
+import type { LayoutAlgorithmType } from '../utils/layout/interfaces';
 
 /**
  * Type of rectangle in the hierarchy
@@ -226,7 +227,7 @@ export interface GlobalSettings {
   /** Extra margin for nodes with children to accommodate labels */
   labelMargin: number;
   /** Layout algorithm type to use */
-  layoutAlgorithm: 'grid' | 'flow';
+  layoutAlgorithm: LayoutAlgorithmType;
 }
 
 /**
@@ -364,7 +365,7 @@ export interface AppSettingsHook {
   predefinedColors: string[];
   margin: number;
   labelMargin: number;
-  layoutAlgorithm: 'grid' | 'flow';
+  layoutAlgorithm: LayoutAlgorithmType;
   getFixedDimensions: () => FixedDimensions;
   calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
   handleLeafFixedWidthChange: (enabled: boolean) => void;
@@ -379,7 +380,7 @@ export interface AppSettingsHook {
   handleBorderWidthChange: (width: number) => void;
   handleMarginChange: (margin: number) => void;
   handleLabelMarginChange: (labelMargin: number) => void;
-  handleLayoutAlgorithmChange: (algorithm: 'grid' | 'flow') => void;
+  handleLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType) => void;
   addCustomColor: (color: string) => void;
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;

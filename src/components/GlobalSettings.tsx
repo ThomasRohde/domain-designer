@@ -1,5 +1,6 @@
 import React from 'react';
 import { Settings, Lock, Unlock, Loader2 } from 'lucide-react';
+import type { LayoutAlgorithmType } from '../utils/layout';
 
 interface GlobalSettingsProps {
   gridSize: number;
@@ -26,8 +27,8 @@ interface GlobalSettingsProps {
   onMarginChange: (margin: number) => void;
   labelMargin: number;
   onLabelMarginChange: (labelMargin: number) => void;
-  layoutAlgorithm: 'grid' | 'flow';
-  onLayoutAlgorithmChange: (algorithm: 'grid' | 'flow') => void;
+  layoutAlgorithm: LayoutAlgorithmType;
+  onLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType) => void;
   fontFamily: string;
   onFontFamilyChange: (fontFamily: string) => void;
   availableFonts: Array<{ value: string; label: string; category: string }>;
@@ -92,16 +93,21 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
           </label>
           <select
             value={layoutAlgorithm}
-            onChange={(e) => onLayoutAlgorithmChange(e.target.value as 'grid' | 'flow')}
+            onChange={(e) => onLayoutAlgorithmChange(e.target.value as LayoutAlgorithmType)}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="grid">Grid Layout</option>
             <option value="flow">Flow Layout</option>
+            <option value="mixed-flow">Mixed Flow Layout</option>
           </select>
           <div className="text-xs text-gray-500 mt-1">
             {layoutAlgorithm === 'grid' ? 
               'Traditional grid-based layout with fixed positioning' : 
-              'Flow-based layout with alternating row/column orientation'
+              layoutAlgorithm === 'flow' ?
+              'Flow-based layout with alternating row/column orientation' :
+              layoutAlgorithm === 'mixed-flow' ?
+              'Adaptive layout combining rows and columns to minimize whitespace' :
+              'Unknown layout algorithm'
             }
           </div>
         </div>

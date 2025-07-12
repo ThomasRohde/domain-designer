@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
 import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS, DEFAULT_MARGIN_SETTINGS, DEFAULT_FONT_FAMILY, FALLBACK_FONT_OPTIONS } from '../utils/constants';
 import { getAvailableFonts, type FontOption } from '../utils/fontDetection';
+import type { LayoutAlgorithmType } from '../utils/layout';
 
 // Initial predefined color palette - prioritizing colors from the handdrawn model
 const INITIAL_PREDEFINED_COLORS = [
@@ -43,6 +44,7 @@ export interface UseAppSettingsReturn {
   predefinedColors: string[];
   margin: number;
   labelMargin: number;
+  layoutAlgorithm: LayoutAlgorithmType;
   
   // Functions
   getFixedDimensions: () => FixedDimensions;
@@ -58,6 +60,7 @@ export interface UseAppSettingsReturn {
   handleBorderWidthChange: (width: number) => void;
   handleMarginChange: (margin: number) => void;
   handleLabelMarginChange: (labelMargin: number) => void;
+  handleLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType) => void;
   addCustomColor: (color: string) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
@@ -84,7 +87,7 @@ export const useAppSettings = (): AppSettingsHook => {
   const [margin, setMargin] = useState(DEFAULT_MARGIN_SETTINGS.margin);
   const [labelMargin, setLabelMargin] = useState(DEFAULT_MARGIN_SETTINGS.labelMargin);
   const [predefinedColors, setPredefinedColors] = useState(INITIAL_PREDEFINED_COLORS);
-  const [layoutAlgorithm, setLayoutAlgorithm] = useState<'grid' | 'flow'>('grid');
+  const [layoutAlgorithm, setLayoutAlgorithm] = useState<LayoutAlgorithmType>('grid');
   
   // Initialize and update layout manager with the current algorithm
   useEffect(() => {
@@ -327,7 +330,7 @@ export const useAppSettings = (): AppSettingsHook => {
   }, []);
 
   // Layout algorithm handler
-  const handleLayoutAlgorithmChange = useCallback((algorithm: 'grid' | 'flow') => {
+  const handleLayoutAlgorithmChange = useCallback((algorithm: LayoutAlgorithmType) => {
     setLayoutAlgorithm(algorithm);
     // Update the layout manager to use the new algorithm
     layoutManager.setAlgorithm(algorithm);

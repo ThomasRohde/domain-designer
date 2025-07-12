@@ -9,6 +9,8 @@ export type {
 
 // Export concrete implementations
 export { GridLayoutAlgorithm } from './GridLayoutAlgorithm';
+export { FlowLayoutAlgorithm } from './FlowLayoutAlgorithm';
+export { MixedFlowLayoutAlgorithm } from './MixedFlowLayoutAlgorithm';
 export { LayoutAlgorithmFactory, layoutAlgorithmFactory } from './LayoutAlgorithmFactory';
 export { LayoutManager, layoutManager } from './LayoutManager';
 

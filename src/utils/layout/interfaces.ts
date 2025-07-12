@@ -38,6 +38,17 @@ export interface LayoutResult {
 
 /**
  * Abstract interface for layout algorithms
+ * 
+ * All layout algorithms must implement this interface to be compatible
+ * with the Domain Designer layout system. The interface provides a
+ * standardized way to calculate layouts, determine parent sizes, and
+ * handle grid arrangements.
+ * 
+ * Implementation requirements:
+ * - Must maintain O(N) linear time complexity where possible
+ * - Should handle edge cases gracefully (empty containers, single children)
+ * - Must preserve consistent margin and grid alignment
+ * - Should be deterministic (same input produces same output)
  */
 export interface ILayoutAlgorithm {
   /** Unique name/identifier for this layout algorithm */
@@ -48,31 +59,54 @@ export interface ILayoutAlgorithm {
   
   /**
    * Calculate layout for children within a parent rectangle
-   * @param input Layout calculation input parameters
-   * @returns Layout result with positioned rectangles
+   * 
+   * This is the core method that arranges child rectangles within a parent.
+   * The algorithm should optimize for space utilization, visual balance,
+   * and maintainability of hierarchical structure.
+   * 
+   * @param input Layout calculation input parameters including parent, children, and settings
+   * @returns Layout result with positioned rectangles and optional parent size info
    */
   calculateLayout(input: LayoutInput): LayoutResult;
   
   /**
    * Calculate minimum dimensions needed for parent to fit children
+   * 
+   * Used for auto-sizing parent containers. Should calculate the smallest
+   * possible parent size that can accommodate all children with proper
+   * margins and spacing.
+   * 
    * @param input Layout calculation input parameters
-   * @returns Minimum width and height required
+   * @returns Minimum width and height required for the parent container
    */
   calculateMinimumParentSize(input: LayoutInput): { w: number; h: number };
   
   /**
    * Calculate grid dimensions based on children count and preferences
+   * 
+   * Determines the optimal number of columns and rows for arranging
+   * a given number of children. Used for grid-based layouts and
+   * compatibility with other layout systems.
+   * 
    * @param childrenCount Number of children to arrange
-   * @param layoutPreferences Optional layout preferences
-   * @returns Grid columns and rows
+   * @param layoutPreferences Optional layout preferences (aspect ratio, max columns, etc.)
+   * @returns Grid dimensions with optimal columns and rows
    */
   calculateGridDimensions(childrenCount: number, layoutPreferences?: LayoutPreferences): { cols: number; rows: number };
 }
 
 /**
  * Layout algorithm type identifier
+ * 
+ * Available algorithm types:
+ * - 'grid': Uniform grid arrangement for many items
+ * - 'flow': Alternating row/column orientation by depth
+ * - 'mixed-flow': Adaptive layout combining rows and columns to minimize whitespace
+ * - 'tree': Tree-like hierarchical arrangement (future)
+ * - 'force-directed': Physics-based layout (future)
+ * - 'custom': User-defined custom algorithm (future)
  */
-export type LayoutAlgorithmType = 'grid' | 'flow' | 'tree' | 'force-directed' | 'custom';
+export type LayoutAlgorithmType = 'grid' | 'flow' | 'mixed-flow' | 'tree' | 'force-directed' | 'custom';
 
 /**
  * Factory for creating layout algorithms
