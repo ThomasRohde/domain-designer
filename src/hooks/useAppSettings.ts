@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
-import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS, DEFAULT_MARGIN_SETTINGS, DEFAULT_FONT_FAMILY } from '../utils/constants';
+import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS, DEFAULT_MARGIN_SETTINGS, DEFAULT_FONT_FAMILY, FALLBACK_FONT_OPTIONS } from '../utils/constants';
+import { getAvailableFonts, type FontOption } from '../utils/fontDetection';
 
 // Initial predefined color palette - prioritizing colors from the handdrawn model
 const INITIAL_PREDEFINED_COLORS = [
@@ -71,6 +72,12 @@ export const useAppSettings = (): AppSettingsHook => {
   const [rootFontSize, setRootFontSize] = useState(DEFAULT_FONT_SETTINGS.rootFontSize);
   const [dynamicFontSizing, setDynamicFontSizing] = useState(DEFAULT_FONT_SETTINGS.dynamicFontSizing);
   const [fontFamily, setFontFamily] = useState(DEFAULT_FONT_FAMILY);
+  const [availableFonts, setAvailableFonts] = useState<FontOption[]>(FALLBACK_FONT_OPTIONS);
+  const [fontsLoading, setFontsLoading] = useState(true);
+  
+  // Debug logging
+  console.log('🎯 useAppSettings initialized with fallback fonts:', FALLBACK_FONT_OPTIONS.length);
+  console.log('📋 Current availableFonts state:', availableFonts.length, availableFonts);
   const [borderRadius, setBorderRadius] = useState(DEFAULT_BORDER_SETTINGS.borderRadius);
   const [borderColor, setBorderColor] = useState(DEFAULT_BORDER_SETTINGS.borderColor);
   const [borderWidth, setBorderWidth] = useState(DEFAULT_BORDER_SETTINGS.borderWidth);
@@ -83,6 +90,27 @@ export const useAppSettings = (): AppSettingsHook => {
   useEffect(() => {
     layoutManager.setAlgorithm(layoutAlgorithm);
   }, [layoutAlgorithm]);
+  
+  // Load available fonts on component mount
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        console.log('🚀 Starting font loading in useAppSettings...');
+        setFontsLoading(true);
+        const fonts = await getAvailableFonts();
+        console.log('🎉 Fonts loaded successfully:', fonts.length, 'fonts');
+        setAvailableFonts(fonts);
+      } catch (error) {
+        console.warn('❌ Failed to detect fonts, using fallback list:', error);
+        setAvailableFonts(FALLBACK_FONT_OPTIONS);
+      } finally {
+        setFontsLoading(false);
+        console.log('⚡ Font loading completed');
+      }
+    };
+    
+    loadFonts();
+  }, []);
   
   // Store a reference to the setRectangles function from the rectangle manager
   const setRectanglesRef = useRef<React.Dispatch<React.SetStateAction<Rectangle[]>> | null>(null);
@@ -372,6 +400,8 @@ export const useAppSettings = (): AppSettingsHook => {
     rootFontSize,
     dynamicFontSizing,
     fontFamily,
+    availableFonts,
+    fontsLoading,
     borderRadius,
     borderColor,
     borderWidth,

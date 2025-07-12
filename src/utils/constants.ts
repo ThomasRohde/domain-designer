@@ -22,19 +22,25 @@ export const DEFAULT_FONT_SETTINGS = {
   dynamicFontSizing: true
 };
 
+import type { FontOption } from './fontDetection';
+
 export const DEFAULT_FONT_FAMILY = 'Inter';
 
-export const FONT_OPTIONS = [
-  { value: 'Inter', label: 'Inter' },
-  { value: 'Arial', label: 'Arial' },
-  { value: 'Helvetica', label: 'Helvetica' },
-  { value: 'Georgia', label: 'Georgia' },
-  { value: 'Times New Roman', label: 'Times New Roman' },
-  { value: 'Verdana', label: 'Verdana' },
-  { value: 'Trebuchet MS', label: 'Trebuchet MS' },
-  { value: 'Courier New', label: 'Courier New' },
-  { value: 'system-ui', label: 'System UI' }
+// Fallback font options if dynamic detection fails
+export const FALLBACK_FONT_OPTIONS: FontOption[] = [
+  { value: 'Inter', label: 'Inter', category: 'web' },
+  { value: 'Arial', label: 'Arial', category: 'sans-serif' },
+  { value: 'Helvetica', label: 'Helvetica', category: 'sans-serif' },
+  { value: 'Georgia', label: 'Georgia', category: 'serif' },
+  { value: 'Times New Roman', label: 'Times New Roman', category: 'serif' },
+  { value: 'Verdana', label: 'Verdana', category: 'sans-serif' },
+  { value: 'Trebuchet MS', label: 'Trebuchet MS', category: 'sans-serif' },
+  { value: 'Courier New', label: 'Courier New', category: 'monospace' },
+  { value: 'system-ui', label: 'System UI', category: 'system' }
 ];
+
+// Re-export for backward compatibility (deprecated - use getAvailableFonts instead)
+export const FONT_OPTIONS = FALLBACK_FONT_OPTIONS;
 
 export const DEFAULT_BORDER_SETTINGS = {
   borderRadius: 8,

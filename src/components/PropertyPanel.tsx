@@ -34,6 +34,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     rootFontSize,
     dynamicFontSizing,
     fontFamily,
+    availableFonts,
+    fontsLoading,
     borderRadius,
     borderColor,
     borderWidth,
@@ -175,6 +177,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
       onDynamicFontSizingChange={(enabled) => onSettingsChange({ dynamicFontSizing: enabled })}
       fontFamily={fontFamily}
       onFontFamilyChange={(fontFamily) => onSettingsChange({ fontFamily: fontFamily })}
+      availableFonts={availableFonts || []}
+      fontsLoading={fontsLoading || false}
       borderRadius={borderRadius}
       onBorderRadiusChange={(radius) => onSettingsChange({ borderRadius: radius })}
       borderColor={borderColor}

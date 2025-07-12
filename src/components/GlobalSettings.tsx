@@ -1,6 +1,5 @@
 import React from 'react';
-import { Settings, Lock, Unlock } from 'lucide-react';
-import { FONT_OPTIONS } from '../utils/constants';
+import { Settings, Lock, Unlock, Loader2 } from 'lucide-react';
 
 interface GlobalSettingsProps {
   gridSize: number;
@@ -31,6 +30,8 @@ interface GlobalSettingsProps {
   onLayoutAlgorithmChange: (algorithm: 'grid' | 'flow') => void;
   fontFamily: string;
   onFontFamilyChange: (fontFamily: string) => void;
+  availableFonts: Array<{ value: string; label: string; category: string }>;
+  fontsLoading: boolean;
 }
 
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
@@ -61,8 +62,17 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   layoutAlgorithm,
   onLayoutAlgorithmChange,
   fontFamily,
-  onFontFamilyChange
+  onFontFamilyChange,
+  availableFonts,
+  fontsLoading
 }) => {
+  // Debug logging
+  console.log('🔧 GlobalSettings rendered with:', {
+    availableFonts: availableFonts.length,
+    fontsLoading,
+    fontFamily
+  });
+  
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
       <div className="flex items-center justify-between mb-3">
@@ -234,19 +244,36 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Font Family
               </label>
-              <select
-                value={fontFamily}
-                onChange={(e) => onFontFamilyChange(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {FONT_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={fontFamily}
+                  onChange={(e) => onFontFamilyChange(e.target.value)}
+                  disabled={fontsLoading}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {availableFonts.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {fontsLoading && (
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <Loader2 size={14} className="animate-spin text-gray-400" />
+                  </div>
+                )}
+              </div>
               <div className="text-xs text-gray-500 mt-1">
-                Font used in app and all export formats
+                {fontsLoading ? (
+                  <span className="flex items-center gap-1">
+                    <Loader2 size={10} className="animate-spin" />
+                    Detecting available fonts...
+                  </span>
+                ) : (
+                  <span>
+                    Font used in app and all export formats ({availableFonts.length} available)
+                  </span>
+                )}
               </div>
             </div>
 

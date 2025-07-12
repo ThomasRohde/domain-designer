@@ -209,6 +209,10 @@ export interface GlobalSettings {
   dynamicFontSizing: boolean;
   /** Font family for all text in the application and exports */
   fontFamily: string;
+  /** Available font options detected from the system */
+  availableFonts?: Array<{ value: string; label: string; category: string }>;
+  /** Whether fonts are currently being detected */
+  fontsLoading?: boolean;
   /** Border radius for rectangles in pixels */
   borderRadius: number;
   /** Border color for rectangles (hex format) */
@@ -352,6 +356,8 @@ export interface AppSettingsHook {
   rootFontSize: number;
   dynamicFontSizing: boolean;
   fontFamily: string;
+  availableFonts: Array<{ value: string; label: string; category: string }>;
+  fontsLoading: boolean;
   borderRadius: number;
   borderColor: string;
   borderWidth: number;

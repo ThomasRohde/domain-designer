@@ -238,6 +238,8 @@ const HierarchicalDrawingApp = () => {
     rootFontSize: appSettings.rootFontSize,
     dynamicFontSizing: appSettings.dynamicFontSizing,
     fontFamily: appSettings.fontFamily,
+    availableFonts: appSettings.availableFonts,
+    fontsLoading: appSettings.fontsLoading,
     borderRadius: appSettings.borderRadius,
     borderColor: appSettings.borderColor,
     borderWidth: appSettings.borderWidth,
