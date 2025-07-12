@@ -328,13 +328,38 @@ const HierarchicalDrawingApp = () => {
     (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveManager?: typeof autoSaveManager }).autoSaveManager = autoSaveManager;
   }, [testIndexedDB, autoSaveManager]);
 
+  // Arrow key movement handlers with pixel-level precision
+  const handleMoveUp = useCallback((deltaPixels: number) => {
+    if (!rectangleManager.selectedId) return;
+    rectangleManager.moveRectangle(rectangleManager.selectedId, 0, -deltaPixels);
+  }, [rectangleManager]);
+
+  const handleMoveDown = useCallback((deltaPixels: number) => {
+    if (!rectangleManager.selectedId) return;
+    rectangleManager.moveRectangle(rectangleManager.selectedId, 0, deltaPixels);
+  }, [rectangleManager]);
+
+  const handleMoveLeft = useCallback((deltaPixels: number) => {
+    if (!rectangleManager.selectedId) return;
+    rectangleManager.moveRectangle(rectangleManager.selectedId, -deltaPixels, 0);
+  }, [rectangleManager]);
+
+  const handleMoveRight = useCallback((deltaPixels: number) => {
+    if (!rectangleManager.selectedId) return;
+    rectangleManager.moveRectangle(rectangleManager.selectedId, deltaPixels, 0);
+  }, [rectangleManager]);
+
   // Keyboard shortcuts
   useKeyboardShortcuts(useMemo(() => ({
     onUndo: rectangleManager.undo,
     onRedo: rectangleManager.redo,
     onDelete: handleDeleteSelected,
     onCancel: canvasInteractions.cancelDrag,
-  }), [rectangleManager.undo, rectangleManager.redo, handleDeleteSelected, canvasInteractions.cancelDrag]));
+    onMoveUp: handleMoveUp,
+    onMoveDown: handleMoveDown,
+    onMoveLeft: handleMoveLeft,
+    onMoveRight: handleMoveRight,
+  }), [rectangleManager.undo, rectangleManager.redo, handleDeleteSelected, canvasInteractions.cancelDrag, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">

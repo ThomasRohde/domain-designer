@@ -10,6 +10,10 @@ interface KeyboardShortcuts {
   onUndo?: () => void;
   onRedo?: () => void;
   onCancel?: () => void;
+  onMoveUp?: (deltaPixels: number) => void;
+  onMoveDown?: (deltaPixels: number) => void;
+  onMoveLeft?: (deltaPixels: number) => void;
+  onMoveRight?: (deltaPixels: number) => void;
 }
 
 export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
@@ -29,6 +33,42 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
         } else if (key === 'Escape' && shortcuts.onCancel) {
           event.preventDefault();
           shortcuts.onCancel();
+        } else if (!isTyping && !isInModal) {
+          // Handle arrow key movement with modifier support
+          let deltaPixels = 1; // Default: 1 pixel movement
+          
+          if (event.shiftKey) {
+            deltaPixels = 10; // Shift: 10 pixel movement (fast)
+          } else if (!event.ctrlKey && !event.metaKey) {
+            deltaPixels = 1; // No modifier: 1 pixel movement (precise)
+          }
+          
+          switch (key) {
+            case 'ArrowUp':
+              if (shortcuts.onMoveUp) {
+                event.preventDefault();
+                shortcuts.onMoveUp(deltaPixels);
+              }
+              break;
+            case 'ArrowDown':
+              if (shortcuts.onMoveDown) {
+                event.preventDefault();
+                shortcuts.onMoveDown(deltaPixels);
+              }
+              break;
+            case 'ArrowLeft':
+              if (shortcuts.onMoveLeft) {
+                event.preventDefault();
+                shortcuts.onMoveLeft(deltaPixels);
+              }
+              break;
+            case 'ArrowRight':
+              if (shortcuts.onMoveRight) {
+                event.preventDefault();
+                shortcuts.onMoveRight(deltaPixels);
+              }
+              break;
+          }
         }
         return;
       }

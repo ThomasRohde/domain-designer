@@ -50,6 +50,7 @@ export interface UseRectangleManagerReturn {
   lockAsIs: (id: string) => void;
   fitToChildren: (id: string) => void;
   getAllDescendantsWrapper: (parentId: string) => Rectangle[];
+  moveRectangle: (id: string, deltaX: number, deltaY: number) => void;
   
   // Hierarchy actions
   reparentRectangle: (childId: string, newParentId: string | null) => boolean;
@@ -504,6 +505,82 @@ export const useRectangleManager = ({
     return true;
   }, [canReparent, setRectanglesWithHistory, getFixedDimensions, getMargins]);
 
+  // Move rectangle by pixel offset with constraint checking
+  const moveRectangle = useCallback((id: string, deltaXPixels: number, deltaYPixels: number) => {
+    const rect = findRectangle(id);
+    if (!rect) return;
+
+    // Check movement constraints
+    if (rect.parentId) {
+      const parent = findRectangle(rect.parentId);
+      if (!parent || !parent.isManualPositioningEnabled) {
+        // Cannot move children of locked parents
+        return;
+      }
+    }
+
+    setRectanglesWithHistory(prevRectangles => {
+      // Get all descendants of the rectangle being moved
+      const descendants = getAllDescendants(id, prevRectangles);
+      const idsToMove = new Set([id, ...descendants]);
+
+      // Calculate the actual delta after applying constraints to the main rectangle
+      const mainRect = prevRectangles.find(r => r.id === id);
+      if (!mainRect) return prevRectangles;
+
+      let actualDeltaXPixels = deltaXPixels;
+      let actualDeltaYPixels = deltaYPixels;
+
+      // Check constraints for the main rectangle if it has a parent
+      if (mainRect.parentId) {
+        const parent = prevRectangles.find(p => p.id === mainRect.parentId);
+        if (parent) {
+          const { margin, labelMargin } = getMargins();
+          const currentXPixels = mainRect.x * gridSize;
+          const currentYPixels = mainRect.y * gridSize;
+          const parentXPixels = parent.x * gridSize;
+          const parentYPixels = parent.y * gridSize;
+          const parentWPixels = parent.w * gridSize;
+          const parentHPixels = parent.h * gridSize;
+          const rectWPixels = mainRect.w * gridSize;
+          const rectHPixels = mainRect.h * gridSize;
+          
+          let newXPixels = currentXPixels + deltaXPixels;
+          let newYPixels = currentYPixels + deltaYPixels;
+          
+          // Ensure rectangle stays within parent bounds with margins
+          newXPixels = Math.max(parentXPixels + margin, newXPixels);
+          newYPixels = Math.max(parentYPixels + labelMargin, newYPixels);
+          newXPixels = Math.min(parentXPixels + parentWPixels - rectWPixels - margin, newXPixels);
+          newYPixels = Math.min(parentYPixels + parentHPixels - rectHPixels - margin, newYPixels);
+          
+          // Calculate the actual constrained movement
+          actualDeltaXPixels = newXPixels - currentXPixels;
+          actualDeltaYPixels = newYPixels - currentYPixels;
+        }
+      }
+
+      // Apply the same delta to all rectangles (main + descendants)
+      return prevRectangles.map(r => {
+        if (idsToMove.has(r.id)) {
+          // Convert current grid coordinates to pixels, apply actual delta, then back to grid units
+          const currentXPixels = r.x * gridSize;
+          const currentYPixels = r.y * gridSize;
+          
+          const newXPixels = currentXPixels + actualDeltaXPixels;
+          const newYPixels = currentYPixels + actualDeltaYPixels;
+
+          // Convert back to grid units
+          const newX = newXPixels / gridSize;
+          const newY = newYPixels / gridSize;
+
+          return { ...r, x: newX, y: newY };
+        }
+        return r;
+      });
+    });
+  }, [findRectangle, setRectanglesWithHistory, getMargins, gridSize]);
+
   // Recalculate z-order after hierarchy changes
   const recalculateZOrder = useCallback(() => {
     // This is handled automatically by the getZIndex function in layoutUtils
@@ -532,6 +609,7 @@ export const useRectangleManager = ({
     lockAsIs,
     fitToChildren,
     getAllDescendantsWrapper,
+    moveRectangle,
     
     // Hierarchy actions
     reparentRectangle,

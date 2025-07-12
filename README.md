@@ -20,6 +20,7 @@ A React+TypeScript application for creating domain models and hierarchical diagr
   - Resize parent rectangles
   - Double-click to edit labels
   - Right-click context menus
+  - Arrow key movement for precise positioning
 - **Save/Load**: Persist diagrams as JSON files
 - **Export**: Export to PNG, SVG, PDF, or JSON formats
 - **Undo/Redo**: Full history management
@@ -87,6 +88,17 @@ npm run lint
 - **Drag** root rectangles to reposition them
 - **Resize** parent rectangles using the resize handle (bottom-right corner)
 - **Right-click** for context menu options
+- **Arrow keys** to move selected rectangles with pixel-level precision
+
+#### Manual Positioning
+
+To enable arrow key movement for child rectangles:
+1. Select a parent rectangle
+2. Click the unlock icon (padlock) to enable manual positioning
+3. Child rectangles be moved with arrow keys:
+   - **Arrow keys**: 1 pixel precision movement
+   - **Shift + Arrow keys**: 10 pixel fast movement
+4. Click the lock icon to return to automatic layout
 
 ### Categories
 
@@ -107,6 +119,11 @@ npm run lint
 - `Ctrl+Z` - Undo
 - `Ctrl+Y` or `Ctrl+Shift+Z` - Redo
 - `Delete` - Remove selected rectangle
+- `Arrow Keys` - Move selected rectangle by 1 pixel (precise movement)
+- `Shift+Arrow Keys` - Move selected rectangle by 10 pixels (fast movement)
+- `Escape` - Cancel current drag operation
+
+**Note**: Arrow key movement only works for root rectangles or children of unlocked parents (manual positioning enabled). When moving a parent rectangle, all its children move together to maintain the hierarchy.
 
 ### Export Options
 
