@@ -16,6 +16,7 @@ interface RectangleComponentProps {
   childCount: number;
   gridSize?: number;
   fontSize?: number;
+  fontFamily?: string;
   isDropTarget?: boolean;
   isValidDropTarget?: boolean;
   isCurrentDropTarget?: boolean;
@@ -43,6 +44,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   childCount,
   gridSize = GRID_SIZE,
   fontSize = 14,
+  fontFamily = 'Inter',
   isDropTarget = false,
   isValidDropTarget = true,
   isCurrentDropTarget = false,
@@ -211,7 +213,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 onBlur={handleInputSubmit}
                 onKeyDown={handleInputKeyDown}
                 className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-                style={{ color: textColor, fontSize: `${fontSize}px` }}
+                style={{ color: textColor, fontSize: `${fontSize}px`, fontFamily }}
               />
             ) : (
               <CustomTooltip content={rectangle.description || rectangle.label}>
@@ -220,6 +222,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                   style={{ 
                     color: textColor, 
                     fontSize: `${fontSize}px`,
+                    fontFamily,
                     cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'text')
                   }}
                   onMouseDown={(e) => {
@@ -252,7 +255,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
               onBlur={handleInputSubmit}
               onKeyDown={handleInputKeyDown}
               className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
-              style={{ color: textColor, fontSize: `${fontSize}px` }}
+              style={{ color: textColor, fontSize: `${fontSize}px`, fontFamily }}
             />
           ) : (
             <CustomTooltip content={rectangle.description || rectangle.label}>
@@ -261,6 +264,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 style={{ 
                   color: textColor,
                   fontSize: `${fontSize}px`,
+                  fontFamily,
                   wordWrap: 'break-word',
                   overflowWrap: 'break-word',
                   hyphens: 'auto'

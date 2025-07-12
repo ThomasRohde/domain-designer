@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, AppSettingsHook, FixedDimensions } from '../types';
-import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS, DEFAULT_MARGIN_SETTINGS } from '../utils/constants';
+import { GRID_SIZE, DEFAULT_RECTANGLE_SIZE, DEFAULT_FONT_SETTINGS, DEFAULT_BORDER_SETTINGS, DEFAULT_MARGIN_SETTINGS, DEFAULT_FONT_FAMILY } from '../utils/constants';
 
 // Initial predefined color palette - prioritizing colors from the handdrawn model
 const INITIAL_PREDEFINED_COLORS = [
@@ -70,6 +70,7 @@ export const useAppSettings = (): AppSettingsHook => {
   const [leafHeight, setLeafHeight] = useState(DEFAULT_RECTANGLE_SIZE.leaf.h);
   const [rootFontSize, setRootFontSize] = useState(DEFAULT_FONT_SETTINGS.rootFontSize);
   const [dynamicFontSizing, setDynamicFontSizing] = useState(DEFAULT_FONT_SETTINGS.dynamicFontSizing);
+  const [fontFamily, setFontFamily] = useState(DEFAULT_FONT_FAMILY);
   const [borderRadius, setBorderRadius] = useState(DEFAULT_BORDER_SETTINGS.borderRadius);
   const [borderColor, setBorderColor] = useState(DEFAULT_BORDER_SETTINGS.borderColor);
   const [borderWidth, setBorderWidth] = useState(DEFAULT_BORDER_SETTINGS.borderWidth);
@@ -263,6 +264,10 @@ export const useAppSettings = (): AppSettingsHook => {
     setDynamicFontSizing(enabled);
   }, []);
 
+  const handleFontFamilyChange = useCallback((family: string) => {
+    setFontFamily(family);
+  }, []);
+
   // Border settings handlers
   const handleBorderRadiusChange = useCallback((radius: number) => {
     setBorderRadius(radius);
@@ -366,6 +371,7 @@ export const useAppSettings = (): AppSettingsHook => {
     leafHeight,
     rootFontSize,
     dynamicFontSizing,
+    fontFamily,
     borderRadius,
     borderColor,
     borderWidth,
@@ -383,6 +389,7 @@ export const useAppSettings = (): AppSettingsHook => {
     handleLeafHeightChange,
     handleRootFontSizeChange,
     handleDynamicFontSizingChange,
+    handleFontFamilyChange,
     handleBorderRadiusChange,
     handleBorderColorChange,
     handleBorderWidthChange,

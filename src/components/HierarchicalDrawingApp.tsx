@@ -98,6 +98,7 @@ const HierarchicalDrawingApp = () => {
         leafHeight: appSettings.leafHeight,
         rootFontSize: appSettings.rootFontSize,
         dynamicFontSizing: appSettings.dynamicFontSizing,
+        fontFamily: appSettings.fontFamily,
         borderRadius: appSettings.borderRadius,
         borderColor: appSettings.borderColor,
         borderWidth: appSettings.borderWidth,
@@ -121,7 +122,7 @@ const HierarchicalDrawingApp = () => {
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors, appSettings.layoutAlgorithm, appSettings.margin, appSettings.labelMargin]);
+  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.fontFamily, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors, appSettings.layoutAlgorithm, appSettings.margin, appSettings.labelMargin]);
 
   const handleDeleteSelected = useCallback(() => {
     if (rectangleManager.selectedId) {
@@ -137,6 +138,7 @@ const HierarchicalDrawingApp = () => {
     if (settings.leafHeight !== undefined) appSettings.handleLeafHeightChange(settings.leafHeight);
     if (settings.rootFontSize !== undefined) appSettings.handleRootFontSizeChange(settings.rootFontSize);
     if (settings.dynamicFontSizing !== undefined) appSettings.handleDynamicFontSizingChange(settings.dynamicFontSizing);
+    if (settings.fontFamily !== undefined) appSettings.handleFontFamilyChange(settings.fontFamily);
     if (settings.borderRadius !== undefined) appSettings.handleBorderRadiusChange(settings.borderRadius);
     if (settings.borderColor !== undefined) appSettings.handleBorderColorChange(settings.borderColor);
     if (settings.borderWidth !== undefined) appSettings.handleBorderWidthChange(settings.borderWidth);
@@ -235,6 +237,7 @@ const HierarchicalDrawingApp = () => {
     leafHeight: appSettings.leafHeight,
     rootFontSize: appSettings.rootFontSize,
     dynamicFontSizing: appSettings.dynamicFontSizing,
+    fontFamily: appSettings.fontFamily,
     borderRadius: appSettings.borderRadius,
     borderColor: appSettings.borderColor,
     borderWidth: appSettings.borderWidth,
@@ -392,6 +395,7 @@ const HierarchicalDrawingApp = () => {
               onRemove={rectangleManager.removeRectangle}
               onFitToChildren={rectangleManager.fitToChildren}
               calculateFontSize={appSettings.calculateFontSize}
+              fontFamily={appSettings.fontFamily}
               borderRadius={appSettings.borderRadius}
               borderColor={appSettings.borderColor}
               borderWidth={appSettings.borderWidth}

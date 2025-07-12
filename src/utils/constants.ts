@@ -22,6 +22,20 @@ export const DEFAULT_FONT_SETTINGS = {
   dynamicFontSizing: true
 };
 
+export const DEFAULT_FONT_FAMILY = 'Inter';
+
+export const FONT_OPTIONS = [
+  { value: 'Inter', label: 'Inter' },
+  { value: 'Arial', label: 'Arial' },
+  { value: 'Helvetica', label: 'Helvetica' },
+  { value: 'Georgia', label: 'Georgia' },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Verdana', label: 'Verdana' },
+  { value: 'Trebuchet MS', label: 'Trebuchet MS' },
+  { value: 'Courier New', label: 'Courier New' },
+  { value: 'system-ui', label: 'System UI' }
+];
+
 export const DEFAULT_BORDER_SETTINGS = {
   borderRadius: 8,
   borderColor: '#374151',

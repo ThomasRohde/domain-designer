@@ -207,6 +207,8 @@ export interface GlobalSettings {
   rootFontSize: number;
   /** Whether to use dynamic font sizing based on rectangle size */
   dynamicFontSizing: boolean;
+  /** Font family for all text in the application and exports */
+  fontFamily: string;
   /** Border radius for rectangles in pixels */
   borderRadius: number;
   /** Border color for rectangles (hex format) */
@@ -349,6 +351,7 @@ export interface AppSettingsHook {
   leafHeight: number;
   rootFontSize: number;
   dynamicFontSizing: boolean;
+  fontFamily: string;
   borderRadius: number;
   borderColor: string;
   borderWidth: number;
@@ -364,6 +367,7 @@ export interface AppSettingsHook {
   handleLeafHeightChange: (height: number) => void;
   handleRootFontSizeChange: (size: number) => void;
   handleDynamicFontSizingChange: (enabled: boolean) => void;
+  handleFontFamilyChange: (fontFamily: string) => void;
   handleBorderRadiusChange: (radius: number) => void;
   handleBorderColorChange: (color: string) => void;
   handleBorderWidthChange: (width: number) => void;

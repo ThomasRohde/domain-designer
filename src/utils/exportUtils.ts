@@ -23,7 +23,7 @@ export const exportDiagram = async (
       exportToHTML(rectangles, filename, { includeBackground, scale }, globalSettings);
       break;
     case 'svg':
-      await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, gridSize, borderRadius, borderColor, borderWidth);
+      await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
       break;
     case 'json':
       exportToJSON(rectangles, globalSettings, filename, predefinedColors);
@@ -42,13 +42,14 @@ const exportToSVG = async (
   rectangles: Rectangle[],
   filename: string,
   options: { scale: number; includeBackground: boolean },
+  globalSettings?: GlobalSettings,
   gridSize: number = 20,
   borderRadius: number = 8,
   borderColor: string = '#374151',
   borderWidth: number = 2
 ): Promise<void> => {
   try {
-    const svg = createSVGFromRectangles(rectangles, options, gridSize, borderRadius, borderColor, borderWidth);
+    const svg = createSVGFromRectangles(rectangles, options, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     
@@ -291,6 +292,7 @@ const wrapText = (text: string, maxWidth: number, fontSize: number): string[] =>
 const createSVGFromRectangles = (
   rectangles: Rectangle[],
   options: { scale: number; includeBackground: boolean },
+  globalSettings?: GlobalSettings,
   gridSize: number = 20,
   borderRadius: number = 8,
   borderColor: string = '#374151',
@@ -368,8 +370,9 @@ const createSVGFromRectangles = (
       const textY = textStartY + (index * lineHeight);
       const textX = x + w / 2; // Center horizontally
       
+      const fontFamily = globalSettings?.fontFamily || 'Arial';
       svg += `<text x="${textX}" y="${textY}" 
-        font-family="Arial, sans-serif" 
+        font-family="${fontFamily}, sans-serif" 
         font-size="${fontSize}" 
         font-weight="bold" 
         fill="#374151"

@@ -35,6 +35,7 @@ const generateInteractiveHTML = (
   const borderRadius = globalSettings?.borderRadius || 8;
   const borderColor = globalSettings?.borderColor || '#374151';
   const borderWidth = globalSettings?.borderWidth || 2;
+  const fontFamily = globalSettings?.fontFamily || 'Inter';
   const backgroundColor = options.includeBackground ? '#f9fafb' : 'transparent';
 
   // Calculate bounding box
@@ -126,7 +127,7 @@ const generateInteractiveHTML = (
            data-type="${rect.type}"
            ${rect.description ? `data-description="${escapeHtml(rect.description)}"` : ''}>
         <div class="label" style="
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+          font-family: '${fontFamily}', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
           font-size: ${fontSize}px;
           font-weight: bold;
           color: #374151;
@@ -154,7 +155,7 @@ const generateInteractiveHTML = (
     }
     
     body {
-      font-family: Arial, sans-serif;
+      font-family: '${fontFamily}', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
       background-color: #f3f4f6;
       overflow: hidden;
       user-select: none;

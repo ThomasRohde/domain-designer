@@ -1,5 +1,6 @@
 import React from 'react';
 import { Settings, Lock, Unlock } from 'lucide-react';
+import { FONT_OPTIONS } from '../utils/constants';
 
 interface GlobalSettingsProps {
   gridSize: number;
@@ -28,6 +29,8 @@ interface GlobalSettingsProps {
   onLabelMarginChange: (labelMargin: number) => void;
   layoutAlgorithm: 'grid' | 'flow';
   onLayoutAlgorithmChange: (algorithm: 'grid' | 'flow') => void;
+  fontFamily: string;
+  onFontFamilyChange: (fontFamily: string) => void;
 }
 
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
@@ -56,7 +59,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   labelMargin,
   onLabelMarginChange,
   layoutAlgorithm,
-  onLayoutAlgorithmChange
+  onLayoutAlgorithmChange,
+  fontFamily,
+  onFontFamilyChange
 }) => {
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
@@ -221,6 +226,27 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               <div className="flex justify-between text-xs text-gray-500 mt-1">
                 <span>10px (Small)</span>
                 <span>24px (Large)</span>
+              </div>
+            </div>
+
+            {/* Font Family */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Font Family
+              </label>
+              <select
+                value={fontFamily}
+                onChange={(e) => onFontFamilyChange(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {FONT_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <div className="text-xs text-gray-500 mt-1">
+                Font used in app and all export formats
               </div>
             </div>
 

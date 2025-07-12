@@ -23,6 +23,7 @@ interface RectangleRendererProps {
   onRemove: (id: string) => void;
   onFitToChildren: (id: string) => void;
   calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
+  fontFamily: string;
   borderRadius: number;
   borderColor: string;
   borderWidth: number;
@@ -41,6 +42,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   onSelect,
   onUpdateLabel,
   calculateFontSize,
+  fontFamily,
   borderRadius,
   borderColor,
   borderWidth,
@@ -75,6 +77,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             childCount={getChildren(rect.id, rectangles).length}
             gridSize={gridSize}
             fontSize={calculateFontSize(rect.id, rectangles)}
+            fontFamily={fontFamily}
             isDropTarget={isDropTarget}
             isValidDropTarget={isValidDropTarget}
             isCurrentDropTarget={isCurrentDropTarget}
