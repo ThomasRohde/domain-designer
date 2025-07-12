@@ -33,7 +33,7 @@ interface MixedFlowRectangle extends Rectangle {
  * Layout option configuration for evaluation
  */
 interface LayoutOption {
-  type: 'single-row' | 'single-column' | 'two-column' | 'two-row';
+  type: 'single-row' | 'single-column' | 'two-column' | 'two-row' | string;
   parentW: number;
   parentH: number;
   children: Array<{ rect: MixedFlowRectangle; x: number; y: number }>;
@@ -64,7 +64,6 @@ interface LayoutOption {
  * - Typically 20-45% better space efficiency vs pure row/column layouts
  * - Maintains consistent performance up to 500+ nodes
  * 
- * @see MIXALGO.md for detailed algorithm design and rationale
  * @see algorithm-tuning-recommendations.md for parameter optimization
  */
 export class MixedFlowLayoutAlgorithm implements ILayoutAlgorithm {
@@ -198,6 +197,96 @@ export class MixedFlowLayoutAlgorithm implements ILayoutAlgorithm {
   }
 
   /**
+   * Calculate optimal grid dimensions for a given number of children
+   */
+  private calculateOptimalGridDimensions(childCount: number): Array<{ cols: number; rows: number }> {
+    const gridOptions: Array<{ cols: number; rows: number }> = [];
+    
+    // For 4 children, add 2x2 option
+    if (childCount === 4) {
+      gridOptions.push({ cols: 2, rows: 2 });
+    }
+    
+    // For 6 children, add 2x3 and 3x2 options  
+    if (childCount === 6) {
+      gridOptions.push({ cols: 2, rows: 3 });
+      gridOptions.push({ cols: 3, rows: 2 });
+    }
+    
+    // For 8 children, add 2x4, 4x2 options
+    if (childCount === 8) {
+      gridOptions.push({ cols: 2, rows: 4 });
+      gridOptions.push({ cols: 4, rows: 2 });
+    }
+    
+    // For 9 children, add 3x3 option
+    if (childCount === 9) {
+      gridOptions.push({ cols: 3, rows: 3 });
+    }
+    
+    // For larger counts, try to find reasonable grid dimensions
+    if (childCount > 9) {
+      // Find factors that create reasonable grids
+      for (let cols = 2; cols <= Math.ceil(Math.sqrt(childCount * 1.5)); cols++) {
+        const rows = Math.ceil(childCount / cols);
+        if (cols * rows >= childCount && cols * rows <= childCount + 2) {
+          gridOptions.push({ cols, rows });
+        }
+      }
+    }
+    
+    return gridOptions;
+  }
+
+  /**
+   * Create matrix grid layout option
+   */
+  private createMatrixGridOption(children: MixedFlowRectangle[], cols: number, rows: number, gap: number): LayoutOption {
+    const childPositions: Array<{ rect: MixedFlowRectangle; x: number; y: number }> = [];
+    
+    // Calculate grid cell dimensions - find max dimensions for uniformity
+    const maxChildW = Math.max(...children.map(child => child.minW || LEAF_W));
+    const maxChildH = Math.max(...children.map(child => child.minH || LEAF_H));
+    
+    const cellWidth = maxChildW;
+    const cellHeight = maxChildH;
+    
+    // Position children in grid
+    for (let i = 0; i < children.length && i < cols * rows; i++) {
+      const child = children[i];
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      
+      const childW = child.minW || LEAF_W;
+      const childH = child.minH || LEAF_H;
+      
+      // Center child within grid cell
+      const cellX = col * (cellWidth + gap);
+      const cellY = row * (cellHeight + gap);
+      const offsetX = (cellWidth - childW) / 2;
+      const offsetY = (cellHeight - childH) / 2;
+      
+      childPositions.push({
+        rect: { ...child, w: childW, h: childH },
+        x: cellX + offsetX,
+        y: cellY + offsetY
+      });
+    }
+    
+    // Calculate total grid dimensions
+    const totalWidth = cols * cellWidth + (cols - 1) * gap;
+    const totalHeight = rows * cellHeight + (rows - 1) * gap;
+    
+    return {
+      type: `grid-${cols}x${rows}`,
+      parentW: totalWidth,
+      parentH: totalHeight,
+      children: childPositions,
+      score: 0
+    };
+  }
+
+  /**
    * Generate different layout options for evaluation
    */
   private generateLayoutOptions(children: MixedFlowRectangle[], margins?: MarginsLike): LayoutOption[] {
@@ -218,6 +307,14 @@ export class MixedFlowLayoutAlgorithm implements ILayoutAlgorithm {
     // Option D: Two-Row Layout (only if more than 2 children)
     if (children.length > 2) {
       options.push(this.createTwoRowOption(children, gap));
+    }
+
+    // Option E: Matrix Grid Layouts (for appropriate child counts)
+    if (children.length >= 4) {
+      const gridDimensions = this.calculateOptimalGridDimensions(children.length);
+      gridDimensions.forEach(({ cols, rows }) => {
+        options.push(this.createMatrixGridOption(children, cols, rows, gap));
+      });
     }
 
     // Evaluate each option
@@ -488,8 +585,43 @@ export class MixedFlowLayoutAlgorithm implements ILayoutAlgorithm {
       balancePenalty = Math.abs(row1Width - row2Width) / Math.max(row1Width, row2Width);
     }
     
-    // Combine metrics (higher score is better)
-    const score = efficiency * 0.6 - aspectRatioPenalty * 0.3 - balancePenalty * 0.1;
+    // Grid layout bonus - encourage matrix layouts for appropriate child counts
+    let gridBonus = 0;
+    if (option.type.startsWith('grid-')) {
+      const childCount = option.children.length;
+      // Extract grid dimensions from type string (e.g., "grid-2x2")
+      const gridMatch = option.type.match(/grid-(\d+)x(\d+)/);
+      if (gridMatch) {
+        const cols = parseInt(gridMatch[1]);
+        const rows = parseInt(gridMatch[2]);
+        const gridCells = cols * rows;
+        
+        // Bonus for utilizing grid cells efficiently
+        const cellUtilization = childCount / gridCells;
+        
+        // Bonus for balanced grid dimensions (square-ish grids are good)
+        const gridAspectRatio = Math.max(cols, rows) / Math.min(cols, rows);
+        const gridBalanceBonus = 1 / gridAspectRatio;
+        
+        // Special bonus for perfect grids (4 children in 2x2, 9 in 3x3, etc.)
+        const perfectGridBonus = (childCount === gridCells) ? 0.2 : 0;
+        
+        gridBonus = cellUtilization * 0.3 + gridBalanceBonus * 0.2 + perfectGridBonus;
+      }
+    }
+    
+    // Reduce single-column bias by adjusting weights
+    let layoutTypeBonus = 0;
+    if (option.type === 'single-column') {
+      // Small penalty for single column to reduce bias
+      layoutTypeBonus = -0.1;
+    } else if (option.type.startsWith('grid-')) {
+      // Encourage grid layouts for appropriate scenarios
+      layoutTypeBonus = 0.1;
+    }
+    
+    // Combine metrics with adjusted weights (higher score is better)
+    const score = efficiency * 0.5 - aspectRatioPenalty * 0.2 - balancePenalty * 0.1 + gridBonus + layoutTypeBonus;
     
     return score;
   }

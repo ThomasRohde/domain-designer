@@ -133,7 +133,7 @@ const generateInteractiveHTML = (
           color: #374151;
           text-align: center;
           word-wrap: break-word;
-          ${isParent ? `margin-top: ${-fontSize * 0.9}px; margin-bottom: ${labelMargin * gridSize}px;` : ''}
+          ${isParent ? `margin-top: ${-fontSize * 0.5}px; margin-bottom: ${labelMargin * gridSize}px;` : ''}
           ${isParent ? 'align-self: flex-start;' : ''}
         ">
           ${escapeHtml(rect.label)}
