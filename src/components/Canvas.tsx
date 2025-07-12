@@ -37,7 +37,7 @@ const Canvas: React.FC<CanvasProps> = ({
       <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full canvas-container relative">
         <div
           ref={containerRef}
-          className={`relative w-full h-full transition-all duration-200 ${
+          className={`relative w-full h-full transition-all duration-200 select-none ${
             isSpacePressed ? 'cursor-grab' : ''
           } ${panState ? 'cursor-grabbing' : ''} ${
             isCanvasCurrentDropTarget 

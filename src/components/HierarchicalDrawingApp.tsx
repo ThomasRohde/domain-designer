@@ -362,7 +362,7 @@ const HierarchicalDrawingApp = () => {
   }), [rectangleManager.undo, rectangleManager.redo, handleDeleteSelected, canvasInteractions.cancelDrag, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight]));
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
       <Toolbar
         onAddRectangle={handleAddRectangle}
         onExport={uiState.openExportModal}

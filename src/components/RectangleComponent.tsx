@@ -187,7 +187,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   return (
     <div
       style={style}
-      className="group"
+      className="group select-none"
       onMouseDown={handleMouseDown}
       onContextMenu={(e) => onContextMenu(e, rectangle.id)}
       onDoubleClick={handleDoubleClick}
@@ -212,7 +212,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={handleInputSubmit}
                 onKeyDown={handleInputKeyDown}
-                className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center select-text"
                 style={{ color: textColor, fontSize: `${fontSize}px`, fontFamily }}
               />
             ) : (
@@ -254,7 +254,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={handleInputSubmit}
               onKeyDown={handleInputKeyDown}
-              className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+              className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center select-text"
               style={{ color: textColor, fontSize: `${fontSize}px`, fontFamily }}
             />
           ) : (

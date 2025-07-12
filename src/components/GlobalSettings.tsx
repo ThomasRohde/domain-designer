@@ -408,7 +408,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   type="text"
                   value={borderColor}
                   onChange={(e) => onBorderColorChange(e.target.value)}
-                  className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 select-text"
                   placeholder="#374151"
                 />
               </div>
