@@ -94,6 +94,7 @@ export class LayoutManager {
     const parent = rectangles.find(r => r.id === parentId);
     const children = rectangles.filter(r => r.parentId === parentId);
 
+
     if (!parent || children.length === 0) {
       return { w: MIN_WIDTH, h: MIN_HEIGHT };
     }
@@ -110,7 +111,8 @@ export class LayoutManager {
       depth
     };
 
-    return this.currentAlgorithm.calculateMinimumParentSize(input);
+    const result = this.currentAlgorithm.calculateMinimumParentSize(input);
+    return result;
   }
 
   /**

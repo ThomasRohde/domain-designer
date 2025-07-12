@@ -112,10 +112,11 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     value={selectedRectangle.layoutPreferences?.maxColumns || ''}
                     placeholder="Auto"
                     onChange={(e) => {
+                      const maxColumns = e.target.value ? parseInt(e.target.value) : undefined;
                       const newPreferences: LayoutPreferences = {
                         ...selectedRectangle.layoutPreferences,
                         fillStrategy: 'fill-rows-first',
-                        maxColumns: e.target.value ? parseInt(e.target.value) : undefined
+                        maxColumns: maxColumns
                       };
                       onLayoutPreferencesChange(selectedId, newPreferences);
                     }}
@@ -136,10 +137,11 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     value={selectedRectangle.layoutPreferences?.maxRows || ''}
                     placeholder="Auto"
                     onChange={(e) => {
+                      const maxRows = e.target.value ? parseInt(e.target.value) : undefined;
                       const newPreferences: LayoutPreferences = {
                         ...selectedRectangle.layoutPreferences,
                         fillStrategy: 'fill-columns-first',
-                        maxRows: e.target.value ? parseInt(e.target.value) : undefined
+                        maxRows: maxRows
                       };
                       onLayoutPreferencesChange(selectedId, newPreferences);
                     }}

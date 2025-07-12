@@ -325,25 +325,23 @@ export const useRectangleManager = ({
         } : rect
       );
       
-      // Check if parent needs to be resized to accommodate new layout
+      // Always resize parent to optimal size when layout preferences change
       const parent = updated.find(rect => rect.id === id);
       if (parent) {
         const children = getChildren(id, updated);
         if (children.length > 0) {
-          // Calculate minimum size needed for the new layout
-          const minParentSize = calculateMinimumParentSize(id, updated, getFixedDimensions(), getMargins());
+          // Calculate optimal size for the new layout (same logic as fitToChildren)
+          const optimalSize = calculateMinimumParentSize(id, updated, getFixedDimensions(), getMargins());
           
-          // Resize parent if it's too small to accommodate the new layout
-          if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
-            const resizedUpdated = updated.map(rect => 
-              rect.id === id 
-                ? { ...rect, w: Math.max(rect.w, minParentSize.w), h: Math.max(rect.h, minParentSize.h) }
-                : rect
-            );
-            
-            // Recalculate layout for all children after parent resize
-            return updateChildrenLayout(resizedUpdated, getFixedDimensions(), getMargins());
-          }
+          // Always resize parent to optimal size for best layout
+          const resizedUpdated = updated.map(rect => 
+            rect.id === id 
+              ? { ...rect, w: optimalSize.w, h: optimalSize.h }
+              : rect
+          );
+          
+          // Recalculate layout for all children after parent resize
+          return updateChildrenLayout(resizedUpdated, getFixedDimensions(), getMargins());
         }
       }
       

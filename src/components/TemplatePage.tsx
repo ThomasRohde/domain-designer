@@ -150,19 +150,6 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     templateData: TemplateNode[],
     options: TemplateInsertionOptions
   ): Promise<TemplateInsertionResult> => {
-    // Get all descendants
-    const getDescendants = (nodeId: string): TemplateNode[] => {
-      const descendants: TemplateNode[] = [];
-      const directChildren = templateData.filter(node => node.parent === nodeId);
-      
-      directChildren.forEach(child => {
-        descendants.push(child);
-        descendants.push(...getDescendants(child.id));
-      });
-      
-      return descendants;
-    };
-    
     
     // Get nodes to insert based on levels (0 = root only, 1 = root + direct children, etc.)
     const getNodesUpToLevel = (rootNode: TemplateNode, maxLevels: number): TemplateNode[] => {
