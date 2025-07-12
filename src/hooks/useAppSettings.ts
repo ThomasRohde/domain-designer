@@ -164,12 +164,30 @@ export const useAppSettings = (): AppSettingsHook => {
   }), [leafFixedWidth, leafFixedHeight, leafWidth, leafHeight]);
 
   // Calculate font size based on hierarchy level
-  const calculateFontSize = useCallback((_rectangleId: string): number => {
+  const calculateFontSize = useCallback((rectangleId: string, rectangles: Rectangle[]): number => {
     if (!dynamicFontSizing) return rootFontSize;
     
-    // This function needs to be called with rectangle data from the component
-    // For now, return the root font size as a fallback
-    return rootFontSize;
+    // Helper function to calculate hierarchy depth
+    const getDepth = (rectId: string): number => {
+      const rect = rectangles.find(r => r.id === rectId);
+      if (!rect || !rect.parentId) return 0;
+      
+      let depth = 0;
+      let current = rect;
+      
+      while (current && current.parentId) {
+        depth++;
+        const parent = rectangles.find(r => r.id === current!.parentId);
+        if (!parent || depth > 10) break; // Prevent infinite loops
+        current = parent;
+      }
+      
+      return depth;
+    };
+    
+    const depth = getDepth(rectangleId);
+    // Scale down font size by 10% for each level of depth, minimum 60% of root size
+    return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
   }, [dynamicFontSizing, rootFontSize]);
 
   // Update leaf nodes when fixed width setting changes

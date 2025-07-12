@@ -357,7 +357,7 @@ export interface AppSettingsHook {
   labelMargin: number;
   layoutAlgorithm: 'grid' | 'flow';
   getFixedDimensions: () => FixedDimensions;
-  calculateFontSize: (rectangleId: string) => number;
+  calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
   handleLeafFixedWidthChange: (enabled: boolean) => void;
   handleLeafFixedHeightChange: (enabled: boolean) => void;
   handleLeafWidthChange: (width: number) => void;

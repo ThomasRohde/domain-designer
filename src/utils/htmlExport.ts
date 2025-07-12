@@ -61,6 +61,39 @@ const generateInteractiveHTML = (
     return 0;
   });
 
+  // Calculate font sizes and padding using global settings
+  const margin = globalSettings?.margin || 1;
+  const labelMargin = globalSettings?.labelMargin || 2;
+  const rootFontSize = globalSettings?.rootFontSize || 12;
+  const dynamicFontSizing = globalSettings?.dynamicFontSizing ?? true;
+  
+  // Helper function to calculate hierarchy depth
+  const getDepth = (rectId: string): number => {
+    const rect = rectangles.find(r => r.id === rectId);
+    if (!rect || !rect.parentId) return 0;
+    
+    let depth = 0;
+    let current = rect;
+    
+    while (current && current.parentId) {
+      depth++;
+      const parent = rectangles.find(r => r.id === current!.parentId);
+      if (!parent || depth > 10) break; // Prevent infinite loops
+      current = parent;
+    }
+    
+    return depth;
+  };
+  
+  // Helper function to calculate font size based on depth
+  const calculateFontSize = (rectId: string): number => {
+    if (!dynamicFontSizing) return rootFontSize;
+    
+    const depth = getDepth(rectId);
+    // Scale down font size by 10% for each level of depth
+    return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
+  };
+
   const rectangleElements = sortedRectangles.map(rect => {
     const x = (rect.x - minX) * gridSize;
     const y = (rect.y - minY) * gridSize;
@@ -68,8 +101,8 @@ const generateInteractiveHTML = (
     const h = rect.h * gridSize;
     
     const isParent = hasChildren.has(rect.id);
-    const textAlign = isParent ? 'top' : 'center';
-    const padding = 10;
+    const padding = margin * gridSize;
+    const fontSize = calculateFontSize(rect.id);
     
     return `
       <div class="rectangle" 
@@ -83,7 +116,7 @@ const generateInteractiveHTML = (
              border: ${borderWidth}px solid ${borderColor};
              border-radius: ${borderRadius}px;
              display: flex;
-             align-items: ${textAlign === 'center' ? 'center' : 'flex-start'};
+             align-items: ${isParent ? 'flex-start' : 'center'};
              justify-content: center;
              padding: ${padding}px;
              box-sizing: border-box;
@@ -93,13 +126,14 @@ const generateInteractiveHTML = (
            data-type="${rect.type}"
            ${rect.description ? `data-description="${escapeHtml(rect.description)}"` : ''}>
         <div class="label" style="
-          font-family: Arial, sans-serif;
-          font-size: 14px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+          font-size: ${fontSize}px;
           font-weight: bold;
           color: #374151;
           text-align: center;
           word-wrap: break-word;
-          ${textAlign === 'top' ? 'margin-top: 0;' : ''}
+          ${isParent ? `margin-top: ${-fontSize * 0.9}px; margin-bottom: ${labelMargin * gridSize}px;` : ''}
+          ${isParent ? 'align-self: flex-start;' : ''}
         ">
           ${escapeHtml(rect.label)}
         </div>
