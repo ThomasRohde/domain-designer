@@ -16,28 +16,29 @@ export interface UseHistoryReturn {
 const MAX_HISTORY_SIZE = 50;
 
 export const useHistory = (): UseHistoryReturn => {
-  const [history, setHistory] = useState<Rectangle[][]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [history, setHistory] = useState<Rectangle[][]>([[]]);
+  const [historyIndex, setHistoryIndex] = useState(0);
 
   const pushState = useCallback((rectangles: Rectangle[]) => {
     setHistory(prev => {
-      const newHistory = [...prev];
+      let newHistory = [...prev];
       
       // If we're not at the end of history, remove all states after current index
       const currentIndex = historyIndex;
       if (currentIndex < newHistory.length - 1) {
-        newHistory.splice(currentIndex + 1);
+        newHistory = newHistory.slice(0, currentIndex + 1);
       }
       
-      // Check if the new state is identical to the last state (prevents StrictMode duplicates)
-      const lastState = newHistory[newHistory.length - 1];
-      if (lastState) {
+      // Check if the new state is identical to the current state (prevents duplicates)
+      const currentState = newHistory[currentIndex];
+      if (currentState) {
         const serializedNew = JSON.stringify(rectangles);
-        const serializedLast = JSON.stringify(lastState);
+        const serializedCurrent = JSON.stringify(currentState);
         
-        if (serializedNew === serializedLast) {
-          // Skip adding duplicate state
-          return prev;
+        if (serializedNew === serializedCurrent) {
+          // Skip adding duplicate state, but still update index to be consistent
+          setHistoryIndex(currentIndex);
+          return newHistory;
         }
       }
       
@@ -82,8 +83,8 @@ export const useHistory = (): UseHistoryReturn => {
   }, [history, historyIndex]);
 
   const clearHistory = useCallback(() => {
-    setHistory([]);
-    setHistoryIndex(-1);
+    setHistory([[]]);
+    setHistoryIndex(0);
   }, []);
 
   return {

@@ -91,27 +91,23 @@ export const useRectangleManager = ({
   // Wrapper for setRectangles that saves history
   const setRectanglesWithHistory = useCallback((value: React.SetStateAction<Rectangle[]>) => {
     setRectangles(prev => {
-      // Save the previous state to history before making the change
-      if (!isUndoRedoInProgress.current) {
-        history.pushState(prev);
-      }
       const newRectangles = typeof value === 'function' ? value(prev) : value;
+      // Save the NEW state to history after making the change
+      if (!isUndoRedoInProgress.current) {
+        history.pushState(newRectangles);
+      }
       // Schedule save after state update completes
       setTimeout(() => triggerSave?.(), 0);
       return newRectangles;
     });
   }, [history, triggerSave]);
   
-  // Track undo/redo operations for proper cleanup
-  const [undoRedoInProgress, setUndoRedoInProgress] = useState(false);
-  
-  // Effect to reset undo/redo flag after state updates
+  // Simple cleanup to reset undo/redo flag after state updates
   useEffect(() => {
-    if (undoRedoInProgress) {
+    if (isUndoRedoInProgress.current) {
       isUndoRedoInProgress.current = false;
-      setUndoRedoInProgress(false);
     }
-  }, [undoRedoInProgress, rectangles]);
+  }, [rectangles]);
   
   // Undo/Redo functions
   const undo = useCallback(() => {
@@ -120,7 +116,6 @@ export const useRectangleManager = ({
       isUndoRedoInProgress.current = true;
       setRectangles(previousState);
       setSelectedId(null); // Clear selection on undo
-      setUndoRedoInProgress(true);
     }
   }, [history]);
   
@@ -130,7 +125,6 @@ export const useRectangleManager = ({
       isUndoRedoInProgress.current = true;
       setRectangles(nextState);
       setSelectedId(null); // Clear selection on redo
-      setUndoRedoInProgress(true);
     }
   }, [history]);
 
