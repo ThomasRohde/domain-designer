@@ -61,7 +61,8 @@ npm run lint
 - **Vite** for development and building
 - **Tailwind CSS** for styling
 - **Lucide React** for icons
-- **html2canvas** + **jsPDF** for export functionality
+- **html2canvas** for export functionality
+- **pako** for compression
 - **ESLint** with TypeScript rules and React hooks plugin
 - **Progressive Web App**: `vite-plugin-pwa` + `workbox-window`
 - **Local Storage**: `idb` for IndexedDB-based persistence
