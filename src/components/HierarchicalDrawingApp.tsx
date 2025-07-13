@@ -34,13 +34,25 @@ const HierarchicalDrawingApp = () => {
   // Create a ref for triggerSave to avoid circular dependency
   const triggerSaveRef = useRef<(() => void) | null>(null);
   
+  // Memoize the pan offset ref to avoid recreating object
+  const panOffsetRef = useRef({ x: 0, y: 0 });
+  
+  // Memoize the getMargins function to avoid inline object creation
+  const getMargins = useCallback(() => ({ 
+    margin: appSettings.margin, 
+    labelMargin: appSettings.labelMargin 
+  }), [appSettings.margin, appSettings.labelMargin]);
+  
+  // Memoize the triggerSave function
+  const triggerSave = useCallback(() => triggerSaveRef.current?.(), []);
+  
   const rectangleManager = useRectangleManager({
     gridSize: appSettings.gridSize,
-    panOffsetRef: { current: { x: 0, y: 0 } },
+    panOffsetRef,
     containerRef,
     getFixedDimensions: appSettings.getFixedDimensions,
-    getMargins: () => ({ margin: appSettings.margin, labelMargin: appSettings.labelMargin }),
-    triggerSave: () => triggerSaveRef.current?.()
+    getMargins,
+    triggerSave
   });
 
   // Canvas interactions with proper setSelectedId wrapper
@@ -64,7 +76,7 @@ const HierarchicalDrawingApp = () => {
     leafHeight: appSettings.leafHeight,
     containerRef,
     getFixedDimensions: appSettings.getFixedDimensions,
-    getMargins: () => ({ margin: appSettings.margin, labelMargin: appSettings.labelMargin }),
+    getMargins,
     reparentRectangle: rectangleManager.reparentRectangle,
     canReparent: rectangleManager.canReparent,
     saveToHistory: rectangleManager.saveToHistory,
@@ -88,42 +100,49 @@ const HierarchicalDrawingApp = () => {
     rectangleManager.addRectangle(parentId || undefined);
   }, [rectangleManager]);
 
+  // Memoize export settings to avoid recreating object and reduce dependency array
+  const exportSettings = useMemo(() => ({
+    gridSize: appSettings.gridSize,
+    leafFixedWidth: appSettings.leafFixedWidth,
+    leafFixedHeight: appSettings.leafFixedHeight,
+    leafWidth: appSettings.leafWidth,
+    leafHeight: appSettings.leafHeight,
+    rootFontSize: appSettings.rootFontSize,
+    dynamicFontSizing: appSettings.dynamicFontSizing,
+    fontFamily: appSettings.fontFamily,
+    borderRadius: appSettings.borderRadius,
+    borderColor: appSettings.borderColor,
+    borderWidth: appSettings.borderWidth,
+    predefinedColors: appSettings.predefinedColors,
+    margin: appSettings.margin,
+    labelMargin: appSettings.labelMargin,
+    layoutAlgorithm: appSettings.layoutAlgorithm
+  }), [
+    appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, 
+    appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, 
+    appSettings.dynamicFontSizing, appSettings.fontFamily, appSettings.borderRadius, 
+    appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors, 
+    appSettings.layoutAlgorithm, appSettings.margin, appSettings.labelMargin
+  ]);
+
   const handleExport = useCallback(async (options: ExportOptions) => {
     if (!containerRef.current) return;
     try {
-      const globalSettings = {
-        gridSize: appSettings.gridSize,
-        leafFixedWidth: appSettings.leafFixedWidth,
-        leafFixedHeight: appSettings.leafFixedHeight,
-        leafWidth: appSettings.leafWidth,
-        leafHeight: appSettings.leafHeight,
-        rootFontSize: appSettings.rootFontSize,
-        dynamicFontSizing: appSettings.dynamicFontSizing,
-        fontFamily: appSettings.fontFamily,
-        borderRadius: appSettings.borderRadius,
-        borderColor: appSettings.borderColor,
-        borderWidth: appSettings.borderWidth,
-        predefinedColors: appSettings.predefinedColors,
-        margin: appSettings.margin,
-        labelMargin: appSettings.labelMargin,
-        layoutAlgorithm: appSettings.layoutAlgorithm
-      };
-      
       await exportDiagram(
         containerRef.current, 
         rectangleManager.rectangles, 
         options, 
-        globalSettings,
-        appSettings.gridSize,
-        appSettings.borderRadius,
-        appSettings.borderColor,
-        appSettings.borderWidth,
-        appSettings.predefinedColors
+        exportSettings,
+        exportSettings.gridSize,
+        exportSettings.borderRadius,
+        exportSettings.borderColor,
+        exportSettings.borderWidth,
+        exportSettings.predefinedColors
       );
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangleManager.rectangles, appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, appSettings.dynamicFontSizing, appSettings.fontFamily, appSettings.borderRadius, appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors, appSettings.layoutAlgorithm, appSettings.margin, appSettings.labelMargin]);
+  }, [rectangleManager.rectangles, exportSettings]);
 
   const handleDeleteSelected = useCallback(() => {
     if (rectangleManager.selectedId) {

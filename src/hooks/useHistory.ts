@@ -43,10 +43,21 @@ export const useHistory = (): UseHistoryReturn => {
     // Enhanced duplicate detection - check if the new state is identical to the current state
     const currentState = newHistory[currentIndex];
     if (currentState) {
-      const serializedNew = JSON.stringify(rectangles);
-      const serializedCurrent = JSON.stringify(currentState);
-      
-      if (serializedNew === serializedCurrent) {
+      // Optimized comparison - avoid expensive JSON serialization
+      if (rectangles.length === currentState.length && 
+          rectangles.every((rect, i) => {
+            const current = currentState[i];
+            return current && 
+                   rect.id === current.id &&
+                   rect.x === current.x &&
+                   rect.y === current.y &&
+                   rect.w === current.w &&
+                   rect.h === current.h &&
+                   rect.label === current.label &&
+                   rect.color === current.color &&
+                   rect.parentId === current.parentId &&
+                   rect.type === current.type;
+          })) {
         // Skip adding duplicate state - no changes needed
         return;
       }

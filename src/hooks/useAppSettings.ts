@@ -173,7 +173,7 @@ export const useAppSettings = (): AppSettingsHook => {
       
       setNeedsLayoutUpdate(false);
     }
-  }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, margin, labelMargin, layoutAlgorithm]);
+  }, [needsLayoutUpdate, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, margin, labelMargin, layoutAlgorithm, setRectanglesRef]);
   
   // Effect to call fitToChildren for each parent after leaf dimensions are updated
   useEffect(() => {
@@ -237,7 +237,7 @@ export const useAppSettings = (): AppSettingsHook => {
     if (setRectanglesRef.current) {
       setNeedsLayoutUpdate(true);
     }
-  }, [leafWidth]);
+  }, [leafWidth, setNeedsLayoutUpdate]);
 
   // Update leaf nodes when fixed height setting changes
   const handleLeafFixedHeightChange = useCallback((enabled: boolean) => {
@@ -254,7 +254,7 @@ export const useAppSettings = (): AppSettingsHook => {
     if (setRectanglesRef.current) {
       setNeedsLayoutUpdate(true);
     }
-  }, [leafHeight]);
+  }, [leafHeight, setNeedsLayoutUpdate]);
 
   // Update leaf width and apply to existing leaf nodes if fixed width is enabled
   const handleLeafWidthChange = useCallback((width: number) => {
@@ -269,7 +269,7 @@ export const useAppSettings = (): AppSettingsHook => {
       // Trigger layout update for all children
       setNeedsLayoutUpdate(true);
     }
-  }, [leafFixedWidth]);
+  }, [leafFixedWidth, setNeedsLayoutUpdate]);
 
   // Update leaf height and apply to existing leaf nodes if fixed height is enabled
   const handleLeafHeightChange = useCallback((height: number) => {
@@ -284,7 +284,7 @@ export const useAppSettings = (): AppSettingsHook => {
       // Trigger layout update for all children
       setNeedsLayoutUpdate(true);
     }
-  }, [leafFixedHeight]);
+  }, [leafFixedHeight, setNeedsLayoutUpdate]);
 
   // Font settings handlers
   const handleRootFontSizeChange = useCallback((size: number) => {
@@ -319,7 +319,7 @@ export const useAppSettings = (): AppSettingsHook => {
     if (setRectanglesRef.current) {
       setNeedsLayoutUpdate(true);
     }
-  }, []);
+  }, [setNeedsLayoutUpdate]);
 
   const handleLabelMarginChange = useCallback((labelMargin: number) => {
     setLabelMargin(labelMargin);
@@ -327,7 +327,7 @@ export const useAppSettings = (): AppSettingsHook => {
     if (setRectanglesRef.current) {
       setNeedsLayoutUpdate(true);
     }
-  }, []);
+  }, [setNeedsLayoutUpdate]);
 
   // Layout algorithm handler
   const handleLayoutAlgorithmChange = useCallback((algorithm: LayoutAlgorithmType) => {
@@ -338,7 +338,7 @@ export const useAppSettings = (): AppSettingsHook => {
     if (setRectanglesRef.current) {
       setNeedsLayoutUpdate(true);
     }
-  }, []);
+  }, [setNeedsLayoutUpdate]);
 
   // Track custom colors separately to manage replacement from bottom-right
   const [customColors, setCustomColors] = useState<string[]>([]);
