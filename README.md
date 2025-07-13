@@ -291,18 +291,6 @@ This project is automatically deployed to GitHub Pages via GitHub Actions. Every
 - **Deployment**: Automated via GitHub Actions
 - **Build**: Static files generated with Vite and served from GitHub Pages
 
-### Local Production Testing
-
-To test the production build locally:
-
-```bash
-# Build with GitHub Pages configuration
-GITHUB_PAGES=true npm run build
-
-# Preview the production build
-npm run preview
-```
-
 ## Contributing
 
 1. Fork the repository
