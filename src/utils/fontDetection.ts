@@ -95,8 +95,9 @@ function isFontAvailableModern(fontName: string): boolean {
  * Detect if a font is available using canvas-based measurement (fallback)
  */
 function isFontAvailableCanvas(fontName: string): boolean {
+  let canvas: HTMLCanvasElement | null = null;
   try {
-    const canvas = document.createElement('canvas');
+    canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (!context) {
       console.log(`❌ Canvas context not available for "${fontName}"`);
@@ -130,6 +131,13 @@ function isFontAvailableCanvas(fontName: string): boolean {
   } catch (error) {
     console.warn(`❌ Error checking font "${fontName}" with canvas method:`, error);
     return false;
+  } finally {
+    // Clean up canvas to prevent memory leak
+    if (canvas) {
+      canvas.width = 0;
+      canvas.height = 0;
+      canvas = null;
+    }
   }
 }
 
