@@ -82,8 +82,8 @@ State is managed through React hooks with clear separation:
 ### Export System
 
 The application supports multiple export formats through `src/utils/exportUtils.ts`:
-- PNG, SVG, PDF, and JSON formats
-- Uses html2canvas for raster exports
+- HTML, SVG, JSON, and Mermaid formats
+- Interactive HTML exports with zoom and pan functionality
 - Maintains layout integrity across all formats
 
 ## Technology Stack

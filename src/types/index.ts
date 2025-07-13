@@ -416,6 +416,7 @@ export interface UIStateHook {
   lockConfirmationModal: LockConfirmationModalState | null;
   descriptionEditModal: DescriptionEditModalState | null;
   templatePageOpen: boolean;
+  helpModalOpen: boolean;
   toggleSidebar: () => void;
   openSidebar: () => void;
   closeSidebar: () => void;
@@ -432,6 +433,8 @@ export interface UIStateHook {
   hideDescriptionEditModal: () => void;
   openTemplatePage: () => void;
   closeTemplatePage: () => void;
+  openHelpModal: () => void;
+  closeHelpModal: () => void;
 }
 
 /**

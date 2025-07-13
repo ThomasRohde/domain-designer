@@ -9,6 +9,7 @@ export interface UIState {
   lockConfirmationModal: LockConfirmationModalState | null;
   descriptionEditModal: DescriptionEditModalState | null;
   templatePageOpen: boolean;
+  helpModalOpen: boolean;
 }
 
 export interface UIActions {
@@ -41,6 +42,10 @@ export interface UIActions {
   // Template page actions
   openTemplatePage: () => void;
   closeTemplatePage: () => void;
+  
+  // Help modal actions
+  openHelpModal: () => void;
+  closeHelpModal: () => void;
 }
 
 export interface UseUIStateReturn extends UIState, UIActions {}
@@ -56,6 +61,7 @@ export const useUIState = (): UIStateHook => {
   const [lockConfirmationModal, setLockConfirmationModal] = useState<LockConfirmationModalState | null>(null);
   const [descriptionEditModal, setDescriptionEditModal] = useState<DescriptionEditModalState | null>(null);
   const [templatePageOpen, setTemplatePageOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
 
   // Sidebar actions
   const toggleSidebar = useCallback(() => {
@@ -128,6 +134,15 @@ export const useUIState = (): UIStateHook => {
     setTemplatePageOpen(false);
   }, []);
 
+  // Help modal actions
+  const openHelpModal = useCallback(() => {
+    setHelpModalOpen(true);
+  }, []);
+
+  const closeHelpModal = useCallback(() => {
+    setHelpModalOpen(false);
+  }, []);
+
   // Handle responsive sidebar and left menu behavior - auto-close on mobile when clicking outside
   useEffect(() => {
     const handleResize = () => {
@@ -182,6 +197,7 @@ export const useUIState = (): UIStateHook => {
     lockConfirmationModal,
     descriptionEditModal,
     templatePageOpen,
+    helpModalOpen,
     
     // Actions
     toggleSidebar,
@@ -200,5 +216,7 @@ export const useUIState = (): UIStateHook => {
     hideDescriptionEditModal,
     openTemplatePage,
     closeTemplatePage,
+    openHelpModal,
+    closeHelpModal,
   };
 };

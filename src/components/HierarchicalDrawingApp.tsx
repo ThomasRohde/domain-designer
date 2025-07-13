@@ -18,6 +18,7 @@ import Sidebar from './Sidebar';
 import PropertyPanel from './PropertyPanel';
 import LeftMenu from './LeftMenu';
 import AboutModal from './AboutModal';
+import HelpModal from './HelpModal';
 import LockConfirmationModal from './LockConfirmationModal';
 import DescriptionEditModal from './DescriptionEditModal';
 import TemplatePage from './TemplatePage';
@@ -384,6 +385,7 @@ const HierarchicalDrawingApp = () => {
           onClose={uiState.closeLeftMenu}
           onAboutClick={handleAboutClick}
           onTemplatesClick={handleTemplatesClick}
+          onHelpClick={uiState.openHelpModal}
           onClearSavedData={handleClearSavedData}
         />
         
@@ -473,6 +475,11 @@ const HierarchicalDrawingApp = () => {
       <AboutModal
         isOpen={aboutModalOpen}
         onClose={() => setAboutModalOpen(false)}
+      />
+
+      <HelpModal
+        isOpen={uiState.helpModalOpen}
+        onClose={uiState.closeHelpModal}
       />
 
       <LockConfirmationModal

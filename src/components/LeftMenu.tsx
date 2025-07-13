@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, FileText, Trash2 } from 'lucide-react';
+import { Info, FileText, Trash2, HelpCircle } from 'lucide-react';
 import MobileOverlay from './MobileOverlay';
 
 interface LeftMenuProps {
@@ -7,10 +7,11 @@ interface LeftMenuProps {
   onClose: () => void;
   onAboutClick: () => void;
   onTemplatesClick: () => void;
+  onHelpClick: () => void;
   onClearSavedData?: () => void;
 }
 
-const LeftMenu: React.FC<LeftMenuProps> = ({ isOpen, onClose, onAboutClick, onTemplatesClick, onClearSavedData }) => {
+const LeftMenu: React.FC<LeftMenuProps> = ({ isOpen, onClose, onAboutClick, onTemplatesClick, onHelpClick, onClearSavedData }) => {
   return (
     <>
       {/* Left-side Menu */}
@@ -42,6 +43,14 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ isOpen, onClose, onAboutClick, onTe
           >
             <FileText size={16} />
             <span>Templates</span>
+          </button>
+          
+          <button
+            onClick={onHelpClick}
+            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <HelpCircle size={16} />
+            <span>Help</span>
           </button>
           
           <button

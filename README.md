@@ -15,7 +15,6 @@ A React+TypeScript application for creating domain models and hierarchical diagr
   - Mixed Flow layout with intelligent space optimization (20-45% better efficiency)
   - Auto-sizing with intelligent parent-child constraints
 - **Advanced Global Settings**: Configure layout algorithms, margins, fonts, font families, and sizing preferences
-- **Categories**: Different rectangle types for domain modeling (Channels, Business Support, Products, etc.)
 - **Interactive Editing**: 
   - Drag and drop for root rectangles
   - Resize parent rectangles with visual feedback
@@ -24,9 +23,10 @@ A React+TypeScript application for creating domain models and hierarchical diagr
   - Arrow key movement for precise positioning (1px and 10px increments)
   - Manual positioning mode with lock/unlock functionality
 - **Save/Load**: Persist diagrams as JSON files
-- **Export**: Export to PNG, SVG, PDF, or JSON formats
+- **Export**: Export to HTML, SVG, JSON, or Mermaid formats
+- **Templates**: Load hierarchical templates from JSON files and insert nodes onto the canvas
 - **Undo/Redo**: Full history management with improved state recording
-- **Professional Styling**: Color-coded categories with professional appearance
+- **Professional Styling**: Clean, modern appearance with customizable colors
 - **Progressive Web App**: Installable on desktop, works offline with auto-save
 
 ## Getting Started
@@ -72,7 +72,7 @@ npm run lint
 
 1. Click "Add Root" to create a top-level rectangle
 2. Select a rectangle and click "Add Child" to create nested rectangles
-3. Use the category selector to change rectangle types
+3. Double-click any rectangle to edit its label
 
 ### Layout Algorithm Selection
 
@@ -103,18 +103,6 @@ To enable arrow key movement for child rectangles:
    - **Shift + Arrow keys**: 10 pixel fast movement
 4. Click the lock icon to return to automatic layout
 
-### Categories
-
-- **Channels**: Digital and communication channels
-- **Relationships**: Customer and partner relationships  
-- **Business Support**: Core business capabilities
-- **Products & Services**: Product offerings
-- **Business Control**: Governance and oversight
-- **Risk Management**: Risk and compliance
-- **IT Platform**: Technology infrastructure
-- **Data Platform**: Data management and analytics
-- **Organisational Support**: HR and organizational functions
-
 ### Keyboard Shortcuts
 
 - `Ctrl+S` - Save diagram
@@ -130,10 +118,41 @@ To enable arrow key movement for child rectangles:
 
 ### Export Options
 
-- **PNG**: High-quality raster image
-- **SVG**: Scalable vector graphics
-- **PDF**: Print-ready document format
+- **HTML**: Interactive web document with zoom and pan capabilities
+- **SVG**: Scalable vector graphics that maintain quality at any size
 - **JSON**: Raw diagram data for backup/sharing
+- **Mermaid**: Diagram notation for documentation and version control
+
+### Templates
+
+The application supports template functionality for efficient diagram creation:
+
+- **Template Loading**: Load hierarchical templates from JSON files
+- **Template Format**: JSON arrays containing nodes with `id`, `name`, `description`, and `parent` fields
+- **Template Insertion**: Select any node from the template hierarchy to insert it (with its children) onto the canvas
+- **Template Navigation**: Interactive tree view for browsing template structure
+- **Color Coding**: Templates are automatically colored based on hierarchy level (root, parent, leaf)
+
+#### Template File Format
+
+Templates should be JSON arrays with the following structure:
+
+```json
+[
+  {
+    "id": "root-1",
+    "name": "Business Architecture",
+    "description": "Top-level business architecture domain",
+    "parent": null
+  },
+  {
+    "id": "child-1",
+    "name": "Business Processes",
+    "description": "Core business processes",
+    "parent": "root-1"
+  }
+]
+```
 
 ## Progressive Web App Features
 
@@ -172,7 +191,6 @@ The app displays your connection status and auto-save information in the toolbar
 - `Canvas`: Manages the drawing canvas with pan/zoom capabilities
 - `Sidebar` + `PropertyPanel`: Settings and properties management
 - `Toolbar`: Top navigation and actions
-- `CategorySelector`: Rectangle category management
 - `ContextMenu`: Right-click menu
 - `ExportModal`: Export configuration dialog
 
