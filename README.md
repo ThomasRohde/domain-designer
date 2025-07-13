@@ -1,149 +1,227 @@
-# Hierarchical Drawing Program
+<div align="center">
+  <h1>🎨 Domain Designer</h1>
+  <p><strong>A powerful React+TypeScript application for creating domain models and hierarchical diagrams with intelligent constraint-based layout</strong></p>
+  
+  <p>
+    <a href="https://thomasrohde.github.io/domain-designer/"><strong>🚀 Live Demo</strong></a>
+    •
+    <a href="#features"><strong>Features</strong></a>
+    •
+    <a href="#getting-started"><strong>Getting Started</strong></a>
+    •
+    <a href="#usage"><strong>Usage</strong></a>
+    •
+    <a href="#contributing"><strong>Contributing</strong></a>
+  </p>
 
-A React+TypeScript application for creating domain models and hierarchical diagrams with constraint-based layout.
+  <p>
+    <img src="https://img.shields.io/badge/React-18-blue?logo=react" alt="React 18">
+    <img src="https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript" alt="TypeScript">
+    <img src="https://img.shields.io/badge/Vite-5.0-646CFF?logo=vite" alt="Vite">
+    <img src="https://img.shields.io/badge/TailwindCSS-3.0-06B6D4?logo=tailwindcss" alt="TailwindCSS">
+    <img src="https://img.shields.io/badge/PWA-Ready-green?logo=pwa" alt="PWA Ready">
+  </p>
+</div>
 
-**🚀 Live Demo**: [https://thomasrohde.github.io/domain-designer/](https://thomasrohde.github.io/domain-designer/)
+---
 
-## Features
+## ✨ Features
 
-- **Multiple Layout Algorithms**: Choose between Grid, Flow, and Mixed Flow layout algorithms for different diagram styles
-- **Grid-based Drawing**: Rectangles snap to a grid for precise alignment
-- **Hierarchical Structure**: Create parent-child relationships between rectangles
-- **Advanced Layout System**: 
-  - Flow layout with depth-based alternating orientations
-  - Grid layout with consistent spacing and alignment
-  - Mixed Flow layout with intelligent space optimization (20-45% better efficiency)
-  - Auto-sizing with intelligent parent-child constraints
-- **Advanced Global Settings**: Configure layout algorithms, margins, fonts, font families, and sizing preferences
-- **Interactive Editing**: 
-  - Drag and drop for root rectangles
-  - Resize parent rectangles with visual feedback
-  - Double-click to edit labels
-  - Right-click context menus
-  - Arrow key movement for precise positioning (1px and 10px increments)
-  - Manual positioning mode with lock/unlock functionality
+<table>
+<tr>
+<td>
+
+### 🔧 Layout Algorithms
+- **Grid Layout**: Traditional grid-based positioning with consistent spacing
+- **Flow Layout**: Hierarchical flow with depth-based alternating orientations  
+- **Mixed Flow Layout**: Intelligent space optimization (20-45% better efficiency)
+
+### 🎯 Interactive Editing
+- **Drag & Drop**: Intuitive rectangle positioning
+- **Resize Handles**: Visual feedback for parent rectangles
+- **Double-click Editing**: Quick label modifications
+- **Context Menus**: Right-click for advanced options
+- **Keyboard Navigation**: Arrow keys for precise positioning (1px/10px)
+
+</td>
+<td>
+
+### 💾 Data Management
 - **Save/Load**: Persist diagrams as JSON files
-- **Export**: Export to HTML, SVG, JSON, or Mermaid formats
-- **Templates**: Load hierarchical templates from JSON files and insert nodes onto the canvas
-- **Undo/Redo**: Full history management with improved state recording
-- **Professional Styling**: Clean, modern appearance with customizable colors
-- **Progressive Web App**: Installable on desktop, works offline with auto-save
+- **Auto-save**: Automatic IndexedDB persistence
+- **Undo/Redo**: Full history management
+- **Templates**: Load hierarchical templates from JSON
 
-## Getting Started
+### 🚀 Export Options
+- **HTML**: Interactive web documents with zoom/pan
+- **SVG**: Scalable vector graphics
+- **JSON**: Raw diagram data
+- **Mermaid**: Diagram notation for documentation
 
-### Prerequisites
+</td>
+</tr>
+</table>
 
-- Node.js 20+ 
-- npm
+### 📱 Progressive Web App
+- **📲 Installable**: Desktop installation on Windows, macOS, Linux
+- **🌐 Offline Support**: Works without internet connection
+- **💾 Auto-save**: Automatic IndexedDB-based persistence
+- **⚡ Instant Loading**: Service worker caching for fast startup
 
-### Installation
+## 🚀 Getting Started
+
+### 📋 Prerequisites
+
+- **Node.js** 20+ 
+- **npm** or **yarn**
+
+### ⚡ Quick Start
 
 ```bash
+# Clone the repository
+git clone https://github.com/ThomasRohde/domain-designer.git
+cd domain-designer
+
 # Install dependencies
 npm install
 
 # Start development server
 npm run dev
 
-# Build for production
-npm run build
-
-# Run type checking
-npm run typecheck
-
-# Run linting
-npm run lint
+# Open http://localhost:5173 in your browser
 ```
 
-### Technology Stack
+### 🛠️ Available Scripts
 
-- **React 18** with TypeScript
-- **Vite** for development and building
-- **Tailwind CSS** for styling
-- **Lucide React** for icons
-- **html2canvas** for export functionality
-- **pako** for compression
-- **ESLint** with TypeScript rules and React hooks plugin
-- **Progressive Web App**: `vite-plugin-pwa` + `workbox-window`
-- **Local Storage**: `idb` for IndexedDB-based persistence
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm run preview` | Preview production build |
+| `npm run typecheck` | Run TypeScript type checking |
+| `npm run lint` | Run ESLint |
 
-## Usage
+### 🏗️ Tech Stack
 
-### Creating Rectangles
+<div align="center">
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React">
+  <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-5.0-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Tailwind-3.0-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind">
+</div>
 
-1. Click "Add Root" to create a top-level rectangle
-2. Select a rectangle and click "Add Child" to create nested rectangles
-3. Double-click any rectangle to edit its label
+**Core Technologies:**
+- **React 18** with TypeScript for robust UI development
+- **Vite** for lightning-fast development and building
+- **Tailwind CSS** for utility-first styling
+- **Lucide React** for beautiful icons
+- **html2canvas** for high-quality export functionality
+- **pako** for efficient compression
+- **IndexedDB (idb)** for client-side data persistence
 
-### Layout Algorithm Selection
+## 📖 Usage
 
-- **Open Settings**: Click the settings icon in the toolbar to access global settings
-- **Choose Algorithm**: Select between "Grid", "Flow", and "Mixed Flow" layout algorithms
-- **Configure Settings**: 
-  - Adjust margin and label margin values
+### 🎯 Creating Your First Diagram
+
+1. **🔰 Add Root Rectangle**: Click "Add Root" to create your first top-level rectangle
+2. **🌳 Build Hierarchy**: Select any rectangle and click "Add Child" to create nested elements
+3. **✏️ Edit Labels**: Double-click any rectangle to modify its label
+4. **🎨 Customize**: Use the settings panel to adjust colors, fonts, and layout algorithms
+
+### ⚙️ Layout Algorithm Configuration
+
+<details>
+<summary><strong>🔧 Global Settings</strong></summary>
+
+- **Open Settings**: Click the ⚙️ settings icon in the toolbar
+- **Choose Algorithm**: Select between Grid, Flow, and Mixed Flow layouts
+- **Configure Appearance**: 
+  - Adjust margin and label spacing
   - Set fixed dimensions for leaf nodes
-  - Customize font sizes, font families, and border styles
-  - Choose from system fonts with loading detection
-- **Live Updates**: Changes apply immediately to your diagram
+  - Customize fonts, sizes, and border styles
+  - Real-time preview of changes
 
-### Editing
+</details>
 
-- **Double-click** any rectangle to edit its label
-- **Drag** root rectangles to reposition them
-- **Resize** parent rectangles using the resize handle (bottom-right corner)
-- **Right-click** for context menu options
-- **Arrow keys** to move selected rectangles with pixel-level precision
+### 🖱️ Interaction Guide
 
-#### Manual Positioning
+| Action | Method | Description |
+|--------|--------|-------------|
+| **Edit Label** | Double-click | Quick text editing |
+| **Move Rectangle** | Drag | Reposition root rectangles |
+| **Resize** | Drag corner handle | Adjust parent rectangle size |
+| **Context Menu** | Right-click | Access advanced options |
+| **Precise Movement** | Arrow keys | 1px precision movement |
+| **Fast Movement** | Shift + Arrow keys | 10px quick movement |
 
-To enable arrow key movement for child rectangles:
-1. Select a parent rectangle
-2. Click the unlock icon (padlock) to enable manual positioning
-3. Child rectangles be moved with arrow keys:
-   - **Arrow keys**: 1 pixel precision movement
-   - **Shift + Arrow keys**: 10 pixel fast movement
-4. Click the lock icon to return to automatic layout
+### 🔐 Manual Positioning Mode
 
-### Keyboard Shortcuts
+For advanced positioning control:
 
+1. **🔓 Unlock**: Select a parent rectangle and click the unlock icon
+2. **🎯 Move Children**: Use arrow keys to position child rectangles manually
+3. **🔒 Lock**: Click the lock icon to return to automatic layout
+
+> **💡 Pro Tip**: Manual positioning is perfect for fine-tuning specific layouts while keeping the overall structure intact.
+
+### ⌨️ Keyboard Shortcuts
+
+<table>
+<tr>
+<td>
+
+**File Operations**
 - `Ctrl+S` - Save diagram
 - `Ctrl+O` - Load diagram
+
+**Editing**
 - `Ctrl+Z` - Undo
-- `Ctrl+Y` or `Ctrl+Shift+Z` - Redo
+- `Ctrl+Y` / `Ctrl+Shift+Z` - Redo
 - `Delete` - Remove selected rectangle
-- `Arrow Keys` - Move selected rectangle by 1 pixel (precise movement)
-- `Shift+Arrow Keys` - Move selected rectangle by 10 pixels (fast movement)
-- `Escape` - Cancel current drag operation
+- `Escape` - Cancel current operation
 
-**Note**: Arrow key movement only works for root rectangles or children of unlocked parents (manual positioning enabled). When moving a parent rectangle, all its children move together to maintain the hierarchy.
+</td>
+<td>
 
-### Export Options
+**Navigation**
+- `Arrow Keys` - Move 1px (precision)
+- `Shift+Arrow Keys` - Move 10px (fast)
 
-- **HTML**: Interactive web document with zoom and pan capabilities
-- **SVG**: Scalable vector graphics that maintain quality at any size
-- **JSON**: Raw diagram data for backup/sharing
-- **Mermaid**: Diagram notation for documentation and version control
+**Special**
+- Works for root rectangles always
+- Works for children when parent is unlocked
+- Moving parent moves all children together
 
-### Templates
+</td>
+</tr>
+</table>
 
-The application supports template functionality for efficient diagram creation:
+### 📤 Export Your Work
 
-- **Template Loading**: Load hierarchical templates from JSON files
-- **Template Format**: JSON arrays containing nodes with `id`, `name`, `description`, and `parent` fields
-- **Template Insertion**: Select any node from the template hierarchy to insert it (with its children) onto the canvas
-- **Template Navigation**: Interactive tree view for browsing template structure
-- **Color Coding**: Templates are automatically colored based on hierarchy level (root, parent, leaf)
+<div align="center">
+  <img src="https://img.shields.io/badge/HTML-Interactive-orange?style=for-the-badge&logo=html5" alt="HTML Export">
+  <img src="https://img.shields.io/badge/SVG-Scalable-blue?style=for-the-badge&logo=svg" alt="SVG Export">
+  <img src="https://img.shields.io/badge/JSON-Data-green?style=for-the-badge&logo=json" alt="JSON Export">
+  <img src="https://img.shields.io/badge/Mermaid-Diagram-ff69b4?style=for-the-badge&logo=mermaid" alt="Mermaid Export">
+</div>
 
-#### Template File Format
+| Format | Best For | Features |
+|--------|----------|----------|
+| **HTML** | Web sharing | Interactive zoom/pan, standalone document |
+| **SVG** | High-quality prints | Vector graphics, infinite scalability |
+| **JSON** | Backup/sharing | Raw data, version control friendly |
+| **Mermaid** | Documentation | Code-based diagrams, GitHub integration |
 
-Templates should be JSON arrays with the following structure:
+### 📋 Template System
+
+Accelerate your workflow with hierarchical templates:
 
 ```json
 [
   {
     "id": "root-1",
     "name": "Business Architecture",
-    "description": "Top-level business architecture domain",
+    "description": "Top-level business domain",
     "parent": null
   },
   {
@@ -155,66 +233,118 @@ Templates should be JSON arrays with the following structure:
 ]
 ```
 
-## Progressive Web App Features
+**Template Features:**
+- 📁 **Load from JSON**: Import structured hierarchies instantly
+- 🎨 **Auto-coloring**: Hierarchy-based color coding
+- 🌳 **Interactive Tree**: Browse and select nodes visually
+- 🔄 **Partial Import**: Insert specific branches onto canvas
 
-This application is built as a Progressive Web App (PWA) with the following capabilities:
+## 📱 Progressive Web App
 
-### Installation
-- **Desktop Installation**: Install the app on Windows, macOS, or Linux
-- **App-like Experience**: Runs in its own window without browser UI
-- **Easy Access**: Launch from desktop or start menu like any native app
+<div align="center">
+  <img src="https://img.shields.io/badge/PWA-Ready-success?style=for-the-badge&logo=pwa" alt="PWA Ready">
+  <img src="https://img.shields.io/badge/Offline-Support-blue?style=for-the-badge&logo=offline" alt="Offline Support">
+  <img src="https://img.shields.io/badge/Auto--save-Enabled-green?style=for-the-badge&logo=save" alt="Auto-save">
+</div>
 
-### Offline Capabilities
-- **Offline Support**: Continue working even without internet connection using service worker caching
-- **Auto-save**: Your work is automatically saved to IndexedDB as you edit
-- **Instant Loading**: App loads instantly after first visit, even offline
-- **Data Persistence**: All diagrams are saved locally using IndexedDB and restored on app restart
-- **Background Sync**: Seamless data synchronization when connection is restored
+### 🏠 Installation
 
-### How to Install
-1. Open the app in Chrome, Edge, or similar browser
-2. Look for the "Install" button in the address bar or menu
-3. Click "Install Domain Designer" to add it to your system
-4. Launch the app from your desktop or start menu
+<table>
+<tr>
+<td width="50%">
 
-### Offline Status
-The app displays your connection status and auto-save information in the toolbar:
-- **Online/Offline indicator**: Shows current network status
-- **Auto-save status**: Displays when your work was last saved to IndexedDB
-- **Save confirmation**: Shows "Saved" message when changes are persisted locally
+**Desktop Experience**
+- 🖥️ **Native-like**: Runs in dedicated window
+- 🚀 **Fast Launch**: Start from desktop/menu
+- 💾 **Offline Ready**: Works without internet
+- 🔄 **Auto-sync**: Seamless data synchronization
 
-## Technical Architecture
+</td>
+<td width="50%">
 
-### Core Components
+**How to Install**
+1. Open app in Chrome/Edge
+2. Look for "Install" button in address bar
+3. Click "Install Domain Designer"
+4. Launch from desktop/start menu
 
-- `HierarchicalDrawingApp`: Main application component and orchestrator
-- `RectangleRenderer`: Handles rendering of all rectangles with proper z-indexing
-- `Canvas`: Manages the drawing canvas with pan/zoom capabilities
-- `Sidebar` + `PropertyPanel`: Settings and properties management
-- `Toolbar`: Top navigation and actions
-- `ContextMenu`: Right-click menu
-- `ExportModal`: Export configuration dialog
+</td>
+</tr>
+</table>
 
-### Layout System Architecture
+### 🌐 Offline Capabilities
+
+| Feature | Description |
+|---------|-------------|
+| **Service Worker** | Caches app for instant loading |
+| **IndexedDB** | Local data persistence |
+| **Auto-save** | Real-time diagram saving |
+| **Offline Indicator** | Network status display |
+| **Background Sync** | Sync when connection restored |
+
+### 📊 Status Indicators
+
+The toolbar shows your connection and save status:
+- 🟢 **Online/Offline**: Current network state
+- 💾 **Auto-save**: Last saved timestamp
+- ✅ **Saved**: Confirmation of data persistence
+
+## 🏗️ Technical Architecture
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Architecture-Modular-blueviolet?style=for-the-badge" alt="Modular Architecture">
+  <img src="https://img.shields.io/badge/Patterns-Factory-orange?style=for-the-badge" alt="Factory Pattern">
+  <img src="https://img.shields.io/badge/Hooks-Custom-green?style=for-the-badge" alt="Custom Hooks">
+</div>
+
+### 🧩 Core Components
+
+| Component | Responsibility |
+|-----------|---------------|
+| `HierarchicalDrawingApp` | Main orchestrator and state management |
+| `RectangleRenderer` | Handles rendering with proper z-indexing |
+| `Canvas` | Drawing surface with pan/zoom capabilities |
+| `Sidebar` + `PropertyPanel` | Settings and properties interface |
+| `Toolbar` | Top navigation and action buttons |
+| `ContextMenu` | Right-click interaction menu |
+| `ExportModal` | Export configuration dialog |
+
+### 🏭 Layout System Architecture
 
 The application uses a **Factory Pattern** for pluggable layout algorithms:
 
-- **`LayoutManager`**: Central orchestrator for all layout operations
-- **`ILayoutAlgorithm`**: Interface defining the contract for layout algorithms
-- **`LayoutAlgorithmFactory`**: Creates algorithm instances based on user selection
-- **`GridLayoutAlgorithm`**: Grid-based layout with consistent spacing
-- **`FlowLayoutAlgorithm`**: Hierarchical flow layout with depth-based alternating orientations
-- **`MixedFlowLayoutAlgorithm`**: Advanced mixed-orientation layout with intelligent space optimization
+```typescript
+// Factory Pattern Implementation
+interface ILayoutAlgorithm {
+  calculateChildLayout(parent: Rectangle, children: Rectangle[]): Rectangle[];
+  updateChildrenLayout(parent: Rectangle, children: Rectangle[]): void;
+}
 
-### Hook-Based Architecture
+class LayoutAlgorithmFactory {
+  static create(type: LayoutType): ILayoutAlgorithm {
+    switch (type) {
+      case 'grid': return new GridLayoutAlgorithm();
+      case 'flow': return new FlowLayoutAlgorithm();
+      case 'mixed': return new MixedFlowLayoutAlgorithm();
+    }
+  }
+}
+```
 
-The application uses custom hooks to separate concerns:
-- `useRectangleManager` - Manages rectangle state and CRUD operations
-- `useCanvasInteractions` - Handles drag/drop, resize, and pan operations
-- `useAppSettings` - Manages global app settings and layout preferences
-- `useUIState` - Manages UI state (sidebar, modals, context menus)
+### 🎣 Hook-Based Architecture
 
-### Data Structure
+Separation of concerns through custom hooks:
+
+| Hook | Purpose |
+|------|---------|
+| `useRectangleManager` | Rectangle state and CRUD operations |
+| `useCanvasInteractions` | Drag/drop, resize, and pan handling |
+| `useAppSettings` | Global settings and layout preferences |
+| `useUIState` | UI state management (modals, sidebar) |
+| `useHistory` | Undo/redo functionality |
+| `useAutoSave` | Automatic data persistence |
+
+### 📊 Data Structure
 
 ```typescript
 interface Rectangle {
@@ -231,77 +361,199 @@ interface Rectangle {
 }
 ```
 
-### Layout Algorithms
+## 🎯 Layout Algorithms
 
-**Grid Layout**: Traditional grid-based positioning with consistent spacing and alignment
-**Flow Layout**: Hierarchical flow layout using:
-- Depth-based calculations for parent-child relationships
-- Alternating row/column orientation based on tree depth
-- Dynamic size calculations based on content and hierarchy
-- Intelligent margin and spacing management
+<div align="center">
+  <img src="https://img.shields.io/badge/Grid-Layout-blue?style=for-the-badge" alt="Grid Layout">
+  <img src="https://img.shields.io/badge/Flow-Layout-green?style=for-the-badge" alt="Flow Layout">
+  <img src="https://img.shields.io/badge/Mixed-Layout-purple?style=for-the-badge" alt="Mixed Layout">
+</div>
 
-**Mixed Flow Layout**: Advanced algorithm that:
-- Evaluates multiple layout options (single row/column, two columns/rows)
-- Dynamically selects optimal arrangement to minimize whitespace
-- Provides 20-45% better space efficiency than traditional layouts
-- Adapts to content characteristics and hierarchy structure
+### 🔲 Grid Layout Algorithm
 
-## Layout System
+<table>
+<tr>
+<td width="70%">
 
-The layout system provides three distinct algorithms optimized for different use cases:
+**Purpose**: Traditional grid-based positioning with consistent spacing
 
-### Grid Layout Algorithm (`GridLayoutAlgorithm`)
-- **Purpose**: Traditional grid-based positioning with consistent spacing
-- **Features**:
-  - Arranges children in a grid pattern within parent bounds
-  - Uses consistent margin system: `LABEL_MARGIN` for top spacing, `MARGIN` for other sides
-  - Calculates minimum parent size based on child requirements
-  - Provides `calculateChildLayout` and `updateChildrenLayout` methods
-- **Best for**: Structured diagrams with regular spacing requirements
+**Features**:
+- 📐 Arranges children in structured grid patterns
+- 📏 Consistent margin system with configurable spacing
+- 🔢 Minimum parent size calculation
+- ⚡ Optimized for structured diagrams
 
-### Flow Layout Algorithm (`FlowLayoutAlgorithm`)
-- **Purpose**: Hierarchical flow layout with depth-based alternating orientations
-- **Features**:
-  - Alternates between ROW and COLUMN orientations based on tree depth
-  - Calculates optimal positions using hierarchical flow principles
-  - Supports both horizontal and vertical flow directions
-  - Implements intelligent size calculations based on content hierarchy
-- **Best for**: Organizational charts, process flows, and hierarchical structures
+**Best For**: Organizational charts, structured data models
 
-### Mixed Flow Layout Algorithm (`MixedFlowLayoutAlgorithm`)
-- **Purpose**: Advanced mixed-orientation layout with intelligent space optimization
-- **Features**:
-  - Evaluates multiple layout configurations (single row/column, two columns/rows)
-  - Automatically selects the best option based on space efficiency scoring
-  - Minimizes whitespace while maintaining visual balance
-  - Adapts dynamically to content characteristics and container constraints
-  - Provides 20-45% better space utilization than traditional algorithms
-- **Best for**: Complex diagrams with mixed content types and space optimization requirements
+</td>
+<td width="30%">
 
-### Layout Management
-- **`LayoutManager`**: Central orchestrator that coordinates layout operations
-- **`LayoutAlgorithmFactory`**: Factory for creating algorithm instances
-- **Dynamic Switching**: Users can change algorithms via global settings
-- **Consistent Interface**: All algorithms implement `ILayoutAlgorithm` for seamless switching
+```
+┌─────────────────┐
+│ Parent          │
+│ ┌─────┐ ┌─────┐ │
+│ │ C1  │ │ C2  │ │
+│ └─────┘ └─────┘ │
+│ ┌─────┐ ┌─────┐ │
+│ │ C3  │ │ C4  │ │
+│ └─────┘ └─────┘ │
+└─────────────────┘
+```
 
-## Deployment
+</td>
+</tr>
+</table>
 
-This project is automatically deployed to GitHub Pages via GitHub Actions. Every push to the main branch triggers a deployment.
+### 🌊 Flow Layout Algorithm
 
-- **Live Site**: [https://thomasrohde.github.io/domain-designer/](https://thomasrohde.github.io/domain-designer/)
-- **Deployment**: Automated via GitHub Actions
-- **Build**: Static files generated with Vite and served from GitHub Pages
+<table>
+<tr>
+<td width="70%">
 
-## Contributing
+**Purpose**: Hierarchical flow with depth-based alternating orientations
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
+**Features**:
+- 🔄 Alternates between ROW and COLUMN based on tree depth
+- 🌳 Hierarchical positioning with intelligent spacing
+- 📐 Dynamic orientation switching
+- 🎯 Content-aware size calculations
 
-The site will be automatically deployed when changes are merged to the main branch.
+**Best For**: Process flows, decision trees, hierarchical structures
 
-## License
+</td>
+<td width="30%">
 
-MIT License - see LICENSE file for details
+```
+┌─────────────────┐
+│ Parent          │
+│ ┌─────┐         │
+│ │ C1  │         │
+│ └─────┘         │
+│ ┌─────┐         │
+│ │ C2  │         │
+│ └─────┘         │
+└─────────────────┘
+```
+
+</td>
+</tr>
+</table>
+
+### 🎨 Mixed Flow Layout Algorithm
+
+<table>
+<tr>
+<td width="70%">
+
+**Purpose**: Intelligent space optimization with adaptive layouts
+
+**Features**:
+- 🧠 Evaluates multiple layout configurations
+- 📊 Automatic selection based on efficiency scoring
+- 🎯 20-45% better space utilization
+- 🔄 Adapts to content characteristics dynamically
+
+**Best For**: Complex diagrams, mixed content, space-constrained layouts
+
+</td>
+<td width="30%">
+
+```
+┌─────────────────┐
+│ Parent          │
+│ ┌─────┐ ┌─────┐ │
+│ │ C1  │ │ C2  │ │
+│ └─────┘ └─────┘ │
+│ ┌─────┐         │
+│ │ C3  │         │
+│ └─────┘         │
+└─────────────────┘
+```
+
+</td>
+</tr>
+</table>
+
+### 🎛️ Layout Management
+
+- **`LayoutManager`**: Central orchestrator for all layout operations
+- **`LayoutAlgorithmFactory`**: Factory for creating algorithm instances  
+- **Dynamic Switching**: Change algorithms via global settings
+- **Consistent Interface**: All algorithms implement `ILayoutAlgorithm`
+
+## 🚀 Deployment
+
+<div align="center">
+  <img src="https://img.shields.io/badge/GitHub-Pages-181717?style=for-the-badge&logo=github" alt="GitHub Pages">
+  <img src="https://img.shields.io/badge/CI/CD-Automated-success?style=for-the-badge&logo=githubactions" alt="CI/CD">
+  <img src="https://img.shields.io/badge/Vite-Build-646CFF?style=for-the-badge&logo=vite" alt="Vite Build">
+</div>
+
+This project features **fully automated deployment** to GitHub Pages:
+
+### 🔄 Automated Pipeline
+- **Trigger**: Every push to `main` branch
+- **Build**: Vite optimized production build
+- **Deploy**: Automatic GitHub Pages deployment
+- **Live**: Instantly available at the live URL
+
+### 🌍 Live Environment
+- **URL**: [https://thomasrohde.github.io/domain-designer/](https://thomasrohde.github.io/domain-designer/)
+- **CDN**: Global content delivery via GitHub Pages
+- **HTTPS**: Secure connection with SSL certificate
+- **Performance**: Optimized static assets with Vite
+
+## 🤝 Contributing
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Contributions-Welcome-brightgreen?style=for-the-badge" alt="Contributions Welcome">
+  <img src="https://img.shields.io/badge/Code-Review-blue?style=for-the-badge" alt="Code Review">
+  <img src="https://img.shields.io/badge/Issues-Open-red?style=for-the-badge" alt="Issues Open">
+</div>
+
+### 🛠️ Development Process
+
+1. **🍴 Fork** the repository
+2. **🌿 Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **📝 Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **📤 Push** to the branch (`git push origin feature/amazing-feature`)
+5. **🔄 Open** a Pull Request
+
+### 📋 Before Contributing
+
+- [ ] Run `npm run typecheck` to ensure TypeScript compliance
+- [ ] Run `npm run lint` to check code style
+- [ ] Test your changes thoroughly
+- [ ] Update documentation if needed
+- [ ] Follow the existing code patterns
+
+### 🎯 Areas for Contribution
+
+- 🐛 **Bug Fixes**: Check the issues tab for reported bugs
+- ✨ **New Features**: Layout algorithms, export formats, UI improvements
+- 📚 **Documentation**: README improvements, code comments
+- 🎨 **Design**: UI/UX enhancements, accessibility improvements
+- 🧪 **Testing**: Unit tests, integration tests, E2E tests
+
+## 📄 License
+
+<div align="center">
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="MIT License">
+</div>
+
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+  <p>
+    <strong>Made with ❤️ by <a href="https://github.com/ThomasRohde">Thomas Rohde</a></strong>
+  </p>
+  <p>
+    <a href="https://thomasrohde.github.io/domain-designer/">🚀 Try it now</a>
+    •
+    <a href="https://github.com/ThomasRohde/domain-designer/issues">🐛 Report Bug</a>
+    •
+    <a href="https://github.com/ThomasRohde/domain-designer/issues">💡 Request Feature</a>
+  </p>
+</div>
