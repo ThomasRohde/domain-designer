@@ -62,6 +62,7 @@ export const useDragAndResize = ({
   const [hierarchyDragState, setHierarchyDragState] = useState<HierarchyDragState | null>(null);
   const [resizeConstraintState, setResizeConstraintState] = useState<ResizeConstraintState | null>(null);
   const [needsLayoutUpdate, setNeedsLayoutUpdate] = useState<{ type: 'reparent' | 'resize'; rectangleId?: string } | null>(null);
+  const [initialPositions, setInitialPositions] = useState<Map<string, { x: number; y: number }> | null>(null);
   const mouseMoveHandlerRef = useRef<((e: MouseEvent, panOffset: { x: number; y: number }, zoomLevel: number) => void) | null>(null);
 
   // Handle mouse down for dragging and resizing
@@ -86,6 +87,23 @@ export const useDragAndResize = ({
           return;
         }
       }
+      
+      // Store initial positions for regular drag too (in case of descendants)
+      const descendantIds = new Set(getAllDescendants(rect.id, rectangles));
+      const positions = new Map<string, { x: number; y: number }>();
+      
+      // Store position of the dragged rectangle itself
+      positions.set(rect.id, { x: rect.x, y: rect.y });
+      
+      // Store positions of all descendants
+      rectangles.forEach(r => {
+        if (descendantIds.has(r.id)) {
+          positions.set(r.id, { x: r.x, y: r.y });
+        }
+      });
+      
+      setInitialPositions(positions);
+      
       setDragState({
         id: rect.id,
         startX,
@@ -95,6 +113,22 @@ export const useDragAndResize = ({
       });
     } else if (action === 'hierarchy-drag') {
       // Hierarchy drag - allow for any rectangle
+      // Store initial positions of the dragged rectangle and all its descendants
+      const descendantIds = new Set(getAllDescendants(rect.id, rectangles));
+      const positions = new Map<string, { x: number; y: number }>();
+      
+      // Store position of the dragged rectangle itself
+      positions.set(rect.id, { x: rect.x, y: rect.y });
+      
+      // Store positions of all descendants
+      rectangles.forEach(r => {
+        if (descendantIds.has(r.id)) {
+          positions.set(r.id, { x: r.x, y: r.y });
+        }
+      });
+      
+      setInitialPositions(positions);
+      
       setDragState({
         id: rect.id,
         startX,
@@ -441,6 +475,7 @@ export const useDragAndResize = ({
     setResizeState(null);
     setHierarchyDragState(null);
     setResizeConstraintState(null);
+    setInitialPositions(null);
     
     if (wasResizing) {
       // Only update children layout after resize operations
@@ -503,28 +538,12 @@ export const useDragAndResize = ({
 
   // Cancel drag operation - reset to original position without state changes
   const cancelDrag = useCallback(() => {
-    if (dragState) {
-      // Reset dragged rectangle to original position
+    if (dragState && initialPositions) {
+      // Reset all rectangles to their stored initial positions
       setRectangles(prev => prev.map(rect => {
-        if (rect.id === dragState.id) {
-          return { ...rect, x: dragState.initialX, y: dragState.initialY };
-        }
-        // If it's a hierarchy drag, also reset descendants
-        if (dragState.isHierarchyDrag) {
-          const draggedRect = prev.find(r => r.id === dragState.id);
-          if (draggedRect) {
-            const descendantIds = new Set(getAllDescendants(dragState.id, prev));
-            if (descendantIds.has(rect.id)) {
-              // Calculate how much the parent moved and reverse it
-              const parentDeltaX = draggedRect.x - dragState.initialX;
-              const parentDeltaY = draggedRect.y - dragState.initialY;
-              return { 
-                ...rect, 
-                x: rect.x - parentDeltaX, 
-                y: rect.y - parentDeltaY 
-              };
-            }
-          }
+        const storedPosition = initialPositions.get(rect.id);
+        if (storedPosition) {
+          return { ...rect, x: storedPosition.x, y: storedPosition.y };
         }
         return rect;
       }));
@@ -535,10 +554,11 @@ export const useDragAndResize = ({
     setResizeState(null);
     setHierarchyDragState(null);
     setResizeConstraintState(null);
+    setInitialPositions(null);
     
     // Trigger save after cancel (position reset)
     triggerSave?.();
-  }, [dragState, setRectangles, triggerSave]);
+  }, [dragState, initialPositions, setRectangles, triggerSave]);
 
   // Handle layout updates after reparenting or resize operations
   useEffect(() => {
