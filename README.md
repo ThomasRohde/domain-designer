@@ -33,8 +33,8 @@ A React+TypeScript application for creating domain models and hierarchical diagr
 
 ### Prerequisites
 
-- Node.js 16+ 
-- npm or yarn
+- Node.js 20+ 
+- npm
 
 ### Installation
 
