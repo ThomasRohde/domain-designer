@@ -23,7 +23,11 @@
       "Bash(ls:*)",
       "Bash(node:*)",
       "Bash(npm run lint:*)",
-      "WebFetch(domain:mermaid.ink)"
+      "WebFetch(domain:mermaid.ink)",
+      "Bash(npm audit:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm outdated)",
+      "Bash(timeout 10s npm run dev:*)"
     ],
     "deny": []
   }

@@ -547,7 +547,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <div align="center">
   <p>
-    <strong>Made with ❤️ by <a href="https://github.com/ThomasRohde">Thomas Rohde</a></strong>
+    <strong>Made with ❤️ by <a href="https://github.com/ThomasRohde">Thomas Klok Rohde</a></strong>
   </p>
   <p>
     <a href="https://thomasrohde.github.io/domain-designer/">🚀 Try it now</a>
