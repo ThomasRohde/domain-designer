@@ -63,6 +63,8 @@ export interface UseRectangleManagerReturn {
   canUndo: boolean;
   canRedo: boolean;
   saveToHistory: (rectangles: Rectangle[]) => void;
+  clearHistory: () => void;
+  initializeHistory: (initialState: Rectangle[]) => void;
   
   // Internal state setters (for drag/resize operations)
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
@@ -92,20 +94,25 @@ export const useRectangleManager = ({
   const setRectanglesWithHistory = useCallback((value: React.SetStateAction<Rectangle[]>) => {
     setRectangles(prev => {
       const newRectangles = typeof value === 'function' ? value(prev) : value;
-      // Save the NEW state to history after making the change
+      
+      // Don't save to history or trigger auto-save during undo/redo
       if (!isUndoRedoInProgress.current) {
         history.pushState(newRectangles);
+        // Defer auto-save to ensure state consistency
+        requestAnimationFrame(() => triggerSave?.());
       }
-      // Schedule save after state update completes
-      setTimeout(() => triggerSave?.(), 0);
+      
       return newRectangles;
     });
   }, [history, triggerSave]);
   
-  // Simple cleanup to reset undo/redo flag after state updates
+  // Reset undo/redo flag after state updates with proper timing
   useEffect(() => {
     if (isUndoRedoInProgress.current) {
-      isUndoRedoInProgress.current = false;
+      // Use a microtask to ensure the flag is reset after all synchronous operations
+      Promise.resolve().then(() => {
+        isUndoRedoInProgress.current = false;
+      });
     }
   }, [rectangles]);
   
@@ -113,18 +120,22 @@ export const useRectangleManager = ({
   const undo = useCallback(() => {
     const previousState = history.undo();
     if (previousState) {
+      // Set the flag BEFORE any state changes to prevent auto-save
       isUndoRedoInProgress.current = true;
       setRectangles(previousState);
       setSelectedId(null); // Clear selection on undo
+      // The flag will be reset by the useEffect when rectangles change
     }
   }, [history]);
   
   const redo = useCallback(() => {
     const nextState = history.redo();
     if (nextState) {
+      // Set the flag BEFORE any state changes to prevent auto-save
       isUndoRedoInProgress.current = true;
       setRectangles(nextState);
       setSelectedId(null); // Clear selection on redo
+      // The flag will be reset by the useEffect when rectangles change
     }
   }, [history]);
 
@@ -616,6 +627,8 @@ export const useRectangleManager = ({
     canUndo: history.canUndo,
     canRedo: history.canRedo,
     saveToHistory,
+    clearHistory: history.clearHistory,
+    initializeHistory: history.initializeHistory,
     
     // Internal state setters (for drag/resize operations)
     setRectangles,

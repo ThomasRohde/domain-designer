@@ -263,8 +263,10 @@ const HierarchicalDrawingApp = () => {
       console.log('Restoring', rectangles.length, 'rectangles');
       // Clear selection first to avoid issues
       rectangleManager.setSelectedId(null);
-      // Replace all rectangles with restored data
+      // Set rectangles directly to avoid triggering history during restoration
       rectangleManager.setRectangles(rectangles);
+      // Initialize history properly with the restored state as the baseline
+      rectangleManager.initializeHistory(rectangles);
       handleSettingsChange(settings);
     }, [rectangleManager, handleSettingsChange])
   });
