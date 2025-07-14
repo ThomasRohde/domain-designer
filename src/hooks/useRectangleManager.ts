@@ -363,7 +363,8 @@ export const useRectangleManager = ({
       const updated = prev.map(rect => 
         rect.id === id ? { 
           ...rect, 
-          isManualPositioningEnabled: !rect.isManualPositioningEnabled
+          isManualPositioningEnabled: !rect.isManualPositioningEnabled,
+          isLockedAsIs: false // Clear locked state when toggling
         } : rect
       );
       
@@ -383,7 +384,8 @@ export const useRectangleManager = ({
       return prev.map(rect => 
         rect.id === id ? { 
           ...rect, 
-          isManualPositioningEnabled: false
+          isManualPositioningEnabled: false,
+          isLockedAsIs: true
         } : rect
       );
     });

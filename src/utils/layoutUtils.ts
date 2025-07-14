@@ -70,8 +70,8 @@ export const updateChildrenLayout = (
         if (siblings.length > 0) {
           const currentParent = updated.find(p => p.id === rect.parentId);
           if (currentParent) {
-            // Skip automatic layout if manual positioning is enabled
-            if (currentParent.isManualPositioningEnabled) {
+            // Skip automatic layout if manual positioning is enabled or locked as-is
+            if (currentParent.isManualPositioningEnabled || currentParent.isLockedAsIs) {
               // Just mark as processed without updating layout
               siblings.forEach(child => {
                 processedIds.add(child.id);

@@ -37,7 +37,8 @@ export const createRectangle = (
     label: label || `Rectangle ${id}`,
     color: defaultColor,
     type,
-    isEditing: false
+    isEditing: false,
+    isLockedAsIs: false
   };
 };
 

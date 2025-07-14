@@ -68,6 +68,8 @@ export interface Rectangle {
   layoutPreferences?: LayoutPreferences;
   /** Whether manual positioning is enabled for direct children (unlocked padlock) */
   isManualPositioningEnabled?: boolean;
+  /** Whether the rectangle is locked as-is (positions preserved but not editable) */
+  isLockedAsIs?: boolean;
   /** Optional description for tooltips and metadata */
   description?: string;
   /** Optional metadata for extensibility */
