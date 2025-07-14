@@ -1,5 +1,6 @@
 import React from 'react';
-import { Info, FileText, Trash2, HelpCircle } from 'lucide-react';
+import { Info, FileText, Trash2, HelpCircle, Eye } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import MobileOverlay from './MobileOverlay';
 
 interface LeftMenuProps {
@@ -44,6 +45,15 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ isOpen, onClose, onAboutClick, onTe
             <FileText size={16} />
             <span>Templates</span>
           </button>
+          
+          <Link
+            to="/viewer"
+            onClick={onClose}
+            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <Eye size={16} />
+            <span>Viewer Mode</span>
+          </Link>
           
           <button
             onClick={onHelpClick}

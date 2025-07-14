@@ -29,6 +29,7 @@ interface RectangleComponentProps {
   borderRadius?: number;
   borderColor?: string;
   borderWidth?: number;
+  disableEditing?: boolean;
 }
 
 const RectangleComponent: React.FC<RectangleComponentProps> = ({
@@ -56,7 +57,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   isAtMinSize = false,
   borderRadius = 8,
   borderColor = '#374151',
-  borderWidth = 2
+  borderWidth = 2,
+  disableEditing = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(rectangle.label);
@@ -71,6 +73,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (disableEditing) return;
     setIsEditing(true);
     setEditValue(rectangle.label);
   };
