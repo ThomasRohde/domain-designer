@@ -77,6 +77,7 @@ export const useAppSettings = (): AppSettingsHook => {
   const [fontFamily, setFontFamily] = useState(DEFAULT_FONT_FAMILY);
   const [availableFonts, setAvailableFonts] = useState<FontOption[]>(FALLBACK_FONT_OPTIONS);
   const [fontsLoading, setFontsLoading] = useState(true);
+  const [isRestoring, setIsRestoring] = useState(false);
   
   // Debug logging
   console.log('🎯 useAppSettings initialized with fallback fonts:', FALLBACK_FONT_OPTIONS.length);
@@ -233,11 +234,11 @@ export const useAppSettings = (): AppSettingsHook => {
         )
       );
     }
-    // Trigger layout update for all children
-    if (setRectanglesRef.current) {
+    // Trigger layout update for all children (skip during restoration)
+    if (setRectanglesRef.current && !isRestoring) {
       setNeedsLayoutUpdate(true);
     }
-  }, [leafWidth, setNeedsLayoutUpdate]);
+  }, [leafWidth, setNeedsLayoutUpdate, isRestoring]);
 
   // Update leaf nodes when fixed height setting changes
   const handleLeafFixedHeightChange = useCallback((enabled: boolean) => {
@@ -250,11 +251,11 @@ export const useAppSettings = (): AppSettingsHook => {
         )
       );
     }
-    // Trigger layout update for all children
-    if (setRectanglesRef.current) {
+    // Trigger layout update for all children (skip during restoration)
+    if (setRectanglesRef.current && !isRestoring) {
       setNeedsLayoutUpdate(true);
     }
-  }, [leafHeight, setNeedsLayoutUpdate]);
+  }, [leafHeight, setNeedsLayoutUpdate, isRestoring]);
 
   // Update leaf width and apply to existing leaf nodes if fixed width is enabled
   const handleLeafWidthChange = useCallback((width: number) => {
@@ -266,10 +267,12 @@ export const useAppSettings = (): AppSettingsHook => {
           rect.type === 'leaf' ? { ...rect, w: width } : rect
         )
       );
-      // Trigger layout update for all children
-      setNeedsLayoutUpdate(true);
+      // Trigger layout update for all children (skip during restoration)
+      if (!isRestoring) {
+        setNeedsLayoutUpdate(true);
+      }
     }
-  }, [leafFixedWidth, setNeedsLayoutUpdate]);
+  }, [leafFixedWidth, setNeedsLayoutUpdate, isRestoring]);
 
   // Update leaf height and apply to existing leaf nodes if fixed height is enabled
   const handleLeafHeightChange = useCallback((height: number) => {
@@ -281,10 +284,12 @@ export const useAppSettings = (): AppSettingsHook => {
           rect.type === 'leaf' ? { ...rect, h: height } : rect
         )
       );
-      // Trigger layout update for all children
-      setNeedsLayoutUpdate(true);
+      // Trigger layout update for all children (skip during restoration)
+      if (!isRestoring) {
+        setNeedsLayoutUpdate(true);
+      }
     }
-  }, [leafFixedHeight, setNeedsLayoutUpdate]);
+  }, [leafFixedHeight, setNeedsLayoutUpdate, isRestoring]);
 
   // Font settings handlers
   const handleRootFontSizeChange = useCallback((size: number) => {
@@ -315,30 +320,30 @@ export const useAppSettings = (): AppSettingsHook => {
   // Margin settings handlers
   const handleMarginChange = useCallback((margin: number) => {
     setMargin(margin);
-    // Trigger layout update for all rectangles
-    if (setRectanglesRef.current) {
+    // Trigger layout update for all rectangles (skip during restoration)
+    if (setRectanglesRef.current && !isRestoring) {
       setNeedsLayoutUpdate(true);
     }
-  }, [setNeedsLayoutUpdate]);
+  }, [setNeedsLayoutUpdate, isRestoring]);
 
   const handleLabelMarginChange = useCallback((labelMargin: number) => {
     setLabelMargin(labelMargin);
-    // Trigger layout update for all rectangles
-    if (setRectanglesRef.current) {
+    // Trigger layout update for all rectangles (skip during restoration)
+    if (setRectanglesRef.current && !isRestoring) {
       setNeedsLayoutUpdate(true);
     }
-  }, [setNeedsLayoutUpdate]);
+  }, [setNeedsLayoutUpdate, isRestoring]);
 
   // Layout algorithm handler
   const handleLayoutAlgorithmChange = useCallback((algorithm: LayoutAlgorithmType) => {
     setLayoutAlgorithm(algorithm);
     // Update the layout manager to use the new algorithm
     layoutManager.setAlgorithm(algorithm);
-    // Trigger layout update since changing algorithm affects layout
-    if (setRectanglesRef.current) {
+    // Trigger layout update since changing algorithm affects layout (skip during restoration)
+    if (setRectanglesRef.current && !isRestoring) {
       setNeedsLayoutUpdate(true);
     }
-  }, [setNeedsLayoutUpdate]);
+  }, [setNeedsLayoutUpdate, isRestoring]);
 
   // Track custom colors separately to manage replacement from bottom-right
   const [customColors, setCustomColors] = useState<string[]>([]);
@@ -434,5 +439,6 @@ export const useAppSettings = (): AppSettingsHook => {
     setGridSize,
     setRectanglesRef: setRectanglesRefHandler,
     setFitToChildrenRef: setFitToChildrenRefHandler,
+    setIsRestoring,
   };
 };

@@ -150,7 +150,11 @@ const HierarchicalDrawingApp = () => {
     }
   }, [rectangleManager]);
 
-  const handleSettingsChange = useCallback((settings: Partial<AppSettings>) => {
+  const handleSettingsChange = useCallback((settings: Partial<AppSettings>, isRestoring = false) => {
+    if (isRestoring) {
+      appSettings.setIsRestoring(true);
+    }
+    
     if (settings.gridSize !== undefined) appSettings.setGridSize(settings.gridSize);
     if (settings.leafFixedWidth !== undefined) appSettings.handleLeafFixedWidthChange(settings.leafFixedWidth);
     if (settings.leafFixedHeight !== undefined) appSettings.handleLeafFixedHeightChange(settings.leafFixedHeight);
@@ -166,6 +170,10 @@ const HierarchicalDrawingApp = () => {
     if (settings.margin !== undefined) appSettings.handleMarginChange(settings.margin);
     if (settings.labelMargin !== undefined) appSettings.handleLabelMarginChange(settings.labelMargin);
     if (settings.layoutAlgorithm !== undefined) appSettings.handleLayoutAlgorithmChange(settings.layoutAlgorithm);
+    
+    if (isRestoring) {
+      appSettings.setIsRestoring(false);
+    }
   }, [appSettings]);
 
   const handleImport = useCallback(() => {
@@ -287,7 +295,7 @@ const HierarchicalDrawingApp = () => {
       rectangleManager.setRectangles(rectangles);
       // Initialize history properly with the restored state as the baseline
       rectangleManager.initializeHistory(rectangles);
-      handleSettingsChange(settings);
+      handleSettingsChange(settings, true);
     }, [rectangleManager, handleSettingsChange])
   });
   

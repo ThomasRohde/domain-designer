@@ -386,6 +386,7 @@ export interface AppSettingsHook {
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
   setFitToChildrenRef: (fitToChildren: (id: string) => void) => void;
+  setIsRestoring: (isRestoring: boolean) => void;
 }
 
 /**
