@@ -27,7 +27,10 @@
       "Bash(npm audit:*)",
       "Bash(npm ls:*)",
       "Bash(npm outdated)",
-      "Bash(timeout 10s npm run dev:*)"
+      "Bash(timeout 10s npm run dev:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(pgrep:*)"
     ],
     "deny": []
   }

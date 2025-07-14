@@ -353,23 +353,27 @@ const HierarchicalDrawingApp = () => {
   // Arrow key movement handlers with pixel-level precision
   const handleMoveUp = useCallback((deltaPixels: number) => {
     if (!rectangleManager.selectedId) return;
+    canvasInteractions.startKeyboardMovement();
     rectangleManager.moveRectangle(rectangleManager.selectedId, 0, -deltaPixels);
-  }, [rectangleManager]);
+  }, [rectangleManager, canvasInteractions]);
 
   const handleMoveDown = useCallback((deltaPixels: number) => {
     if (!rectangleManager.selectedId) return;
+    canvasInteractions.startKeyboardMovement();
     rectangleManager.moveRectangle(rectangleManager.selectedId, 0, deltaPixels);
-  }, [rectangleManager]);
+  }, [rectangleManager, canvasInteractions]);
 
   const handleMoveLeft = useCallback((deltaPixels: number) => {
     if (!rectangleManager.selectedId) return;
+    canvasInteractions.startKeyboardMovement();
     rectangleManager.moveRectangle(rectangleManager.selectedId, -deltaPixels, 0);
-  }, [rectangleManager]);
+  }, [rectangleManager, canvasInteractions]);
 
   const handleMoveRight = useCallback((deltaPixels: number) => {
     if (!rectangleManager.selectedId) return;
+    canvasInteractions.startKeyboardMovement();
     rectangleManager.moveRectangle(rectangleManager.selectedId, deltaPixels, 0);
-  }, [rectangleManager]);
+  }, [rectangleManager, canvasInteractions]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts(useMemo(() => ({
@@ -432,6 +436,7 @@ const HierarchicalDrawingApp = () => {
                 isDragging={canvasInteractions.isDragging}
                 isResizing={canvasInteractions.isResizing}
                 isHierarchyDragging={canvasInteractions.isHierarchyDragging}
+                isKeyboardMoving={canvasInteractions.isKeyboardMoving}
               />
             }
           >

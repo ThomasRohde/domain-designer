@@ -457,11 +457,13 @@ export interface CanvasInteractionsHook {
   isResizing: boolean;
   isPanning: boolean;
   isHierarchyDragging: boolean;
+  isKeyboardMoving: boolean;
   
   // Event handlers
   handleCanvasMouseDown: (e: React.MouseEvent) => void;
   handleRectangleMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
   cancelDrag: () => void;
+  startKeyboardMovement: () => void;
 }
 
 // Error Handling Types

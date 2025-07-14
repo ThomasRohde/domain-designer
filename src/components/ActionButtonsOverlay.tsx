@@ -15,6 +15,7 @@ interface ActionButtonsOverlayProps {
   isDragging?: boolean;
   isResizing?: boolean;
   isHierarchyDragging?: boolean;
+  isKeyboardMoving?: boolean;
 }
 
 const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
@@ -28,10 +29,11 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
   gridSize,
   isDragging = false,
   isResizing = false,
-  isHierarchyDragging = false
+  isHierarchyDragging = false,
+  isKeyboardMoving = false
 }) => {
-  // Hide action buttons during any drag/resize operation
-  if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging) {
+  // Hide action buttons during any drag/resize/keyboard movement operation
+  if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging || isKeyboardMoving) {
     return null;
   }
 

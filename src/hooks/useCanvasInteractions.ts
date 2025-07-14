@@ -62,6 +62,34 @@ export const useCanvasInteractions = ({
     maxLevel: 3.0
   });
 
+  // Initialize keyboard movement state
+  const [isKeyboardMoving, setIsKeyboardMoving] = useState(false);
+  const keyboardTimeoutRef = React.useRef<number | null>(null);
+
+  // Methods to manage keyboard movement state
+  const startKeyboardMovement = useCallback(() => {
+    setIsKeyboardMoving(true);
+    
+    // Clear any existing timeout
+    if (keyboardTimeoutRef.current) {
+      clearTimeout(keyboardTimeoutRef.current);
+    }
+    
+    // Set a debounced timeout to reset the state
+    keyboardTimeoutRef.current = window.setTimeout(() => {
+      setIsKeyboardMoving(false);
+    }, 150); // 150ms delay after last arrow key press
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (keyboardTimeoutRef.current) {
+        clearTimeout(keyboardTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Initialize the drag and resize hook
   const {
     dragState,
@@ -212,10 +240,12 @@ export const useCanvasInteractions = ({
     isResizing,
     isPanning: panState !== null,
     isHierarchyDragging,
+    isKeyboardMoving,
     
     // Event handlers
     handleCanvasMouseDown,
     handleRectangleMouseDown,
     cancelDrag,
+    startKeyboardMovement,
   };
 };
