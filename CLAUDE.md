@@ -14,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Always conclude a programming run with linting, building, fixing errors, and finally update the @PLAN.md 
 - Before running 'npm run dev' always check if the dev server is already running
+- Do not start a dev server. Test if a server is running on port 3000. If not, ask the user to start it
 
 ## Architecture Overview
 
