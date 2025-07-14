@@ -173,15 +173,7 @@ const CustomTreeView: React.FC<CustomTreeViewProps> = ({
     );
   }, [selectedItems, expandedNodes, getChildren, handleToggleExpand, handleSelect]);
 
-  // Expand all parent nodes on mount
-  React.useEffect(() => {
-    const parentNodes = templateNodes.filter(node => {
-      const children = getChildren(node.id);
-      return children.length > 0;
-    });
-    
-    setExpandedNodes(new Set(parentNodes.map(node => node.id)));
-  }, [templateNodes, getChildren]);
+
 
   // Loading state
   if (isLoading) {
