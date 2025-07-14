@@ -2,7 +2,7 @@ import React, { RefObject } from 'react';
 import { PanState, ZoomState } from '../types';
 
 interface ViewerCanvasProps {
-  containerRef: RefObject<HTMLDivElement>;
+  containerRef: RefObject<HTMLDivElement | null>;
   panOffset: { x: number; y: number };
   panState: PanState | null;
   zoomState: ZoomState;

@@ -2,7 +2,7 @@ import React, { RefObject } from 'react';
 import { PanState, HierarchyDragState, ZoomState } from '../types';
 
 interface CanvasProps {
-  containerRef: RefObject<HTMLDivElement>;
+  containerRef: RefObject<HTMLDivElement | null>;
   gridSize: number;
   panOffset: { x: number; y: number };
   isSpacePressed: boolean;

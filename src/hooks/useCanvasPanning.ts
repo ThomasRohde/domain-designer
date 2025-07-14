@@ -4,7 +4,7 @@ import { getMousePosition, shouldStartPan, preventEventDefault, isEventTargetEdi
 import { PanOffset } from '../utils/canvasUtils';
 
 interface UseCanvasPanningProps {
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 interface UseCanvasPanningReturn {

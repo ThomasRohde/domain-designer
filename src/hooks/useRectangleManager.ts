@@ -23,7 +23,7 @@ export type { FixedDimensions } from '../utils/rectangleOperations';
 export interface UseRectangleManagerProps {
   gridSize: number;
   panOffsetRef: React.RefObject<{ x: number; y: number }>;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   getFixedDimensions: () => FixedDimensions;
   getMargins: () => { margin: number; labelMargin: number };
   triggerSave?: () => void;

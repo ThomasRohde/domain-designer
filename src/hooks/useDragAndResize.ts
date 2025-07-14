@@ -13,7 +13,7 @@ interface UseDragAndResizeProps {
   leafFixedHeight: boolean;
   leafWidth: number;
   leafHeight: number;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
   getMargins: () => { margin: number; labelMargin: number };
   reparentRectangle?: (childId: string, newParentId: string | null) => boolean;
