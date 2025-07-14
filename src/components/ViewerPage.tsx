@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Rectangle, AppSettings } from '../types';
 import { useViewerInteractions } from '../hooks/useViewerInteractions';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -81,7 +81,16 @@ const ViewerPage: React.FC = () => {
   // Handle back to editor navigation for PWA compatibility
   const handleBackToEditor = (e: React.MouseEvent) => {
     e.preventDefault();
-    navigate('/');
+    e.stopPropagation();
+    
+    // For PWA, try React Router first, then fallback to history
+    try {
+      navigate('/', { replace: true });
+    } catch {
+      // Fallback for PWA navigation issues
+      window.history.replaceState(null, '', '/');
+      window.location.reload();
+    }
   };
 
   // No longer need handlers since ViewerRectangleRenderer handles them
@@ -109,13 +118,12 @@ const ViewerPage: React.FC = () => {
       <div className="bg-white shadow-sm border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-gray-800">Diagram Viewer</h1>
-          <Link 
-            to="/" 
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+          <button
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium bg-transparent border-none cursor-pointer"
             onClick={handleBackToEditor}
           >
             ← Back to Editor
-          </Link>
+          </button>
         </div>
       </div>
 

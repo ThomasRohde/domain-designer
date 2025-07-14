@@ -17,6 +17,8 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         theme_color: '#ffffff',
         background_color: '#ffffff',
+        orientation: 'any',
+        categories: ['productivity', 'utilities'],
         icons: [
           {
             src: 'pwa-icon-192.png',
