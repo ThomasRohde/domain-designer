@@ -30,7 +30,9 @@
       "Bash(timeout 10s npm run dev:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(pgrep:*)"
+      "Bash(pgrep:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs"
     ],
     "deny": []
   }

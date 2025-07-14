@@ -90,14 +90,25 @@ const ViewerPage: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     
-    // For PWA, use relative navigation to stay within scope
+    // Get the correct navigation path based on environment
+    const getNavigationPath = () => {
+      // For PWA in production with GitHub Pages, we need to navigate within scope
+      if (isPWA() && import.meta.env.PROD && import.meta.env.BASE_URL === '/domain-designer/') {
+        // Navigate to the base URL (root of PWA scope)
+        return '/domain-designer/';
+      }
+      // For development or regular browser, use root
+      return '/';
+    };
+    
+    const navigationPath = getNavigationPath();
+    
+    // Use window.location.href for PWA to ensure we stay within scope
     if (isPWA()) {
-      // Use relative path navigation to avoid scope issues
-      // Navigate to '../' to go from /viewer to /
-      navigate('../', { replace: true });
+      window.location.href = navigationPath;
     } else {
-      // Use absolute path for regular browser navigation
-      navigate('/', { replace: true });
+      // Use React Router for regular browser navigation
+      navigate(navigationPath, { replace: true });
     }
   };
 
