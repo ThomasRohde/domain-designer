@@ -78,18 +78,26 @@ const ViewerPage: React.FC = () => {
     borderWidth: 1
   };
 
+  // Detect if running in PWA mode
+  const isPWA = () => {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.matchMedia('(display-mode: fullscreen)').matches ||
+           'standalone' in window.navigator && (window.navigator as { standalone?: boolean }).standalone === true;
+  };
+
   // Handle back to editor navigation for PWA compatibility
   const handleBackToEditor = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // For PWA, try React Router first, then fallback to history
-    try {
+    // For PWA, use relative navigation to stay within scope
+    if (isPWA()) {
+      // Use relative path navigation to avoid scope issues
+      // Navigate to '../' to go from /viewer to /
+      navigate('../', { replace: true });
+    } else {
+      // Use absolute path for regular browser navigation
       navigate('/', { replace: true });
-    } catch {
-      // Fallback for PWA navigation issues
-      window.history.replaceState(null, '', '/');
-      window.location.reload();
     }
   };
 
