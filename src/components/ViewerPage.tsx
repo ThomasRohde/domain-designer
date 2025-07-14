@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Rectangle, AppSettings } from '../types';
 import { useViewerInteractions } from '../hooks/useViewerInteractions';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -11,6 +11,7 @@ const ViewerPage: React.FC = () => {
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Initialize viewer interactions (pan and zoom only)
   const {
@@ -77,6 +78,12 @@ const ViewerPage: React.FC = () => {
     borderWidth: 1
   };
 
+  // Handle back to editor navigation for PWA compatibility
+  const handleBackToEditor = (e: React.MouseEvent) => {
+    e.preventDefault();
+    navigate('/');
+  };
+
   // No longer need handlers since ViewerRectangleRenderer handles them
 
   if (loading) {
@@ -105,6 +112,7 @@ const ViewerPage: React.FC = () => {
           <Link 
             to="/" 
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+            onClick={handleBackToEditor}
           >
             ← Back to Editor
           </Link>
