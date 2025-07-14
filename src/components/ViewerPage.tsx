@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Rectangle, AppSettings } from '../types';
 import { useViewerInteractions } from '../hooks/useViewerInteractions';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -101,12 +102,12 @@ const ViewerPage: React.FC = () => {
       <div className="bg-white shadow-sm border-b px-4 py-3">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-gray-800">Diagram Viewer</h1>
-          <a 
-            href="/" 
+          <Link 
+            to="/" 
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
             ← Back to Editor
-          </a>
+          </Link>
         </div>
       </div>
 
