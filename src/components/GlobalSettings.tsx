@@ -165,7 +165,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 <input
                   type="range"
                   min="2"
-                  max="20"
+                  max="40"
                   step="1"
                   value={leafWidth}
                   onChange={(e) => onLeafWidthChange(parseInt(e.target.value))}
@@ -173,7 +173,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>2</span>
-                  <span>20</span>
+                  <span>40</span>
                 </div>
               </div>
             )}
@@ -202,7 +202,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 <input
                   type="range"
                   min="2"
-                  max="16"
+                  max="20"
                   step="1"
                   value={leafHeight}
                   onChange={(e) => onLeafHeightChange(parseInt(e.target.value))}
@@ -210,7 +210,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>2</span>
-                  <span>16</span>
+                  <span>20</span>
                 </div>
               </div>
             )}

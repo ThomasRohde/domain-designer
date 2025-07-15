@@ -71,7 +71,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
         {children.length > 0 && (
           <div className="bg-white rounded-lg shadow p-4">
-            <h3 className="font-semibold mb-2 text-sm lg:text-base">Layout Preferences</h3>
+            <h3 className="font-semibold mb-2 text-sm lg:text-base">Grid Layout Preferences</h3>
             <div className="space-y-3">
               <div>
                 <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
