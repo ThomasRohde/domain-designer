@@ -36,6 +36,7 @@ export const useRobustAutoSave = ({
   const [lastGoodSave, setLastGoodSave] = useState<number | null>(null);
   const [hasSavedData, setHasSavedData] = useState(false);
   const lastGoodDataRef = useRef<SavedDiagram | null>(null);
+  const hasAutoRestoredRef = useRef(false);
 
   // Validate data before saving
   const validateBeforeSave = useCallback((data: SavedDiagram): ValidationResult => {
@@ -238,9 +239,14 @@ export const useRobustAutoSave = ({
     }
   }, [clearAutoSaveData]);
 
-  // Check for existing data on mount
+  // Check for existing data on mount and auto-restore (only once)
   useEffect(() => {
-    const checkForSavedData = async () => {
+    const checkAndRestoreSavedData = async () => {
+      // Prevent multiple auto-restores
+      if (hasAutoRestoredRef.current) {
+        return;
+      }
+
       try {
         const autoSaveData = await loadData();
         if (autoSaveData) {
@@ -266,6 +272,11 @@ export const useRobustAutoSave = ({
           if (validation.isValid) {
             lastGoodDataRef.current = savedData;
             setLastGoodSave(savedData.timestamp);
+            
+            // Automatically restore the validated data (only once)
+            console.log('🔄 Auto-restoring saved data on page load:', savedData.rectangles.length, 'rectangles');
+            hasAutoRestoredRef.current = true;
+            onRestore(savedData.rectangles, savedData.globalSettings, savedData.layoutMetadata);
           }
         }
       } catch (error) {
@@ -273,7 +284,7 @@ export const useRobustAutoSave = ({
       }
     };
     
-    checkForSavedData();
+    checkAndRestoreSavedData();
   }, [loadData]);
 
   return {
