@@ -1,0 +1,3 @@
+- [ ] Color picker error
+- [ ] Adding children to locked parent
+- [ ] Global color wheel
