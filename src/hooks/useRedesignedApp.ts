@@ -96,7 +96,7 @@ export const useRedesignedApp = ({
     settings: Partial<AppSettings>,
     skipLayoutUpdates = false
   ) => {
-    // Update individual settings - pass skipLayoutUpdates to layout-affecting handlers
+    // Update individual settings - only pass skipLayoutUpdates to handlers that support it
     if (settings.gridSize !== undefined) appSettings.setGridSize(settings.gridSize);
     if (settings.leafFixedWidth !== undefined) appSettings.handleLeafFixedWidthChange(settings.leafFixedWidth, skipLayoutUpdates);
     if (settings.leafFixedHeight !== undefined) appSettings.handleLeafFixedHeightChange(settings.leafFixedHeight, skipLayoutUpdates);
