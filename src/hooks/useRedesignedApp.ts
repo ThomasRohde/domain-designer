@@ -210,6 +210,26 @@ export const useRedesignedApp = ({
         // Update global settings if available with layout updates disabled
         if (importedData.globalSettings) {
           handleSettingsChange(importedData.globalSettings, true);
+          
+          // After settings are applied, we need to apply fixed dimensions to existing rectangles
+          // This is separate from layout updates and should happen even when skipLayoutUpdates = true
+          if (importedData.globalSettings.leafFixedWidth || importedData.globalSettings.leafFixedHeight) {
+            setRectanglesWithHistory(prev => 
+              prev.map(rect => {
+                if (rect.type === 'leaf') {
+                  const updatedRect = { ...rect };
+                  if (importedData.globalSettings!.leafFixedWidth) {
+                    updatedRect.w = importedData.globalSettings!.leafWidth;
+                  }
+                  if (importedData.globalSettings!.leafFixedHeight) {
+                    updatedRect.h = importedData.globalSettings!.leafHeight;
+                  }
+                  return updatedRect;
+                }
+                return rect;
+              })
+            );
+          }
         }
         
         // Clear selection
