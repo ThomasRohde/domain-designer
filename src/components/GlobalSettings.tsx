@@ -67,13 +67,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   availableFonts,
   fontsLoading
 }) => {
-  // Debug logging
-  console.log('🔧 GlobalSettings rendered with:', {
-    availableFonts: availableFonts.length,
-    fontsLoading,
-    fontFamily
-  });
-  
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
       <div className="flex items-center justify-between mb-3">

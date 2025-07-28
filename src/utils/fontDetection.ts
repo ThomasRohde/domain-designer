@@ -83,7 +83,7 @@ function isFontAvailableModern(fontName: string): boolean {
     // Test with a reasonable size
     const result = document.fonts.check(`16px "${fontName}"`);
     return result;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -123,7 +123,7 @@ function isFontAvailableCanvas(fontName: string): boolean {
     }
     
     return false;
-  } catch (error) {
+  } catch {
     return false;
   } finally {
     // Clean up canvas to prevent memory leak
@@ -227,7 +227,8 @@ export async function getAvailableFonts(): Promise<FontOption[]> {
     if (cached && expiry && Date.now() < parseInt(expiry)) {
       return JSON.parse(cached);
     }
-  } catch (error) {
+  } catch {
+    // Ignore cache read errors
   }
   
   // Detect fonts
@@ -237,7 +238,8 @@ export async function getAvailableFonts(): Promise<FontOption[]> {
     // Cache the results
     localStorage.setItem(cacheKey, JSON.stringify(fonts));
     localStorage.setItem(cacheExpiry, (Date.now() + cacheTimeout).toString());
-  } catch (error) {
+  } catch {
+    // Ignore cache write errors
   }
   
   return fonts;
@@ -250,6 +252,7 @@ export function clearFontCache(): void {
   try {
     localStorage.removeItem('availableFonts');
     localStorage.removeItem('availableFontsExpiry');
-  } catch (error) {
+  } catch {
+    // Ignore cache clear errors
   }
 }

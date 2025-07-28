@@ -19,6 +19,7 @@ export interface UseRedesignedAppProps {
   setSelectedId: (id: string | null) => void;
   getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number };
   getMargins: () => { margin: number; labelMargin: number };
+  appSettings: ReturnType<typeof useAppSettings>;
 }
 
 export interface UseRedesignedAppReturn {
@@ -50,14 +51,14 @@ export const useRedesignedApp = ({
   nextId,
   setSelectedId,
   getFixedDimensions,
-  getMargins
+  getMargins,
+  appSettings
 }: UseRedesignedAppProps): UseRedesignedAppReturn => {
   
   // Initialize the state machine
   const stateMachine = useAppStateMachine();
   
-  // Initialize app settings
-  const appSettings = useAppSettings();
+  // App settings are passed from the parent component
   
   // Initialize layout and dimension engines
   const layoutEngine = useLayoutEngine({

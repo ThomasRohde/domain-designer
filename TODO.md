@@ -1,4 +1,4 @@
-- [ ] Color picker error
+- [x] Color picker error
 - [ ] Adding children to locked parent
 - [ ] Global color wheel
-- [ ] Reformat after importing, or restarting the app
+- [x] Reformat after importing, or restarting the app

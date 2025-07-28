@@ -45,6 +45,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     layoutAlgorithm,
   } = appSettings;
 
+
   if (selectedId && selectedRectangle) {
     // Node is selected: Show color picker and node details
     const children = getChildren(selectedId, rectangles);
@@ -195,4 +196,4 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   );
 };
 
-export default React.memo(PropertyPanel);
+export default PropertyPanel;

@@ -99,7 +99,7 @@ export const useAppSettings = (): AppSettingsHook => {
         setFontsLoading(true);
         const fonts = await getAvailableFonts();
         setAvailableFonts(fonts);
-      } catch (error) {
+      } catch {
         setAvailableFonts(FALLBACK_FONT_OPTIONS);
       } finally {
         setFontsLoading(false);

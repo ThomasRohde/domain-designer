@@ -39,7 +39,7 @@ const HierarchicalDrawingApp = () => {
   // Memoize the triggerSave function
   const triggerSave = useCallback(() => triggerSaveRef.current?.(), []);
   
-  // Initialize app settings first
+  // Initialize app settings first  
   const appSettings = useAppSettings();
 
   // Memoize the getMargins function to avoid inline object creation
@@ -67,7 +67,8 @@ const HierarchicalDrawingApp = () => {
     nextId: rectangleManager.nextId,
     setSelectedId: rectangleManager.setSelectedId,
     getFixedDimensions: appSettings.getFixedDimensions,
-    getMargins
+    getMargins,
+    appSettings
   });
 
   // Canvas interactions with proper setSelectedId wrapper
@@ -218,25 +219,6 @@ const HierarchicalDrawingApp = () => {
     [rectangleManager]
   );
 
-  const appSettingsObject = useMemo(() => ({
-    gridSize: appSettings.gridSize,
-    leafFixedWidth: appSettings.leafFixedWidth,
-    leafFixedHeight: appSettings.leafFixedHeight,
-    leafWidth: appSettings.leafWidth,
-    leafHeight: appSettings.leafHeight,
-    rootFontSize: appSettings.rootFontSize,
-    dynamicFontSizing: appSettings.dynamicFontSizing,
-    fontFamily: appSettings.fontFamily,
-    availableFonts: appSettings.availableFonts,
-    fontsLoading: appSettings.fontsLoading,
-    borderRadius: appSettings.borderRadius,
-    borderColor: appSettings.borderColor,
-    borderWidth: appSettings.borderWidth,
-    predefinedColors: appSettings.predefinedColors,
-    margin: appSettings.margin,
-    labelMargin: appSettings.labelMargin,
-    layoutAlgorithm: appSettings.layoutAlgorithm,
-  }), [appSettings]);
 
   // Use the redesigned robust auto-save system
   const autoSaveManager = redesignedApp.autoSave;
@@ -421,7 +403,7 @@ const HierarchicalDrawingApp = () => {
             rectangles={rectangleManager.rectangles}
             onColorChange={rectangleManager.updateRectangleColor}
             onLayoutPreferencesChange={rectangleManager.updateRectangleLayoutPreferences}
-            appSettings={appSettingsObject}
+            appSettings={appSettings}
             onSettingsChange={(settings) => handleSettingsChange(settings)}
             onAddCustomColor={redesignedApp.appSettings.addCustomColor}
           />
