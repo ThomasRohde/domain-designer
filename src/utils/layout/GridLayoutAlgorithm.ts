@@ -1,12 +1,13 @@
 import { LayoutPreferences } from '../../types';
-import { ILayoutAlgorithm, LayoutInput, LayoutResult } from './interfaces';
+import { LayoutInput, LayoutResult } from './interfaces';
+import { BaseLayoutAlgorithm } from './BaseLayoutAlgorithm';
 import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT, DEFAULT_RECTANGLE_SIZE } from '../constants';
 
 /**
  * Grid-based layout algorithm that arranges children in a grid pattern
  * This is the current layout algorithm extracted from layoutUtils.ts
  */
-export class GridLayoutAlgorithm implements ILayoutAlgorithm {
+export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
   readonly name = 'grid';
   readonly description = 'Arranges children in a grid pattern with configurable fill strategy';
 
@@ -42,7 +43,7 @@ export class GridLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Calculate auto-sized dimensions and positions for child rectangles
    */
-  calculateLayout(input: LayoutInput): LayoutResult {
+  protected doCalculateLayout(input: LayoutInput): LayoutResult {
     const { parentRect, children, fixedDimensions, margins, allRectangles } = input;
     
     if (!parentRect || children.length === 0) {

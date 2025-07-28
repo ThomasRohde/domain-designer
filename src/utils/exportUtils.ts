@@ -1,4 +1,6 @@
 import { Rectangle, ExportOptions, GlobalSettings, ValidationResult } from '../types';
+import { SavedDiagram, calculateBoundingBox } from '../types/layoutSnapshot';
+import { validateDiagramAuto, sanitizeDiagramData } from './schemaValidation';
 import { exportToHTML } from './htmlExport';
 import pako from 'pako';
 
@@ -66,11 +68,9 @@ const exportToSVG = async (
 };
 
 
-const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[]): void => {
-  const enhancedGlobalSettings = globalSettings ? {
-    ...globalSettings,
-    predefinedColors: predefinedColors || globalSettings.predefinedColors
-  } : predefinedColors ? {
+const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[], preserveLayout = true): void => {
+  // Create default settings with all required properties
+  const defaultSettings = {
     gridSize: 20,
     leafFixedWidth: false,
     leafFixedHeight: false,
@@ -78,25 +78,36 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
     leafHeight: 4,
     rootFontSize: 14,
     dynamicFontSizing: false,
+    fontFamily: 'Inter' as const,
     borderRadius: 8,
     borderColor: '#374151',
     borderWidth: 2,
     margin: 1,
     labelMargin: 2,
-    predefinedColors
-  } : undefined;
+    layoutAlgorithm: 'grid' as const,
+    predefinedColors: predefinedColors || []
+  };
 
-  const data = {
+  const enhancedGlobalSettings = globalSettings ? {
+    ...defaultSettings,
+    ...globalSettings,
+    predefinedColors: predefinedColors || globalSettings.predefinedColors
+  } : defaultSettings;
+
+  // Create v2.0 schema with layout preservation metadata
+  const boundingBox = calculateBoundingBox(rectangles);
+  
+  const data: SavedDiagram = {
+    version: '2.0',
     rectangles,
     globalSettings: enhancedGlobalSettings,
-    version: '1.0',
-    timestamp: new Date().toISOString(),
-    metadata: {
-      totalRectangles: rectangles.length,
-      rootRectangles: rectangles.filter(r => !r.parentId).length,
-      types: [...new Set(rectangles.map(r => r.type))],
-      hasGlobalSettings: !!enhancedGlobalSettings
-    }
+    layoutMetadata: {
+      algorithm: enhancedGlobalSettings.layoutAlgorithm,
+      isUserArranged: rectangles.some(r => r.isManualPositioningEnabled),
+      preservePositions: preserveLayout,
+      boundingBox
+    },
+    timestamp: Date.now()
   };
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -387,63 +398,19 @@ const createSVGFromRectangles = (
 export interface ImportedDiagramData {
   rectangles: Rectangle[];
   globalSettings?: GlobalSettings;
-  version?: string;
-  timestamp?: string;
-  metadata?: {
-    totalRectangles: number;
-    rootRectangles: number;
-    types: string[];
-    hasGlobalSettings?: boolean;
+  version: string;
+  timestamp?: string | number;
+  layoutMetadata?: {
+    algorithm: string;
+    isUserArranged: boolean;
+    preservePositions: boolean;
+    boundingBox: { w: number; h: number };
   };
 }
 
 export const validateImportedData = (data: unknown): ValidationResult => {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  if (!data || typeof data !== 'object') {
-    errors.push('Invalid JSON data structure');
-    return { isValid: false, errors, warnings };
-  }
-
-  const dataObj = data as Record<string, unknown>;
-
-  if (!Array.isArray(dataObj.rectangles)) {
-    errors.push('Missing or invalid rectangles array');
-    return { isValid: false, errors, warnings };
-  }
-
-  if (dataObj.rectangles.length === 0) {
-    warnings.push('No rectangles found in import data');
-  }
-
-  for (let i = 0; i < dataObj.rectangles.length; i++) {
-    const rect = dataObj.rectangles[i] as Record<string, unknown>;
-    if (!rect.id || typeof rect.id !== 'string') {
-      errors.push(`Rectangle at index ${i} missing valid id`);
-    }
-    if (typeof rect.x !== 'number' || typeof rect.y !== 'number') {
-      errors.push(`Rectangle at index ${i} missing valid coordinates`);
-    }
-    if (typeof rect.w !== 'number' || typeof rect.h !== 'number') {
-      errors.push(`Rectangle at index ${i} missing valid dimensions`);
-    }
-    if (!rect.label || typeof rect.label !== 'string') {
-      errors.push(`Rectangle at index ${i} missing valid label`);
-    }
-    if (!rect.color || typeof rect.color !== 'string') {
-      errors.push(`Rectangle at index ${i} missing valid color`);
-    }
-    if (!rect.type || !['root', 'parent', 'leaf'].includes(rect.type as string)) {
-      errors.push(`Rectangle at index ${i} missing valid type`);
-    }
-  }
-
-  if (dataObj.globalSettings && typeof dataObj.globalSettings !== 'object') {
-    warnings.push('Invalid global settings format, will use defaults');
-  }
-
-  return { isValid: errors.length === 0, errors, warnings };
+  // Use the comprehensive schema validation
+  return validateDiagramAuto(data);
 };
 
 export const importDiagramFromJSON = (file: File): Promise<ImportedDiagramData> => {
@@ -453,18 +420,33 @@ export const importDiagramFromJSON = (file: File): Promise<ImportedDiagramData> 
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
-        const data = JSON.parse(text);
+        let data = JSON.parse(text);
         
+        // First validate the raw data
         const validation = validateImportedData(data);
         
         if (!validation.isValid) {
-          reject(new Error(`Invalid JSON data: ${validation.errors.join(', ')}`));
-          return;
+          // Try to sanitize the data if validation fails
+          console.warn('Data validation failed, attempting to sanitize:', validation.errors);
+          data = sanitizeDiagramData(data);
+          
+          if (!data) {
+            reject(new Error(`Invalid JSON data: ${validation.errors.join(', ')}`));
+            return;
+          }
+          
+          // Re-validate after sanitization
+          const revalidation = validateImportedData(data);
+          if (!revalidation.isValid) {
+            reject(new Error(`Invalid JSON data after sanitization: ${revalidation.errors.join(', ')}`));
+            return;
+          }
         }
 
         if (validation.warnings.length > 0) {
           console.warn('Import warnings:', validation.warnings);
         }
+
 
         resolve(data as ImportedDiagramData);
       } catch (error) {

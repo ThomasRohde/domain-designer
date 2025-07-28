@@ -1,4 +1,5 @@
-import { ILayoutAlgorithm, LayoutInput, LayoutResult } from './interfaces';
+import { LayoutInput, LayoutResult } from './interfaces';
+import { BaseLayoutAlgorithm } from './BaseLayoutAlgorithm';
 import { Rectangle, LayoutPreferences, FlowOrientation } from '../../types';
 
 /**
@@ -77,7 +78,7 @@ interface FlowRectangle extends Rectangle {
  * Flow-based layout algorithm implementing the FLOW.md specification
  * Uses alternating row/column orientation for hierarchical capability maps
  */
-export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
+export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   readonly name = 'Flow Layout';
   readonly description = 'Flow-based hierarchical layout with alternating row/column orientation';
 
@@ -173,7 +174,7 @@ export class FlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Calculate layout for children within a parent rectangle using flow algorithm
    */
-  calculateLayout(input: LayoutInput): LayoutResult {
+  protected doCalculateLayout(input: LayoutInput): LayoutResult {
     const { parentRect, children, fixedDimensions, margins, depth, allRectangles } = input;
     
     if (children.length === 0) {

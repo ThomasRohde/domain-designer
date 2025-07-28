@@ -1,4 +1,5 @@
 import { Rectangle, LayoutPreferences } from '../../types';
+import { LayoutMetadata } from '../../types/layoutSnapshot';
 
 /**
  * Input parameters for layout calculations
@@ -24,6 +25,8 @@ export interface LayoutInput {
   allRectangles?: Rectangle[];
   /** Depth of the parent rectangle in the hierarchy (for orientation alternation) */
   depth?: number;
+  /** Layout metadata for preservation rules */
+  layoutMetadata?: LayoutMetadata;
 }
 
 /**
@@ -56,6 +59,17 @@ export interface ILayoutAlgorithm {
   
   /** Human-readable description of the algorithm */
   readonly description: string;
+  
+  /**
+   * Check if layout can be modified based on metadata
+   * 
+   * This method determines whether the algorithm should apply layout changes
+   * based on preservation rules in the layout metadata.
+   * 
+   * @param layoutMetadata Layout metadata containing preservation rules
+   * @returns True if layout can be modified, false if it should be preserved
+   */
+  canApplyLayout(layoutMetadata?: LayoutMetadata): boolean;
   
   /**
    * Calculate layout for children within a parent rectangle

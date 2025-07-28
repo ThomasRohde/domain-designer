@@ -1,4 +1,5 @@
-import { ILayoutAlgorithm, LayoutInput, LayoutResult } from './interfaces';
+import { LayoutInput, LayoutResult } from './interfaces';
+import { BaseLayoutAlgorithm } from './BaseLayoutAlgorithm';
 import { Rectangle, LayoutPreferences } from '../../types';
 
 /**
@@ -66,7 +67,7 @@ interface LayoutOption {
  * 
  * @see algorithm-tuning-recommendations.md for parameter optimization
  */
-export class MixedFlowLayoutAlgorithm implements ILayoutAlgorithm {
+export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   readonly name = 'Mixed Flow Layout';
   readonly description = 'Adaptive flow layout combining rows and columns to minimize whitespace';
 
@@ -95,7 +96,7 @@ export class MixedFlowLayoutAlgorithm implements ILayoutAlgorithm {
   /**
    * Calculate layout for children within a parent rectangle using mixed flow algorithm
    */
-  calculateLayout(input: LayoutInput): LayoutResult {
+  protected doCalculateLayout(input: LayoutInput): LayoutResult {
     const { parentRect, children, fixedDimensions, margins } = input;
     
     if (children.length === 0) {

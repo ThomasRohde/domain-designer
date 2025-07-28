@@ -1,13 +1,13 @@
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-import { ExportOptions, AppSettings } from '../types';
-import { exportDiagram, importDiagramFromJSON, ImportedDiagramData, processImportedDiagram } from '../utils/exportUtils';
+import { ExportOptions } from '../types';
+import { exportDiagram } from '../utils/exportUtils';
 import { getChildren } from '../utils/layoutUtils';
 import { useRectangleManager } from '../hooks/useRectangleManager';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { useAutoSaveManager } from '../hooks/useAutoSaveManager';
+import { useRedesignedApp } from '../hooks/useRedesignedApp';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -28,7 +28,6 @@ const HierarchicalDrawingApp = () => {
 
   // Initialize hooks
   const uiState = useUIState();
-  const appSettings = useAppSettings();
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   
   // Create a ref for triggerSave to avoid circular dependency
@@ -37,14 +36,17 @@ const HierarchicalDrawingApp = () => {
   // Memoize the pan offset ref to avoid recreating object
   const panOffsetRef = useRef({ x: 0, y: 0 });
   
+  // Memoize the triggerSave function
+  const triggerSave = useCallback(() => triggerSaveRef.current?.(), []);
+  
+  // Initialize app settings first
+  const appSettings = useAppSettings();
+
   // Memoize the getMargins function to avoid inline object creation
   const getMargins = useCallback(() => ({ 
     margin: appSettings.margin, 
     labelMargin: appSettings.labelMargin 
   }), [appSettings.margin, appSettings.labelMargin]);
-  
-  // Memoize the triggerSave function
-  const triggerSave = useCallback(() => triggerSaveRef.current?.(), []);
   
   const rectangleManager = useRectangleManager({
     gridSize: appSettings.gridSize,
@@ -53,6 +55,19 @@ const HierarchicalDrawingApp = () => {
     getFixedDimensions: appSettings.getFixedDimensions,
     getMargins,
     triggerSave
+  });
+
+  // Initialize the redesigned app systems
+  const redesignedApp = useRedesignedApp({
+    rectangles: rectangleManager.rectangles,
+    setRectangles: rectangleManager.setRectangles,
+    setRectanglesWithHistory: rectangleManager.setRectanglesWithHistory,
+    initializeHistory: rectangleManager.initializeHistory,
+    updateNextId: rectangleManager.updateNextId,
+    nextId: rectangleManager.nextId,
+    setSelectedId: rectangleManager.setSelectedId,
+    getFixedDimensions: appSettings.getFixedDimensions,
+    getMargins
   });
 
   // Canvas interactions with proper setSelectedId wrapper
@@ -150,71 +165,11 @@ const HierarchicalDrawingApp = () => {
     }
   }, [rectangleManager]);
 
-  const handleSettingsChange = useCallback((settings: Partial<AppSettings>, isRestoring = false) => {
-    if (isRestoring) {
-      appSettings.setIsRestoring(true);
-    }
-    
-    if (settings.gridSize !== undefined) appSettings.setGridSize(settings.gridSize);
-    if (settings.leafFixedWidth !== undefined) appSettings.handleLeafFixedWidthChange(settings.leafFixedWidth);
-    if (settings.leafFixedHeight !== undefined) appSettings.handleLeafFixedHeightChange(settings.leafFixedHeight);
-    if (settings.leafWidth !== undefined) appSettings.handleLeafWidthChange(settings.leafWidth);
-    if (settings.leafHeight !== undefined) appSettings.handleLeafHeightChange(settings.leafHeight);
-    if (settings.rootFontSize !== undefined) appSettings.handleRootFontSizeChange(settings.rootFontSize);
-    if (settings.dynamicFontSizing !== undefined) appSettings.handleDynamicFontSizingChange(settings.dynamicFontSizing);
-    if (settings.fontFamily !== undefined) appSettings.handleFontFamilyChange(settings.fontFamily);
-    if (settings.borderRadius !== undefined) appSettings.handleBorderRadiusChange(settings.borderRadius);
-    if (settings.borderColor !== undefined) appSettings.handleBorderColorChange(settings.borderColor);
-    if (settings.borderWidth !== undefined) appSettings.handleBorderWidthChange(settings.borderWidth);
-    if (settings.predefinedColors !== undefined) appSettings.handlePredefinedColorsChange(settings.predefinedColors);
-    if (settings.margin !== undefined) appSettings.handleMarginChange(settings.margin);
-    if (settings.labelMargin !== undefined) appSettings.handleLabelMarginChange(settings.labelMargin);
-    if (settings.layoutAlgorithm !== undefined) appSettings.handleLayoutAlgorithmChange(settings.layoutAlgorithm);
-    
-    if (isRestoring) {
-      appSettings.setIsRestoring(false);
-    }
-  }, [appSettings]);
+  // Use the redesigned app's settings handler (which includes layout preservation awareness)
+  const handleSettingsChange = redesignedApp.handleSettingsChange;
 
-  const handleImport = useCallback(() => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = async (event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-      
-      try {
-        const importedData: ImportedDiagramData = await importDiagramFromJSON(file);
-        
-        // Process imported data with comprehensive validation and fixing
-        const { rectangles: processedRectangles, nextId: newNextId } = processImportedDiagram(
-          importedData, 
-          rectangleManager.nextId
-        );
-        
-        // Update rectangles with processed data
-        rectangleManager.setRectanglesWithHistory(processedRectangles);
-        
-        // Update the nextId counter to prevent ID conflicts
-        rectangleManager.updateNextId(newNextId);
-        
-        // Update global settings if available
-        if (importedData.globalSettings) {
-          handleSettingsChange(importedData.globalSettings);
-        }
-        
-        // Clear selection
-        rectangleManager.setSelectedId(null);
-        
-        console.log('Successfully imported diagram from JSON');
-      } catch (error) {
-        console.error('Failed to import diagram:', error);
-        alert(`Failed to import diagram: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
-    };
-    input.click();
-  }, [rectangleManager, handleSettingsChange]);
+  // Use the redesigned app's import handler (with state machine and validation)
+  const handleImport = redesignedApp.handleImport;
 
   const handleAboutClick = useCallback(() => {
     setAboutModalOpen(true);
@@ -283,30 +238,17 @@ const HierarchicalDrawingApp = () => {
     layoutAlgorithm: appSettings.layoutAlgorithm,
   }), [appSettings]);
 
-  // Auto-save manager
-  const autoSaveManager = useAutoSaveManager({
-    rectangles: rectangleManager.rectangles,
-    appSettings: appSettingsObject,
-    onRestore: useCallback((rectangles, settings) => {
-      console.log('Restoring', rectangles.length, 'rectangles');
-      // Clear selection first to avoid issues
-      rectangleManager.setSelectedId(null);
-      // Set rectangles directly to avoid triggering history during restoration
-      rectangleManager.setRectangles(rectangles);
-      // Initialize history properly with the restored state as the baseline
-      rectangleManager.initializeHistory(rectangles);
-      handleSettingsChange(settings, true);
-    }, [rectangleManager, handleSettingsChange])
-  });
+  // Use the redesigned robust auto-save system
+  const autoSaveManager = redesignedApp.autoSave;
   
   // Set the triggerSave ref
   useEffect(() => {
-    triggerSaveRef.current = autoSaveManager.triggerSave;
-  }, [autoSaveManager.triggerSave]);
+    triggerSaveRef.current = autoSaveManager.save;
+  }, [autoSaveManager.save]);
 
   const handleClearSavedData = useCallback(async () => {
     if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
-      await autoSaveManager.clearSavedState();
+      await autoSaveManager.clearData();
     }
   }, [autoSaveManager]);
 
@@ -407,7 +349,7 @@ const HierarchicalDrawingApp = () => {
         onToggleLeftMenu={uiState.toggleLeftMenu}
         leftMenuOpen={uiState.leftMenuOpen}
         lastSaved={autoSaveManager.lastSaved}
-        autoSaveEnabled={autoSaveManager.autoSaveEnabled}
+        autoSaveEnabled={autoSaveManager.isAutoSaveEnabled}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -423,7 +365,7 @@ const HierarchicalDrawingApp = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Canvas
             containerRef={containerRef}
-            gridSize={appSettings.gridSize}
+            gridSize={redesignedApp.appSettings.gridSize}
             panOffset={canvasInteractions.panOffset}
             isSpacePressed={canvasInteractions.isSpacePressed}
             panState={canvasInteractions.panState}
@@ -440,7 +382,7 @@ const HierarchicalDrawingApp = () => {
                 onFitToChildren={rectangleManager.fitToChildren}
                 onToggleManualPositioning={rectangleManager.toggleManualPositioning}
                 onShowLockConfirmation={uiState.showLockConfirmationModal}
-                gridSize={appSettings.gridSize}
+                gridSize={redesignedApp.appSettings.gridSize}
                 isDragging={canvasInteractions.isDragging}
                 isResizing={canvasInteractions.isResizing}
                 isHierarchyDragging={canvasInteractions.isHierarchyDragging}
@@ -455,7 +397,7 @@ const HierarchicalDrawingApp = () => {
               resizeState={canvasInteractions.resizeState}
               hierarchyDragState={canvasInteractions.hierarchyDragState}
               resizeConstraintState={canvasInteractions.resizeConstraintState}
-              gridSize={appSettings.gridSize}
+              gridSize={redesignedApp.appSettings.gridSize}
               onMouseDown={canvasInteractions.handleRectangleMouseDown}
               onContextMenu={handleContextMenu}
               onSelect={rectangleManager.setSelectedId}
@@ -463,11 +405,11 @@ const HierarchicalDrawingApp = () => {
               onAddChild={rectangleManager.addRectangle}
               onRemove={rectangleManager.removeRectangle}
               onFitToChildren={rectangleManager.fitToChildren}
-              calculateFontSize={appSettings.calculateFontSize}
-              fontFamily={appSettings.fontFamily}
-              borderRadius={appSettings.borderRadius}
-              borderColor={appSettings.borderColor}
-              borderWidth={appSettings.borderWidth}
+              calculateFontSize={redesignedApp.appSettings.calculateFontSize}
+              fontFamily={redesignedApp.appSettings.fontFamily}
+              borderRadius={redesignedApp.appSettings.borderRadius}
+              borderColor={redesignedApp.appSettings.borderColor}
+              borderWidth={redesignedApp.appSettings.borderWidth}
             />
           </Canvas>
         </div>
@@ -480,8 +422,8 @@ const HierarchicalDrawingApp = () => {
             onColorChange={rectangleManager.updateRectangleColor}
             onLayoutPreferencesChange={rectangleManager.updateRectangleLayoutPreferences}
             appSettings={appSettingsObject}
-            onSettingsChange={handleSettingsChange}
-            onAddCustomColor={appSettings.addCustomColor}
+            onSettingsChange={(settings) => handleSettingsChange(settings)}
+            onAddCustomColor={redesignedApp.appSettings.addCustomColor}
           />
         </Sidebar>
       </div>
@@ -537,13 +479,13 @@ const HierarchicalDrawingApp = () => {
         rectangles={rectangleManager.rectangles}
         setRectangles={rectangleManager.setRectanglesWithHistory}
         fitToChildren={rectangleManager.fitToChildren}
-        predefinedColors={appSettings.predefinedColors}
+        predefinedColors={redesignedApp.appSettings.predefinedColors}
         globalSettings={{
-          gridSize: appSettings.gridSize,
-          leafWidth: appSettings.leafWidth,
-          leafHeight: appSettings.leafHeight,
-          leafFixedWidth: appSettings.leafFixedWidth,
-          leafFixedHeight: appSettings.leafFixedHeight
+          gridSize: redesignedApp.appSettings.gridSize,
+          leafWidth: redesignedApp.appSettings.leafWidth,
+          leafHeight: redesignedApp.appSettings.leafHeight,
+          leafFixedWidth: redesignedApp.appSettings.leafFixedWidth,
+          leafFixedHeight: redesignedApp.appSettings.leafFixedHeight
         }}
       />
     </div>

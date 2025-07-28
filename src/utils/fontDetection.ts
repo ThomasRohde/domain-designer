@@ -76,17 +76,14 @@ const WEB_FONTS: FontOption[] = [
  */
 function isFontAvailableModern(fontName: string): boolean {
   if (!document.fonts || !document.fonts.check) {
-    console.log(`🔍 FontFaceSet API not available for "${fontName}"`);
     return false;
   }
   
   try {
     // Test with a reasonable size
     const result = document.fonts.check(`16px "${fontName}"`);
-    console.log(`🔍 FontFaceSet check for "${fontName}":`, result);
     return result;
   } catch (error) {
-    console.warn(`❌ Error checking font "${fontName}" with FontFaceSet API:`, error);
     return false;
   }
 }
@@ -100,7 +97,6 @@ function isFontAvailableCanvas(fontName: string): boolean {
     canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     if (!context) {
-      console.log(`❌ Canvas context not available for "${fontName}"`);
       return false;
     }
     
@@ -119,7 +115,6 @@ function isFontAvailableCanvas(fontName: string): boolean {
       const testWidth = context.measureText(testText).width;
       
       const difference = Math.abs(baseWidth - testWidth);
-      console.log(`🎨 Canvas test "${fontName}" vs "${baseFont}": base=${baseWidth}px, test=${testWidth}px, diff=${difference}px`);
       
       // If widths are significantly different, the font is likely available
       if (difference > 2) {
@@ -129,7 +124,6 @@ function isFontAvailableCanvas(fontName: string): boolean {
     
     return false;
   } catch (error) {
-    console.warn(`❌ Error checking font "${fontName}" with canvas method:`, error);
     return false;
   } finally {
     // Clean up canvas to prevent memory leak
@@ -152,12 +146,10 @@ export function isFontAvailable(fontName: string): boolean {
   
   // Use canvas method primarily as it's more reliable for system fonts
   const canvasResult = isFontAvailableCanvas(fontName);
-  console.log(`🎨 Canvas detection for "${fontName}":`, canvasResult);
   
   // If canvas fails, try FontFaceSet API as fallback
   if (!canvasResult) {
     const modernResult = isFontAvailableModern(fontName);
-    console.log(`🔧 Fallback to FontFaceSet for "${fontName}":`, modernResult);
     return modernResult;
   }
   
@@ -168,21 +160,17 @@ export function isFontAvailable(fontName: string): boolean {
  * Detect all available fonts from the common fonts list
  */
 export async function detectAvailableFonts(): Promise<FontOption[]> {
-  console.log('🔍 Starting font detection...');
   const availableFonts: FontOption[] = [];
   
   // Always include web fonts first
   availableFonts.push(...WEB_FONTS);
-  console.log('✅ Added web fonts:', WEB_FONTS.length);
   
   // Test a few essential fonts first to ensure detection is working
   const essentialFonts = ['Arial', 'Times New Roman', 'Courier New'];
   const detectedEssential = essentialFonts.filter(fontName => isFontAvailable(fontName));
-  console.log('🎯 Essential fonts detected:', detectedEssential);
   
   // If no essential fonts are detected, something is wrong - use fallback
   if (detectedEssential.length === 0) {
-    console.warn('⚠️ No essential fonts detected! Font detection may be failing. Using fallback list.');
     return [...WEB_FONTS, ...COMMON_FONTS.slice(0, 5).map(font => ({
       value: font.name,
       label: font.name,
@@ -193,7 +181,6 @@ export async function detectAvailableFonts(): Promise<FontOption[]> {
   // Test each common font
   for (const font of COMMON_FONTS) {
     const isAvailable = isFontAvailable(font.name);
-    console.log(`🔤 Testing "${font.name}":`, isAvailable ? '✅' : '❌');
     if (isAvailable) {
       availableFonts.push({
         value: font.name,
@@ -221,8 +208,6 @@ export async function detectAvailableFonts(): Promise<FontOption[]> {
     return a.label.localeCompare(b.label);
   });
   
-  console.log('🎯 Total available fonts detected:', uniqueFonts.length);
-  console.log('📋 Available fonts:', uniqueFonts.map(f => f.value));
   return uniqueFonts;
 }
 
@@ -243,7 +228,6 @@ export async function getAvailableFonts(): Promise<FontOption[]> {
       return JSON.parse(cached);
     }
   } catch (error) {
-    console.warn('Error reading font cache:', error);
   }
   
   // Detect fonts
@@ -254,7 +238,6 @@ export async function getAvailableFonts(): Promise<FontOption[]> {
     localStorage.setItem(cacheKey, JSON.stringify(fonts));
     localStorage.setItem(cacheExpiry, (Date.now() + cacheTimeout).toString());
   } catch (error) {
-    console.warn('Error caching fonts:', error);
   }
   
   return fonts;
@@ -268,6 +251,5 @@ export function clearFontCache(): void {
     localStorage.removeItem('availableFonts');
     localStorage.removeItem('availableFontsExpiry');
   } catch (error) {
-    console.warn('Error clearing font cache:', error);
   }
 }

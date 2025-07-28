@@ -79,9 +79,6 @@ export const useAppSettings = (): AppSettingsHook => {
   const [fontsLoading, setFontsLoading] = useState(true);
   const [isRestoring, setIsRestoring] = useState(false);
   
-  // Debug logging
-  console.log('🎯 useAppSettings initialized with fallback fonts:', FALLBACK_FONT_OPTIONS.length);
-  console.log('📋 Current availableFonts state:', availableFonts.length, availableFonts);
   const [borderRadius, setBorderRadius] = useState(DEFAULT_BORDER_SETTINGS.borderRadius);
   const [borderColor, setBorderColor] = useState(DEFAULT_BORDER_SETTINGS.borderColor);
   const [borderWidth, setBorderWidth] = useState(DEFAULT_BORDER_SETTINGS.borderWidth);
@@ -99,17 +96,13 @@ export const useAppSettings = (): AppSettingsHook => {
   useEffect(() => {
     const loadFonts = async () => {
       try {
-        console.log('🚀 Starting font loading in useAppSettings...');
         setFontsLoading(true);
         const fonts = await getAvailableFonts();
-        console.log('🎉 Fonts loaded successfully:', fonts.length, 'fonts');
         setAvailableFonts(fonts);
       } catch (error) {
-        console.warn('❌ Failed to detect fonts, using fallback list:', error);
         setAvailableFonts(FALLBACK_FONT_OPTIONS);
       } finally {
         setFontsLoading(false);
-        console.log('⚡ Font loading completed');
       }
     };
     
