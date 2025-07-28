@@ -49,18 +49,18 @@ export interface UseAppSettingsReturn {
   // Functions
   getFixedDimensions: () => FixedDimensions;
   calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
-  handleLeafFixedWidthChange: (enabled: boolean) => void;
-  handleLeafFixedHeightChange: (enabled: boolean) => void;
-  handleLeafWidthChange: (width: number) => void;
-  handleLeafHeightChange: (height: number) => void;
+  handleLeafFixedWidthChange: (enabled: boolean, skipLayoutUpdates?: boolean) => void;
+  handleLeafFixedHeightChange: (enabled: boolean, skipLayoutUpdates?: boolean) => void;
+  handleLeafWidthChange: (width: number, skipLayoutUpdates?: boolean) => void;
+  handleLeafHeightChange: (height: number, skipLayoutUpdates?: boolean) => void;
   handleRootFontSizeChange: (size: number) => void;
   handleDynamicFontSizingChange: (enabled: boolean) => void;
   handleBorderRadiusChange: (radius: number) => void;
   handleBorderColorChange: (color: string) => void;
   handleBorderWidthChange: (width: number) => void;
-  handleMarginChange: (margin: number) => void;
-  handleLabelMarginChange: (labelMargin: number) => void;
-  handleLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType) => void;
+  handleMarginChange: (margin: number, skipLayoutUpdates?: boolean) => void;
+  handleLabelMarginChange: (labelMargin: number, skipLayoutUpdates?: boolean) => void;
+  handleLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType, skipLayoutUpdates?: boolean) => void;
   addCustomColor: (color: string) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
@@ -217,7 +217,7 @@ export const useAppSettings = (): AppSettingsHook => {
   }, [dynamicFontSizing, rootFontSize]);
 
   // Update leaf nodes when fixed width setting changes
-  const handleLeafFixedWidthChange = useCallback((enabled: boolean) => {
+  const handleLeafFixedWidthChange = useCallback((enabled: boolean, skipLayoutUpdates = false) => {
     setLeafFixedWidth(enabled);
     if (enabled && setRectanglesRef.current) {
       // Apply fixed width to all existing leaf nodes
@@ -228,13 +228,13 @@ export const useAppSettings = (): AppSettingsHook => {
       );
     }
     // Trigger layout update for all children (skip during restoration)
-    if (setRectanglesRef.current && !isRestoring) {
+    if (setRectanglesRef.current && !isRestoring && !skipLayoutUpdates) {
       setNeedsLayoutUpdate(true);
     }
   }, [leafWidth, setNeedsLayoutUpdate, isRestoring]);
 
   // Update leaf nodes when fixed height setting changes
-  const handleLeafFixedHeightChange = useCallback((enabled: boolean) => {
+  const handleLeafFixedHeightChange = useCallback((enabled: boolean, skipLayoutUpdates = false) => {
     setLeafFixedHeight(enabled);
     if (enabled && setRectanglesRef.current) {
       // Apply fixed height to all existing leaf nodes
@@ -245,13 +245,13 @@ export const useAppSettings = (): AppSettingsHook => {
       );
     }
     // Trigger layout update for all children (skip during restoration)
-    if (setRectanglesRef.current && !isRestoring) {
+    if (setRectanglesRef.current && !isRestoring && !skipLayoutUpdates) {
       setNeedsLayoutUpdate(true);
     }
   }, [leafHeight, setNeedsLayoutUpdate, isRestoring]);
 
   // Update leaf width and apply to existing leaf nodes if fixed width is enabled
-  const handleLeafWidthChange = useCallback((width: number) => {
+  const handleLeafWidthChange = useCallback((width: number, skipLayoutUpdates = false) => {
     setLeafWidth(width);
     if (leafFixedWidth && setRectanglesRef.current) {
       // Apply new width to all existing leaf nodes
@@ -261,14 +261,14 @@ export const useAppSettings = (): AppSettingsHook => {
         )
       );
       // Trigger layout update for all children (skip during restoration)
-      if (!isRestoring) {
+      if (!isRestoring && !skipLayoutUpdates) {
         setNeedsLayoutUpdate(true);
       }
     }
   }, [leafFixedWidth, setNeedsLayoutUpdate, isRestoring]);
 
   // Update leaf height and apply to existing leaf nodes if fixed height is enabled
-  const handleLeafHeightChange = useCallback((height: number) => {
+  const handleLeafHeightChange = useCallback((height: number, skipLayoutUpdates = false) => {
     setLeafHeight(height);
     if (leafFixedHeight && setRectanglesRef.current) {
       // Apply new height to all existing leaf nodes
@@ -278,7 +278,7 @@ export const useAppSettings = (): AppSettingsHook => {
         )
       );
       // Trigger layout update for all children (skip during restoration)
-      if (!isRestoring) {
+      if (!isRestoring && !skipLayoutUpdates) {
         setNeedsLayoutUpdate(true);
       }
     }
@@ -311,29 +311,29 @@ export const useAppSettings = (): AppSettingsHook => {
   }, []);
 
   // Margin settings handlers
-  const handleMarginChange = useCallback((margin: number) => {
+  const handleMarginChange = useCallback((margin: number, skipLayoutUpdates = false) => {
     setMargin(margin);
     // Trigger layout update for all rectangles (skip during restoration)
-    if (setRectanglesRef.current && !isRestoring) {
+    if (setRectanglesRef.current && !isRestoring && !skipLayoutUpdates) {
       setNeedsLayoutUpdate(true);
     }
   }, [setNeedsLayoutUpdate, isRestoring]);
 
-  const handleLabelMarginChange = useCallback((labelMargin: number) => {
+  const handleLabelMarginChange = useCallback((labelMargin: number, skipLayoutUpdates = false) => {
     setLabelMargin(labelMargin);
     // Trigger layout update for all rectangles (skip during restoration)
-    if (setRectanglesRef.current && !isRestoring) {
+    if (setRectanglesRef.current && !isRestoring && !skipLayoutUpdates) {
       setNeedsLayoutUpdate(true);
     }
   }, [setNeedsLayoutUpdate, isRestoring]);
 
   // Layout algorithm handler
-  const handleLayoutAlgorithmChange = useCallback((algorithm: LayoutAlgorithmType) => {
+  const handleLayoutAlgorithmChange = useCallback((algorithm: LayoutAlgorithmType, skipLayoutUpdates = false) => {
     setLayoutAlgorithm(algorithm);
     // Update the layout manager to use the new algorithm
     layoutManager.setAlgorithm(algorithm);
     // Trigger layout update since changing algorithm affects layout (skip during restoration)
-    if (setRectanglesRef.current && !isRestoring) {
+    if (setRectanglesRef.current && !isRestoring && !skipLayoutUpdates) {
       setNeedsLayoutUpdate(true);
     }
   }, [setNeedsLayoutUpdate, isRestoring]);

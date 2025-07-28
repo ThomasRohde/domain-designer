@@ -93,14 +93,15 @@ export const useRedesignedApp = ({
 
   // Handle settings changes with layout preservation awareness
   const handleSettingsChange = useCallback((
-    settings: Partial<AppSettings>
+    settings: Partial<AppSettings>,
+    skipLayoutUpdates = false
   ) => {
-    // Update individual settings
+    // Update individual settings - pass skipLayoutUpdates to layout-affecting handlers
     if (settings.gridSize !== undefined) appSettings.setGridSize(settings.gridSize);
-    if (settings.leafFixedWidth !== undefined) appSettings.handleLeafFixedWidthChange(settings.leafFixedWidth);
-    if (settings.leafFixedHeight !== undefined) appSettings.handleLeafFixedHeightChange(settings.leafFixedHeight);
-    if (settings.leafWidth !== undefined) appSettings.handleLeafWidthChange(settings.leafWidth);
-    if (settings.leafHeight !== undefined) appSettings.handleLeafHeightChange(settings.leafHeight);
+    if (settings.leafFixedWidth !== undefined) appSettings.handleLeafFixedWidthChange(settings.leafFixedWidth, skipLayoutUpdates);
+    if (settings.leafFixedHeight !== undefined) appSettings.handleLeafFixedHeightChange(settings.leafFixedHeight, skipLayoutUpdates);
+    if (settings.leafWidth !== undefined) appSettings.handleLeafWidthChange(settings.leafWidth, skipLayoutUpdates);
+    if (settings.leafHeight !== undefined) appSettings.handleLeafHeightChange(settings.leafHeight, skipLayoutUpdates);
     if (settings.rootFontSize !== undefined) appSettings.handleRootFontSizeChange(settings.rootFontSize);
     if (settings.dynamicFontSizing !== undefined) appSettings.handleDynamicFontSizingChange(settings.dynamicFontSizing);
     if (settings.fontFamily !== undefined) appSettings.handleFontFamilyChange(settings.fontFamily);
@@ -108,15 +109,16 @@ export const useRedesignedApp = ({
     if (settings.borderColor !== undefined) appSettings.handleBorderColorChange(settings.borderColor);
     if (settings.borderWidth !== undefined) appSettings.handleBorderWidthChange(settings.borderWidth);
     if (settings.predefinedColors !== undefined) appSettings.handlePredefinedColorsChange(settings.predefinedColors);
-    if (settings.margin !== undefined) appSettings.handleMarginChange(settings.margin);
-    if (settings.labelMargin !== undefined) appSettings.handleLabelMarginChange(settings.labelMargin);
+    if (settings.margin !== undefined) appSettings.handleMarginChange(settings.margin, skipLayoutUpdates);
+    if (settings.labelMargin !== undefined) appSettings.handleLabelMarginChange(settings.labelMargin, skipLayoutUpdates);
     if (settings.layoutAlgorithm !== undefined) {
-      appSettings.handleLayoutAlgorithmChange(settings.layoutAlgorithm);
+      appSettings.handleLayoutAlgorithmChange(settings.layoutAlgorithm, skipLayoutUpdates);
       layoutEngine.setLayoutAlgorithm(settings.layoutAlgorithm);
     }
   }, [appSettings, layoutEngine]);
 
   // Handle restore with the new architecture - now defined after handleSettingsChange
+  // Memoize to prevent infinite loops in useRobustAutoSave
   const handleRestoreInternal = useCallback(async (
     restoredRectangles: Rectangle[], 
     restoredSettings: AppSettings, 
@@ -141,10 +143,11 @@ export const useRedesignedApp = ({
     // Initialize history properly with the restored state as the baseline
     initializeHistory(processedRectangles);
     
-    // Apply settings changes
-    handleSettingsChange(restoredSettings);
+    // Apply settings changes with layout updates disabled
+    handleSettingsChange(restoredSettings, true);
     
     console.log('✅ Restore complete');
+  // Remove appSettings from dependencies to prevent recreation
   }, [setSelectedId, setRectangles, initializeHistory, dimensionEngine, handleSettingsChange]);
 
   // Initialize robust auto-save - now defined after handleRestoreInternal
@@ -199,27 +202,31 @@ export const useRedesignedApp = ({
         
         // Update rectangles with processed data - use setRectanglesWithHistory for proper history tracking
         setRectanglesWithHistory(finalRectangles);
+        console.log('📦 Set rectangles after import:', finalRectangles.length, 'rectangles');
         
         // Update the nextId counter to prevent ID conflicts
         updateNextId(newNextId);
         
-        // Update global settings if available
+        // Update global settings if available with layout updates disabled
         if (importedData.globalSettings) {
-          handleSettingsChange(importedData.globalSettings);
+          handleSettingsChange(importedData.globalSettings, true);
         }
         
         // Clear selection
         setSelectedId(null);
         
-        // Complete the import process
-        stateMachine.transition({ type: 'COMPLETE' });
+        // Re-enable auto-save immediately and save the imported state BEFORE completing
+        console.log('🔄 Re-enabling auto-save and saving imported state immediately...');
+        console.log('📊 Rectangles state at immediate save time:', finalRectangles.length, 'rectangles');
+        autoSave.setAutoSaveEnabled(true);
+        // Reset auto-restore flag so fresh imports can be properly auto-restored
+        autoSave.resetAutoRestoreFlag();
+        // Immediately save the imported state to ensure it persists (pass finalRectangles directly)
+        await autoSave.save(finalRectangles);
+        console.log('💾 Imported state saved to localStorage');
         
-        // Re-enable auto-save after a delay
-        setTimeout(() => {
-          autoSave.setAutoSaveEnabled(true);
-          // Reset auto-restore flag so fresh imports can be properly auto-restored
-          autoSave.resetAutoRestoreFlag();
-        }, 1000);
+        // Complete the import process AFTER saving
+        stateMachine.transition({ type: 'COMPLETE' });
         
         console.log('✅ Successfully imported diagram with preservation');
         
@@ -242,7 +249,8 @@ export const useRedesignedApp = ({
     updateNextId, 
     setSelectedId, 
     handleSettingsChange,
-    dimensionEngine
+    dimensionEngine,
+    appSettings
   ]);
 
   return {

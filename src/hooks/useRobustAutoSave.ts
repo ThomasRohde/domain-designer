@@ -13,7 +13,7 @@ export interface UseRobustAutoSaveProps {
 }
 
 export interface UseRobustAutoSaveReturn {
-  save: () => Promise<void>;
+  save: (rectanglesOverride?: Rectangle[]) => Promise<void>;
   restore: () => Promise<void>;
   clearData: () => Promise<void>;
   rollbackToLastGood: () => Promise<void>;
@@ -61,28 +61,28 @@ export const useRobustAutoSave = ({
     return validation;
   }, [stateMachine]);
 
-  // Create a diagram from current state
-  const createDiagramFromState = useCallback((): SavedDiagram => {
-    return {
-      version: '2.0',
-      rectangles,
-      globalSettings: appSettings,
-      layoutMetadata: {
-        algorithm: appSettings.layoutAlgorithm || 'grid',
-        isUserArranged: rectangles.some(r => r.isManualPositioningEnabled),
-        preservePositions: false, // Allow re-layout for user-created content
-        boundingBox: { w: 0, h: 0 } // Will be calculated during validation
-      },
-      timestamp: Date.now()
-    };
-  }, [rectangles, appSettings]);
 
   // Save with validation
-  const save = useCallback(async (): Promise<void> => {
+  const save = useCallback(async (rectanglesOverride?: Rectangle[]): Promise<void> => {
     if (!isAutoSaveEnabled) return;
 
+    const rectanglesToSave = rectanglesOverride || rectangles;
+    console.log('🔍 Attempting to save. Current rectangles count:', rectanglesToSave.length);
+    
     try {
-      const data = createDiagramFromState();
+      const data = {
+        version: '2.0' as const,
+        rectangles: rectanglesToSave,
+        globalSettings: appSettings,
+        layoutMetadata: {
+          algorithm: appSettings.layoutAlgorithm || 'grid',
+          isUserArranged: rectanglesToSave.some(r => r.isManualPositioningEnabled),
+          preservePositions: false, // Allow re-layout for user-created content
+          boundingBox: { w: 0, h: 0 } // Will be calculated during validation
+        },
+        timestamp: Date.now()
+      };
+      console.log('📊 Created diagram data with', data.rectangles.length, 'rectangles');
       const validation = validateBeforeSave(data);
       
       if (!validation.isValid) {
@@ -117,7 +117,7 @@ export const useRobustAutoSave = ({
       console.error('Failed to save data:', error);
       throw error;
     }
-  }, [isAutoSaveEnabled, createDiagramFromState, validateBeforeSave, saveData]);
+  }, [isAutoSaveEnabled, validateBeforeSave, saveData, rectangles, appSettings]);
 
   // Rollback to last known good state - define first to avoid circular dependency
   const rollbackToLastGood = useCallback(async (): Promise<void> => {
@@ -144,7 +144,7 @@ export const useRobustAutoSave = ({
       });
       
       // Restore from the good data
-      onRestore(goodData.rectangles, goodData.globalSettings, goodData.layoutMetadata);
+      onRestoreRef.current(goodData.rectangles, goodData.globalSettings, goodData.layoutMetadata);
       setLastSaved(goodData.timestamp);
       setLastGoodSave(goodData.timestamp);
       
@@ -152,7 +152,7 @@ export const useRobustAutoSave = ({
       console.error('Rollback failed:', error);
       throw error;
     }
-  }, [saveData, onRestore]);
+  }, [saveData]);
 
   // Restore with validation - now defined after rollbackToLastGood
   const restore = useCallback(async (): Promise<void> => {
@@ -208,7 +208,7 @@ export const useRobustAutoSave = ({
       stateMachine.transition({ type: 'RESTORE_APPLYING' });
       
       // Restore the data
-      onRestore(savedData.rectangles, savedData.globalSettings, savedData.layoutMetadata);
+      onRestoreRef.current(savedData.rectangles, savedData.globalSettings, savedData.layoutMetadata);
       setLastSaved(savedData.timestamp);
       setHasSavedData(true);
       
@@ -223,7 +223,7 @@ export const useRobustAutoSave = ({
       stateMachine.transition({ type: 'ERROR' });
       throw error;
     }
-  }, [stateMachine, loadData, onRestore, rollbackToLastGood]);
+  }, [stateMachine, loadData, rollbackToLastGood]);
 
   // Clear all saved data
   const clearData = useCallback(async (): Promise<void> => {
@@ -246,17 +246,25 @@ export const useRobustAutoSave = ({
     hasAutoRestoredRef.current = false;
   }, []);
 
+  // Store onRestore in a ref to avoid re-running effect when it changes
+  const onRestoreRef = useRef(onRestore);
+  onRestoreRef.current = onRestore;
+
   // Check for existing data on mount and auto-restore (only once)
   useEffect(() => {
     const checkAndRestoreSavedData = async () => {
       // Prevent multiple auto-restores
       if (hasAutoRestoredRef.current) {
+        console.log('🚫 Skipping auto-restore - already restored this session');
         return;
       }
+      
+      console.log('🔍 Checking for saved data to auto-restore...');
 
       try {
         const autoSaveData = await loadData();
         if (autoSaveData) {
+          console.log('📦 Found saved data:', autoSaveData.rectangles.length, 'rectangles');
           setHasSavedData(true);
           setLastSaved(autoSaveData.timestamp);
           
@@ -283,8 +291,13 @@ export const useRobustAutoSave = ({
             // Automatically restore the validated data (only once)
             console.log('🔄 Auto-restoring saved data on page load:', savedData.rectangles.length, 'rectangles');
             hasAutoRestoredRef.current = true;
-            onRestore(savedData.rectangles, savedData.globalSettings, savedData.layoutMetadata);
+            onRestoreRef.current(savedData.rectangles, savedData.globalSettings, savedData.layoutMetadata);
+          } else {
+            console.error('❌ Corrupted auto-save data found. Please clear localStorage to fix.');
+            console.log('To clear: localStorage.removeItem("hierarchical-drawing-autosave")');
           }
+        } else {
+          console.log('📭 No saved data found');
         }
       } catch (error) {
         console.error('Failed to check for saved data:', error);
@@ -292,7 +305,7 @@ export const useRobustAutoSave = ({
     };
     
     checkAndRestoreSavedData();
-  }, [loadData]);
+  }, [loadData]); // Remove onRestore dependency
 
   return {
     save,
