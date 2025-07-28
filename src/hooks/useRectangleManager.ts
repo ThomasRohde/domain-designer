@@ -148,10 +148,19 @@ export const useRectangleManager = ({
 
   // Generate a unique ID for new rectangles
   const generateId = useCallback(() => {
-    const id = `rect-${nextId}`;
-    setNextId(prev => prev + 1);
-    return id;
-  }, [nextId]);
+    // Always check for existing IDs to prevent collisions
+    let candidateId: string;
+    let candidate = nextId;
+    
+    do {
+      candidateId = `rect-${candidate}`;
+      candidate++;
+    } while (rectangles.some(rect => rect.id === candidateId));
+    
+    // Update nextId to the next available number
+    setNextId(candidate);
+    return candidateId;
+  }, [nextId, rectangles]);
 
   // Update the nextId counter (used for import operations)
   const updateNextId = useCallback((newNextId: number) => {
