@@ -216,6 +216,8 @@ export const useRedesignedApp = ({
         // Re-enable auto-save after a delay
         setTimeout(() => {
           autoSave.setAutoSaveEnabled(true);
+          // Reset auto-restore flag so fresh imports can be properly auto-restored
+          autoSave.resetAutoRestoreFlag();
         }, 1000);
         
         console.log('✅ Successfully imported diagram with preservation');

@@ -17,6 +17,7 @@ export interface UseRobustAutoSaveReturn {
   restore: () => Promise<void>;
   clearData: () => Promise<void>;
   rollbackToLastGood: () => Promise<void>;
+  resetAutoRestoreFlag: () => void;
   isAutoSaveEnabled: boolean;
   setAutoSaveEnabled: (enabled: boolean) => void;
   lastSaved: number | null;
@@ -45,16 +46,15 @@ export const useRobustAutoSave = ({
     
     // Additional business logic validation
     if (validation.isValid) {
-      // Don't save empty states unless intentional
-      if (data.rectangles.length === 0) {
-        validation.errors.push('Cannot save empty rectangle set');
-        validation.isValid = false;
-      }
-      
       // Don't save during state transitions that might produce invalid data
       if (stateMachine.isImporting || stateMachine.isRestoring) {
         validation.errors.push('Cannot save during import/restore operations');
         validation.isValid = false;
+      }
+      
+      // Allow empty states to be saved - users should be able to clear their canvas
+      if (data.rectangles.length === 0) {
+        validation.warnings.push('Saving empty canvas state');
       }
     }
     
@@ -233,11 +233,18 @@ export const useRobustAutoSave = ({
       setLastGoodSave(null);
       setHasSavedData(false);
       lastGoodDataRef.current = null;
+      // Reset auto-restore flag so new data can be auto-restored
+      hasAutoRestoredRef.current = false;
     } catch (error) {
       console.error('Failed to clear data:', error);
       throw error;
     }
   }, [clearAutoSaveData]);
+
+  // Reset auto-restore flag (useful after imports or manual operations)
+  const resetAutoRestoreFlag = useCallback(() => {
+    hasAutoRestoredRef.current = false;
+  }, []);
 
   // Check for existing data on mount and auto-restore (only once)
   useEffect(() => {
@@ -292,6 +299,7 @@ export const useRobustAutoSave = ({
     restore,
     clearData,
     rollbackToLastGood,
+    resetAutoRestoreFlag,
     isAutoSaveEnabled,
     setAutoSaveEnabled,
     lastSaved,
