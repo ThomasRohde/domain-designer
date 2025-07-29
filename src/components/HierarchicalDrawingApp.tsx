@@ -403,6 +403,8 @@ const HierarchicalDrawingApp = () => {
             rectangles={rectangleManager.rectangles}
             onColorChange={rectangleManager.updateRectangleColor}
             onLayoutPreferencesChange={rectangleManager.updateRectangleLayoutPreferences}
+            onToggleTextLabel={rectangleManager.toggleTextLabel}
+            onUpdateTextLabelProperties={rectangleManager.updateTextLabelProperties}
             appSettings={appSettings}
             onSettingsChange={(settings) => handleSettingsChange(settings)}
             onUpdateColorSquare={appCore.appSettings.updateColorSquare}

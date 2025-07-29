@@ -102,8 +102,32 @@ const generateInteractiveHTML = (
     const h = rect.h * gridSize;
     
     const isParent = hasChildren.has(rect.id);
+    const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
     const padding = margin * gridSize;
-    const fontSize = calculateFontSize(rect.id);
+    const fontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : fontFamily;
+    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : 'bold';
+    const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
+    
+    // Text labels have no border or background styling
+    const finalBorderWidth = isTextLabel ? 0 : borderWidth;
+    const finalBorderStyle = isTextLabel ? 'none' : 'solid';
+    const finalBorderColor = isTextLabel ? 'transparent' : borderColor;
+    const finalBackgroundColor = isTextLabel ? 'transparent' : rect.color;
+    
+    let justifyContent = 'center';
+    if (isTextLabel) {
+      switch (textAlign) {
+        case 'left':
+          justifyContent = 'flex-start';
+          break;
+        case 'right':
+          justifyContent = 'flex-end';
+          break;
+        default:
+          justifyContent = 'center';
+      }
+    }
     
     return `
       <div class="rectangle" 
@@ -113,12 +137,12 @@ const generateInteractiveHTML = (
              top: ${y}px;
              width: ${w}px;
              height: ${h}px;
-             background-color: ${rect.color};
-             border: ${borderWidth}px solid ${borderColor};
+             background-color: ${finalBackgroundColor};
+             border: ${finalBorderWidth}px ${finalBorderStyle} ${finalBorderColor};
              border-radius: ${borderRadius}px;
              display: flex;
              align-items: ${isParent ? 'flex-start' : 'center'};
-             justify-content: center;
+             justify-content: ${justifyContent};
              padding: ${padding}px;
              box-sizing: border-box;
              cursor: default;
@@ -127,12 +151,13 @@ const generateInteractiveHTML = (
            data-type="${rect.type}"
            ${rect.description ? `data-description="${escapeHtml(rect.description)}"` : ''}>
         <div class="label" style="
-          font-family: '${fontFamily}', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+          font-family: '${textFontFamily}', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
           font-size: ${fontSize}px;
-          font-weight: bold;
+          font-weight: ${fontWeight};
           color: #374151;
-          text-align: center;
+          text-align: ${textAlign};
           word-wrap: break-word;
+          width: 100%;
           ${isParent ? `margin-top: ${-fontSize * 0.5}px; margin-bottom: ${labelMargin * gridSize}px;` : ''}
           ${isParent ? 'align-self: flex-start;' : ''}
         ">

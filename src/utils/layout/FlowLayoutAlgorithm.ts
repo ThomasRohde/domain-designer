@@ -1,6 +1,7 @@
 import { LayoutInput, LayoutResult } from './interfaces';
 import { BaseLayoutAlgorithm } from './BaseLayoutAlgorithm';
 import { Rectangle, LayoutPreferences, FlowOrientation } from '../../types';
+import { MIN_WIDTH, MIN_HEIGHT } from '../constants';
 
 /**
  * Constants for flow layout calculations (in grid units)
@@ -318,7 +319,14 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
     leafHeight: number;
   }, margins?: MarginsLike): void {
     rectangles.forEach(rect => {
-      if (rect.type === 'leaf') {
+      if ('isTextLabel' in rect && rect.isTextLabel || rect.type === 'textLabel') {
+        // For text labels, calculate size based on text content and font size
+        const fontSize = ('textFontSize' in rect ? rect.textFontSize : undefined) || 14;
+        const textWidth = Math.max(MIN_WIDTH, fontSize * (rect.label?.length || 5) * 0.6);
+        const textHeight = Math.max(MIN_HEIGHT, fontSize * 1.5);
+        rect.minW = this.snapToGrid(textWidth, margins);
+        rect.minH = this.snapToGrid(textHeight, margins);
+      } else if (rect.type === 'leaf') {
         // For leaves, use fixed dimensions if available, otherwise use current size or minimum
         if (fixedDimensions?.leafFixedWidth) {
           rect.minW = fixedDimensions.leafWidth;

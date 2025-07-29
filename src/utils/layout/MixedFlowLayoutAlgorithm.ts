@@ -1,6 +1,7 @@
 import { LayoutInput, LayoutResult } from './interfaces';
 import { BaseLayoutAlgorithm } from './BaseLayoutAlgorithm';
 import { Rectangle, LayoutPreferences } from '../../types';
+import { MIN_WIDTH, MIN_HEIGHT } from '../constants';
 
 /**
  * Constants for mixed flow layout calculations (in grid units)
@@ -173,7 +174,14 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
         weight: 1
       };
 
-      if (child.type === 'leaf') {
+      if ('isTextLabel' in child && child.isTextLabel || child.type === 'textLabel') {
+        // For text labels, calculate size based on text content and font size
+        const fontSize = ('textFontSize' in child ? child.textFontSize : undefined) || 14;
+        const textWidth = Math.max(MIN_WIDTH, fontSize * (child.label?.length || 5) * 0.6);
+        const textHeight = Math.max(MIN_HEIGHT, fontSize * 1.5);
+        mixedChild.minW = this.snapToGrid(textWidth);
+        mixedChild.minH = this.snapToGrid(textHeight);
+      } else if (child.type === 'leaf') {
         // For leaves, use fixed dimensions if available
         if (fixedDimensions?.leafFixedWidth) {
           mixedChild.minW = fixedDimensions.leafWidth;

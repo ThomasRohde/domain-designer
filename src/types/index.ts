@@ -4,7 +4,7 @@ import type { LayoutAlgorithmType } from '../utils/layout/interfaces';
 /**
  * Type of rectangle in the hierarchy
  */
-export type RectangleType = 'root' | 'parent' | 'leaf';
+export type RectangleType = 'root' | 'parent' | 'leaf' | 'textLabel';
 
 /**
  * Interaction types for canvas operations
@@ -77,6 +77,16 @@ export interface Rectangle {
     tags?: string[];
     [key: string]: unknown;
   };
+  /** Whether this rectangle is a text label */
+  isTextLabel?: boolean;
+  /** Font family for text labels (independent from global font settings) */
+  textFontFamily?: string;
+  /** Font size for text labels */
+  textFontSize?: number;
+  /** Font weight for text labels */
+  fontWeight?: 'normal' | 'bold';
+  /** Text alignment for text labels */
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
 }
 
 /**

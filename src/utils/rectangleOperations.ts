@@ -22,10 +22,11 @@ export const createRectangle = (
   w: number,
   h: number,
   parentId?: string,
-  label?: string
+  label?: string,
+  isTextLabel?: boolean
 ): Rectangle => {
-  const type: RectangleType = parentId ? 'leaf' : 'root';
-  const defaultColor = DEFAULT_COLORS[type];
+  const type: RectangleType = isTextLabel ? 'textLabel' : (parentId ? 'leaf' : 'root');
+  const defaultColor = DEFAULT_COLORS[type] || DEFAULT_COLORS['leaf'];
   
   return {
     id,
@@ -34,11 +35,16 @@ export const createRectangle = (
     y,
     w: Math.max(MIN_WIDTH, w),
     h: Math.max(MIN_HEIGHT, h),
-    label: label || `Rectangle ${id}`,
+    label: label || (isTextLabel ? `Text Label ${id}` : `Rectangle ${id}`),
     color: defaultColor,
     type,
     isEditing: false,
-    isLockedAsIs: false
+    isLockedAsIs: false,
+    isTextLabel,
+    textFontFamily: isTextLabel ? 'Arial, sans-serif' : undefined,
+    textFontSize: isTextLabel ? 14 : undefined,
+    fontWeight: isTextLabel ? 'normal' : undefined,
+    textAlign: isTextLabel ? 'center' : undefined
   };
 };
 
@@ -51,6 +57,11 @@ export const updateRectangleType = (
 ): Rectangle[] => {
   return rectangles.map(rect => {
     if (rect.id === rectangleId) {
+      // Don't change type for text labels
+      if (rect.isTextLabel) {
+        return rect;
+      }
+      
       const hasChildren = getChildren(rect.id, rectangles).length > 0;
       const hasParent = rect.parentId !== undefined;
       

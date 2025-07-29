@@ -8,13 +8,15 @@ export const MAX_HISTORY_SIZE = 50;
 export const DEFAULT_COLORS = {
   root: '#4ECDC4',
   parent: '#45B7D1', 
-  leaf: '#96CEB4'
+  leaf: '#96CEB4',
+  textLabel: 'transparent'
 };
 
 export const DEFAULT_RECTANGLE_SIZE = {
   root: { w: 16, h: 10 },
   parent: { w: 6, h: 4 },
-  leaf: { w: 4, h: 3 }
+  leaf: { w: 4, h: 3 },
+  textLabel: { w: 8, h: 2 }
 };
 
 export const DEFAULT_FONT_SETTINGS = {

@@ -10,6 +10,13 @@ export interface PropertyPanelProps {
   rectangles: Rectangle[];
   onColorChange: (id: string, color: string) => void;
   onLayoutPreferencesChange: (id: string, preferences: LayoutPreferences) => void;
+  onToggleTextLabel: (id: string) => void;
+  onUpdateTextLabelProperties: (id: string, properties: {
+    textFontFamily?: string;
+    textFontSize?: number;
+    fontWeight?: 'normal' | 'bold';
+    textAlign?: 'left' | 'center' | 'right' | 'justify';
+  }) => void;
   appSettings: AppSettings;
   onSettingsChange: (settings: Partial<AppSettings>) => void;
   onUpdateColorSquare: (index: number, color: string) => void;
@@ -21,6 +28,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   rectangles,
   onColorChange,
   onLayoutPreferencesChange,
+  onToggleTextLabel,
+  onUpdateTextLabelProperties,
   appSettings,
   onSettingsChange,
   onUpdateColorSquare,
@@ -67,8 +76,97 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
             <div>Children: {children.length}</div>
             <div>Type: {selectedRectangle.parentId ? 'Child' : 'Root'}</div>
             <div>Color: {selectedRectangle.color}</div>
+            {selectedRectangle.isTextLabel && (
+              <div>Mode: Text Label</div>
+            )}
           </div>
         </div>
+
+        {/* Text Label Mode Controls - only show for rectangles without children */}
+        {children.length === 0 && (
+          <div className="bg-white rounded-lg shadow p-4">
+            <h3 className="font-semibold mb-2 text-sm lg:text-base">Text Label Mode</h3>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="textLabelMode"
+                  checked={selectedRectangle.isTextLabel || false}
+                  onChange={() => onToggleTextLabel(selectedId)}
+                  className="rounded"
+                />
+                <label htmlFor="textLabelMode" className="text-xs lg:text-sm font-medium text-gray-700">
+                  Enable Text Label Mode
+                </label>
+              </div>
+
+              {selectedRectangle.isTextLabel && (
+                <>
+                  <div>
+                    <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                      Font Family
+                    </label>
+                    <select
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
+                      value={selectedRectangle.textFontFamily || 'Arial, sans-serif'}
+                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { textFontFamily: e.target.value })}
+                    >
+                      {(availableFonts || []).map((font) => (
+                        <option key={font.value} value={font.value}>
+                          {font.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                      Font Size
+                    </label>
+                    <input
+                      type="number"
+                      min="8"
+                      max="72"
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
+                      value={selectedRectangle.textFontSize || 14}
+                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { textFontSize: parseInt(e.target.value) })}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                      Font Weight
+                    </label>
+                    <select
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
+                      value={selectedRectangle.fontWeight || 'normal'}
+                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { fontWeight: e.target.value as 'normal' | 'bold' })}
+                    >
+                      <option value="normal">Normal</option>
+                      <option value="bold">Bold</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
+                      Text Alignment
+                    </label>
+                    <select
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
+                      value={selectedRectangle.textAlign || 'center'}
+                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { textAlign: e.target.value as 'left' | 'center' | 'right' | 'justify' })}
+                    >
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                      <option value="justify">Justify</option>
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {children.length > 0 && (
           <div className="bg-white rounded-lg shadow p-4">

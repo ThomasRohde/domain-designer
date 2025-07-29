@@ -65,7 +65,13 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     
     // Calculate dimensions for all children, considering their actual requirements
     const childDimensions = children.map(child => {
-      if (child.type === 'leaf' && fixedDimensions) {
+      if (child.isTextLabel || child.type === 'textLabel') {
+        // For text labels, use fixed dimensions based on text content
+        // TODO: Calculate actual text dimensions based on font size and content
+        const textWidth = Math.max(MIN_WIDTH, (child.textFontSize || 14) * (child.label?.length || 5) * 0.6);
+        const textHeight = Math.max(MIN_HEIGHT, (child.textFontSize || 14) * 1.5);
+        return { width: textWidth, height: textHeight };
+      } else if (child.type === 'leaf' && fixedDimensions) {
         // For leaf nodes, use fixed dimensions if specified
         let childWidth = fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w;
         let childHeight = fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h;

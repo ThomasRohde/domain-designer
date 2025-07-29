@@ -45,6 +45,13 @@ export interface UseRectangleManagerReturn {
   updateRectangleLabel: (id: string, label: string) => void;
   updateRectangleDescription: (id: string, description: string) => void;
   updateRectangleColor: (id: string, color: string) => void;
+  toggleTextLabel: (id: string) => void;
+  updateTextLabelProperties: (id: string, properties: {
+    textFontFamily?: string;
+    textFontSize?: number;
+    fontWeight?: 'normal' | 'bold';
+    textAlign?: 'left' | 'center' | 'right' | 'justify';
+  }) => void;
   updateRectangleLayoutPreferences: (id: string, preferences: LayoutPreferences) => void;
   toggleManualPositioning: (id: string) => void;
   lockAsIs: (id: string) => void;
@@ -174,6 +181,15 @@ export const useRectangleManager = ({
 
   // Add a new rectangle
   const addRectangle = useCallback((parentId: string | null = null) => {
+    // Prevent adding children to text labels
+    if (parentId) {
+      const parentRect = findRectangle(parentId);
+      if (parentRect?.isTextLabel) {
+        console.warn('Cannot add children to text labels');
+        return;
+      }
+    }
+    
     const id = generateId();
     
     let { x, y, w, h } = calculateNewRectangleLayout(parentId, rectangles, DEFAULT_RECTANGLE_SIZE, getMargins());
@@ -283,7 +299,7 @@ export const useRectangleManager = ({
     setSelectedId(id);
     
     // Remove the setTimeout since we're doing the layout update immediately above
-  }, [generateId, rectangles, gridSize, panOffsetRef, containerRef, getFixedDimensions, getMargins, setRectanglesWithHistory]);
+  }, [generateId, rectangles, gridSize, panOffsetRef, containerRef, getFixedDimensions, getMargins, setRectanglesWithHistory, findRectangle]);
 
   // Get all descendants of a rectangle (recursive)
   const getAllDescendantsWrapper = useCallback((parentId: string): Rectangle[] => {
@@ -329,6 +345,48 @@ export const useRectangleManager = ({
       );
       return updated;
     });
+  }, [setRectanglesWithHistory]);
+
+  // Toggle text label mode for a rectangle
+  const toggleTextLabel = useCallback((id: string) => {
+    setRectanglesWithHistory(prev => {
+      const rect = prev.find(r => r.id === id);
+      if (!rect) return prev;
+      
+      // Can't convert parent rectangles to text labels
+      const hasChildren = getChildren(id, prev).length > 0;
+      if (hasChildren && !rect.isTextLabel) {
+        console.warn('Cannot convert parent rectangles to text labels');
+        return prev;
+      }
+      
+      const isTextLabel = !rect.isTextLabel;
+      return prev.map(r => 
+        r.id === id ? {
+          ...r,
+          isTextLabel,
+          type: isTextLabel ? 'textLabel' : (r.parentId ? 'leaf' : 'root'),
+          textFontFamily: isTextLabel ? (r.textFontFamily || 'Arial, sans-serif') : r.textFontFamily,
+          textFontSize: isTextLabel ? (r.textFontSize || 14) : r.textFontSize,
+          fontWeight: isTextLabel ? (r.fontWeight || 'normal') : r.fontWeight,
+          textAlign: isTextLabel ? (r.textAlign || 'center') : r.textAlign
+        } : r
+      );
+    });
+  }, [setRectanglesWithHistory]);
+
+  // Update text label properties
+  const updateTextLabelProperties = useCallback((id: string, properties: {
+    textFontFamily?: string;
+    textFontSize?: number;
+    fontWeight?: 'normal' | 'bold';
+    textAlign?: 'left' | 'center' | 'right' | 'justify';
+  }) => {
+    setRectanglesWithHistory(prev => 
+      prev.map(rect => 
+        rect.id === id ? { ...rect, ...properties } : rect
+      )
+    );
   }, [setRectanglesWithHistory]);
 
   // Update rectangle layout preferences
@@ -433,10 +491,16 @@ export const useRectangleManager = ({
       return false;
     }
     
+    // Can't reparent to text labels
+    const newParent = findRectangle(newParentId);
+    if (newParent?.isTextLabel) {
+      return false;
+    }
+    
     // Check if newParentId is a descendant of childId (would create circular hierarchy)
     const childDescendants = getAllDescendantsWrapper(childId);
     return !childDescendants.some(desc => desc.id === newParentId);
-  }, [getAllDescendantsWrapper]);
+  }, [getAllDescendantsWrapper, findRectangle]);
 
   // Reparent a rectangle (change its parent)
   const reparentRectangle = useCallback((childId: string, newParentId: string | null): boolean => {
@@ -620,6 +684,8 @@ export const useRectangleManager = ({
     updateRectangleLabel,
     updateRectangleDescription,
     updateRectangleColor,
+    toggleTextLabel,
+    updateTextLabelProperties,
     updateRectangleLayoutPreferences,
     toggleManualPositioning,
     lockAsIs,

@@ -220,6 +220,9 @@ const generateMermaidDiagram = (rectangles: Rectangle[]): string => {
     // Choose node shape based on type
     let nodeShape: string;
     switch (rect.type) {
+      case 'textLabel':
+        nodeShape = `${nodeId}>"${sanitizedLabel}"]`;
+        break;
       case 'root':
         nodeShape = `${nodeId}["${sanitizedLabel}"]`;
         break;
@@ -352,14 +355,24 @@ const createSVGFromRectangles = (
     const w = rect.w * gridSize * options.scale;
     const h = rect.h * gridSize * options.scale;
 
-    svg += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
-      fill="${rect.color}" 
-      stroke="${borderColor}" 
-      stroke-width="${borderWidth}" 
-      rx="${borderRadius}"/>`;
-    
     // Calculate text positioning and wrapping
-    const fontSize = 14;
+    const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
+    
+    // Text labels should have transparent background and no border
+    const fillColor = isTextLabel ? 'transparent' : rect.color;
+    const strokeColor = isTextLabel ? 'transparent' : borderColor;
+    const strokeWidth = isTextLabel ? 0 : borderWidth;
+    
+    svg += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
+      fill="${fillColor}" 
+      stroke="${strokeColor}" 
+      stroke-width="${strokeWidth}" 
+      rx="${borderRadius}"/>`;
+    const fontSize = isTextLabel ? (rect.textFontSize || 14) : 14;
+    const fontFamily = isTextLabel ? (rect.textFontFamily || globalSettings?.fontFamily || 'Arial') : (globalSettings?.fontFamily || 'Arial');
+    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : 'bold';
+    const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
+    
     const padding = 10;
     const textWidth = w - (padding * 2);
     const lines = wrapText(rect.label, textWidth, fontSize);
@@ -379,15 +392,37 @@ const createSVGFromRectangles = (
     
     lines.forEach((line, index) => {
       const textY = textStartY + (index * lineHeight);
-      const textX = x + w / 2; // Center horizontally
+      let textX: number;
+      let textAnchor: string;
       
-      const fontFamily = globalSettings?.fontFamily || 'Arial';
+      // Handle text alignment for text labels
+      if (isTextLabel) {
+        switch (textAlign) {
+          case 'left':
+            textX = x + padding;
+            textAnchor = 'start';
+            break;
+          case 'right':
+            textX = x + w - padding;
+            textAnchor = 'end';
+            break;
+          case 'justify':
+          case 'center':
+          default:
+            textX = x + w / 2;
+            textAnchor = 'middle';
+        }
+      } else {
+        textX = x + w / 2; // Center horizontally for regular rectangles
+        textAnchor = 'middle';
+      }
+      
       svg += `<text x="${textX}" y="${textY}" 
         font-family="${fontFamily}, sans-serif" 
         font-size="${fontSize}" 
-        font-weight="bold" 
+        font-weight="${fontWeight}" 
         fill="#374151"
-        text-anchor="middle">${escapeXML(line)}</text>`;
+        text-anchor="${textAnchor}">${escapeXML(line)}</text>`;
     });
   });
 

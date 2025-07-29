@@ -105,12 +105,29 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
 
   const textColor = getTextColor(rectangle.color);
   
+  // Text label specific styling
+  const isTextLabel = rectangle.isTextLabel || rectangle.type === 'textLabel';
+  const textLabelFontSize = isTextLabel ? (rectangle.textFontSize || 14) : fontSize;
+  const textLabelFontFamily = isTextLabel ? (rectangle.textFontFamily || fontFamily) : fontFamily;
+  const textLabelFontWeight = isTextLabel ? (rectangle.fontWeight || 'normal') : 'normal';
+  const textLabelAlignment = isTextLabel ? (rectangle.textAlign || 'center') : 'center';
+  
   // Determine border color and style based on state
   let finalBorderColor = borderColor; // Use global setting as default
   let borderStyle = 'solid';
   let finalBorderWidth = `${borderWidth}px`;
   let boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)';
   let opacity = 1;
+  
+  // Text labels have no border or background by default
+  let backgroundColor = rectangle.color;
+  if (isTextLabel && !isSelected && !isDropTarget && !isCurrentDropTarget) {
+    finalBorderWidth = '0px';
+    borderStyle = 'none';
+    finalBorderColor = 'transparent';
+    boxShadow = 'none';
+    backgroundColor = 'transparent';
+  }
   
   if (isBeingResized) {
     // Make rectangle semi-transparent during resize to show children underneath
@@ -164,7 +181,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     top: rectangle.y * gridSize,
     width: rectangle.w * gridSize,
     height: rectangle.h * gridSize,
-    backgroundColor: rectangle.color,
+    backgroundColor: backgroundColor,
     border: `${finalBorderWidth} ${borderStyle} ${finalBorderColor}`,
     borderRadius: `${borderRadius}px`,
     cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'default'),
@@ -216,7 +233,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                 onBlur={handleInputSubmit}
                 onKeyDown={handleInputKeyDown}
                 className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center select-text"
-                style={{ color: textColor, fontSize: `${fontSize}px`, fontFamily }}
+                style={{ color: textColor, fontSize: `${textLabelFontSize}px`, fontFamily: textLabelFontFamily }}
               />
             ) : (
               <CustomTooltip content={rectangle.description || rectangle.label}>
@@ -224,8 +241,10 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
                   className="font-medium truncate"
                   style={{ 
                     color: textColor, 
-                    fontSize: `${fontSize}px`,
-                    fontFamily,
+                    fontSize: `${textLabelFontSize}px`,
+                    fontFamily: textLabelFontFamily,
+                    fontWeight: textLabelFontWeight,
+                    textAlign: textLabelAlignment,
                     cursor: isHierarchyDragActive ? 'pointer' : (canDrag ? 'move' : 'text')
                   }}
                   onMouseDown={(e) => {
@@ -248,7 +267,11 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         </div>
       ) : (
         // Leaf rectangles: label centered and word wrapped in both dimensions
-        <div className="h-full flex items-center justify-center p-2">
+        <div className={`h-full flex items-center p-2 ${
+          isTextLabel && textLabelAlignment === 'left' ? 'justify-start' :
+          isTextLabel && textLabelAlignment === 'right' ? 'justify-end' :
+          'justify-center'
+        }`}>
           {isEditing ? (
             <input
               ref={inputRef}
@@ -258,16 +281,18 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
               onBlur={handleInputSubmit}
               onKeyDown={handleInputKeyDown}
               className="w-full px-1 py-0.5 font-medium bg-white border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center select-text"
-              style={{ color: textColor, fontSize: `${fontSize}px`, fontFamily }}
+              style={{ color: textColor, fontSize: `${textLabelFontSize}px`, fontFamily: textLabelFontFamily }}
             />
           ) : (
             <CustomTooltip content={rectangle.description || rectangle.label}>
               <div 
-                className="font-medium cursor-text text-center break-words leading-tight"
+                className="font-medium cursor-text break-words leading-tight"
                 style={{ 
                   color: textColor,
-                  fontSize: `${fontSize}px`,
-                  fontFamily,
+                  fontSize: `${textLabelFontSize}px`,
+                  fontFamily: textLabelFontFamily,
+                  fontWeight: textLabelFontWeight,
+                  textAlign: textLabelAlignment,
                   wordWrap: 'break-word',
                   overflowWrap: 'break-word',
                   hyphens: 'auto'

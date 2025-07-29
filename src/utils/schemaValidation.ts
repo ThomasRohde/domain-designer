@@ -40,7 +40,7 @@ export const validateRectangle = (rect: any, index?: number): ValidationResult =
     warnings.push(`${prefix}: Missing or invalid label`);
   }
 
-  if (rect.type && !['root', 'parent', 'leaf'].includes(rect.type)) {
+  if (rect.type && !['root', 'parent', 'leaf', 'textLabel'].includes(rect.type)) {
     errors.push(`${prefix}: Invalid type "${rect.type}"`);
   }
 
@@ -58,11 +58,28 @@ export const validateRectangle = (rect: any, index?: number): ValidationResult =
   }
 
   // Boolean field validation
-  ['isManualPositioningEnabled', 'isLockedAsIs'].forEach(field => {
+  ['isManualPositioningEnabled', 'isLockedAsIs', 'isTextLabel'].forEach(field => {
     if (rect[field] !== undefined && typeof rect[field] !== 'boolean') {
       warnings.push(`${prefix}: Invalid ${field}`);
     }
   });
+
+  // Text label property validation
+  if (rect.textFontFamily !== undefined && typeof rect.textFontFamily !== 'string') {
+    warnings.push(`${prefix}: Invalid textFontFamily`);
+  }
+
+  if (rect.textFontSize !== undefined && (typeof rect.textFontSize !== 'number' || !isFinite(rect.textFontSize) || rect.textFontSize <= 0)) {
+    warnings.push(`${prefix}: Invalid textFontSize`);
+  }
+
+  if (rect.fontWeight !== undefined && !['normal', 'bold'].includes(rect.fontWeight)) {
+    warnings.push(`${prefix}: Invalid fontWeight`);
+  }
+
+  if (rect.textAlign !== undefined && !['left', 'center', 'right', 'justify'].includes(rect.textAlign)) {
+    warnings.push(`${prefix}: Invalid textAlign`);
+  }
 
   return { isValid: errors.length === 0, errors, warnings };
 };
