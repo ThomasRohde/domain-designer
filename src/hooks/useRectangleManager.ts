@@ -464,6 +464,9 @@ export const useRectangleManager = ({
       const parent = prev.find(rect => rect.id === id);
       if (!parent) return prev;
 
+      // Skip if parent is locked as-is
+      if (parent.isLockedAsIs) return prev;
+
       const children = getChildren(id, prev);
       if (children.length === 0) return prev;
 

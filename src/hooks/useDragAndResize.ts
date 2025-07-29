@@ -378,7 +378,7 @@ export const useDragAndResize = ({
     let minRequiredW = MIN_WIDTH;
     let minRequiredH = MIN_HEIGHT;
     
-    if (children.length > 0 && !rect.isManualPositioningEnabled) {
+    if (children.length > 0 && !rect.isManualPositioningEnabled && !rect.isLockedAsIs) {
       const minSize = calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions(), getMargins());
       minRequiredW = minSize.w;
       minRequiredH = minSize.h;
@@ -395,8 +395,8 @@ export const useDragAndResize = ({
     // Update resize constraint state for visual feedback (only when constraints are active)
     setResizeConstraintState({
       rectangleId: rect.id,
-      isAtMinWidth: !rect.isManualPositioningEnabled && newW <= minRequiredW + 1, // +1 for slight tolerance
-      isAtMinHeight: !rect.isManualPositioningEnabled && newH <= minRequiredH + 1,
+      isAtMinWidth: !rect.isManualPositioningEnabled && !rect.isLockedAsIs && newW <= minRequiredW + 1, // +1 for slight tolerance
+      isAtMinHeight: !rect.isManualPositioningEnabled && !rect.isLockedAsIs && newH <= minRequiredH + 1,
       minRequiredWidth: minRequiredW,
       minRequiredHeight: minRequiredH
     });
@@ -485,9 +485,9 @@ export const useDragAndResize = ({
         const rect = rectangles.find(r => r.id === rectId);
         if (rect) {
           const hasDescendants = getAllDescendants(rect.id, rectangles).length > 0;
-          if (hasDescendants && !rect.isManualPositioningEnabled) {
+          if (hasDescendants && !rect.isManualPositioningEnabled && !rect.isLockedAsIs) {
             // For deep hierarchies, we need to trigger layout updates to ensure proper containment
-            // But only if manual positioning is not enabled
+            // But only if manual positioning is not enabled and rectangle is not locked as-is
             setNeedsLayoutUpdate({ type: 'resize', rectangleId: rectId });
           }
           
@@ -495,8 +495,8 @@ export const useDragAndResize = ({
           // needs to be resized to accommodate the resized child
           if (rect.parentId) {
             const parent = rectangles.find(r => r.id === rect.parentId);
-            if (parent && !parent.isManualPositioningEnabled) {
-              // Only auto-resize parent if manual positioning is not enabled
+            if (parent && !parent.isManualPositioningEnabled && !parent.isLockedAsIs) {
+              // Only auto-resize parent if manual positioning is not enabled and parent is not locked as-is
               const minParentSize = calculateMinimumParentSize(rect.parentId, rectangles, getFixedDimensions(), getMargins());
               if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
                 // Parent needs to be resized too, trigger a broader layout update

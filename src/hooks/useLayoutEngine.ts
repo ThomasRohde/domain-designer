@@ -89,7 +89,7 @@ export const useLayoutEngine = ({
     }
 
     const parent = rectangles.find(rect => rect.id === parentId);
-    if (!parent || parent.isManualPositioningEnabled) {
+    if (!parent || parent.isManualPositioningEnabled || parent.isLockedAsIs) {
       return rectangles;
     }
 
