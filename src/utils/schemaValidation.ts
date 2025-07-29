@@ -2,6 +2,7 @@ import { ValidationResult } from '../types/layoutSnapshot';
 
 // Note: We use 'any' types for validation functions since they need to validate
 // potentially invalid data that doesn't conform to our types yet
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Schema validation for Rectangle objects
 export const validateRectangle = (rect: any, index?: number): ValidationResult => {

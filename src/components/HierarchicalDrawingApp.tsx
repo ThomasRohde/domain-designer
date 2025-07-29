@@ -7,7 +7,7 @@ import { useAppSettings } from '../hooks/useAppSettings';
 import { useUIState } from '../hooks/useUIState';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { useRedesignedApp } from '../hooks/useRedesignedApp';
+import { useAppCore } from '../hooks/useAppCore';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -57,8 +57,8 @@ const HierarchicalDrawingApp = () => {
     triggerSave
   });
 
-  // Initialize the redesigned app systems
-  const redesignedApp = useRedesignedApp({
+  // Initialize app core systems
+  const appCore = useAppCore({
     rectangles: rectangleManager.rectangles,
     setRectangles: rectangleManager.setRectangles,
     setRectanglesWithHistory: rectangleManager.setRectanglesWithHistory,
@@ -166,11 +166,11 @@ const HierarchicalDrawingApp = () => {
     }
   }, [rectangleManager]);
 
-  // Use the redesigned app's settings handler (which includes layout preservation awareness)
-  const handleSettingsChange = redesignedApp.handleSettingsChange;
+  // Use the app core settings handler
+  const handleSettingsChange = appCore.handleSettingsChange;
 
-  // Use the redesigned app's import handler (with state machine and validation)
-  const handleImport = redesignedApp.handleImport;
+  // Use the app core import handler
+  const handleImport = appCore.handleImport;
 
   const handleAboutClick = useCallback(() => {
     setAboutModalOpen(true);
@@ -220,8 +220,8 @@ const HierarchicalDrawingApp = () => {
   );
 
 
-  // Use the redesigned robust auto-save system
-  const autoSaveManager = redesignedApp.autoSave;
+  // Use the auto-save system
+  const autoSaveManager = appCore.autoSave;
   
   // Set the triggerSave ref
   useEffect(() => {
@@ -347,7 +347,7 @@ const HierarchicalDrawingApp = () => {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Canvas
             containerRef={containerRef}
-            gridSize={redesignedApp.appSettings.gridSize}
+            gridSize={appCore.appSettings.gridSize}
             panOffset={canvasInteractions.panOffset}
             isSpacePressed={canvasInteractions.isSpacePressed}
             panState={canvasInteractions.panState}
@@ -364,7 +364,7 @@ const HierarchicalDrawingApp = () => {
                 onFitToChildren={rectangleManager.fitToChildren}
                 onToggleManualPositioning={rectangleManager.toggleManualPositioning}
                 onShowLockConfirmation={uiState.showLockConfirmationModal}
-                gridSize={redesignedApp.appSettings.gridSize}
+                gridSize={appCore.appSettings.gridSize}
                 isDragging={canvasInteractions.isDragging}
                 isResizing={canvasInteractions.isResizing}
                 isHierarchyDragging={canvasInteractions.isHierarchyDragging}
@@ -379,7 +379,7 @@ const HierarchicalDrawingApp = () => {
               resizeState={canvasInteractions.resizeState}
               hierarchyDragState={canvasInteractions.hierarchyDragState}
               resizeConstraintState={canvasInteractions.resizeConstraintState}
-              gridSize={redesignedApp.appSettings.gridSize}
+              gridSize={appCore.appSettings.gridSize}
               onMouseDown={canvasInteractions.handleRectangleMouseDown}
               onContextMenu={handleContextMenu}
               onSelect={rectangleManager.setSelectedId}
@@ -387,11 +387,11 @@ const HierarchicalDrawingApp = () => {
               onAddChild={rectangleManager.addRectangle}
               onRemove={rectangleManager.removeRectangle}
               onFitToChildren={rectangleManager.fitToChildren}
-              calculateFontSize={redesignedApp.appSettings.calculateFontSize}
-              fontFamily={redesignedApp.appSettings.fontFamily}
-              borderRadius={redesignedApp.appSettings.borderRadius}
-              borderColor={redesignedApp.appSettings.borderColor}
-              borderWidth={redesignedApp.appSettings.borderWidth}
+              calculateFontSize={appCore.appSettings.calculateFontSize}
+              fontFamily={appCore.appSettings.fontFamily}
+              borderRadius={appCore.appSettings.borderRadius}
+              borderColor={appCore.appSettings.borderColor}
+              borderWidth={appCore.appSettings.borderWidth}
             />
           </Canvas>
         </div>
@@ -405,7 +405,7 @@ const HierarchicalDrawingApp = () => {
             onLayoutPreferencesChange={rectangleManager.updateRectangleLayoutPreferences}
             appSettings={appSettings}
             onSettingsChange={(settings) => handleSettingsChange(settings)}
-            onAddCustomColor={redesignedApp.appSettings.addCustomColor}
+            onAddCustomColor={appCore.appSettings.addCustomColor}
           />
         </Sidebar>
       </div>
@@ -461,13 +461,13 @@ const HierarchicalDrawingApp = () => {
         rectangles={rectangleManager.rectangles}
         setRectangles={rectangleManager.setRectanglesWithHistory}
         fitToChildren={rectangleManager.fitToChildren}
-        predefinedColors={redesignedApp.appSettings.predefinedColors}
+        predefinedColors={appCore.appSettings.predefinedColors}
         globalSettings={{
-          gridSize: redesignedApp.appSettings.gridSize,
-          leafWidth: redesignedApp.appSettings.leafWidth,
-          leafHeight: redesignedApp.appSettings.leafHeight,
-          leafFixedWidth: redesignedApp.appSettings.leafFixedWidth,
-          leafFixedHeight: redesignedApp.appSettings.leafFixedHeight
+          gridSize: appCore.appSettings.gridSize,
+          leafWidth: appCore.appSettings.leafWidth,
+          leafHeight: appCore.appSettings.leafHeight,
+          leafFixedWidth: appCore.appSettings.leafFixedWidth,
+          leafFixedHeight: appCore.appSettings.leafFixedHeight
         }}
       />
     </div>

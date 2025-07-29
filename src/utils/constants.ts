@@ -39,7 +39,7 @@ export const FALLBACK_FONT_OPTIONS: FontOption[] = [
   { value: 'system-ui', label: 'System UI', category: 'system' }
 ];
 
-// Re-export for backward compatibility (deprecated - use getAvailableFonts instead)
+// Re-export for compatibility
 export const FONT_OPTIONS = FALLBACK_FONT_OPTIONS;
 
 export const DEFAULT_BORDER_SETTINGS = {

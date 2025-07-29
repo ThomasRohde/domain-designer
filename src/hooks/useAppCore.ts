@@ -2,14 +2,14 @@ import React, { useCallback, useMemo } from 'react';
 import { Rectangle, AppSettings } from '../types';
 import { ImportedDiagramData } from '../utils/exportUtils';
 import { useAppStateMachine } from './useAppStateMachine';
-import { useRobustAutoSave } from './useRobustAutoSave';
+import { useAutoSaveManager } from './useAutoSaveManager';
 import { useLayoutEngine } from './useLayoutEngine';
 import { useDimensionEngine } from './useDimensionEngine';
 import { useAppSettings } from './useAppSettings';
 import { createImportedSnapshot, createRestoreSnapshot } from '../types/layoutSnapshot';
 import { importDiagramFromJSON, processImportedDiagram } from '../utils/exportUtils';
 
-export interface UseRedesignedAppProps {
+export interface UseAppCoreProps {
   rectangles: Rectangle[];
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
   setRectanglesWithHistory: React.Dispatch<React.SetStateAction<Rectangle[]>>;
@@ -22,12 +22,12 @@ export interface UseRedesignedAppProps {
   appSettings: ReturnType<typeof useAppSettings>;
 }
 
-export interface UseRedesignedAppReturn {
+export interface UseAppCoreReturn {
   // State machine
   stateMachine: ReturnType<typeof useAppStateMachine>;
   
   // Auto-save
-  autoSave: ReturnType<typeof useRobustAutoSave>;
+  autoSave: ReturnType<typeof useAutoSaveManager>;
   
   // Layout engines
   layoutEngine: ReturnType<typeof useLayoutEngine>;
@@ -42,7 +42,7 @@ export interface UseRedesignedAppReturn {
   appSettings: ReturnType<typeof useAppSettings>;
 }
 
-export const useRedesignedApp = ({
+export const useAppCore = ({
   rectangles,
   setRectangles,
   setRectanglesWithHistory,
@@ -53,7 +53,7 @@ export const useRedesignedApp = ({
   getFixedDimensions,
   getMargins,
   appSettings
-}: UseRedesignedAppProps): UseRedesignedAppReturn => {
+}: UseAppCoreProps): UseAppCoreReturn => {
   
   // Initialize the state machine
   const stateMachine = useAppStateMachine();
@@ -91,7 +91,7 @@ export const useRedesignedApp = ({
     layoutAlgorithm: appSettings.layoutAlgorithm,
   }), [appSettings]);
 
-  // Handle settings changes with layout preservation awareness
+  // Handle settings changes
   const handleSettingsChange = useCallback((
     settings: Partial<AppSettings>,
     skipLayoutUpdates = false
@@ -117,14 +117,13 @@ export const useRedesignedApp = ({
     }
   }, [appSettings, layoutEngine]);
 
-  // Handle restore with the new architecture - now defined after handleSettingsChange
-  // Memoize to prevent infinite loops in useRobustAutoSave
+  // Handle restore - memoized to prevent infinite loops
   const handleRestoreInternal = useCallback(async (
     restoredRectangles: Rectangle[], 
     restoredSettings: AppSettings, 
     layoutMetadata?: { algorithm: string; isUserArranged: boolean; preservePositions: boolean; boundingBox: { w: number; h: number } }
   ) => {
-    console.log('🔄 Restoring with new architecture:', restoredRectangles.length, 'rectangles');
+    console.log('🔄 Restoring:', restoredRectangles.length, 'rectangles');
     
     // Clear selection first to avoid issues
     setSelectedId(null);
@@ -147,11 +146,10 @@ export const useRedesignedApp = ({
     handleSettingsChange(restoredSettings, true);
     
     console.log('✅ Restore complete');
-  // Remove appSettings from dependencies to prevent recreation
   }, [setSelectedId, setRectangles, initializeHistory, dimensionEngine, handleSettingsChange]);
 
-  // Initialize robust auto-save - now defined after handleRestoreInternal
-  const autoSave = useRobustAutoSave({
+  // Initialize auto-save manager
+  const autoSave = useAutoSaveManager({
     rectangles,
     appSettings: appSettingsObject,
     stateMachine,
@@ -248,7 +246,7 @@ export const useRedesignedApp = ({
         // Complete the import process AFTER saving
         stateMachine.transition({ type: 'COMPLETE' });
         
-        console.log('✅ Successfully imported diagram with preservation');
+        console.log('✅ Successfully imported diagram');
         
       } catch (error) {
         console.error('❌ Failed to import diagram:', error);
@@ -269,8 +267,7 @@ export const useRedesignedApp = ({
     updateNextId, 
     setSelectedId, 
     handleSettingsChange,
-    dimensionEngine,
-    appSettings
+    dimensionEngine
   ]);
 
   return {
