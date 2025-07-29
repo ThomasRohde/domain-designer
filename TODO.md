@@ -1,4 +1,7 @@
 - [x] Color picker error
-- [ ] Adding children to locked parent
-- [ ] Global color wheel
+- [x] Adding children to locked parent
+- [-] Global color wheel
 - [x] Reformat after importing, or restarting the app
+- [ ] Support onion skinning
+- [ ] Allow true infinite canvas
+- [ ] New rectangle panel settings to format the rectangle as a text label (disallow children, no action buttons)

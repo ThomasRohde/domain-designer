@@ -384,6 +384,7 @@ export interface AppSettingsHook {
   handleLabelMarginChange: (labelMargin: number, skipLayoutUpdates?: boolean) => void;
   handleLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType, skipLayoutUpdates?: boolean) => void;
   addCustomColor: (color: string) => void;
+  updateColorSquare: (index: number, color: string) => void;
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;

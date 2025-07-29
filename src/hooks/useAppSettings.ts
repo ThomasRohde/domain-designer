@@ -62,6 +62,7 @@ export interface UseAppSettingsReturn {
   handleLabelMarginChange: (labelMargin: number, skipLayoutUpdates?: boolean) => void;
   handleLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType, skipLayoutUpdates?: boolean) => void;
   addCustomColor: (color: string) => void;
+  updateColorSquare: (index: number, color: string) => void;
   setGridSize: (size: number) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
 }
@@ -365,6 +366,35 @@ export const useAppSettings = (): AppSettingsHook => {
     }
   }, [predefinedColors, customColors]);
 
+  const updateColorSquare = useCallback((index: number, color: string) => {
+    if (index >= 0 && index < predefinedColors.length) {
+      const updatedColors = [...predefinedColors];
+      updatedColors[index] = color;
+      setPredefinedColors(updatedColors);
+      
+      // Update custom colors tracking if this color is not in the initial set
+      if (!INITIAL_PREDEFINED_COLORS.includes(color)) {
+        const newCustomColors = [...customColors];
+        
+        // Calculate which custom color slot this corresponds to
+        const initialColorAtIndex = INITIAL_PREDEFINED_COLORS[index];
+        const customColorSlot = INITIAL_PREDEFINED_COLORS.length - 1 - index;
+        
+        // If this position should hold a custom color, update the custom colors array
+        if (customColorSlot >= 0 && customColorSlot < newCustomColors.length) {
+          newCustomColors[newCustomColors.length - 1 - customColorSlot] = color;
+        } else if (!initialColorAtIndex || INITIAL_PREDEFINED_COLORS[index] !== color) {
+          // This is a new custom color, add it to the custom colors list
+          if (!newCustomColors.includes(color)) {
+            newCustomColors.push(color);
+          }
+        }
+        
+        setCustomColors(newCustomColors);
+      }
+    }
+  }, [predefinedColors, customColors]);
+
   const handlePredefinedColorsChange = useCallback((colors: string[]) => {
     setPredefinedColors(colors);
     
@@ -428,6 +458,7 @@ export const useAppSettings = (): AppSettingsHook => {
     handleLabelMarginChange,
     handleLayoutAlgorithmChange,
     addCustomColor,
+    updateColorSquare,
     handlePredefinedColorsChange,
     setGridSize,
     setRectanglesRef: setRectanglesRefHandler,

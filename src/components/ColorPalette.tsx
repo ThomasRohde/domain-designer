@@ -1,24 +1,52 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Palette } from 'lucide-react';
 
 interface ColorPaletteProps {
   selectedColor?: string;
   onColorChange: (color: string) => void;
   predefinedColors: string[];
-  onAddCustomColor: (color: string) => void;
+  onUpdateColorSquare: (index: number, color: string) => void;
 }
 
 const ColorPalette: React.FC<ColorPaletteProps> = ({
   selectedColor,
   onColorChange,
   predefinedColors,
-  onAddCustomColor
+  onUpdateColorSquare
 }) => {
   const colorInputRef = React.useRef<HTMLInputElement>(null);
+  const [selectedSquareIndex, setSelectedSquareIndex] = useState<number | null>(null);
+
+  // Find if the selected rectangle color matches any predefined color
+  useEffect(() => {
+    if (selectedColor) {
+      const matchingIndex = predefinedColors.findIndex(color => color === selectedColor);
+      if (matchingIndex !== -1) {
+        setSelectedSquareIndex(matchingIndex);
+      } else {
+        // No match found, don't auto-select any square
+        setSelectedSquareIndex(null);
+      }
+    }
+  }, [selectedColor, predefinedColors]);
 
   const handleCustomColorChange = (newColor: string) => {
+    // If no square is selected, select the bottom-right square (last index)
+    const targetIndex = selectedSquareIndex !== null ? selectedSquareIndex : predefinedColors.length - 1;
+    
+    // Update the specific color square
+    onUpdateColorSquare(targetIndex, newColor);
+    
+    // Update the rectangle color
     onColorChange(newColor);
-    onAddCustomColor(newColor);
+    
+    // Keep the same square selected
+    setSelectedSquareIndex(targetIndex);
+  };
+
+  const handleSquareClick = (color: string, index: number) => {
+    setSelectedSquareIndex(index);
+    onColorChange(color);
   };
 
   return (
@@ -33,17 +61,19 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
 
       {/* Predefined Colors */}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 lg:gap-2 mb-4">
-        {predefinedColors.map((color) => (
+        {predefinedColors.map((color, index) => (
           <button
-            key={color}
-            onClick={() => onColorChange(color)}
+            key={`${color}-${index}`}
+            onClick={() => handleSquareClick(color, index)}
             className={`w-10 h-10 lg:w-12 lg:h-12 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${
-              selectedColor === color
+              selectedSquareIndex === index
+                ? 'border-blue-500 shadow-md ring-2 ring-blue-200'
+                : selectedColor === color && selectedSquareIndex === null
                 ? 'border-gray-800 shadow-md ring-2 ring-gray-300'
                 : 'border-gray-200 hover:border-gray-400'
             }`}
             style={{ backgroundColor: color }}
-            title={color}
+            title={`${color} (Square ${index + 1})`}
           />
         ))}
       </div>

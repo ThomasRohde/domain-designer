@@ -12,7 +12,7 @@ export interface PropertyPanelProps {
   onLayoutPreferencesChange: (id: string, preferences: LayoutPreferences) => void;
   appSettings: AppSettings;
   onSettingsChange: (settings: Partial<AppSettings>) => void;
-  onAddCustomColor: (color: string) => void;
+  onUpdateColorSquare: (index: number, color: string) => void;
 }
 
 const PropertyPanel: React.FC<PropertyPanelProps> = ({
@@ -23,7 +23,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   onLayoutPreferencesChange,
   appSettings,
   onSettingsChange,
-  onAddCustomColor,
+  onUpdateColorSquare,
 }) => {
   const {
     gridSize,
@@ -56,7 +56,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
           selectedColor={selectedRectangle.color}
           onColorChange={(color) => onColorChange(selectedId, color)}
           predefinedColors={predefinedColors}
-          onAddCustomColor={onAddCustomColor}
+          onUpdateColorSquare={onUpdateColorSquare}
         />
 
         <div className="bg-white rounded-lg shadow p-4">

@@ -405,7 +405,7 @@ const HierarchicalDrawingApp = () => {
             onLayoutPreferencesChange={rectangleManager.updateRectangleLayoutPreferences}
             appSettings={appSettings}
             onSettingsChange={(settings) => handleSettingsChange(settings)}
-            onAddCustomColor={appCore.appSettings.addCustomColor}
+            onUpdateColorSquare={appCore.appSettings.updateColorSquare}
           />
         </Sidebar>
       </div>
