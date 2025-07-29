@@ -125,6 +125,11 @@ export const useAutoSaveManager = ({
       throw new Error('No good save data available for rollback');
     }
 
+    // Add safety check for onRestoreRef
+    if (!onRestoreRef.current) {
+      throw new Error('Restore function not initialized - cannot perform rollback');
+    }
+
     try {
       console.log('Rolling back to last good save');
       
@@ -143,7 +148,7 @@ export const useAutoSaveManager = ({
         });
       });
       
-      // Restore from the good data
+      // Safe to call now that we've verified it exists
       onRestoreRef.current(goodData.rectangles, goodData.globalSettings, goodData.layoutMetadata);
       setLastSaved(goodData.timestamp);
       setLastGoodSave(goodData.timestamp);
