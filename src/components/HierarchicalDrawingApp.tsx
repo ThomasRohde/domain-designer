@@ -8,6 +8,7 @@ import { useUIState } from '../hooks/useUIState';
 import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useAppCore } from '../hooks/useAppCore';
+import { setGlobalUpdateNotificationHandler } from '../main';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -22,6 +23,7 @@ import HelpModal from './HelpModal';
 import LockConfirmationModal from './LockConfirmationModal';
 import DescriptionEditModal from './DescriptionEditModal';
 import TemplatePage from './TemplatePage';
+import { UpdateNotification } from './UpdateNotification';
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -282,6 +284,16 @@ const HierarchicalDrawingApp = () => {
     (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveManager?: typeof autoSaveManager }).autoSaveManager = autoSaveManager;
   }, [testIndexedDB, autoSaveManager]);
 
+  // Set up PWA update notification handler
+  useEffect(() => {
+    setGlobalUpdateNotificationHandler(uiState.showUpdateNotification);
+    
+    // Cleanup on unmount
+    return () => {
+      setGlobalUpdateNotificationHandler(() => {});
+    };
+  }, [uiState.showUpdateNotification]);
+
   // Arrow key movement handlers with pixel-level precision
   const handleMoveUp = useCallback((deltaPixels: number) => {
     if (!rectangleManager.selectedId) return;
@@ -321,6 +333,7 @@ const HierarchicalDrawingApp = () => {
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
+      <UpdateNotification updateNotification={uiState.updateNotification} />
       <Toolbar
         onAddRectangle={handleAddRectangle}
         onExport={uiState.openExportModal}

@@ -333,6 +333,20 @@ export interface ContextMenuState {
   rectangleId: string;
 }
 
+/**
+ * PWA update notification state
+ */
+export interface UpdateNotificationState {
+  /** Whether an update is available */
+  isUpdateAvailable: boolean;
+  /** Whether update is currently being installed */
+  isUpdating: boolean;
+  /** Function to trigger immediate update */
+  updateServiceWorker?: () => void;
+  /** Function to dismiss the notification */
+  dismiss?: () => void;
+}
+
 // Hook Return Types
 
 /**
@@ -431,6 +445,7 @@ export interface UIStateHook {
   descriptionEditModal: DescriptionEditModalState | null;
   templatePageOpen: boolean;
   helpModalOpen: boolean;
+  updateNotification: UpdateNotificationState;
   toggleSidebar: () => void;
   openSidebar: () => void;
   closeSidebar: () => void;
@@ -449,6 +464,8 @@ export interface UIStateHook {
   closeTemplatePage: () => void;
   openHelpModal: () => void;
   closeHelpModal: () => void;
+  showUpdateNotification: (updateServiceWorker: () => void) => void;
+  hideUpdateNotification: () => void;
 }
 
 /**

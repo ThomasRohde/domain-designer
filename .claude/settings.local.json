@@ -34,7 +34,9 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "Bash(git push:*)",
-      "Bash(git tag:*)"
+      "Bash(git tag:*)",
+      "WebFetch(domain:developer.mozilla.org)",
+      "WebFetch(domain:vite-pwa-org.netlify.app)"
     ],
     "deny": []
   }

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { ContextMenuState, UIStateHook, LockConfirmationModalState, DescriptionEditModalState } from '../types';
+import { ContextMenuState, UIStateHook, LockConfirmationModalState, DescriptionEditModalState, UpdateNotificationState } from '../types';
 
 export interface UIState {
   sidebarOpen: boolean;
@@ -10,6 +10,7 @@ export interface UIState {
   descriptionEditModal: DescriptionEditModalState | null;
   templatePageOpen: boolean;
   helpModalOpen: boolean;
+  updateNotification: UpdateNotificationState;
 }
 
 export interface UIActions {
@@ -46,6 +47,10 @@ export interface UIActions {
   // Help modal actions
   openHelpModal: () => void;
   closeHelpModal: () => void;
+  
+  // Update notification actions
+  showUpdateNotification: (updateServiceWorker: () => void) => void;
+  hideUpdateNotification: () => void;
 }
 
 export interface UseUIStateReturn extends UIState, UIActions {}
@@ -62,6 +67,10 @@ export const useUIState = (): UIStateHook => {
   const [descriptionEditModal, setDescriptionEditModal] = useState<DescriptionEditModalState | null>(null);
   const [templatePageOpen, setTemplatePageOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [updateNotification, setUpdateNotification] = useState<UpdateNotificationState>({
+    isUpdateAvailable: false,
+    isUpdating: false,
+  });
 
   // Sidebar actions
   const toggleSidebar = useCallback(() => {
@@ -143,6 +152,23 @@ export const useUIState = (): UIStateHook => {
     setHelpModalOpen(false);
   }, []);
 
+  // Update notification actions
+  const showUpdateNotification = useCallback((updateServiceWorker: () => void) => {
+    setUpdateNotification({
+      isUpdateAvailable: true,
+      isUpdating: false,
+      updateServiceWorker,
+      dismiss: () => setUpdateNotification(prev => ({ ...prev, isUpdateAvailable: false })),
+    });
+  }, []);
+
+  const hideUpdateNotification = useCallback(() => {
+    setUpdateNotification({
+      isUpdateAvailable: false,
+      isUpdating: false,
+    });
+  }, []);
+
   // Handle responsive sidebar and left menu behavior - auto-close on mobile when clicking outside
   useEffect(() => {
     const handleResize = () => {
@@ -198,6 +224,7 @@ export const useUIState = (): UIStateHook => {
     descriptionEditModal,
     templatePageOpen,
     helpModalOpen,
+    updateNotification,
     
     // Actions
     toggleSidebar,
@@ -218,5 +245,7 @@ export const useUIState = (): UIStateHook => {
     closeTemplatePage,
     openHelpModal,
     closeHelpModal,
+    showUpdateNotification,
+    hideUpdateNotification,
   };
 };
