@@ -142,11 +142,17 @@ export const useAppCore = ({
     // Initialize history properly with the restored state as the baseline
     initializeHistory(processedRectangles);
     
+    // Set restoration flag to ensure settings are applied to rectangles
+    appSettings.setIsRestoring(true);
+    
     // Apply settings changes with layout updates disabled
     handleSettingsChange(restoredSettings, true);
     
+    // Clear restoration flag after settings are applied
+    appSettings.setIsRestoring(false);
+    
     console.log('✅ Restore complete');
-  }, [setSelectedId, setRectangles, initializeHistory, dimensionEngine, handleSettingsChange]);
+  }, [setSelectedId, setRectangles, initializeHistory, dimensionEngine, handleSettingsChange, appSettings]);
 
   // Initialize auto-save manager
   const autoSave = useAutoSaveManager({
