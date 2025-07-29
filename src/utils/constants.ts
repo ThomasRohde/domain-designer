@@ -15,12 +15,12 @@ export const DEFAULT_COLORS = {
 export const DEFAULT_RECTANGLE_SIZE = {
   root: { w: 16, h: 10 },
   parent: { w: 6, h: 4 },
-  leaf: { w: 4, h: 3 },
+  leaf: { w: 20, h: 4 },
   textLabel: { w: 8, h: 2 }
 };
 
 export const DEFAULT_FONT_SETTINGS = {
-  rootFontSize: 12,
+  rootFontSize: 15,
   dynamicFontSizing: true
 };
 
@@ -45,14 +45,14 @@ export const FALLBACK_FONT_OPTIONS: FontOption[] = [
 export const FONT_OPTIONS = FALLBACK_FONT_OPTIONS;
 
 export const DEFAULT_BORDER_SETTINGS = {
-  borderRadius: 8,
+  borderRadius: 4,
   borderColor: '#374151',
-  borderWidth: 2
+  borderWidth: 1
 };
 
 export const DEFAULT_MARGIN_SETTINGS = {
   margin: 1,
-  labelMargin: 2
+  labelMargin: 2.7
 };
 
 export const KEYBOARD_SHORTCUTS = {

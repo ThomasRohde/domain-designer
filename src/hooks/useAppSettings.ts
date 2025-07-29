@@ -6,22 +6,22 @@ import type { LayoutAlgorithmType } from '../utils/layout';
 
 // Initial predefined color palette - prioritizing colors from the handdrawn model
 const INITIAL_PREDEFINED_COLORS = [
-  '#87CEEB', // Sky Blue (main headers)
-  '#98D8C8', // Mint Green (subcategories)
-  '#D8BFD8', // Light Purple (IT/Data Platform)
-  '#F0E68C', // Light Yellow (Business Control)
-  '#FFB6C1', // Light Pink (Risk Management)
-  '#B0E0E6', // Powder Blue (variation)
-  '#4ECDC4', // Teal (existing default)
-  '#45B7D1', // Blue (existing default)
-  '#96CEB4', // Green (existing default)
-  '#FFEAA7', // Yellow
-  '#DDA0DD', // Plum
-  '#F7DC6F', // Light Yellow
-  '#BB8FCE', // Light Purple
-  '#85C1E9', // Light Blue
-  '#F8C471', // Orange
-  '#82E0AA', // Light Green
+  "#7dca90",
+  "#98D8C8",
+  "#ededed",
+  "#F0E68C",
+  "#FFB6C1",
+  "#B0E0E6",
+  "#4ECDC4",
+  "#45B7D1",
+  "#96CEB4",
+  "#FFEAA7",
+  "#DDA0DD",
+  "#F7DC6F",
+  "#BB8FCE",
+  "#85C1E9",
+  "#F8C471",
+  "#ededed"
 ];
 import { getChildren } from '../utils/layoutUtils';
 import { layoutManager } from '../utils/layout';
@@ -69,8 +69,8 @@ export interface UseAppSettingsReturn {
 
 export const useAppSettings = (): AppSettingsHook => {
   const [gridSize, setGridSize] = useState(GRID_SIZE);
-  const [leafFixedWidth, setLeafFixedWidth] = useState(false);
-  const [leafFixedHeight, setLeafFixedHeight] = useState(false);
+  const [leafFixedWidth, setLeafFixedWidth] = useState(true);
+  const [leafFixedHeight, setLeafFixedHeight] = useState(true);
   const [leafWidth, setLeafWidth] = useState(DEFAULT_RECTANGLE_SIZE.leaf.w);
   const [leafHeight, setLeafHeight] = useState(DEFAULT_RECTANGLE_SIZE.leaf.h);
   const [rootFontSize, setRootFontSize] = useState(DEFAULT_FONT_SETTINGS.rootFontSize);
