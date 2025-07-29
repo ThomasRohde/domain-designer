@@ -123,6 +123,7 @@ const HierarchicalDrawingApp = () => {
   // Memoize export settings to avoid recreating object and reduce dependency array
   const exportSettings = useMemo(() => ({
     gridSize: appSettings.gridSize,
+    showGrid: appSettings.showGrid,
     leafFixedWidth: appSettings.leafFixedWidth,
     leafFixedHeight: appSettings.leafFixedHeight,
     leafWidth: appSettings.leafWidth,
@@ -138,7 +139,7 @@ const HierarchicalDrawingApp = () => {
     labelMargin: appSettings.labelMargin,
     layoutAlgorithm: appSettings.layoutAlgorithm
   }), [
-    appSettings.gridSize, appSettings.leafFixedWidth, appSettings.leafFixedHeight, 
+    appSettings.gridSize, appSettings.showGrid, appSettings.leafFixedWidth, appSettings.leafFixedHeight, 
     appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, 
     appSettings.dynamicFontSizing, appSettings.fontFamily, appSettings.borderRadius, 
     appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors, 
@@ -371,6 +372,7 @@ const HierarchicalDrawingApp = () => {
           <Canvas
             containerRef={containerRef}
             gridSize={appCore.appSettings.gridSize}
+            showGrid={appCore.appSettings.showGrid}
             panOffset={canvasInteractions.panOffset}
             isSpacePressed={canvasInteractions.isSpacePressed}
             panState={canvasInteractions.panState}

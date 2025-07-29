@@ -72,6 +72,7 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
   // Create default settings with all required properties
   const defaultSettings = {
     gridSize: 20,
+    showGrid: true,
     leafFixedWidth: false,
     leafFixedHeight: false,
     leafWidth: 8,

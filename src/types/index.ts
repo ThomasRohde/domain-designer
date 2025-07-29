@@ -208,6 +208,8 @@ export interface ZoomState {
 export interface GlobalSettings {
   /** Grid size in pixels for snapping */
   gridSize: number;
+  /** Whether to display the grid overlay on canvas */
+  showGrid: boolean;
   /** Whether leaf rectangles have fixed width */
   leafFixedWidth: boolean;
   /** Whether leaf rectangles have fixed height */
@@ -376,6 +378,7 @@ export interface RectangleManagerHook {
  */
 export interface AppSettingsHook {
   gridSize: number;
+  showGrid: boolean;
   leafFixedWidth: boolean;
   leafFixedHeight: boolean;
   leafWidth: number;
@@ -411,6 +414,7 @@ export interface AppSettingsHook {
   updateColorSquare: (index: number, color: string) => void;
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;
+  handleShowGridChange: (show: boolean) => void;
   setRectanglesRef: (setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>) => void;
   setFitToChildrenRef: (fitToChildren: (id: string) => void) => void;
   setIsRestoring: (isRestoring: boolean) => void;

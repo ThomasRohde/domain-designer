@@ -26,7 +26,7 @@ export const DEFAULT_FONT_SETTINGS = {
 
 import type { FontOption } from './fontDetection';
 
-export const DEFAULT_FONT_FAMILY = 'Inter';
+export const DEFAULT_FONT_FAMILY = 'Arial';
 
 // Fallback font options if dynamic detection fails
 export const FALLBACK_FONT_OPTIONS: FontOption[] = [

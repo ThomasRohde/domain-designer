@@ -36,6 +36,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
 }) => {
   const {
     gridSize,
+    showGrid,
     leafFixedWidth,
     leafFixedHeight,
     leafWidth,
@@ -262,6 +263,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     <GlobalSettings
       gridSize={gridSize}
       onGridSizeChange={(size) => onSettingsChange({ gridSize: size })}
+      showGrid={showGrid}
+      onShowGridChange={(show) => onSettingsChange({ showGrid: show })}
       leafFixedWidth={leafFixedWidth}
       onLeafFixedWidthChange={(enabled) => onSettingsChange({ leafFixedWidth: enabled })}
       leafFixedHeight={leafFixedHeight}

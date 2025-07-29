@@ -4,6 +4,7 @@ import { PanState, HierarchyDragState, ZoomState } from '../types';
 interface CanvasProps {
   containerRef: RefObject<HTMLDivElement | null>;
   gridSize: number;
+  showGrid: boolean;
   panOffset: { x: number; y: number };
   isSpacePressed: boolean;
   panState: PanState | null;
@@ -18,6 +19,7 @@ interface CanvasProps {
 const Canvas: React.FC<CanvasProps> = ({
   containerRef,
   gridSize,
+  showGrid,
   panOffset,
   isSpacePressed,
   panState,
@@ -47,11 +49,13 @@ const Canvas: React.FC<CanvasProps> = ({
                 : 'bg-gray-50'
           }`}
           style={{ 
-            backgroundImage: isCanvasDropTarget 
-              ? `radial-gradient(circle, #10b981 1px, transparent 1px)`
-              : `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
-            backgroundSize: `${gridSize * zoomState.level}px ${gridSize * zoomState.level}px`,
-            backgroundPosition: `${panOffset.x}px ${panOffset.y}px`,
+            backgroundImage: showGrid ? (
+              isCanvasDropTarget 
+                ? `radial-gradient(circle, #10b981 1px, transparent 1px)`
+                : `radial-gradient(circle, #d1d5db 1px, transparent 1px)`
+            ) : 'none',
+            backgroundSize: showGrid ? `${gridSize * zoomState.level}px ${gridSize * zoomState.level}px` : 'auto',
+            backgroundPosition: showGrid ? `${panOffset.x}px ${panOffset.y}px` : 'auto',
             willChange: panState ? 'background-position' : 'auto',
             overflow: 'hidden'
           }}

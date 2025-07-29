@@ -5,6 +5,8 @@ import type { LayoutAlgorithmType } from '../utils/layout';
 interface GlobalSettingsProps {
   gridSize: number;
   onGridSizeChange: (size: number) => void;
+  showGrid: boolean;
+  onShowGridChange: (show: boolean) => void;
   leafFixedWidth: boolean;
   onLeafFixedWidthChange: (enabled: boolean) => void;
   leafFixedHeight: boolean;
@@ -38,6 +40,8 @@ interface GlobalSettingsProps {
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   gridSize,
   onGridSizeChange,
+  showGrid,
+  onShowGridChange,
   leafFixedWidth,
   onLeafFixedWidthChange,
   leafFixedHeight,
@@ -103,6 +107,27 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               'Unknown layout algorithm'
             }
           </div>
+        </div>
+
+        {/* Grid Display Toggle */}
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="text-sm font-medium text-gray-700">Show Grid</label>
+            <div className="text-xs text-gray-500 mt-0.5">
+              Display grid overlay on canvas
+            </div>
+          </div>
+          <button
+            onClick={() => onShowGridChange(!showGrid)}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              showGrid 
+                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {showGrid ? <Lock size={12} /> : <Unlock size={12} />}
+            {showGrid ? 'Visible' : 'Hidden'}
+          </button>
         </div>
 
         {/* Grid Size Slider */}

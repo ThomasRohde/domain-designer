@@ -73,6 +73,7 @@ export const useAppCore = ({
   // Create app settings object for auto-save
   const appSettingsObject = useMemo(() => ({
     gridSize: appSettings.gridSize,
+    showGrid: appSettings.showGrid,
     leafFixedWidth: appSettings.leafFixedWidth,
     leafFixedHeight: appSettings.leafFixedHeight,
     leafWidth: appSettings.leafWidth,
@@ -98,6 +99,7 @@ export const useAppCore = ({
   ) => {
     // Update individual settings - only pass skipLayoutUpdates to handlers that support it
     if (settings.gridSize !== undefined) appSettings.setGridSize(settings.gridSize);
+    if (settings.showGrid !== undefined) appSettings.handleShowGridChange(settings.showGrid);
     if (settings.leafFixedWidth !== undefined) appSettings.handleLeafFixedWidthChange(settings.leafFixedWidth, skipLayoutUpdates);
     if (settings.leafFixedHeight !== undefined) appSettings.handleLeafFixedHeightChange(settings.leafFixedHeight, skipLayoutUpdates);
     if (settings.leafWidth !== undefined) appSettings.handleLeafWidthChange(settings.leafWidth, skipLayoutUpdates);

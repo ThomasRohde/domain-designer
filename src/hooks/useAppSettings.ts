@@ -32,6 +32,7 @@ export type { AppSettings, FixedDimensions } from '../types';
 export interface UseAppSettingsReturn {
   // State
   gridSize: number;
+  showGrid: boolean;
   leafFixedWidth: boolean;
   leafFixedHeight: boolean;
   leafWidth: number;
@@ -69,6 +70,7 @@ export interface UseAppSettingsReturn {
 
 export const useAppSettings = (): AppSettingsHook => {
   const [gridSize, setGridSize] = useState(GRID_SIZE);
+  const [showGrid, setShowGrid] = useState(true);
   const [leafFixedWidth, setLeafFixedWidth] = useState(true);
   const [leafFixedHeight, setLeafFixedHeight] = useState(true);
   const [leafWidth, setLeafWidth] = useState(DEFAULT_RECTANGLE_SIZE.leaf.w);
@@ -86,7 +88,7 @@ export const useAppSettings = (): AppSettingsHook => {
   const [margin, setMargin] = useState(DEFAULT_MARGIN_SETTINGS.margin);
   const [labelMargin, setLabelMargin] = useState(DEFAULT_MARGIN_SETTINGS.labelMargin);
   const [predefinedColors, setPredefinedColors] = useState(INITIAL_PREDEFINED_COLORS);
-  const [layoutAlgorithm, setLayoutAlgorithm] = useState<LayoutAlgorithmType>('grid');
+  const [layoutAlgorithm, setLayoutAlgorithm] = useState<LayoutAlgorithmType>('mixed-flow');
   
   // Initialize and update layout manager with the current algorithm
   useEffect(() => {
@@ -421,9 +423,15 @@ export const useAppSettings = (): AppSettingsHook => {
     fitToChildrenRef.current = fitToChildren;
   }, []);
 
+  // Handler for showGrid change
+  const handleShowGridChange = useCallback((show: boolean) => {
+    setShowGrid(show);
+  }, []);
+
   return {
     // State
     gridSize,
+    showGrid,
     leafFixedWidth,
     leafFixedHeight,
     leafWidth,
@@ -461,6 +469,7 @@ export const useAppSettings = (): AppSettingsHook => {
     updateColorSquare,
     handlePredefinedColorsChange,
     setGridSize,
+    handleShowGridChange,
     setRectanglesRef: setRectanglesRefHandler,
     setFitToChildrenRef: setFitToChildrenRefHandler,
     setIsRestoring,
