@@ -399,9 +399,9 @@ export const useRectangleManager = ({
         } : rect
       );
       
-      // Always resize parent to optimal size when layout preferences change
+      // Always resize parent to optimal size when layout preferences change (unless locked as-is)
       const parent = updated.find(rect => rect.id === id);
-      if (parent) {
+      if (parent && !parent.isLockedAsIs) {
         const children = getChildren(id, updated);
         if (children.length > 0) {
           // Calculate optimal size for the new layout (same logic as fitToChildren)
@@ -419,7 +419,7 @@ export const useRectangleManager = ({
         }
       }
       
-      // Recalculate layout for all children after preferences change
+      // Recalculate layout for all children after preferences change (updateChildrenLayout already checks isLockedAsIs)
       return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
     });
   }, [setRectanglesWithHistory, getFixedDimensions, getMargins]);
@@ -560,13 +560,13 @@ export const useRectangleManager = ({
         );
       }
       
-      // Check if new parent needs to be resized to accommodate all children
+      // Check if new parent needs to be resized to accommodate all children (unless locked as-is)
       if (newParentId) {
         const newParent = updated.find(r => r.id === newParentId);
         const newParentChildren = updated.filter(r => r.parentId === newParentId);
         
         // Always check if parent needs to be resized, especially for restrictive layout preferences
-        if (newParentChildren.length > 0 && newParent) {
+        if (newParentChildren.length > 0 && newParent && !newParent.isLockedAsIs) {
           // Calculate minimum size needed for the parent to accommodate all children
           const minParentSize = calculateMinimumParentSize(newParentId, updated, getFixedDimensions(), getMargins());
           
