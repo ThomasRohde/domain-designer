@@ -22,6 +22,7 @@ import AboutModal from './AboutModal';
 import HelpModal from './HelpModal';
 import LockConfirmationModal from './LockConfirmationModal';
 import DescriptionEditModal from './DescriptionEditModal';
+import ClearDataConfirmationModal from './ClearDataConfirmationModal';
 import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
 
@@ -31,6 +32,7 @@ const HierarchicalDrawingApp = () => {
   // Initialize hooks
   const uiState = useUIState();
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [clearDataModalOpen, setClearDataModalOpen] = useState(false);
   
   // Create a ref for triggerSave to avoid circular dependency
   const triggerSaveRef = useRef<(() => void) | null>(null);
@@ -230,10 +232,18 @@ const HierarchicalDrawingApp = () => {
     triggerSaveRef.current = autoSaveManager.save;
   }, [autoSaveManager.save]);
 
-  const handleClearSavedData = useCallback(async () => {
-    if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
-      await autoSaveManager.clearData();
-    }
+  const handleClearSavedData = useCallback(() => {
+    setClearDataModalOpen(true);
+  }, []);
+
+  const handleConfirmClearAll = useCallback(async () => {
+    await autoSaveManager.clearData();
+    window.location.reload();
+  }, [autoSaveManager]);
+
+  const handleConfirmClearModel = useCallback(async () => {
+    await autoSaveManager.clearModel();
+    window.location.reload();
   }, [autoSaveManager]);
 
   // Debug function for testing IndexedDB directly
@@ -446,6 +456,13 @@ const HierarchicalDrawingApp = () => {
       <AboutModal
         isOpen={aboutModalOpen}
         onClose={() => setAboutModalOpen(false)}
+      />
+
+      <ClearDataConfirmationModal
+        isOpen={clearDataModalOpen}
+        onClose={() => setClearDataModalOpen(false)}
+        onConfirmClearAll={handleConfirmClearAll}
+        onConfirmClearModel={handleConfirmClearModel}
       />
 
       <HelpModal

@@ -16,6 +16,7 @@ export interface UseAutoSaveManagerReturn {
   save: (rectanglesOverride?: Rectangle[]) => Promise<void>;
   restore: () => Promise<void>;
   clearData: () => Promise<void>;
+  clearModel: () => Promise<void>;
   rollbackToLastGood: () => Promise<void>;
   resetAutoRestoreFlag: () => void;
   isAutoSaveEnabled: boolean;
@@ -246,6 +247,48 @@ export const useAutoSaveManager = ({
     }
   }, [clearAutoSaveData]);
 
+  // Clear only the model (rectangles) but preserve app settings
+  const clearModel = useCallback(async (): Promise<void> => {
+    try {
+      // Save current settings with empty rectangles
+      const data = {
+        version: '2.0' as const,
+        rectangles: [],
+        globalSettings: appSettings,
+        layoutMetadata: {
+          algorithm: appSettings.layoutAlgorithm || 'grid',
+          isUserArranged: false,
+          preservePositions: false,
+          boundingBox: { w: 0, h: 0 }
+        },
+        timestamp: Date.now()
+      };
+
+      // Convert to AutoSaveData format for compatibility
+      const autoSaveData = {
+        rectangles: data.rectangles,
+        appSettings: data.globalSettings,
+        timestamp: data.timestamp
+      };
+
+      // Save the cleared model with preserved settings
+      await new Promise<void>((resolve) => {
+        saveData(autoSaveData, () => {
+          // Update references with the cleared state
+          lastGoodDataRef.current = structuredClone(data);
+          setLastSaved(data.timestamp);
+          setLastGoodSave(data.timestamp);
+          setHasSavedData(true);
+          resolve();
+        });
+      });
+      
+    } catch (error) {
+      console.error('Failed to clear model:', error);
+      throw error;
+    }
+  }, [appSettings, saveData]);
+
   // Reset auto-restore flag (useful after imports or manual operations)
   const resetAutoRestoreFlag = useCallback(() => {
     hasAutoRestoredRef.current = false;
@@ -315,6 +358,7 @@ export const useAutoSaveManager = ({
     save,
     restore,
     clearData,
+    clearModel,
     rollbackToLastGood,
     resetAutoRestoreFlag,
     isAutoSaveEnabled,
