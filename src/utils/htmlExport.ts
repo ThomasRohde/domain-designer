@@ -36,7 +36,7 @@ const generateInteractiveHTML = (
   const borderColor = globalSettings?.borderColor || '#374151';
   const borderWidth = globalSettings?.borderWidth || 2;
   const fontFamily = globalSettings?.fontFamily || 'Inter';
-  const backgroundColor = options.includeBackground ? '#f9fafb' : 'transparent';
+  const backgroundColor = options.includeBackground ? 'white' : 'transparent';
 
   // Calculate bounding box
   const minX = Math.min(...rectangles.map(r => r.x));
@@ -181,7 +181,7 @@ const generateInteractiveHTML = (
     
     body {
       font-family: '${fontFamily}', 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-      background-color: #f3f4f6;
+      background-color: white;
       overflow: hidden;
       user-select: none;
     }
