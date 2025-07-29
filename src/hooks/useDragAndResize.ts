@@ -508,9 +508,14 @@ export const useDragAndResize = ({
       }
     }
     
+    // Save final state to history after any drag/resize completion
+    if (saveToHistory) {
+      saveToHistory(rectangles);
+    }
+    
     // Trigger save after any drag/resize completion
     triggerSave?.();
-  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle, triggerSave, getFixedDimensions, getMargins]);
+  }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle, saveToHistory, triggerSave, getFixedDimensions, getMargins]);
 
   // Store the mouse move handler in a ref to ensure proper cleanup
   React.useEffect(() => {
@@ -556,9 +561,14 @@ export const useDragAndResize = ({
     setResizeConstraintState(null);
     setInitialPositions(null);
     
+    // Save final state to history after cancel (position reset)
+    if (saveToHistory) {
+      saveToHistory(rectangles);
+    }
+    
     // Trigger save after cancel (position reset)
     triggerSave?.();
-  }, [dragState, initialPositions, setRectangles, triggerSave]);
+  }, [dragState, initialPositions, rectangles, setRectangles, saveToHistory, triggerSave]);
 
   // Handle layout updates after reparenting or resize operations
   useEffect(() => {

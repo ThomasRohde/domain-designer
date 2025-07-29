@@ -45,7 +45,7 @@ export interface UseAppCoreReturn {
 export const useAppCore = ({
   rectangles,
   setRectangles,
-  setRectanglesWithHistory,
+  setRectanglesWithHistory: _setRectanglesWithHistory,
   initializeHistory,
   updateNextId,
   nextId,
@@ -204,9 +204,12 @@ export const useAppCore = ({
           ? dimensionEngine.applyFixedDimensions(processedRectangles, importSnapshot.metadata)
           : processedRectangles;
         
-        // Update rectangles with processed data - use setRectanglesWithHistory for proper history tracking
-        setRectanglesWithHistory(finalRectangles);
+        // Update rectangles with processed data - use setRectangles directly to avoid adding to existing history
+        setRectangles(finalRectangles);
         console.log('📦 Set rectangles after import:', finalRectangles.length, 'rectangles');
+        
+        // Initialize history properly with the imported state as the baseline
+        initializeHistory(finalRectangles);
         
         // Update the nextId counter to prevent ID conflicts
         updateNextId(newNextId);
@@ -218,21 +221,23 @@ export const useAppCore = ({
           // After settings are applied, we need to apply fixed dimensions to existing rectangles
           // This is separate from layout updates and should happen even when skipLayoutUpdates = true
           if (importedData.globalSettings.leafFixedWidth || importedData.globalSettings.leafFixedHeight) {
-            setRectanglesWithHistory(prev => 
-              prev.map(rect => {
-                if (rect.type === 'leaf') {
-                  const updatedRect = { ...rect };
-                  if (importedData.globalSettings!.leafFixedWidth) {
-                    updatedRect.w = importedData.globalSettings!.leafWidth;
-                  }
-                  if (importedData.globalSettings!.leafFixedHeight) {
-                    updatedRect.h = importedData.globalSettings!.leafHeight;
-                  }
-                  return updatedRect;
+            const updatedRectangles = finalRectangles.map(rect => {
+              if (rect.type === 'leaf') {
+                const updatedRect = { ...rect };
+                if (importedData.globalSettings!.leafFixedWidth) {
+                  updatedRect.w = importedData.globalSettings!.leafWidth;
                 }
-                return rect;
-              })
-            );
+                if (importedData.globalSettings!.leafFixedHeight) {
+                  updatedRect.h = importedData.globalSettings!.leafHeight;
+                }
+                return updatedRect;
+              }
+              return rect;
+            });
+            
+            // Update rectangles directly and reinitialize history with the final state
+            setRectangles(updatedRectangles);
+            initializeHistory(updatedRectangles);
           }
         }
         
@@ -241,12 +246,31 @@ export const useAppCore = ({
         
         // Re-enable auto-save immediately and save the imported state BEFORE completing
         console.log('🔄 Re-enabling auto-save and saving imported state immediately...');
-        console.log('📊 Rectangles state at immediate save time:', finalRectangles.length, 'rectangles');
+        
+        // Determine final rectangles state after all processing
+        let rectanglesToSave = finalRectangles;
+        if (importedData.globalSettings?.leafFixedWidth || importedData.globalSettings?.leafFixedHeight) {
+          rectanglesToSave = finalRectangles.map(rect => {
+            if (rect.type === 'leaf') {
+              const updatedRect = { ...rect };
+              if (importedData.globalSettings!.leafFixedWidth) {
+                updatedRect.w = importedData.globalSettings!.leafWidth;
+              }
+              if (importedData.globalSettings!.leafFixedHeight) {
+                updatedRect.h = importedData.globalSettings!.leafHeight;
+              }
+              return updatedRect;
+            }
+            return rect;
+          });
+        }
+        
+        console.log('📊 Rectangles state at immediate save time:', rectanglesToSave.length, 'rectangles');
         autoSave.setAutoSaveEnabled(true);
         // Reset auto-restore flag so fresh imports can be properly auto-restored
         autoSave.resetAutoRestoreFlag();
-        // Immediately save the imported state to ensure it persists (pass finalRectangles directly)
-        await autoSave.save(finalRectangles);
+        // Immediately save the imported state to ensure it persists
+        await autoSave.save(rectanglesToSave);
         console.log('💾 Imported state saved to localStorage');
         
         // Complete the import process AFTER saving
@@ -269,7 +293,8 @@ export const useAppCore = ({
     stateMachine, 
     autoSave, 
     nextId, 
-    setRectanglesWithHistory, 
+    setRectangles,
+    initializeHistory,
     updateNextId, 
     setSelectedId, 
     handleSettingsChange,
