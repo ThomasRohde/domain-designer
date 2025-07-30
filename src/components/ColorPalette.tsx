@@ -16,6 +16,7 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
 }) => {
   const colorInputRef = React.useRef<HTMLInputElement>(null);
   const [selectedSquareIndex, setSelectedSquareIndex] = useState<number | null>(null);
+  const [hexInput, setHexInput] = useState('');
 
   // Find if the selected rectangle color matches any predefined color
   useEffect(() => {
@@ -27,8 +28,30 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
         // No match found, don't auto-select any square
         setSelectedSquareIndex(null);
       }
+      // Update hex input to match selected color
+      setHexInput(selectedColor);
     }
   }, [selectedColor, predefinedColors]);
+
+  const isValidHexColor = (hex: string): boolean => {
+    return /^#([0-9A-F]{3}){1,2}$/i.test(hex);
+  };
+
+  const handleHexInputChange = (value: string) => {
+    setHexInput(value);
+    
+    // If it's a valid hex color, update the color
+    if (isValidHexColor(value)) {
+      handleCustomColorChange(value);
+    }
+  };
+
+  const handleHexInputBlur = () => {
+    // On blur, if the input is not a valid hex color, reset it to the current selected color
+    if (!isValidHexColor(hexInput) && selectedColor) {
+      setHexInput(selectedColor);
+    }
+  };
 
   const handleCustomColorChange = (newColor: string) => {
     // If no square is selected, select the bottom-right square (last index)
@@ -81,7 +104,7 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
       {/* Selected Color Display */}
       {selectedColor && (
         <div className="mt-4 p-2 lg:p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-2">
             <div
               className="w-5 h-5 lg:w-6 lg:h-6 rounded border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors relative"
               style={{ backgroundColor: selectedColor }}
@@ -101,6 +124,22 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
               <span className="hidden sm:inline">Selected: </span>
               {selectedColor}
             </span>
+          </div>
+          
+          {/* Hex Input Field */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs lg:text-sm font-medium text-gray-600 whitespace-nowrap">
+              Hex:
+            </label>
+            <input
+              type="text"
+              value={hexInput}
+              onChange={(e) => handleHexInputChange(e.target.value)}
+              onBlur={handleHexInputBlur}
+              className="flex-1 px-2 py-1 text-xs lg:text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
+              placeholder="#000000"
+              maxLength={7}
+            />
           </div>
         </div>
       )}
