@@ -110,8 +110,8 @@ const generateInteractiveHTML = (
     const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
     const padding = margin * gridSize;
     const fontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
-    const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : fontFamily;
-    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : 'bold';
+    const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : (rect.textFontFamily || fontFamily);
+    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : (isParent ? 'bold' : 'normal');
     const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
     
     // Text labels have no border or background styling
@@ -506,8 +506,8 @@ const generateConfluenceHTML = (
     const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
     const padding = margin * gridSize;
     const fontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
-    const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : fontFamily;
-    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : 'bold';
+    const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : (rect.textFontFamily || fontFamily);
+    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : (isParent ? 'bold' : 'normal');
     const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
     
     // Text labels have no border or background styling

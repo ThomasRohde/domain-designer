@@ -144,6 +144,11 @@ export function isFontAvailable(fontName: string): boolean {
     return true;
   }
   
+  // For Danske fonts, be more permissive since they're custom corporate fonts
+  if (fontName.startsWith('Danske')) {
+    return true;
+  }
+  
   try {
     // Use canvas method primarily as it's more reliable for system fonts
     const canvasResult = isFontAvailableCanvas(fontName);
