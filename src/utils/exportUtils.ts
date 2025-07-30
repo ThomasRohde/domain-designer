@@ -15,14 +15,14 @@ export const exportDiagram = async (
   borderWidth: number = 2,
   predefinedColors?: string[]
 ): Promise<void> => {
-  const { format, scale = 1, includeBackground = true } = options;
+  const { format, scale = 1, includeBackground = true, confluenceMode = false } = options;
   
   const timestamp = new Date().toISOString().split('T')[0];
   const filename = `domain-model-${timestamp}`;
 
   switch (format) {
     case 'html':
-      exportToHTML(rectangles, filename, { includeBackground, scale }, globalSettings);
+      exportToHTML(rectangles, filename, { includeBackground, scale, confluenceMode }, globalSettings);
       break;
     case 'svg':
       await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);

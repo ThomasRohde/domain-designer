@@ -3,6 +3,7 @@ import { Rectangle, GlobalSettings } from '../types';
 interface HtmlExportOptions {
   includeBackground: boolean;
   scale: number;
+  confluenceMode: boolean;
 }
 
 export const exportToHTML = (
@@ -30,6 +31,10 @@ const generateInteractiveHTML = (
   globalSettings?: GlobalSettings
 ): string => {
   if (rectangles.length === 0) return '';
+
+  if (options.confluenceMode) {
+    return generateConfluenceHTML(rectangles, options, globalSettings);
+  }
 
   const gridSize = globalSettings?.gridSize || 20;
   const borderRadius = globalSettings?.borderRadius || 8;
@@ -421,6 +426,149 @@ const generateInteractiveHTML = (
   </script>
 </body>
 </html>`;
+};
+
+const generateConfluenceHTML = (
+  rectangles: Rectangle[],
+  options: HtmlExportOptions,
+  globalSettings?: GlobalSettings
+): string => {
+  const gridSize = globalSettings?.gridSize || 20;
+  const borderRadius = globalSettings?.borderRadius || 8;
+  const borderColor = globalSettings?.borderColor || '#374151';
+  const borderWidth = globalSettings?.borderWidth || 2;
+  const fontFamily = globalSettings?.fontFamily || 'Inter';
+  const backgroundColor = options.includeBackground ? 'white' : 'transparent';
+
+  // Calculate bounding box
+  const minX = Math.min(...rectangles.map(r => r.x));
+  const minY = Math.min(...rectangles.map(r => r.y));
+  const maxX = Math.max(...rectangles.map(r => r.x + r.w));
+  const maxY = Math.max(...rectangles.map(r => r.y + r.h));
+  
+  const width = (maxX - minX) * gridSize;
+  const height = (maxY - minY) * gridSize;
+
+  // Check which rectangles have children
+  const hasChildren = new Set<string>();
+  rectangles.forEach(rect => {
+    if (rect.parentId) {
+      hasChildren.add(rect.parentId);
+    }
+  });
+
+  // Sort rectangles by hierarchy (parents first)
+  const sortedRectangles = [...rectangles].sort((a, b) => {
+    if (!a.parentId && b.parentId) return -1;
+    if (a.parentId && !b.parentId) return 1;
+    return 0;
+  });
+
+  // Calculate font sizes and padding using global settings
+  const margin = globalSettings?.margin || 1;
+  const rootFontSize = globalSettings?.rootFontSize || 12;
+  const dynamicFontSizing = globalSettings?.dynamicFontSizing ?? true;
+  
+  // Helper function to calculate hierarchy depth
+  const getDepth = (rectId: string): number => {
+    const rect = rectangles.find(r => r.id === rectId);
+    if (!rect || !rect.parentId) return 0;
+    
+    let depth = 0;
+    let current = rect;
+    
+    while (current && current.parentId) {
+      depth++;
+      const parent = rectangles.find(r => r.id === current!.parentId);
+      if (!parent || depth > 10) break; // Prevent infinite loops
+      current = parent;
+    }
+    
+    return depth;
+  };
+  
+  // Helper function to calculate font size based on depth
+  const calculateFontSize = (rectId: string): number => {
+    if (!dynamicFontSizing) return rootFontSize;
+    
+    const depth = getDepth(rectId);
+    // Scale down font size by 10% for each level of depth
+    return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
+  };
+
+  const rectangleElements = sortedRectangles.map(rect => {
+    const x = (rect.x - minX) * gridSize;
+    const y = (rect.y - minY) * gridSize;
+    const w = rect.w * gridSize;
+    const h = rect.h * gridSize;
+    
+    const isParent = hasChildren.has(rect.id);
+    const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
+    const padding = margin * gridSize;
+    const fontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : fontFamily;
+    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : 'bold';
+    const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
+    
+    // Text labels have no border or background styling
+    const finalBorderWidth = isTextLabel ? 0 : borderWidth;
+    const finalBorderStyle = isTextLabel ? 'none' : 'solid';
+    const finalBorderColor = isTextLabel ? 'transparent' : borderColor;
+    const finalBackgroundColor = isTextLabel ? 'transparent' : rect.color;
+    
+    let justifyContent = 'center';
+    if (isTextLabel) {
+      switch (textAlign) {
+        case 'left':
+          justifyContent = 'flex-start';
+          break;
+        case 'right':
+          justifyContent = 'flex-end';
+          break;
+        default:
+          justifyContent = 'center';
+      }
+    }
+    
+    return `
+      <div style="
+        position: absolute;
+        left: ${x}px;
+        top: ${y}px;
+        width: ${w}px;
+        height: ${h}px;
+        background-color: ${finalBackgroundColor};
+        border: ${finalBorderWidth}px ${finalBorderStyle} ${finalBorderColor};
+        border-radius: ${borderRadius}px;
+        display: flex;
+        align-items: ${isParent ? 'flex-start' : 'center'};
+        justify-content: ${justifyContent};
+        padding: ${isParent ? `${Math.max(padding - 10, 2)}px ${padding}px ${padding}px ${padding}px` : `${padding}px`};
+        box-sizing: border-box;
+        font-family: ${textFontFamily}, Arial, sans-serif;
+        font-size: ${fontSize}px;
+        font-weight: ${fontWeight};
+        color: #374151;
+        text-align: ${textAlign};
+        word-wrap: break-word;
+      " title="${rect.description ? escapeHtml(rect.description) : ''}">
+        ${escapeHtml(rect.label)}
+      </div>`;
+  }).join('');
+
+  // Confluence-compatible HTML (no html, head, body tags)
+  return `<div style="
+    position: relative;
+    width: ${width}px;
+    height: ${height}px;
+    background-color: ${backgroundColor};
+    font-family: ${fontFamily}, Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    overflow: hidden;
+  ">
+    ${rectangleElements}
+  </div>`;
 };
 
 const escapeHtml = (text: string): string => {

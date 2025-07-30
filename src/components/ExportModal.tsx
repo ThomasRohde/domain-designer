@@ -12,6 +12,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
   const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'mermaid'>('html');
   const [scale, setScale] = useState(1);
   const [includeBackground, setIncludeBackground] = useState(true);
+  const [confluenceMode, setConfluenceMode] = useState(false);
 
   if (!isOpen) return null;
 
@@ -19,7 +20,8 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
     onExport({
       format,
       scale,
-      includeBackground
+      includeBackground,
+      confluenceMode
     });
     onClose();
   };
@@ -111,6 +113,21 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
                   Include background
                 </label>
               </div>
+              
+              {format === 'html' && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="confluenceMode"
+                    checked={confluenceMode}
+                    onChange={(e) => setConfluenceMode(e.target.checked)}
+                    className="rounded"
+                  />
+                  <label htmlFor="confluenceMode" className="text-sm text-gray-700">
+                    Confluence Server HTML Macro compatible
+                  </label>
+                </div>
+              )}
             </>
           )}
         </div>

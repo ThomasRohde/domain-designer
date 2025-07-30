@@ -321,6 +321,8 @@ export interface ExportOptions {
   scale?: number;
   /** Whether to include background in export */
   includeBackground?: boolean;
+  /** Whether to generate Confluence-compatible HTML (no html, head, body tags) */
+  confluenceMode?: boolean;
 }
 
 /**
