@@ -144,16 +144,30 @@ export function isFontAvailable(fontName: string): boolean {
     return true;
   }
   
-  // Use canvas method primarily as it's more reliable for system fonts
-  const canvasResult = isFontAvailableCanvas(fontName);
-  
-  // If canvas fails, try FontFaceSet API as fallback
-  if (!canvasResult) {
-    const modernResult = isFontAvailableModern(fontName);
-    return modernResult;
+  try {
+    // Use canvas method primarily as it's more reliable for system fonts
+    const canvasResult = isFontAvailableCanvas(fontName);
+    
+    // If canvas fails, try FontFaceSet API as fallback
+    if (!canvasResult) {
+      const modernResult = isFontAvailableModern(fontName);
+      return modernResult;
+    }
+    
+    return canvasResult;
+  } catch (error) {
+    // In case of any errors, be more permissive in production
+    console.warn(`Font detection error for "${fontName}":`, error);
+    
+    // For Danske fonts, assume they might be available since user specifically wants them
+    if (fontName.startsWith('Danske')) {
+      return true;
+    }
+    
+    // For other common fonts, also assume they might be available
+    const commonFonts = ['Arial', 'Times New Roman', 'Courier New', 'Segoe UI', 'Calibri', 'Verdana', 'Georgia'];
+    return commonFonts.includes(fontName);
   }
-  
-  return canvasResult;
 }
 
 /**
@@ -165,17 +179,40 @@ export async function detectAvailableFonts(): Promise<FontOption[]> {
   // Always include web fonts first
   availableFonts.push(...WEB_FONTS);
   
+  // Log environment info for debugging
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isHTTPS = window.location.protocol === 'https:';
+  console.log(`Font detection running on: ${window.location.origin} (localhost: ${isLocalhost}, HTTPS: ${isHTTPS})`);
+  
   // Test a few essential fonts first to ensure detection is working
   const essentialFonts = ['Arial', 'Times New Roman', 'Courier New'];
   const detectedEssential = essentialFonts.filter(fontName => isFontAvailable(fontName));
   
   // If no essential fonts are detected, something is wrong - use fallback
+  // This is more likely to happen in production environments like GitHub Pages
   if (detectedEssential.length === 0) {
-    return [...WEB_FONTS, ...COMMON_FONTS.slice(0, 5).map(font => ({
-      value: font.name,
-      label: font.name,
-      category: font.category
-    }))];
+    console.warn('Font detection failed - using fallback font list');
+    // Include more fonts in fallback, including the Danske fonts for systems that have them
+    const fallbackFonts: FontOption[] = [
+      ...WEB_FONTS,
+      // Common Windows fonts
+      { value: 'Arial', label: 'Arial', category: 'sans-serif' },
+      { value: 'Calibri', label: 'Calibri', category: 'sans-serif' },
+      { value: 'Segoe UI', label: 'Segoe UI', category: 'sans-serif' },
+      { value: 'Tahoma', label: 'Tahoma', category: 'sans-serif' },
+      { value: 'Verdana', label: 'Verdana', category: 'sans-serif' },
+      // Include Danske fonts in fallback
+      { value: 'DanskeLight', label: 'DanskeLight', category: 'sans-serif' },
+      { value: 'DanskeMedium', label: 'DanskeMedium', category: 'sans-serif' },
+      { value: 'DanskeRegular', label: 'DanskeRegular', category: 'sans-serif' },
+      // Common serif fonts
+      { value: 'Times New Roman', label: 'Times New Roman', category: 'serif' },
+      { value: 'Georgia', label: 'Georgia', category: 'serif' },
+      // Common monospace fonts
+      { value: 'Courier New', label: 'Courier New', category: 'monospace' },
+      { value: 'Consolas', label: 'Consolas', category: 'monospace' },
+    ];
+    return fallbackFonts;
   }
   
   // Test each common font
@@ -207,6 +244,13 @@ export async function detectAvailableFonts(): Promise<FontOption[]> {
     
     return a.label.localeCompare(b.label);
   });
+  
+  // Log detected fonts for debugging
+  console.log(`Detected ${uniqueFonts.length} fonts:`, uniqueFonts.map(f => f.value));
+  const danskeDetected = uniqueFonts.filter(f => f.value.startsWith('Danske'));
+  if (danskeDetected.length > 0) {
+    console.log('Danske fonts detected:', danskeDetected.map(f => f.value));
+  }
   
   return uniqueFonts;
 }
