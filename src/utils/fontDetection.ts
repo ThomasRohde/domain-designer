@@ -57,10 +57,10 @@ const COMMON_FONTS = [
   { name: 'Noto Sans', category: 'sans-serif' as const },
   { name: 'Source Sans Pro', category: 'sans-serif' as const },
   
-  // System UI fonts
-  { name: 'system-ui', category: 'system' as const },
-  { name: '-apple-system', category: 'system' as const },
-  { name: 'BlinkMacSystemFont', category: 'system' as const },
+  // Custom Danske fonts
+  { name: 'DanskeLight', category: 'sans-serif' as const },
+  { name: 'DanskeMedium', category: 'sans-serif' as const },
+  { name: 'DanskeRegular', category: 'sans-serif' as const },
 ];
 
 // Always include web fonts and fallbacks
