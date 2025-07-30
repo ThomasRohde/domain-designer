@@ -157,8 +157,6 @@ export function isFontAvailable(fontName: string): boolean {
     return canvasResult;
   } catch (error) {
     // In case of any errors, be more permissive in production
-    console.warn(`Font detection error for "${fontName}":`, error);
-    
     // For Danske fonts, assume they might be available since user specifically wants them
     if (fontName.startsWith('Danske')) {
       return true;
@@ -179,11 +177,6 @@ export async function detectAvailableFonts(): Promise<FontOption[]> {
   // Always include web fonts first
   availableFonts.push(...WEB_FONTS);
   
-  // Log environment info for debugging
-  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const isHTTPS = window.location.protocol === 'https:';
-  console.log(`Font detection running on: ${window.location.origin} (localhost: ${isLocalhost}, HTTPS: ${isHTTPS})`);
-  
   // Test a few essential fonts first to ensure detection is working
   const essentialFonts = ['Arial', 'Times New Roman', 'Courier New'];
   const detectedEssential = essentialFonts.filter(fontName => isFontAvailable(fontName));
@@ -191,7 +184,6 @@ export async function detectAvailableFonts(): Promise<FontOption[]> {
   // If no essential fonts are detected, something is wrong - use fallback
   // This is more likely to happen in production environments like GitHub Pages
   if (detectedEssential.length === 0) {
-    console.warn('Font detection failed - using fallback font list');
     // Include more fonts in fallback, including the Danske fonts for systems that have them
     const fallbackFonts: FontOption[] = [
       ...WEB_FONTS,
@@ -244,13 +236,6 @@ export async function detectAvailableFonts(): Promise<FontOption[]> {
     
     return a.label.localeCompare(b.label);
   });
-  
-  // Log detected fonts for debugging
-  console.log(`Detected ${uniqueFonts.length} fonts:`, uniqueFonts.map(f => f.value));
-  const danskeDetected = uniqueFonts.filter(f => f.value.startsWith('Danske'));
-  if (danskeDetected.length > 0) {
-    console.log('Danske fonts detected:', danskeDetected.map(f => f.value));
-  }
   
   return uniqueFonts;
 }
