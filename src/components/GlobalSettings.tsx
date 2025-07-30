@@ -152,16 +152,16 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
 
 
         {/* Leaf Node Settings */}
-        <div className="border-t pt-3 mt-3">
-          <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-            <Lock size={14} className="text-gray-600" />
+        <div className="border-t pt-2 mt-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <Lock size={12} className="text-gray-600" />
             Leaf Node Settings
           </h4>
           
           {/* Fixed Width Control */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm text-gray-700">Fixed Width</label>
+              <label className="text-xs text-gray-700">Fixed Width</label>
               <button
                 onClick={() => onLeafFixedWidthChange(!leafFixedWidth)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
@@ -170,14 +170,14 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {leafFixedWidth ? <Lock size={12} /> : <Unlock size={12} />}
-                {leafFixedWidth ? 'Enabled' : 'Disabled'}
+                {leafFixedWidth ? <Lock size={10} /> : <Unlock size={10} />}
+                {leafFixedWidth ? 'On' : 'Off'}
               </button>
             </div>
             
             {leafFixedWidth && (
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-xs text-gray-600 mb-1">
                   Width: {leafWidth} grid units
                 </label>
                 <input
@@ -189,7 +189,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   onChange={(e) => onLeafWidthChange(parseInt(e.target.value))}
                   className="w-full accent-blue-600"
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs text-gray-500 mt-0.5">
                   <span>2</span>
                   <span>20</span>
                 </div>
@@ -198,7 +198,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
 
             {/* Fixed Height Control */}
             <div className="flex items-center justify-between">
-              <label className="text-sm text-gray-700">Fixed Height</label>
+              <label className="text-xs text-gray-700">Fixed Height</label>
               <button
                 onClick={() => onLeafFixedHeightChange(!leafFixedHeight)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
@@ -207,14 +207,14 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {leafFixedHeight ? <Lock size={12} /> : <Unlock size={12} />}
-                {leafFixedHeight ? 'Enabled' : 'Disabled'}
+                {leafFixedHeight ? <Lock size={10} /> : <Unlock size={10} />}
+                {leafFixedHeight ? 'On' : 'Off'}
               </button>
             </div>
             
             {leafFixedHeight && (
               <div>
-                <label className="block text-sm text-gray-600 mb-1">
+                <label className="block text-xs text-gray-600 mb-1">
                   Height: {leafHeight} grid units
                 </label>
                 <input
@@ -226,7 +226,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   onChange={(e) => onLeafHeightChange(parseInt(e.target.value))}
                   className="w-full accent-blue-600"
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs text-gray-500 mt-0.5">
                   <span>2</span>
                   <span>16</span>
                 </div>
@@ -236,16 +236,16 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
         </div>
 
         {/* Font Settings */}
-        <div className="border-t pt-3 mt-3">
-          <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-            <span className="text-lg">Aa</span>
+        <div className="border-t pt-2 mt-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <span className="text-base">Aa</span>
             Font Settings
           </h4>
           
           {/* Root Font Size */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Root Font Size: {rootFontSize}px
               </label>
               <input
@@ -257,15 +257,15 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 onChange={(e) => onRootFontSizeChange(parseInt(e.target.value))}
                 className="w-full accent-blue-600"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>10px (Small)</span>
-                <span>24px (Large)</span>
+              <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                <span>10px</span>
+                <span>24px</span>
               </div>
             </div>
 
             {/* Font Family */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Font Family
               </label>
               <div className="relative">
@@ -273,7 +273,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   value={fontFamily}
                   onChange={(e) => onFontFamilyChange(e.target.value)}
                   disabled={fontsLoading}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {availableFonts.map(option => (
                     <option key={option.value} value={option.value}>
@@ -283,19 +283,19 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 </select>
                 {fontsLoading && (
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                    <Loader2 size={14} className="animate-spin text-gray-400" />
+                    <Loader2 size={12} className="animate-spin text-gray-400" />
                   </div>
                 )}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-xs text-gray-500 mt-0.5">
                 {fontsLoading ? (
                   <span className="flex items-center gap-1">
-                    <Loader2 size={10} className="animate-spin" />
-                    Detecting available fonts...
+                    <Loader2 size={8} className="animate-spin" />
+                    Detecting fonts...
                   </span>
                 ) : (
                   <span>
-                    Font used in app and all export formats ({availableFonts.length} available)
+                    App & export font ({availableFonts.length} available)
                   </span>
                 )}
               </div>
@@ -304,9 +304,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             {/* Dynamic Font Sizing */}
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm text-gray-700">Dynamic Font Sizing</label>
+                <label className="text-xs text-gray-700">Dynamic Font Sizing</label>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  Automatically decrease font size for deeper hierarchies
+                  Auto-decrease for deeper levels
                 </div>
               </div>
               <button
@@ -317,8 +317,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                {dynamicFontSizing ? <Lock size={12} /> : <Unlock size={12} />}
-                {dynamicFontSizing ? 'Enabled' : 'Disabled'}
+                {dynamicFontSizing ? <Lock size={10} /> : <Unlock size={10} />}
+                {dynamicFontSizing ? 'On' : 'Off'}
               </button>
             </div>
 
@@ -326,9 +326,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
         </div>
 
         {/* Margin Settings */}
-        <div className="border-t pt-3 mt-3">
-          <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="border-t pt-2 mt-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M8 3H5a2 2 0 0 0-2 2v3"/>
               <path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
               <path d="M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -337,10 +337,10 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             Margin Settings
           </h4>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Margin */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Margin: {margin} grid units
               </label>
               <input
@@ -352,15 +352,15 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 onChange={(e) => onMarginChange(parseFloat(e.target.value))}
                 className="w-full accent-blue-600"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0.1 (Tight)</span>
-                <span>5.0 (Loose)</span>
+              <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                <span>0.1</span>
+                <span>5.0</span>
               </div>
             </div>
 
             {/* Label Margin */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Label Margin: {labelMargin} grid units
               </label>
               <input
@@ -372,27 +372,27 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 onChange={(e) => onLabelMarginChange(parseFloat(e.target.value))}
                 className="w-full accent-blue-600"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0.1 (Tight)</span>
-                <span>8.0 (Spacious)</span>
+              <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                <span>0.1</span>
+                <span>8.0</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Border Settings */}
-        <div className="border-t pt-3 mt-3">
-          <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="border-t pt-2 mt-2">
+          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             </svg>
             Border Settings
           </h4>
           
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Border Radius */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Border Radius: {borderRadius}px
               </label>
               <input
@@ -404,15 +404,15 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 onChange={(e) => onBorderRadiusChange(parseInt(e.target.value))}
                 className="w-full accent-blue-600"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0px (Square)</span>
-                <span>20px (Rounded)</span>
+              <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                <span>0px</span>
+                <span>20px</span>
               </div>
             </div>
 
             {/* Border Color */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Border Color
               </label>
               <div className="flex items-center gap-2">
@@ -420,13 +420,13 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   type="color"
                   value={borderColor}
                   onChange={(e) => onBorderColorChange(e.target.value)}
-                  className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
+                  className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
                 />
                 <input
                   type="text"
                   value={borderColor}
                   onChange={(e) => onBorderColorChange(e.target.value)}
-                  className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 select-text"
+                  className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 select-text"
                   placeholder="#374151"
                 />
               </div>
@@ -434,7 +434,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
 
             {/* Border Width */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Border Width: {borderWidth}px
               </label>
               <input
@@ -446,9 +446,9 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 onChange={(e) => onBorderWidthChange(parseInt(e.target.value))}
                 className="w-full accent-blue-600"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>1px (Thin)</span>
-                <span>8px (Thick)</span>
+              <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+                <span>1px</span>
+                <span>8px</span>
               </div>
             </div>
           </div>

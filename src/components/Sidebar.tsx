@@ -15,7 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, children }) => {
         ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         fixed lg:fixed
         top-16 right-0 bottom-0 z-40
-        w-80 bg-gray-50 shadow-xl
+        w-96 bg-gray-50 shadow-xl
         transition-transform duration-300 ease-in-out
         flex flex-col
       `}>
