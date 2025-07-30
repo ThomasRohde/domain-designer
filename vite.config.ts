@@ -10,11 +10,13 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'vite.svg'],
       manifest: {
+        id: mode === 'production' && process.env.GITHUB_PAGES ? '/domain-designer/' : '/domain-designer-pwa',
         name: 'Domain Designer',
-        short_name: 'DomainDesigner',
+        short_name: 'Domain Designer',
         start_url: mode === 'production' && process.env.GITHUB_PAGES ? '/domain-designer/' : '/',
         scope: mode === 'production' && process.env.GITHUB_PAGES ? '/domain-designer/' : '/',
         display: 'standalone',
+        display_override: ['window-controls-overlay', 'standalone'],
         theme_color: '#ffffff',
         background_color: '#ffffff',
         orientation: 'any',
@@ -26,9 +28,20 @@ export default defineConfig(({ mode }) => ({
             type: 'image/png'
           },
           {
+            src: 'pwa-icon-256.png',
+            sizes: '256x256',
+            type: 'image/png'
+          },
+          {
             src: 'pwa-icon-512.png',
             sizes: '512x512',
             type: 'image/png'
+          },
+          {
+            src: 'pwa-icon-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },
