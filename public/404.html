@@ -17,12 +17,12 @@
           // This allows React Router to handle the routing client-side
           window.history.replaceState(null, null, path + l.search + l.hash);
           
-          // Redirect to index.html which will load the React app
-          window.location.replace('/domain-designer/');
+          // Redirect to index.html with query parameters and hash preserved
+          window.location.replace('/domain-designer/' + l.search + l.hash);
         } else {
           // Fallback for root domain deployment
           window.history.replaceState(null, null, path + l.search + l.hash);
-          window.location.replace('/');
+          window.location.replace('/' + l.search + l.hash);
         }
       }(window.location))
     </script>

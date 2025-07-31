@@ -50,7 +50,17 @@ const ViewerPage: React.FC = () => {
   // Check if there's a URL query parameter - if so, render URLViewerPage instead
   const urlParam = new URLSearchParams(location.search).get('url');
   
+  // Debug logging for production troubleshooting (temporary)
+  console.log('ViewerPage URL Detection:', {
+    search: location.search,
+    pathname: location.pathname,
+    urlParam,
+    shouldRenderURLViewer: !!urlParam,
+    timestamp: new Date().toISOString()
+  });
+  
   if (urlParam) {
+    console.log('Rendering URLViewerPage with URL:', urlParam);
     return <URLViewerPage />;
   }
 
