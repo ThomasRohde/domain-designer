@@ -75,6 +75,11 @@ if (!root) {
   container._reactRoot = root;
 }
 
+// Debug: Early logging to verify app loading
+console.log('🔍 Main.tsx loading with basename:', basename);
+console.log('🔍 Current URL:', window.location.href);
+console.log('🔍 Search params:', window.location.search);
+
 root.render(
   <React.StrictMode>
     <BrowserRouter basename={basename}>

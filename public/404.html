@@ -7,22 +7,29 @@
       // GitHub Pages SPA redirect for Domain Designer
       // This handles the case where GitHub Pages returns 404 for client-side routes
       // and redirects to the main app with the path preserved
+      console.log('🔍 404.html executing with location:', window.location.href);
       (function(l) {
         // Get the current path
         var path = l.pathname;
         
         // If we're in the domain-designer subdirectory, preserve the full path
         if (path.startsWith('/domain-designer/')) {
+          console.log('🔍 Redirecting domain-designer path:', path, 'search:', l.search);
           // Replace the current URL in history with the index.html version
           // This allows React Router to handle the routing client-side
           window.history.replaceState(null, null, path + l.search + l.hash);
           
           // Redirect to index.html with query parameters and hash preserved
-          window.location.replace('/domain-designer/' + l.search + l.hash);
+          var redirectUrl = '/domain-designer/' + l.search + l.hash;
+          console.log('🔍 Redirecting to:', redirectUrl);
+          window.location.replace(redirectUrl);
         } else {
+          console.log('🔍 Redirecting root path:', path, 'search:', l.search);
           // Fallback for root domain deployment
           window.history.replaceState(null, null, path + l.search + l.hash);
-          window.location.replace('/' + l.search + l.hash);
+          var redirectUrl = '/' + l.search + l.hash;
+          console.log('🔍 Redirecting to:', redirectUrl);
+          window.location.replace(redirectUrl);
         }
       }(window.location))
     </script>
