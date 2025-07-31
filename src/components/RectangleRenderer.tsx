@@ -1,52 +1,46 @@
 import React from 'react';
-import { Rectangle, DragState, ResizeState, HierarchyDragState, ResizeConstraintState } from '../types';
+import { Rectangle } from '../types';
 import { 
   getChildren,
   getZIndex,
   sortRectanglesByDepth,
 } from '../utils/layoutUtils';
+import { useAppStore } from '../stores/useAppStore';
 import RectangleComponent from './RectangleComponent';
 
 interface RectangleRendererProps {
-  rectangles: Rectangle[];
-  selectedId: string | null;
-  dragState: DragState | null;
-  resizeState: ResizeState | null;
-  hierarchyDragState: HierarchyDragState | null;
-  resizeConstraintState: ResizeConstraintState | null;
-  gridSize: number;
-  onMouseDown: (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => void;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   onContextMenu: (e: React.MouseEvent, rectangleId: string) => void;
-  onSelect: (id: string) => void;
-  onUpdateLabel: (id: string, label: string) => void;
-  onAddChild: (parentId: string) => void;
-  onRemove: (id: string) => void;
-  onFitToChildren: (id: string) => void;
-  calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
-  fontFamily: string;
-  borderRadius: number;
-  borderColor: string;
-  borderWidth: number;
 }
 
 const RectangleRenderer: React.FC<RectangleRendererProps> = ({
-  rectangles,
-  selectedId,
-  dragState,
-  resizeState,
-  hierarchyDragState,
-  resizeConstraintState,
-  gridSize,
-  onMouseDown,
+  containerRef,
   onContextMenu,
-  onSelect,
-  onUpdateLabel,
-  calculateFontSize,
-  fontFamily,
-  borderRadius,
-  borderColor,
-  borderWidth,
 }) => {
+  // Get data from store
+  const rectangles = useAppStore(state => state.rectangles);
+  const selectedId = useAppStore(state => state.selectedId);
+  const gridSize = useAppStore(state => state.settings.gridSize);
+  const fontFamily = useAppStore(state => state.settings.fontFamily);
+  const borderRadius = useAppStore(state => state.settings.borderRadius);
+  const borderColor = useAppStore(state => state.settings.borderColor);
+  const borderWidth = useAppStore(state => state.settings.borderWidth);
+  const calculateFontSize = useAppStore(state => state.getters.calculateFontSize);
+  
+  // Get canvas states from store
+  const dragState = useAppStore(state => state.canvas.dragState);
+  const resizeState = useAppStore(state => state.canvas.resizeState);
+  const hierarchyDragState = useAppStore(state => state.canvas.hierarchyDragState);
+  const resizeConstraintState = useAppStore(state => state.canvas.resizeConstraintState);
+  
+  // Get actions from store
+  const { setSelectedId, updateRectangleLabel } = useAppStore(state => state.rectangleActions);
+  const handleRectangleMouseDown = useAppStore(state => state.canvasActions.handleRectangleMouseDown);
+  
+  // Create an onMouseDown handler that includes the containerRef
+  const onMouseDown = (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => {
+    handleRectangleMouseDown(e, rect, action || 'drag', containerRef);
+  };
   return (
     <>
       {sortRectanglesByDepth(rectangles).map(rect => {
@@ -70,13 +64,13 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState, hierarchyDragState)}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}
-            onSelect={onSelect}
-            onUpdateLabel={onUpdateLabel}
+            onSelect={setSelectedId}
+            onUpdateLabel={updateRectangleLabel}
             canDrag={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
             canResize={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
             childCount={getChildren(rect.id, rectangles).length}
             gridSize={gridSize}
-            fontSize={calculateFontSize(rect.id, rectangles)}
+            fontSize={calculateFontSize(rect.id)}
             fontFamily={fontFamily}
             isDropTarget={isDropTarget}
             isValidDropTarget={isValidDropTarget}

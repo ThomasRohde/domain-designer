@@ -1,13 +1,14 @@
 import React from 'react';
+import { useAppStore } from '../stores/useAppStore';
 import MobileOverlay from './MobileOverlay';
 
 interface SidebarProps {
-  isOpen: boolean;
-  onClose: () => void;
   children: React.ReactNode;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, children }) => {
+const Sidebar: React.FC<SidebarProps> = ({ children }) => {
+  const isOpen = useAppStore(state => state.ui.sidebarOpen);
+  const onClose = useAppStore(state => state.uiActions.closeSidebar);
   return (
     <>
       {/* Responsive Sidebar */}

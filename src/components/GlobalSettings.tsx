@@ -1,76 +1,49 @@
 import React from 'react';
 import { Settings, Lock, Unlock, Loader2 } from 'lucide-react';
 import type { LayoutAlgorithmType } from '../utils/layout';
+import { useAppStore } from '../stores/useAppStore';
 
 interface GlobalSettingsProps {
   gridSize: number;
-  onGridSizeChange: (size: number) => void;
   showGrid: boolean;
-  onShowGridChange: (show: boolean) => void;
   leafFixedWidth: boolean;
-  onLeafFixedWidthChange: (enabled: boolean) => void;
   leafFixedHeight: boolean;
-  onLeafFixedHeightChange: (enabled: boolean) => void;
   leafWidth: number;
-  onLeafWidthChange: (width: number) => void;
   leafHeight: number;
-  onLeafHeightChange: (height: number) => void;
   rootFontSize: number;
-  onRootFontSizeChange: (size: number) => void;
   dynamicFontSizing: boolean;
-  onDynamicFontSizingChange: (enabled: boolean) => void;
   borderRadius: number;
-  onBorderRadiusChange: (radius: number) => void;
   borderColor: string;
-  onBorderColorChange: (color: string) => void;
   borderWidth: number;
-  onBorderWidthChange: (width: number) => void;
   margin: number;
-  onMarginChange: (margin: number) => void;
   labelMargin: number;
-  onLabelMarginChange: (labelMargin: number) => void;
   layoutAlgorithm: LayoutAlgorithmType;
-  onLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType) => void;
   fontFamily: string;
-  onFontFamilyChange: (fontFamily: string) => void;
   availableFonts: Array<{ value: string; label: string; category: string }>;
   fontsLoading: boolean;
 }
 
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   gridSize,
-  onGridSizeChange,
   showGrid,
-  onShowGridChange,
   leafFixedWidth,
-  onLeafFixedWidthChange,
   leafFixedHeight,
-  onLeafFixedHeightChange,
   leafWidth,
-  onLeafWidthChange,
   leafHeight,
-  onLeafHeightChange,
   rootFontSize,
-  onRootFontSizeChange,
   dynamicFontSizing,
-  onDynamicFontSizingChange,
   borderRadius,
-  onBorderRadiusChange,
   borderColor,
-  onBorderColorChange,
   borderWidth,
-  onBorderWidthChange,
   margin,
-  onMarginChange,
   labelMargin,
-  onLabelMarginChange,
   layoutAlgorithm,
-  onLayoutAlgorithmChange,
   fontFamily,
-  onFontFamilyChange,
   availableFonts,
   fontsLoading
 }) => {
+  // Access store actions
+  const settingsActions = useAppStore(state => state.settingsActions);
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
       <div className="flex items-center justify-between mb-3">
@@ -90,7 +63,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
           </label>
           <select
             value={layoutAlgorithm}
-            onChange={(e) => onLayoutAlgorithmChange(e.target.value as LayoutAlgorithmType)}
+            onChange={(e) => settingsActions.handleLayoutAlgorithmChange(e.target.value as LayoutAlgorithmType)}
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="grid">Grid Layout</option>
@@ -118,7 +91,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             </div>
           </div>
           <button
-            onClick={() => onShowGridChange(!showGrid)}
+            onClick={() => settingsActions.handleShowGridChange(!showGrid)}
             className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
               showGrid 
                 ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
@@ -141,7 +114,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             max="50"
             step="1"
             value={gridSize}
-            onChange={(e) => onGridSizeChange(parseInt(e.target.value))}
+            onChange={(e) => settingsActions.setGridSize(parseInt(e.target.value))}
             className="w-full accent-blue-600"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -163,7 +136,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs text-gray-700">Fixed Width</label>
               <button
-                onClick={() => onLeafFixedWidthChange(!leafFixedWidth)}
+                onClick={() => settingsActions.handleLeafFixedWidthChange(!leafFixedWidth)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   leafFixedWidth 
                     ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
@@ -186,7 +159,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   max="20"
                   step="1"
                   value={leafWidth}
-                  onChange={(e) => onLeafWidthChange(parseInt(e.target.value))}
+                  onChange={(e) => settingsActions.handleLeafWidthChange(parseInt(e.target.value))}
                   className="w-full accent-blue-600"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -200,7 +173,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             <div className="flex items-center justify-between">
               <label className="text-xs text-gray-700">Fixed Height</label>
               <button
-                onClick={() => onLeafFixedHeightChange(!leafFixedHeight)}
+                onClick={() => settingsActions.handleLeafFixedHeightChange(!leafFixedHeight)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   leafFixedHeight 
                     ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
@@ -223,7 +196,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   max="16"
                   step="1"
                   value={leafHeight}
-                  onChange={(e) => onLeafHeightChange(parseInt(e.target.value))}
+                  onChange={(e) => settingsActions.handleLeafHeightChange(parseInt(e.target.value))}
                   className="w-full accent-blue-600"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -254,7 +227,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 max="24"
                 step="1"
                 value={rootFontSize}
-                onChange={(e) => onRootFontSizeChange(parseInt(e.target.value))}
+                onChange={(e) => settingsActions.handleRootFontSizeChange(parseInt(e.target.value))}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -271,7 +244,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               <div className="relative">
                 <select
                   value={fontFamily}
-                  onChange={(e) => onFontFamilyChange(e.target.value)}
+                  onChange={(e) => settingsActions.handleFontFamilyChange(e.target.value)}
                   disabled={fontsLoading}
                   className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -310,7 +283,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 </div>
               </div>
               <button
-                onClick={() => onDynamicFontSizingChange(!dynamicFontSizing)}
+                onClick={() => settingsActions.handleDynamicFontSizingChange(!dynamicFontSizing)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   dynamicFontSizing 
                     ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
@@ -349,7 +322,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 max="5"
                 step="0.1"
                 value={margin}
-                onChange={(e) => onMarginChange(parseFloat(e.target.value))}
+                onChange={(e) => settingsActions.handleMarginChange(parseFloat(e.target.value))}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -369,7 +342,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 max="8"
                 step="0.1"
                 value={labelMargin}
-                onChange={(e) => onLabelMarginChange(parseFloat(e.target.value))}
+                onChange={(e) => settingsActions.handleLabelMarginChange(parseFloat(e.target.value))}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -401,7 +374,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 max="20"
                 step="1"
                 value={borderRadius}
-                onChange={(e) => onBorderRadiusChange(parseInt(e.target.value))}
+                onChange={(e) => settingsActions.handleBorderRadiusChange(parseInt(e.target.value))}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -419,13 +392,13 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 <input
                   type="color"
                   value={borderColor}
-                  onChange={(e) => onBorderColorChange(e.target.value)}
+                  onChange={(e) => settingsActions.handleBorderColorChange(e.target.value)}
                   className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
                 />
                 <input
                   type="text"
                   value={borderColor}
-                  onChange={(e) => onBorderColorChange(e.target.value)}
+                  onChange={(e) => settingsActions.handleBorderColorChange(e.target.value)}
                   className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 select-text"
                   placeholder="#374151"
                 />
@@ -443,7 +416,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 max="8"
                 step="1"
                 value={borderWidth}
-                onChange={(e) => onBorderWidthChange(parseInt(e.target.value))}
+                onChange={(e) => settingsActions.handleBorderWidthChange(parseInt(e.target.value))}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">

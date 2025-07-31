@@ -1,39 +1,27 @@
 import React from 'react';
-import { Rectangle, AppSettings, LayoutPreferences } from '../types';
-import { getChildren } from '../utils/layoutUtils';
+import { LayoutPreferences } from '../types';
+import { useAppStore } from '../stores/useAppStore';
 import ColorPalette from './ColorPalette';
 import GlobalSettings from './GlobalSettings';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface PropertyPanelProps {
-  selectedId: string | null;
-  selectedRectangle: Rectangle | null;
-  rectangles: Rectangle[];
-  onColorChange: (id: string, color: string) => void;
-  onLayoutPreferencesChange: (id: string, preferences: LayoutPreferences) => void;
-  onToggleTextLabel: (id: string) => void;
-  onUpdateTextLabelProperties: (id: string, properties: {
-    textFontFamily?: string;
-    textFontSize?: number;
-    fontWeight?: 'normal' | 'bold';
-    textAlign?: 'left' | 'center' | 'right' | 'justify';
-  }) => void;
-  appSettings: AppSettings;
-  onSettingsChange: (settings: Partial<AppSettings>) => void;
-  onUpdateColorSquare: (index: number, color: string) => void;
+  // No props needed - component will access store directly
 }
 
-const PropertyPanel: React.FC<PropertyPanelProps> = ({
-  selectedId,
-  selectedRectangle,
-  rectangles,
-  onColorChange,
-  onLayoutPreferencesChange,
-  onToggleTextLabel,
-  onUpdateTextLabelProperties,
-  appSettings,
-  onSettingsChange,
-  onUpdateColorSquare,
-}) => {
+const PropertyPanel: React.FC<PropertyPanelProps> = () => {
+  // Access store state and actions
+  const selectedId = useAppStore(state => state.selectedId);
+  const rectangles = useAppStore(state => state.rectangles);
+  const settings = useAppStore(state => state.settings);
+  const updateRectangleColor = useAppStore(state => state.rectangleActions.updateRectangleColor);
+  const updateRectangleLayoutPreferences = useAppStore(state => state.rectangleActions.updateRectangleLayoutPreferences);
+  const toggleTextLabel = useAppStore(state => state.rectangleActions.toggleTextLabel);
+  const updateTextLabelProperties = useAppStore(state => state.rectangleActions.updateTextLabelProperties);
+  const updateColorSquare = useAppStore(state => state.settingsActions.updateColorSquare);
+  
+  const selectedRectangle = selectedId ? rectangles.find(r => r.id === selectedId) || null : null;
+  
   const {
     gridSize,
     showGrid,
@@ -53,20 +41,20 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
     margin,
     labelMargin,
     layoutAlgorithm,
-  } = appSettings;
+  } = settings;
 
 
   if (selectedId && selectedRectangle) {
     // Node is selected: Show color picker and node details
-    const children = getChildren(selectedId, rectangles);
+    const children = useAppStore.getState().getters.getChildren(selectedId);
     
     return (
       <>
         <ColorPalette
           selectedColor={selectedRectangle.color}
-          onColorChange={(color) => onColorChange(selectedId, color)}
+          onColorChange={(color) => updateRectangleColor(selectedId, color)}
           predefinedColors={predefinedColors}
-          onUpdateColorSquare={onUpdateColorSquare}
+          onUpdateColorSquare={updateColorSquare}
         />
 
         <div className="bg-white rounded-lg shadow p-4">
@@ -93,7 +81,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                   type="checkbox"
                   id="textLabelMode"
                   checked={selectedRectangle.isTextLabel || false}
-                  onChange={() => onToggleTextLabel(selectedId)}
+                  onChange={() => toggleTextLabel(selectedId)}
                   className="rounded"
                 />
                 <label htmlFor="textLabelMode" className="text-xs lg:text-sm font-medium text-gray-700">
@@ -110,7 +98,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     <select
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
                       value={selectedRectangle.textFontFamily || 'Arial, sans-serif'}
-                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { textFontFamily: e.target.value })}
+                      onChange={(e) => updateTextLabelProperties(selectedId, { textFontFamily: e.target.value })}
                     >
                       {(availableFonts || []).map((font) => (
                         <option key={font.value} value={font.value}>
@@ -130,7 +118,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                       max="72"
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
                       value={selectedRectangle.textFontSize || 14}
-                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { textFontSize: parseInt(e.target.value) })}
+                      onChange={(e) => updateTextLabelProperties(selectedId, { textFontSize: parseInt(e.target.value) })}
                     />
                   </div>
 
@@ -141,7 +129,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     <select
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
                       value={selectedRectangle.fontWeight || 'normal'}
-                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { fontWeight: e.target.value as 'normal' | 'bold' })}
+                      onChange={(e) => updateTextLabelProperties(selectedId, { fontWeight: e.target.value as 'normal' | 'bold' })}
                     >
                       <option value="normal">Normal</option>
                       <option value="bold">Bold</option>
@@ -155,7 +143,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     <select
                       className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
                       value={selectedRectangle.textAlign || 'center'}
-                      onChange={(e) => onUpdateTextLabelProperties(selectedId, { textAlign: e.target.value as 'left' | 'center' | 'right' | 'justify' })}
+                      onChange={(e) => updateTextLabelProperties(selectedId, { textAlign: e.target.value as 'left' | 'center' | 'right' | 'justify' })}
                     >
                       <option value="left">Left</option>
                       <option value="center">Center</option>
@@ -186,13 +174,13 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                       const newPreferences: LayoutPreferences = {
                         fillStrategy: 'fill-columns-first'
                       };
-                      onLayoutPreferencesChange(selectedId, newPreferences);
+                      updateRectangleLayoutPreferences(selectedId, newPreferences);
                     } else {
                       const newPreferences: LayoutPreferences = {
                         ...selectedRectangle.layoutPreferences,
                         fillStrategy: e.target.value as 'fill-columns-first' | 'fill-rows-first'
                       };
-                      onLayoutPreferencesChange(selectedId, newPreferences);
+                      updateRectangleLayoutPreferences(selectedId, newPreferences);
                     }
                   }}
                 >
@@ -221,7 +209,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                         fillStrategy: 'fill-rows-first',
                         maxColumns: maxColumns
                       };
-                      onLayoutPreferencesChange(selectedId, newPreferences);
+                      updateRectangleLayoutPreferences(selectedId, newPreferences);
                     }}
                   />
                 </div>
@@ -246,7 +234,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
                         fillStrategy: 'fill-columns-first',
                         maxRows: maxRows
                       };
-                      onLayoutPreferencesChange(selectedId, newPreferences);
+                      updateRectangleLayoutPreferences(selectedId, newPreferences);
                     }}
                   />
                 </div>
@@ -262,37 +250,22 @@ const PropertyPanel: React.FC<PropertyPanelProps> = ({
   return (
     <GlobalSettings
       gridSize={gridSize}
-      onGridSizeChange={(size) => onSettingsChange({ gridSize: size })}
       showGrid={showGrid}
-      onShowGridChange={(show) => onSettingsChange({ showGrid: show })}
       leafFixedWidth={leafFixedWidth}
-      onLeafFixedWidthChange={(enabled) => onSettingsChange({ leafFixedWidth: enabled })}
       leafFixedHeight={leafFixedHeight}
-      onLeafFixedHeightChange={(enabled) => onSettingsChange({ leafFixedHeight: enabled })}
       leafWidth={leafWidth}
-      onLeafWidthChange={(width) => onSettingsChange({ leafWidth: width })}
       leafHeight={leafHeight}
-      onLeafHeightChange={(height) => onSettingsChange({ leafHeight: height })}
       rootFontSize={rootFontSize}
-      onRootFontSizeChange={(size) => onSettingsChange({ rootFontSize: size })}
       dynamicFontSizing={dynamicFontSizing}
-      onDynamicFontSizingChange={(enabled) => onSettingsChange({ dynamicFontSizing: enabled })}
       fontFamily={fontFamily}
-      onFontFamilyChange={(fontFamily) => onSettingsChange({ fontFamily: fontFamily })}
       availableFonts={availableFonts || []}
       fontsLoading={fontsLoading || false}
       borderRadius={borderRadius}
-      onBorderRadiusChange={(radius) => onSettingsChange({ borderRadius: radius })}
       borderColor={borderColor}
-      onBorderColorChange={(color) => onSettingsChange({ borderColor: color })}
       borderWidth={borderWidth}
-      onBorderWidthChange={(width) => onSettingsChange({ borderWidth: width })}
       margin={margin}
-      onMarginChange={(margin) => onSettingsChange({ margin: margin })}
       labelMargin={labelMargin}
-      onLabelMarginChange={(labelMargin) => onSettingsChange({ labelMargin: labelMargin })}
       layoutAlgorithm={layoutAlgorithm}
-      onLayoutAlgorithmChange={(algorithm) => onSettingsChange({ layoutAlgorithm: algorithm })}
     />
   );
 };

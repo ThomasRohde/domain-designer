@@ -1,13 +1,17 @@
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-import { ExportOptions } from '../types';
+import { ExportOptions, Rectangle } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
-import { getChildren } from '../utils/layoutUtils';
-import { useRectangleManager } from '../hooks/useRectangleManager';
-import { useAppSettings } from '../hooks/useAppSettings';
-import { useUIState } from '../hooks/useUIState';
-import { useCanvasInteractions } from '../hooks/useCanvasInteractions';
+// import { getChildren } from '../utils/layoutUtils'; // MIGRATION: Now using store getters
+// MIGRATION: useRectangleManager replaced by Zustand store
+// import { useRectangleManager } from '../hooks/useRectangleManager';
+// MIGRATION: useAppSettings replaced by Zustand store
+// import { useAppSettings } from '../hooks/useAppSettings';
+// MIGRATION: useUIState replaced by Zustand store
+// import { useUIState } from '../hooks/useUIState';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useAppCore } from '../hooks/useAppCore';
+import { useAppStore } from '../stores/useAppStore';
+import { initializeAutoSaveSubscription } from '../stores/useAppStore';
 import { setGlobalUpdateNotificationHandler } from '../main';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
@@ -29,121 +33,173 @@ import { UpdateNotification } from './UpdateNotification';
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Initialize hooks
-  const uiState = useUIState();
+  // Get rectangle data and actions from Zustand store
+  const rectangles = useAppStore(state => state.rectangles);
+  const selectedId = useAppStore(state => state.selectedId);
+  const { 
+    addRectangle, 
+    removeRectangle, 
+    updateRectangleDescription,
+    setSelectedId,
+    moveRectangle,
+    fitToChildren,
+    toggleManualPositioning,
+    lockAsIs,
+    // reparentRectangle, // MIGRATION: Not used directly anymore
+    setRectangles,
+    setRectanglesWithHistory,
+    updateNextId
+  } = useAppStore(state => state.rectangleActions);
+  const { findRectangle /* , canReparent */ } = useAppStore(state => state.getters); // MIGRATION: canReparent not used directly anymore
+  const { undo, redo, initializeHistory } = useAppStore(state => state.historyActions);
+
+  // Get UI state and actions from Zustand store
+  const ui = useAppStore(state => state.ui);
+  const uiActions = useAppStore(state => state.uiActions);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [clearDataModalOpen, setClearDataModalOpen] = useState(false);
   
-  // Create a ref for triggerSave to avoid circular dependency
-  const triggerSaveRef = useRef<(() => void) | null>(null);
+  // Auto-save state from store
+  const autoSaveState = useAppStore(state => state.autoSave);
+  const autoSaveActions = useAppStore(state => state.autoSaveActions);
   
-  // Memoize the pan offset ref to avoid recreating object
-  const panOffsetRef = useRef({ x: 0, y: 0 });
-  
-  // Memoize the triggerSave function
-  const triggerSave = useCallback(() => triggerSaveRef.current?.(), []);
-  
-  // Initialize app settings first  
-  const appSettings = useAppSettings();
+  // Get settings from Zustand store
+  const settings = useAppStore(state => state.settings);
+  const settingsActions = useAppStore(state => state.settingsActions);
 
   // Memoize the getMargins function to avoid inline object creation
   const getMargins = useCallback(() => ({ 
-    margin: appSettings.margin, 
-    labelMargin: appSettings.labelMargin 
-  }), [appSettings.margin, appSettings.labelMargin]);
+    margin: settings.margin, 
+    labelMargin: settings.labelMargin 
+  }), [settings.margin, settings.labelMargin]);
   
-  const rectangleManager = useRectangleManager({
-    gridSize: appSettings.gridSize,
-    panOffsetRef,
-    containerRef,
-    getFixedDimensions: appSettings.getFixedDimensions,
-    getMargins,
-    triggerSave
-  });
+  // MIGRATION: rectangleManager is now replaced by Zustand store
+  // const rectangleManager = useRectangleManager({
+  //   gridSize: appSettings.gridSize,
+  //   panOffsetRef,
+  //   containerRef,
+  //   getFixedDimensions: appSettings.getFixedDimensions,
+  //   getMargins,
+  //   triggerSave
+  // });
 
   // Initialize app core systems
+  const nextId = useAppStore(state => state.nextId);
+  
+  // Create wrappers to match expected signatures
+  const setRectanglesWrapper = useCallback((value: React.SetStateAction<Rectangle[]>) => {
+    if (typeof value === 'function') {
+      const current = useAppStore.getState().rectangles;
+      setRectangles(value(current));
+    } else {
+      setRectangles(value);
+    }
+  }, [setRectangles]);
+
+  const setRectanglesWithHistoryWrapper = useCallback((value: React.SetStateAction<Rectangle[]>) => {
+    if (typeof value === 'function') {
+      const current = useAppStore.getState().rectangles;
+      setRectanglesWithHistory(value(current));
+    } else {
+      setRectanglesWithHistory(value);
+    }
+  }, [setRectanglesWithHistory]);
+
   const appCore = useAppCore({
-    rectangles: rectangleManager.rectangles,
-    setRectangles: rectangleManager.setRectangles,
-    setRectanglesWithHistory: rectangleManager.setRectanglesWithHistory,
-    initializeHistory: rectangleManager.initializeHistory,
-    updateNextId: rectangleManager.updateNextId,
-    nextId: rectangleManager.nextId,
-    setSelectedId: rectangleManager.setSelectedId,
-    getFixedDimensions: appSettings.getFixedDimensions,
+    rectangles,
+    setRectangles: setRectanglesWrapper,
+    setRectanglesWithHistory: setRectanglesWithHistoryWrapper,
+    initializeHistory,
+    updateNextId,
+    nextId,
+    setSelectedId,
+    getFixedDimensions: settingsActions.getFixedDimensions,
     getMargins,
-    appSettings
+    appSettings: {
+      ...settings,
+      // Ensure required arrays are defined
+      availableFonts: settings.availableFonts || [],
+      fontsLoading: settings.fontsLoading || false,
+      // Add legacy compatibility methods that useAppCore expects
+      getFixedDimensions: settingsActions.getFixedDimensions,
+      calculateFontSize: settingsActions.calculateFontSize,
+      handleLeafFixedWidthChange: settingsActions.handleLeafFixedWidthChange,
+      handleLeafFixedHeightChange: settingsActions.handleLeafFixedHeightChange,
+      handleLeafWidthChange: settingsActions.handleLeafWidthChange,
+      handleLeafHeightChange: settingsActions.handleLeafHeightChange,
+      handleRootFontSizeChange: settingsActions.handleRootFontSizeChange,
+      handleDynamicFontSizingChange: settingsActions.handleDynamicFontSizingChange,
+      handleFontFamilyChange: settingsActions.handleFontFamilyChange,
+      handleBorderRadiusChange: settingsActions.handleBorderRadiusChange,
+      handleBorderColorChange: settingsActions.handleBorderColorChange,
+      handleBorderWidthChange: settingsActions.handleBorderWidthChange,
+      handleMarginChange: settingsActions.handleMarginChange,
+      handleLabelMarginChange: settingsActions.handleLabelMarginChange,
+      handleLayoutAlgorithmChange: settingsActions.handleLayoutAlgorithmChange,
+      addCustomColor: settingsActions.addCustomColor,
+      updateColorSquare: settingsActions.updateColorSquare,
+      handlePredefinedColorsChange: settingsActions.handlePredefinedColorsChange,
+      setGridSize: settingsActions.setGridSize,
+      handleShowGridChange: settingsActions.handleShowGridChange,
+      setRectanglesRef: () => {}, // No-op since store manages this directly
+      setFitToChildrenRef: () => {}, // No-op since store manages this directly
+      setIsRestoring: settingsActions.setIsRestoring
+    }
   });
 
   // Canvas interactions with proper setSelectedId wrapper
-  const setSelectedIdWrapper = useCallback((value: React.SetStateAction<string | null>) => {
-    if (typeof value === 'function') {
-      rectangleManager.setSelectedId(value(rectangleManager.selectedId));
-    } else {
-      rectangleManager.setSelectedId(value);
-    }
-  }, [rectangleManager]);
+  // MIGRATION: setSelectedIdWrapper no longer needed as we use store directly
+  // const setSelectedIdWrapper = useCallback((value: React.SetStateAction<string | null>) => {
+  //   if (typeof value === 'function') {
+  //     setSelectedId(value(selectedId));
+  //   } else {
+  //     setSelectedId(value);
+  //   }
+  // }, [selectedId, setSelectedId]);
 
-  const canvasInteractions = useCanvasInteractions({
-    rectangles: rectangleManager.rectangles,
-    setRectangles: rectangleManager.setRectangles,
-    setRectanglesWithHistory: rectangleManager.setRectanglesWithHistory,
-    setSelectedId: setSelectedIdWrapper,
-    gridSize: appSettings.gridSize,
-    leafFixedWidth: appSettings.leafFixedWidth,
-    leafFixedHeight: appSettings.leafFixedHeight,
-    leafWidth: appSettings.leafWidth,
-    leafHeight: appSettings.leafHeight,
-    containerRef,
-    getFixedDimensions: appSettings.getFixedDimensions,
-    getMargins,
-    reparentRectangle: rectangleManager.reparentRectangle,
-    canReparent: rectangleManager.canReparent,
-    saveToHistory: rectangleManager.saveToHistory,
-    triggerSave: () => triggerSaveRef.current?.()
-  });
+  // Canvas interactions now handled directly by the store
 
-  // Connect app settings to rectangle manager
-  React.useEffect(() => {
-    appSettings.setRectanglesRef(rectangleManager.setRectangles);
-    appSettings.setFitToChildrenRef(rectangleManager.fitToChildren);
-  }, [rectangleManager.setRectangles, rectangleManager.fitToChildren, appSettings]);
+  // App settings no longer need refs - they use the store directly
+  // React.useEffect(() => {
+  //   appSettings.setRectanglesRef(setRectanglesWrapper);
+  //   appSettings.setFitToChildrenRef(fitToChildren);
+  // }, [setRectanglesWrapper, fitToChildren, appSettings]);
 
   // Event handlers
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    uiState.showContextMenu(e.clientX, e.clientY, rectangleId);
-  }, [uiState]);
+    uiActions.showContextMenu(e.clientX, e.clientY, rectangleId);
+  }, [uiActions]);
 
   const handleAddRectangle = useCallback((parentId: string | null = null) => {
-    rectangleManager.addRectangle(parentId || undefined);
-  }, [rectangleManager]);
+    addRectangle(parentId || undefined);
+  }, [addRectangle]);
 
   // Memoize export settings to avoid recreating object and reduce dependency array
   const exportSettings = useMemo(() => ({
-    gridSize: appSettings.gridSize,
-    showGrid: appSettings.showGrid,
-    leafFixedWidth: appSettings.leafFixedWidth,
-    leafFixedHeight: appSettings.leafFixedHeight,
-    leafWidth: appSettings.leafWidth,
-    leafHeight: appSettings.leafHeight,
-    rootFontSize: appSettings.rootFontSize,
-    dynamicFontSizing: appSettings.dynamicFontSizing,
-    fontFamily: appSettings.fontFamily,
-    borderRadius: appSettings.borderRadius,
-    borderColor: appSettings.borderColor,
-    borderWidth: appSettings.borderWidth,
-    predefinedColors: appSettings.predefinedColors,
-    margin: appSettings.margin,
-    labelMargin: appSettings.labelMargin,
-    layoutAlgorithm: appSettings.layoutAlgorithm
+    gridSize: settings.gridSize,
+    showGrid: settings.showGrid,
+    leafFixedWidth: settings.leafFixedWidth,
+    leafFixedHeight: settings.leafFixedHeight,
+    leafWidth: settings.leafWidth,
+    leafHeight: settings.leafHeight,
+    rootFontSize: settings.rootFontSize,
+    dynamicFontSizing: settings.dynamicFontSizing,
+    fontFamily: settings.fontFamily,
+    borderRadius: settings.borderRadius,
+    borderColor: settings.borderColor,
+    borderWidth: settings.borderWidth,
+    predefinedColors: settings.predefinedColors,
+    margin: settings.margin,
+    labelMargin: settings.labelMargin,
+    layoutAlgorithm: settings.layoutAlgorithm
   }), [
-    appSettings.gridSize, appSettings.showGrid, appSettings.leafFixedWidth, appSettings.leafFixedHeight, 
-    appSettings.leafWidth, appSettings.leafHeight, appSettings.rootFontSize, 
-    appSettings.dynamicFontSizing, appSettings.fontFamily, appSettings.borderRadius, 
-    appSettings.borderColor, appSettings.borderWidth, appSettings.predefinedColors, 
-    appSettings.layoutAlgorithm, appSettings.margin, appSettings.labelMargin
+    settings.gridSize, settings.showGrid, settings.leafFixedWidth, settings.leafFixedHeight, 
+    settings.leafWidth, settings.leafHeight, settings.rootFontSize, 
+    settings.dynamicFontSizing, settings.fontFamily, settings.borderRadius, 
+    settings.borderColor, settings.borderWidth, settings.predefinedColors, 
+    settings.layoutAlgorithm, settings.margin, settings.labelMargin
   ]);
 
   const handleExport = useCallback(async (options: ExportOptions) => {
@@ -151,7 +207,7 @@ const HierarchicalDrawingApp = () => {
     try {
       await exportDiagram(
         containerRef.current, 
-        rectangleManager.rectangles, 
+        rectangles, 
         options, 
         exportSettings,
         exportSettings.gridSize,
@@ -163,89 +219,92 @@ const HierarchicalDrawingApp = () => {
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangleManager.rectangles, exportSettings]);
+  }, [rectangles, exportSettings]);
 
   const handleDeleteSelected = useCallback(() => {
-    if (rectangleManager.selectedId) {
-      rectangleManager.removeRectangle(rectangleManager.selectedId);
+    if (selectedId) {
+      removeRectangle(selectedId);
     }
-  }, [rectangleManager]);
+  }, [selectedId, removeRectangle]);
 
   // Use the app core settings handler
-  const handleSettingsChange = appCore.handleSettingsChange;
+  // Settings are now managed by the store directly
+  // const handleSettingsChange = appCore.handleSettingsChange;
 
   // Use the app core import handler
   const handleImport = appCore.handleImport;
 
   const handleAboutClick = useCallback(() => {
     setAboutModalOpen(true);
-    uiState.closeLeftMenu();
-  }, [uiState]);
+    uiActions.closeLeftMenu();
+  }, [uiActions]);
 
   const handleTemplatesClick = useCallback(() => {
-    uiState.openTemplatePage();
-    uiState.closeLeftMenu();
-  }, [uiState]);
+    uiActions.openTemplatePage();
+    uiActions.closeLeftMenu();
+  }, [uiActions]);
 
   const handleLockConfirmation = useCallback(() => {
-    if (uiState.lockConfirmationModal) {
-      rectangleManager.toggleManualPositioning(uiState.lockConfirmationModal.rectangleId);
+    if (ui.lockConfirmationModal) {
+      toggleManualPositioning(ui.lockConfirmationModal.rectangleId);
     }
-  }, [uiState.lockConfirmationModal, rectangleManager]);
+  }, [ui.lockConfirmationModal, toggleManualPositioning]);
 
   const handleLockAsIs = useCallback(() => {
-    if (uiState.lockConfirmationModal) {
-      rectangleManager.lockAsIs(uiState.lockConfirmationModal.rectangleId);
+    if (ui.lockConfirmationModal) {
+      lockAsIs(ui.lockConfirmationModal.rectangleId);
     }
-  }, [uiState.lockConfirmationModal, rectangleManager]);
+  }, [ui.lockConfirmationModal, lockAsIs]);
 
   const handleEditDescription = useCallback((rectangleId: string) => {
-    const rectangle = rectangleManager.findRectangle(rectangleId);
+    const rectangle = findRectangle(rectangleId);
     if (rectangle) {
-      uiState.showDescriptionEditModal(rectangleId, rectangle.label, rectangle.description || '');
+      uiActions.showDescriptionEditModal(rectangleId, rectangle.label, rectangle.description || '');
     }
-  }, [rectangleManager, uiState]);
+  }, [findRectangle, uiActions]);
 
   const handleSaveDescription = useCallback((description: string) => {
-    if (uiState.descriptionEditModal) {
-      rectangleManager.updateRectangleDescription(uiState.descriptionEditModal.rectangleId, description);
+    if (ui.descriptionEditModal) {
+      updateRectangleDescription(ui.descriptionEditModal.rectangleId, description);
     }
-  }, [rectangleManager, uiState.descriptionEditModal]);
+  }, [updateRectangleDescription, ui.descriptionEditModal]);
 
 
-  // Memoized calculations
-  const selectedRectangle = useMemo(() => 
-    rectangleManager.selectedId ? rectangleManager.findRectangle(rectangleManager.selectedId) || null : null,
-    [rectangleManager]
-  );
+  // MIGRATION: These memoized calculations no longer needed as components use store directly
+  // const selectedRectangle = useMemo(() => 
+  //   selectedId ? findRectangle(selectedId) || null : null,
+  //   [selectedId, findRectangle]
+  // );
 
-  const selectedChildCount = useMemo(() =>
-    rectangleManager.selectedId ? getChildren(rectangleManager.selectedId, rectangleManager.rectangles).length : 0,
-    [rectangleManager]
-  );
+  // const selectedChildCount = useMemo(() =>
+  //   selectedId ? getChildren(selectedId, rectangles).length : 0,
+  //   [selectedId, rectangles]
+  // );
 
 
-  // Use the auto-save system
-  const autoSaveManager = appCore.autoSave;
-  
-  // Set the triggerSave ref
+  // Initialize auto-save system
   useEffect(() => {
-    triggerSaveRef.current = autoSaveManager.save;
-  }, [autoSaveManager.save]);
+    autoSaveActions.initialize();
+    // Initialize auto-save subscriptions
+    const cleanup = initializeAutoSaveSubscription();
+    return cleanup;
+  }, [autoSaveActions]);
 
   const handleClearSavedData = useCallback(() => {
     setClearDataModalOpen(true);
   }, []);
 
   const handleConfirmClearAll = useCallback(async () => {
-    await autoSaveManager.clearData();
+    await autoSaveActions.clearData();
     window.location.reload();
-  }, [autoSaveManager]);
+  }, [autoSaveActions]);
 
   const handleConfirmClearModel = useCallback(async () => {
-    await autoSaveManager.clearModel();
+    // Clear only rectangles but preserve settings by setting empty rectangles
+    setRectanglesWithHistory([]);
+    await autoSaveActions.saveData();
     window.location.reload();
-  }, [autoSaveManager]);
+  }, [autoSaveActions, setRectanglesWithHistory]);
 
   // Debug function for testing IndexedDB directly
   const testIndexedDB = useCallback(async () => {
@@ -291,167 +350,186 @@ const HierarchicalDrawingApp = () => {
 
   // Add this to window for debugging
   React.useEffect(() => {
-    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveManager?: typeof autoSaveManager }).testIndexedDB = testIndexedDB;
-    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveManager?: typeof autoSaveManager }).autoSaveManager = autoSaveManager;
-  }, [testIndexedDB, autoSaveManager]);
+    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveActions?: typeof autoSaveActions }).testIndexedDB = testIndexedDB;
+    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveActions?: typeof autoSaveActions }).autoSaveActions = autoSaveActions;
+  }, [testIndexedDB, autoSaveActions]);
 
   // Set up PWA update notification handler
   useEffect(() => {
-    setGlobalUpdateNotificationHandler(uiState.showUpdateNotification);
+    setGlobalUpdateNotificationHandler(uiActions.showUpdateNotification);
     
     // Cleanup on unmount
     return () => {
       setGlobalUpdateNotificationHandler(() => {});
     };
-  }, [uiState.showUpdateNotification]);
+  }, [uiActions.showUpdateNotification]);
+
+  // Get canvas actions from store for keyboard shortcuts and mouse handling
+  const cancelDrag = useAppStore(state => state.canvasActions.cancelDrag);
+  const startKeyboardMovement = useAppStore(state => state.canvasActions.startKeyboardMovement);
+  const handleMouseMove = useAppStore(state => state.canvasActions.handleMouseMove);
+  const handleMouseUp = useAppStore(state => state.canvasActions.handleMouseUp);
+  const handleWheel = useAppStore(state => state.canvasActions.handleWheel);
+  const setIsSpacePressed = useAppStore(state => state.canvasActions.setIsSpacePressed);
 
   // Arrow key movement handlers with pixel-level precision
   const handleMoveUp = useCallback((deltaPixels: number) => {
-    if (!rectangleManager.selectedId) return;
-    canvasInteractions.startKeyboardMovement();
-    rectangleManager.moveRectangle(rectangleManager.selectedId, 0, -deltaPixels);
-  }, [rectangleManager, canvasInteractions]);
+    if (!selectedId) return;
+    startKeyboardMovement();
+    moveRectangle(selectedId, 0, -deltaPixels);
+  }, [selectedId, moveRectangle, startKeyboardMovement]);
 
   const handleMoveDown = useCallback((deltaPixels: number) => {
-    if (!rectangleManager.selectedId) return;
-    canvasInteractions.startKeyboardMovement();
-    rectangleManager.moveRectangle(rectangleManager.selectedId, 0, deltaPixels);
-  }, [rectangleManager, canvasInteractions]);
+    if (!selectedId) return;
+    startKeyboardMovement();
+    moveRectangle(selectedId, 0, deltaPixels);
+  }, [selectedId, moveRectangle, startKeyboardMovement]);
 
   const handleMoveLeft = useCallback((deltaPixels: number) => {
-    if (!rectangleManager.selectedId) return;
-    canvasInteractions.startKeyboardMovement();
-    rectangleManager.moveRectangle(rectangleManager.selectedId, -deltaPixels, 0);
-  }, [rectangleManager, canvasInteractions]);
+    if (!selectedId) return;
+    startKeyboardMovement();
+    moveRectangle(selectedId, -deltaPixels, 0);
+  }, [selectedId, moveRectangle, startKeyboardMovement]);
 
   const handleMoveRight = useCallback((deltaPixels: number) => {
-    if (!rectangleManager.selectedId) return;
-    canvasInteractions.startKeyboardMovement();
-    rectangleManager.moveRectangle(rectangleManager.selectedId, deltaPixels, 0);
-  }, [rectangleManager, canvasInteractions]);
+    if (!selectedId) return;
+    startKeyboardMovement();
+    moveRectangle(selectedId, deltaPixels, 0);
+  }, [selectedId, moveRectangle, startKeyboardMovement]);
+
+  // Global mouse event handlers for canvas interactions
+  useEffect(() => {
+    const mouseMove = (e: MouseEvent) => handleMouseMove(e, containerRef);
+    const mouseUp = () => handleMouseUp();
+    const wheel = (e: WheelEvent) => handleWheel(e, containerRef);
+    
+    document.addEventListener('mousemove', mouseMove);
+    document.addEventListener('mouseup', mouseUp);
+    
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', wheel, { passive: false });
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', mouseMove);
+      document.removeEventListener('mouseup', mouseUp);
+      if (container) {
+        container.removeEventListener('wheel', wheel);
+      }
+    };
+  }, [handleMouseMove, handleMouseUp, handleWheel]);
+
+  // Global keyboard event handlers for space key panning
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !e.repeat) {
+        const target = e.target as HTMLElement;
+        const isEditable = target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.contentEditable === 'true'
+        );
+        
+        if (!isEditable) {
+          e.preventDefault();
+          setIsSpacePressed(true);
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        const target = e.target as HTMLElement;
+        const isEditable = target && (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.contentEditable === 'true'
+        );
+        
+        if (!isEditable) {
+          e.preventDefault();
+        }
+        setIsSpacePressed(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyUp);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [setIsSpacePressed]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts(useMemo(() => ({
-    onUndo: rectangleManager.undo,
-    onRedo: rectangleManager.redo,
+    onUndo: undo,
+    onRedo: redo,
     onDelete: handleDeleteSelected,
-    onCancel: canvasInteractions.cancelDrag,
+    onCancel: cancelDrag,
     onMoveUp: handleMoveUp,
     onMoveDown: handleMoveDown,
     onMoveLeft: handleMoveLeft,
     onMoveRight: handleMoveRight,
-  }), [rectangleManager.undo, rectangleManager.redo, handleDeleteSelected, canvasInteractions.cancelDrag, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight]));
+  }), [undo, redo, handleDeleteSelected, cancelDrag, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
-      <UpdateNotification updateNotification={uiState.updateNotification} />
+      <UpdateNotification updateNotification={ui.updateNotification} />
       <Toolbar
         onAddRectangle={handleAddRectangle}
-        onExport={uiState.openExportModal}
+        onExport={uiActions.openExportModal}
         onImport={handleImport}
-        selectedId={rectangleManager.selectedId}
-        onToggleSidebar={uiState.toggleSidebar}
-        sidebarOpen={uiState.sidebarOpen}
-        onToggleLeftMenu={uiState.toggleLeftMenu}
-        leftMenuOpen={uiState.leftMenuOpen}
-        lastSaved={autoSaveManager.lastSaved}
-        autoSaveEnabled={autoSaveManager.isAutoSaveEnabled}
+        selectedId={selectedId}
+        lastSaved={autoSaveState.lastSaved}
+        autoSaveEnabled={autoSaveState.enabled}
       />
 
       <div className="flex-1 flex overflow-hidden relative">
         <LeftMenu
-          isOpen={uiState.leftMenuOpen}
-          onClose={uiState.closeLeftMenu}
           onAboutClick={handleAboutClick}
           onTemplatesClick={handleTemplatesClick}
-          onHelpClick={uiState.openHelpModal}
           onClearSavedData={handleClearSavedData}
         />
         
         <div className="flex-1 flex flex-col overflow-hidden">
           <Canvas
             containerRef={containerRef}
-            gridSize={appCore.appSettings.gridSize}
-            showGrid={appCore.appSettings.showGrid}
-            panOffset={canvasInteractions.panOffset}
-            isSpacePressed={canvasInteractions.isSpacePressed}
-            panState={canvasInteractions.panState}
-            hierarchyDragState={canvasInteractions.hierarchyDragState}
-            zoomState={canvasInteractions.zoomState}
-            onMouseDown={canvasInteractions.handleCanvasMouseDown}
-            onSelect={rectangleManager.setSelectedId}
             overlay={
-              <ActionButtonsOverlay
-                selectedRectangle={selectedRectangle}
-                childCount={selectedChildCount}
-                onAddChild={handleAddRectangle}
-                onRemove={rectangleManager.removeRectangle}
-                onFitToChildren={rectangleManager.fitToChildren}
-                onToggleManualPositioning={rectangleManager.toggleManualPositioning}
-                onShowLockConfirmation={uiState.showLockConfirmationModal}
-                gridSize={appCore.appSettings.gridSize}
-                isDragging={canvasInteractions.isDragging}
-                isResizing={canvasInteractions.isResizing}
-                isHierarchyDragging={canvasInteractions.isHierarchyDragging}
-                isKeyboardMoving={canvasInteractions.isKeyboardMoving}
-              />
+              <ActionButtonsOverlay />
             }
           >
             <RectangleRenderer
-              rectangles={rectangleManager.rectangles}
-              selectedId={rectangleManager.selectedId}
-              dragState={canvasInteractions.dragState}
-              resizeState={canvasInteractions.resizeState}
-              hierarchyDragState={canvasInteractions.hierarchyDragState}
-              resizeConstraintState={canvasInteractions.resizeConstraintState}
-              gridSize={appCore.appSettings.gridSize}
-              onMouseDown={canvasInteractions.handleRectangleMouseDown}
+              containerRef={containerRef}
               onContextMenu={handleContextMenu}
-              onSelect={rectangleManager.setSelectedId}
-              onUpdateLabel={rectangleManager.updateRectangleLabel}
-              onAddChild={rectangleManager.addRectangle}
-              onRemove={rectangleManager.removeRectangle}
-              onFitToChildren={rectangleManager.fitToChildren}
-              calculateFontSize={appCore.appSettings.calculateFontSize}
-              fontFamily={appCore.appSettings.fontFamily}
-              borderRadius={appCore.appSettings.borderRadius}
-              borderColor={appCore.appSettings.borderColor}
-              borderWidth={appCore.appSettings.borderWidth}
             />
           </Canvas>
         </div>
 
-        <Sidebar isOpen={uiState.sidebarOpen} onClose={uiState.closeSidebar}>
+        <Sidebar>
           <PropertyPanel
-            selectedId={rectangleManager.selectedId}
-            selectedRectangle={selectedRectangle}
-            rectangles={rectangleManager.rectangles}
-            onColorChange={rectangleManager.updateRectangleColor}
-            onLayoutPreferencesChange={rectangleManager.updateRectangleLayoutPreferences}
-            onToggleTextLabel={rectangleManager.toggleTextLabel}
-            onUpdateTextLabelProperties={rectangleManager.updateTextLabelProperties}
-            appSettings={appSettings}
-            onSettingsChange={(settings) => handleSettingsChange(settings)}
-            onUpdateColorSquare={appCore.appSettings.updateColorSquare}
+            // PropertyPanel now uses store directly - no props needed
           />
         </Sidebar>
       </div>
 
-      {uiState.contextMenu && (
+      {ui.contextMenu && (
         <ContextMenu
-          x={uiState.contextMenu.x}
-          y={uiState.contextMenu.y}
-          rectangleId={uiState.contextMenu.rectangleId}
-          onAddChild={rectangleManager.addRectangle}
-          onRemove={rectangleManager.removeRectangle}
+          x={ui.contextMenu.x}
+          y={ui.contextMenu.y}
+          rectangleId={ui.contextMenu.rectangleId}
+          onAddChild={addRectangle}
+          onRemove={removeRectangle}
           onEditDescription={handleEditDescription}
-          onClose={uiState.hideContextMenu}
+          onClose={uiActions.hideContextMenu}
         />
       )}
 
       <ExportModal
-        isOpen={uiState.exportModalOpen}
-        onClose={uiState.closeExportModal}
+        isOpen={ui.exportModalOpen}
+        onClose={uiActions.closeExportModal}
         onExport={handleExport}
       />
 
@@ -468,40 +546,40 @@ const HierarchicalDrawingApp = () => {
       />
 
       <HelpModal
-        isOpen={uiState.helpModalOpen}
-        onClose={uiState.closeHelpModal}
+        isOpen={ui.helpModalOpen}
+        onClose={uiActions.closeHelpModal}
       />
 
       <LockConfirmationModal
-        isOpen={!!uiState.lockConfirmationModal}
-        onClose={uiState.hideLockConfirmationModal}
+        isOpen={!!ui.lockConfirmationModal}
+        onClose={uiActions.hideLockConfirmationModal}
         onConfirm={handleLockConfirmation}
         onConfirmLockAsIs={handleLockAsIs}
-        rectangleLabel={uiState.lockConfirmationModal?.rectangleLabel || ''}
+        rectangleLabel={ui.lockConfirmationModal?.rectangleLabel || ''}
       />
 
       <DescriptionEditModal
-        isOpen={!!uiState.descriptionEditModal}
-        onClose={uiState.hideDescriptionEditModal}
+        isOpen={!!ui.descriptionEditModal}
+        onClose={uiActions.hideDescriptionEditModal}
         onSave={handleSaveDescription}
-        rectangleId={uiState.descriptionEditModal?.rectangleId || ''}
-        rectangleLabel={uiState.descriptionEditModal?.rectangleLabel || ''}
-        currentDescription={uiState.descriptionEditModal?.currentDescription || ''}
+        rectangleId={ui.descriptionEditModal?.rectangleId || ''}
+        rectangleLabel={ui.descriptionEditModal?.rectangleLabel || ''}
+        currentDescription={ui.descriptionEditModal?.currentDescription || ''}
       />
 
       <TemplatePage
-        isOpen={uiState.templatePageOpen}
-        onClose={uiState.closeTemplatePage}
-        rectangles={rectangleManager.rectangles}
-        setRectangles={rectangleManager.setRectanglesWithHistory}
-        fitToChildren={rectangleManager.fitToChildren}
-        predefinedColors={appCore.appSettings.predefinedColors}
+        isOpen={ui.templatePageOpen}
+        onClose={uiActions.closeTemplatePage}
+        rectangles={rectangles}
+        setRectangles={setRectanglesWithHistoryWrapper}
+        fitToChildren={fitToChildren}
+        predefinedColors={settings.predefinedColors}
         globalSettings={{
-          gridSize: appCore.appSettings.gridSize,
-          leafWidth: appCore.appSettings.leafWidth,
-          leafHeight: appCore.appSettings.leafHeight,
-          leafFixedWidth: appCore.appSettings.leafFixedWidth,
-          leafFixedHeight: appCore.appSettings.leafFixedHeight
+          gridSize: settings.gridSize,
+          leafWidth: settings.leafWidth,
+          leafHeight: settings.leafHeight,
+          leafFixedWidth: settings.leafFixedWidth,
+          leafFixedHeight: settings.leafFixedHeight
         }}
       />
     </div>

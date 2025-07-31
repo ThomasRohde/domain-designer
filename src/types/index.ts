@@ -242,6 +242,10 @@ export interface GlobalSettings {
   labelMargin: number;
   /** Layout algorithm type to use */
   layoutAlgorithm: LayoutAlgorithmType;
+  /** Custom colors array for tracking user-added colors */
+  customColors?: string[];
+  /** Whether the settings are being restored from storage */
+  isRestoring?: boolean;
 }
 
 /**
@@ -439,40 +443,7 @@ export interface DescriptionEditModalState {
   currentDescription: string;
 }
 
-/**
- * Return type for useUIState hook
- */
-export interface UIStateHook {
-  sidebarOpen: boolean;
-  leftMenuOpen: boolean;
-  contextMenu: ContextMenuState | null;
-  exportModalOpen: boolean;
-  lockConfirmationModal: LockConfirmationModalState | null;
-  descriptionEditModal: DescriptionEditModalState | null;
-  templatePageOpen: boolean;
-  helpModalOpen: boolean;
-  updateNotification: UpdateNotificationState;
-  toggleSidebar: () => void;
-  openSidebar: () => void;
-  closeSidebar: () => void;
-  toggleLeftMenu: () => void;
-  openLeftMenu: () => void;
-  closeLeftMenu: () => void;
-  showContextMenu: (x: number, y: number, rectangleId: string) => void;
-  hideContextMenu: () => void;
-  openExportModal: () => void;
-  closeExportModal: () => void;
-  showLockConfirmationModal: (rectangleId: string, rectangleLabel: string) => void;
-  hideLockConfirmationModal: () => void;
-  showDescriptionEditModal: (rectangleId: string, rectangleLabel: string, currentDescription: string) => void;
-  hideDescriptionEditModal: () => void;
-  openTemplatePage: () => void;
-  closeTemplatePage: () => void;
-  openHelpModal: () => void;
-  closeHelpModal: () => void;
-  showUpdateNotification: (updateServiceWorker: () => void) => void;
-  hideUpdateNotification: () => void;
-}
+// MIGRATION: UIStateHook removed - UI state now managed by Zustand store
 
 /**
  * Return type for useCanvasInteractions hook

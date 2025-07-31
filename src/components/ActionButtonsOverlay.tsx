@@ -1,37 +1,34 @@
 import React from 'react';
 import { Plus, Trash2, Minimize2, Lock, Unlock } from 'lucide-react';
-import { Rectangle } from '../types';
 import { LABEL_MARGIN } from '../utils/constants';
+import { useAppStore } from '../stores/useAppStore';
 
-interface ActionButtonsOverlayProps {
-  selectedRectangle: Rectangle | null;
-  childCount: number;
-  onAddChild: (parentId: string) => void;
-  onRemove: (id: string) => void;
-  onFitToChildren: (id: string) => void;
-  onToggleManualPositioning: (id: string) => void;
-  onShowLockConfirmation: (rectangleId: string, rectangleLabel: string) => void;
-  gridSize: number;
-  isDragging?: boolean;
-  isResizing?: boolean;
-  isHierarchyDragging?: boolean;
-  isKeyboardMoving?: boolean;
-}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface ActionButtonsOverlayProps {}
 
-const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
-  selectedRectangle,
-  childCount,
-  onAddChild,
-  onRemove,
-  onFitToChildren,
-  onToggleManualPositioning,
-  onShowLockConfirmation,
-  gridSize,
-  isDragging = false,
-  isResizing = false,
-  isHierarchyDragging = false,
-  isKeyboardMoving = false
-}) => {
+const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
+  // Get state from store
+  const selectedId = useAppStore(state => state.selectedId);
+  const rectangles = useAppStore(state => state.rectangles);
+  const gridSize = useAppStore(state => state.settings.gridSize);
+  const isDragging = useAppStore(state => state.canvasActions.isDragging());
+  const isResizing = useAppStore(state => state.canvasActions.isResizing());
+  const isHierarchyDragging = useAppStore(state => state.canvasActions.isHierarchyDragging());
+  const isKeyboardMoving = useAppStore(state => state.canvas.isKeyboardMoving);
+  
+  // Get actions from store
+  const addRectangle = useAppStore(state => state.rectangleActions.addRectangle);
+  const removeRectangle = useAppStore(state => state.rectangleActions.removeRectangle);
+  const fitToChildren = useAppStore(state => state.rectangleActions.fitToChildren);
+  const toggleManualPositioning = useAppStore(state => state.rectangleActions.toggleManualPositioning);
+  const showLockConfirmationModal = useAppStore(state => state.uiActions.showLockConfirmationModal);
+  
+  // Get computed values
+  const getChildren = useAppStore(state => state.getters.getChildren);
+  
+  // Calculate derived state
+  const selectedRectangle = selectedId ? rectangles.find(r => r.id === selectedId) : null;
+  const childCount = selectedId ? getChildren(selectedId).length : 0;
   // Hide action buttons during any drag/resize/keyboard movement operation
   if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging || isKeyboardMoving) {
     return null;
@@ -65,7 +62,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
           e.preventDefault();
           e.stopPropagation();
           console.log('Overlay Add Child button clicked for:', rect.id);
-          onAddChild(rect.id);
+          addRectangle(rect.id);
         }}
         onMouseDown={(e) => {
           e.preventDefault();
@@ -88,10 +85,10 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
             
             if (isManualPositioningEnabled) {
               // Show confirmation modal when locking (going from unlocked to locked)
-              onShowLockConfirmation(rect.id, rect.label);
+              showLockConfirmationModal(rect.id, rect.label);
             } else {
               // Allow unlocking without confirmation
-              onToggleManualPositioning(rect.id);
+              toggleManualPositioning(rect.id);
             }
           }}
           onMouseDown={(e) => {
@@ -111,7 +108,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
             e.preventDefault();
             e.stopPropagation();
             console.log('Overlay Fit to Children button clicked for:', rect.id);
-            onFitToChildren(rect.id);
+            fitToChildren(rect.id);
           }}
           onMouseDown={(e) => {
             e.preventDefault();
@@ -129,7 +126,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = ({
           e.preventDefault();
           e.stopPropagation();
           console.log('Overlay Remove button clicked for:', rect.id);
-          onRemove(rect.id);
+          removeRectangle(rect.id);
         }}
         onMouseDown={(e) => {
           e.preventDefault();

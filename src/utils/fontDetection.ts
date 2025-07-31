@@ -160,7 +160,7 @@ export function isFontAvailable(fontName: string): boolean {
     }
     
     return canvasResult;
-  } catch (error) {
+  } catch {
     // In case of any errors, be more permissive in production
     // For Danske fonts, assume they might be available since user specifically wants them
     if (fontName.startsWith('Danske')) {

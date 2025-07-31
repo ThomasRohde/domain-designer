@@ -1,18 +1,19 @@
 import React from 'react';
 import { Info, FileText, Trash2, HelpCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAppStore } from '../stores/useAppStore';
 import MobileOverlay from './MobileOverlay';
 
 interface LeftMenuProps {
-  isOpen: boolean;
-  onClose: () => void;
   onAboutClick: () => void;
   onTemplatesClick: () => void;
-  onHelpClick: () => void;
   onClearSavedData?: () => void;
 }
 
-const LeftMenu: React.FC<LeftMenuProps> = ({ isOpen, onClose, onAboutClick, onTemplatesClick, onHelpClick, onClearSavedData }) => {
+const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onClearSavedData }) => {
+  const isOpen = useAppStore(state => state.ui.leftMenuOpen);
+  const onClose = useAppStore(state => state.uiActions.closeLeftMenu);
+  const onHelpClick = useAppStore(state => state.uiActions.openHelpModal);
   return (
     <>
       {/* Left-side Menu */}

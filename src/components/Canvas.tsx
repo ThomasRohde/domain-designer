@@ -1,35 +1,30 @@
 import React, { RefObject } from 'react';
-import { PanState, HierarchyDragState, ZoomState } from '../types';
+import { useAppStore } from '../stores/useAppStore';
 
 interface CanvasProps {
   containerRef: RefObject<HTMLDivElement | null>;
-  gridSize: number;
-  showGrid: boolean;
-  panOffset: { x: number; y: number };
-  isSpacePressed: boolean;
-  panState: PanState | null;
-  hierarchyDragState?: HierarchyDragState | null;
-  zoomState: ZoomState;
-  onMouseDown: (e: React.MouseEvent) => void;
-  onSelect: (id: string | null) => void;
   children: React.ReactNode;
   overlay?: React.ReactNode;
 }
 
 const Canvas: React.FC<CanvasProps> = ({
   containerRef,
-  gridSize,
-  showGrid,
-  panOffset,
-  isSpacePressed,
-  panState,
-  hierarchyDragState,
-  zoomState,
-  onMouseDown,
-  onSelect,
   children,
   overlay,
 }) => {
+  // Get canvas state from store
+  const gridSize = useAppStore(state => state.settings.gridSize);
+  const showGrid = useAppStore(state => state.settings.showGrid);
+  const panOffset = useAppStore(state => state.canvas.panOffset);
+  const isSpacePressed = useAppStore(state => state.canvas.isSpacePressed);
+  const panState = useAppStore(state => state.canvas.panState);
+  const hierarchyDragState = useAppStore(state => state.canvas.hierarchyDragState);
+  const zoomState = useAppStore(state => state.canvas.zoomState);
+  
+  // Get actions from store
+  const handleCanvasMouseDown = useAppStore(state => state.canvasActions.handleCanvasMouseDown);
+  const setSelectedId = useAppStore(state => state.rectangleActions.setSelectedId);
+  
   // Check if the canvas background is a potential drop target
   const isCanvasDropTarget = hierarchyDragState && 
     hierarchyDragState.potentialTargets.some(target => target.targetId === null);
@@ -59,8 +54,8 @@ const Canvas: React.FC<CanvasProps> = ({
             willChange: panState ? 'background-position' : 'auto',
             overflow: 'hidden'
           }}
-          onClick={() => onSelect(null)}
-          onMouseDown={onMouseDown}
+          onClick={() => setSelectedId(null)}
+          onMouseDown={(e) => handleCanvasMouseDown(e, containerRef)}
         >
           <div
             className="w-full h-full relative"

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, Menu, Download, Upload, Settings } from 'lucide-react';
+import { useAppStore } from '../stores/useAppStore';
 import OfflineIndicator from './OfflineIndicator';
 
 interface ToolbarProps {
@@ -7,10 +8,6 @@ interface ToolbarProps {
   onExport: () => void;
   onImport: () => void;
   selectedId: string | null;
-  onToggleSidebar?: () => void;
-  sidebarOpen?: boolean;
-  onToggleLeftMenu?: () => void;
-  leftMenuOpen?: boolean;
   lastSaved?: number | null;
   autoSaveEnabled?: boolean;
 }
@@ -20,13 +17,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onExport,
   onImport,
   selectedId,
-  onToggleSidebar,
-  sidebarOpen,
-  onToggleLeftMenu,
-  leftMenuOpen,
   lastSaved,
   autoSaveEnabled
 }) => {
+  const sidebarOpen = useAppStore(state => state.ui.sidebarOpen);
+  const leftMenuOpen = useAppStore(state => state.ui.leftMenuOpen);
+  const onToggleSidebar = useAppStore(state => state.uiActions.toggleSidebar);
+  const onToggleLeftMenu = useAppStore(state => state.uiActions.toggleLeftMenu);
   return (
     <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-3">
       <div className="flex items-center justify-between">
