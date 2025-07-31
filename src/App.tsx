@@ -11,14 +11,10 @@ function RootHandler() {
   const location = useLocation();
   const urlParam = new URLSearchParams(location.search).get('url');
   
-  console.log('🔍 RootHandler - Location:', location.pathname, 'URL param:', urlParam);
-  
   if (urlParam) {
-    console.log('✅ URL parameter detected at root, rendering URLViewerPage');
     return <URLViewerPage />;
   }
   
-  console.log('📝 No URL parameter, rendering main editor');
   return <HierarchicalDrawingApp />;
 }
 

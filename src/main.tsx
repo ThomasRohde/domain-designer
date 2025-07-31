@@ -75,20 +75,6 @@ if (!root) {
   container._reactRoot = root;
 }
 
-// Debug: Early logging to verify app loading
-console.log('🔍 Main.tsx loading with basename:', basename);
-console.log('🔍 Current URL:', window.location.href);
-console.log('🔍 Search params:', window.location.search);
-
-// Check for GitHub Pages redirect stored in sessionStorage
-const redirectPath = sessionStorage.getItem('github-pages-redirect');
-if (redirectPath) {
-  console.log('🔍 Found GitHub Pages redirect:', redirectPath);
-  sessionStorage.removeItem('github-pages-redirect');
-  // Update the browser URL to the correct path
-  window.history.replaceState(null, '', basename.replace(/\/$/, '') + redirectPath);
-  console.log('🔍 Updated URL to:', window.location.href);
-}
 
 root.render(
   <React.StrictMode>

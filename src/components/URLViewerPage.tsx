@@ -69,14 +69,6 @@ const URLViewerPage: React.FC = () => {
   
   const url = getUrlFromPath();
   
-  // Debug logging for URL extraction
-  useEffect(() => {
-    console.log('URLViewerPage Debug:', {
-      pathname: location.pathname,
-      extractedUrl: url,
-      fullLocation: location
-    });
-  }, [location, url]);
   
   // Store actions for importing data to editor
   const { rectangleActions, settingsActions } = useAppStore();
