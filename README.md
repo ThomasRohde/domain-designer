@@ -18,6 +18,20 @@
 
   <img src="Screenshot.png" alt="Domain Designer Application Screenshot - showing hierarchical rectangles with layout controls and settings panel" width="800">
 
+  <div style="max-width: 700px; margin: 20px auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white; text-align: center;">
+    <h3 style="margin: 0 0 15px 0; font-size: 1.4em;">🏗️ The Enterprise Solution for Business Architecture</h3>
+    <p style="margin: 0 0 15px 0; font-size: 1.1em; line-height: 1.4;">
+      Design <strong>Business Capability Models</strong> and domain architectures with enterprise-grade security. 
+      Create, share, and collaborate on hierarchical diagrams without compromising sensitive business data.
+    </p>
+    <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+      <span style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9em;">🔒 No Data Upload Required</span>
+      <span style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9em;">🌐 URL-Based Sharing</span>
+      <span style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9em;">📱 Works Offline</span>
+      <span style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 0.9em;">⚡ Enterprise Ready</span>
+    </div>
+  </div>
+
   <p>
     <img src="https://img.shields.io/badge/React-18-blue?logo=react" alt="React 18">
     <img src="https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript" alt="TypeScript">
