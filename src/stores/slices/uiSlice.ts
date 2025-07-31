@@ -73,8 +73,8 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
   return {
     // Initial state
     ui: {
-      sidebarOpen: typeof window !== 'undefined' ? window.innerWidth >= 768 : false,
-      leftMenuOpen: typeof window !== 'undefined' ? window.innerWidth >= 768 : false,
+      sidebarOpen: false,
+      leftMenuOpen: false,
       contextMenu: null,
       exportModalOpen: false,
       lockConfirmationModal: null,
