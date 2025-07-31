@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Rectangle, AppSettings } from '../types';
 import { useViewerInteractions } from '../hooks/useViewerInteractions';
 import { useAutoSave } from '../hooks/useAutoSave';
 import ViewerCanvas from './ViewerCanvas';
 import ViewerRectangleRenderer from './ViewerRectangleRenderer';
+import URLViewerPage from './URLViewerPage';
 
 const ViewerPage: React.FC = () => {
+  const location = useLocation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
@@ -44,6 +46,13 @@ const ViewerPage: React.FC = () => {
 
     loadSavedData();
   }, [loadData]);
+
+  // Check if there's a URL query parameter - if so, render URLViewerPage instead
+  const urlParam = new URLSearchParams(location.search).get('url');
+  
+  if (urlParam) {
+    return <URLViewerPage />;
+  }
 
   /**
    * Dynamic font size calculation based on hierarchy depth.
