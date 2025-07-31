@@ -2,19 +2,15 @@ import { Rectangle, GlobalSettings } from '../types';
 import { AlignmentType } from '../stores/types';
 
 /**
- * PowerPoint-style alignment utilities for multi-select operations
+ * Professional alignment utilities for multi-select operations
  * 
- * Implements alignment algorithms that match PowerPoint's behavior:
- * - Left/Right/Top/Bottom: Align to extremes of selection bounding box
- * - Center/Middle: Align to mathematical center of selection bounding box
- * - Grid snapping: Final positions snap to application's grid system
- * 
- * All operations preserve the hierarchical constraints and respect manual positioning settings.
+ * Implements alignment algorithms matching PowerPoint and design tool behavior:
+ * - Edge alignments use the extremes of the selection bounding box
+ * - Center alignments use the mathematical center of the selection bounding box
+ * - All final positions snap to the application's grid system
+ * - Operations respect hierarchical constraints and manual positioning settings
  */
 
-/**
- * Selection bounds for alignment calculations
- */
 interface SelectionBounds {
   left: number;
   right: number;
@@ -25,8 +21,8 @@ interface SelectionBounds {
 }
 
 /**
- * Calculate the bounding box of the selected rectangles
- * Used as reference for all alignment operations
+ * Calculates the bounding box encompassing all selected rectangles.
+ * This bounding box serves as the reference frame for all alignment operations.
  */
 function calculateSelectionBounds(rectangles: Rectangle[]): SelectionBounds {
   if (rectangles.length === 0) {
@@ -45,16 +41,14 @@ function calculateSelectionBounds(rectangles: Rectangle[]): SelectionBounds {
 }
 
 /**
- * Snap position to grid system
- * Ensures aligned rectangles maintain grid alignment
+ * Snaps coordinate values to the grid system to maintain consistent positioning.
  */
 function snapToGrid(value: number, gridSize: number): number {
   return Math.round(value / gridSize) * gridSize;
 }
 
 /**
- * Align rectangles to the left edge of the selection bounds
- * All rectangles will have their left edge at the leftmost x position
+ * Aligns all rectangles to the leftmost edge of the selection bounds.
  */
 export function alignLeft(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
@@ -69,8 +63,7 @@ export function alignLeft(rectangles: Rectangle[], settings: GlobalSettings): Re
 }
 
 /**
- * Align rectangles to horizontal center of the selection bounds
- * All rectangles will have their center x at the selection center x
+ * Aligns all rectangles to the horizontal center of the selection bounds.
  */
 export function alignCenter(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
@@ -85,8 +78,7 @@ export function alignCenter(rectangles: Rectangle[], settings: GlobalSettings): 
 }
 
 /**
- * Align rectangles to the right edge of the selection bounds
- * All rectangles will have their right edge at the rightmost x position
+ * Aligns all rectangles to the rightmost edge of the selection bounds.
  */
 export function alignRight(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
@@ -101,8 +93,7 @@ export function alignRight(rectangles: Rectangle[], settings: GlobalSettings): R
 }
 
 /**
- * Align rectangles to the top edge of the selection bounds
- * All rectangles will have their top edge at the topmost y position
+ * Aligns all rectangles to the topmost edge of the selection bounds.
  */
 export function alignTop(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
@@ -117,8 +108,7 @@ export function alignTop(rectangles: Rectangle[], settings: GlobalSettings): Rec
 }
 
 /**
- * Align rectangles to vertical center of the selection bounds
- * All rectangles will have their center y at the selection center y
+ * Aligns all rectangles to the vertical center of the selection bounds.
  */
 export function alignMiddle(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
@@ -133,8 +123,7 @@ export function alignMiddle(rectangles: Rectangle[], settings: GlobalSettings): 
 }
 
 /**
- * Align rectangles to the bottom edge of the selection bounds
- * All rectangles will have their bottom edge at the bottommost y position
+ * Aligns all rectangles to the bottommost edge of the selection bounds.
  */
 export function alignBottom(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
@@ -149,8 +138,7 @@ export function alignBottom(rectangles: Rectangle[], settings: GlobalSettings): 
 }
 
 /**
- * Master alignment function that dispatches to specific alignment implementations
- * Provides a unified interface for all alignment operations
+ * Dispatches alignment operations to the appropriate algorithm implementation.
  */
 export function alignRectangles(
   rectangles: Rectangle[], 
@@ -176,16 +164,14 @@ export function alignRectangles(
 }
 
 /**
- * Validate if alignment operation can be performed
- * Checks minimum selection size and other constraints
+ * Validates if alignment can be performed (requires minimum 2 rectangles).
  */
 export function canAlign(rectangles: Rectangle[]): boolean {
   return rectangles.length >= 2;
 }
 
 /**
- * Get a human-readable description of the alignment operation
- * Useful for undo/redo history and user feedback
+ * Generates description text for undo/redo history and user feedback.
  */
 export function getAlignmentDescription(alignmentType: AlignmentType, count: number): string {
   const alignmentNames = {

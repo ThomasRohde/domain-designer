@@ -673,7 +673,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       if (rectangles.length < 2) return;
       
-      // Use the sophisticated alignment utility with grid snapping
+      // Apply professional alignment algorithms with grid snapping
       const alignedRectangles = alignRectangles(rectangles, type, state.settings);
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
@@ -687,13 +687,13 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     distributeRectangles: (ids: string[], direction: import('../types').DistributionDirection) => {
       const state = get();
       
-      // Get rectangles in SELECTION ORDER - this is crucial for determining boundaries
-      // The first and last selected rectangles will be the fixed boundaries
+      // Preserve selection order - critical for boundary determination
+      // First and last selected rectangles become fixed boundaries
       const rectangles = ids.map(id => state.rectangles.find(r => r.id === id)).filter(Boolean) as Rectangle[];
       
       if (rectangles.length < 3) return;
       
-      // Use the sophisticated distribution utility with selection-order boundaries
+      // Apply professional distribution algorithms with white space focus
       const distributedRectangles = distributeRectangles(rectangles, direction, state.settings);
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {

@@ -4,77 +4,61 @@ import { DistributionDirection } from '../stores/types';
 /**
  * Professional design tool distribution utilities for multi-select operations
  * 
- * Implements WHITE SPACE distribution like Adobe Illustrator, Figma, etc:
- * - FIRST SELECTED rectangle remains FIXED - user-defined start boundary
- * - LAST SELECTED rectangle remains FIXED - user-defined end boundary  
- * - ALL OTHER rectangles are positioned so WHITE SPACE (gaps) between them are equal
- * - Calculates total available white space and divides it equally between all gaps
- * - Selection order determines boundaries, not spatial position
+ * Implements white space distribution behavior matching Adobe Illustrator and Figma:
+ * - First and last selected rectangles remain fixed as user-defined boundaries
+ * - Intermediate rectangles are repositioned to create equal gaps between all objects
+ * - Selection order (not spatial position) determines which rectangles act as boundaries
+ * - Total available white space is calculated and divided equally among all gaps
  * 
- * This is the true professional design tool behavior - distribute the available
- * white space evenly, creating perfectly equal gaps between all objects.
- * 
- * Example: Objects A[gap]B[gap]C[gap]D where all [gap] spaces are identical.
- * 
- * All operations preserve the hierarchical constraints and respect manual positioning settings.
+ * This differs from typical "evenly space centers" distribution by focusing on gap uniformity,
+ * which is the standard behavior users expect from professional design tools.
  */
 
 /**
- * Distribute rectangles horizontally with equal WHITE SPACE between them
- * ULTRA SIMPLE: First selected and last selected stay fixed, others get equal gaps
+ * Distributes rectangles horizontally with equal spacing between objects.
+ * Uses selection order to determine fixed boundary rectangles.
  */
 export function distributeHorizontally(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length < 3) return rectangles;
 
-  // First and last in selection order are the FIXED boundaries
   const firstBoundary = rectangles[0];
   const lastBoundary = rectangles[rectangles.length - 1];
   
-  // Determine which boundary is leftmost and rightmost spatially
+  // Determine spatial positioning regardless of selection order
   const leftBoundary = firstBoundary.x <= lastBoundary.x ? firstBoundary : lastBoundary;
   const rightBoundary = firstBoundary.x <= lastBoundary.x ? lastBoundary : firstBoundary;
   
-  // Get all rectangles that need to be repositioned (everything except the two boundaries)
   const rectsToDistribute = rectangles.filter(rect => 
     rect.id !== firstBoundary.id && rect.id !== lastBoundary.id
   );
   
   if (rectsToDistribute.length === 0) return rectangles;
   
-  // Calculate available space between boundaries
   const leftBoundaryRight = leftBoundary.x + leftBoundary.w;
   const rightBoundaryLeft = rightBoundary.x;
   const availableSpace = rightBoundaryLeft - leftBoundaryRight;
   
-  // Calculate total width of rectangles to distribute
   const totalObjectWidth = rectsToDistribute.reduce((sum, rect) => sum + rect.w, 0);
-  
-  // Calculate available white space
   const totalWhiteSpace = availableSpace - totalObjectWidth;
   
-  // Calculate number of gaps: one before each object, one after the last object
+  // Distribute white space equally: one gap before each object, one after the last
   const numGaps = rectsToDistribute.length + 1;
   const gapSize = totalWhiteSpace / numGaps;
   
-  // Sort rectangles to distribute by their current X position (left to right)
   const sortedRects = [...rectsToDistribute].sort((a, b) => a.x - b.x);
-  
-  // Position rectangles with equal gaps
   const newPositions = new Map<string, number>();
   
-  // Keep boundaries fixed
+  // Preserve boundary positions
   newPositions.set(firstBoundary.id, firstBoundary.x);
   newPositions.set(lastBoundary.id, lastBoundary.x);
   
-  // Position the distributed rectangles
+  // Position intermediate rectangles with calculated equal gaps
   let currentX = leftBoundaryRight + gapSize;
-  
   sortedRects.forEach((rect) => {
     newPositions.set(rect.id, currentX);
     currentX += rect.w + gapSize;
   });
   
-  // Return rectangles with new positions
   return rectangles.map(rect => {
     const newX = newPositions.get(rect.id);
     return newX !== undefined ? { ...rect, x: newX } : rect;
@@ -82,61 +66,50 @@ export function distributeHorizontally(rectangles: Rectangle[], _settings: Globa
 }
 
 /**
- * Distribute rectangles vertically with equal WHITE SPACE between them
- * ULTRA SIMPLE: First selected and last selected stay fixed, others get equal gaps
+ * Distributes rectangles vertically with equal spacing between objects.
+ * Uses selection order to determine fixed boundary rectangles.
  */
 export function distributeVertically(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length < 3) return rectangles;
 
-  // First and last in selection order are the FIXED boundaries
   const firstBoundary = rectangles[0];
   const lastBoundary = rectangles[rectangles.length - 1];
   
-  // Determine which boundary is topmost and bottommost spatially
+  // Determine spatial positioning regardless of selection order
   const topBoundary = firstBoundary.y <= lastBoundary.y ? firstBoundary : lastBoundary;
   const bottomBoundary = firstBoundary.y <= lastBoundary.y ? lastBoundary : firstBoundary;
   
-  // Get all rectangles that need to be repositioned (everything except the two boundaries)
   const rectsToDistribute = rectangles.filter(rect => 
     rect.id !== firstBoundary.id && rect.id !== lastBoundary.id
   );
   
   if (rectsToDistribute.length === 0) return rectangles;
   
-  // Calculate available space between boundaries
   const topBoundaryBottom = topBoundary.y + topBoundary.h;
   const bottomBoundaryTop = bottomBoundary.y;
   const availableSpace = bottomBoundaryTop - topBoundaryBottom;
   
-  // Calculate total height of rectangles to distribute
   const totalObjectHeight = rectsToDistribute.reduce((sum, rect) => sum + rect.h, 0);
-  
-  // Calculate available white space
   const totalWhiteSpace = availableSpace - totalObjectHeight;
   
-  // Calculate number of gaps: one before each object, one after the last object
+  // Distribute white space equally: one gap before each object, one after the last
   const numGaps = rectsToDistribute.length + 1;
   const gapSize = totalWhiteSpace / numGaps;
   
-  // Sort rectangles to distribute by their current Y position (top to bottom)
   const sortedRects = [...rectsToDistribute].sort((a, b) => a.y - b.y);
-  
-  // Position rectangles with equal gaps
   const newPositions = new Map<string, number>();
   
-  // Keep boundaries fixed
+  // Preserve boundary positions
   newPositions.set(firstBoundary.id, firstBoundary.y);
   newPositions.set(lastBoundary.id, lastBoundary.y);
   
-  // Position the distributed rectangles
+  // Position intermediate rectangles with calculated equal gaps
   let currentY = topBoundaryBottom + gapSize;
-  
   sortedRects.forEach((rect) => {
     newPositions.set(rect.id, currentY);
     currentY += rect.h + gapSize;
   });
   
-  // Return rectangles with new positions
   return rectangles.map(rect => {
     const newY = newPositions.get(rect.id);
     return newY !== undefined ? { ...rect, y: newY } : rect;
@@ -144,8 +117,7 @@ export function distributeVertically(rectangles: Rectangle[], _settings: GlobalS
 }
 
 /**
- * Master distribution function that dispatches to specific distribution implementations
- * Provides a unified interface for all distribution operations
+ * Dispatches distribution operations to the appropriate algorithm implementation.
  */
 export function distributeRectangles(
   rectangles: Rectangle[], 
@@ -163,16 +135,14 @@ export function distributeRectangles(
 }
 
 /**
- * Validate if distribution operation can be performed
- * Distribution requires minimum 3 rectangles to create meaningful spacing
+ * Validates if distribution can be performed (requires minimum 3 rectangles).
  */
 export function canDistribute(rectangles: Rectangle[]): boolean {
   return rectangles.length >= 3;
 }
 
 /**
- * Get a human-readable description of the distribution operation
- * Useful for undo/redo history and user feedback
+ * Generates description text for undo/redo history and user feedback.
  */
 export function getDistributionDescription(direction: DistributionDirection, count: number): string {
   const directionName = direction === 'horizontal' ? 'Horizontally' : 'Vertically';
@@ -180,8 +150,7 @@ export function getDistributionDescription(direction: DistributionDirection, cou
 }
 
 /**
- * Calculate the current spacing between rectangles (for UI feedback)
- * Returns the spacing measurements for the given direction
+ * Calculates current gap sizes between rectangles for UI feedback and validation.
  */
 export function calculateCurrentSpacing(
   rectangles: Rectangle[], 
@@ -215,8 +184,8 @@ export function calculateCurrentSpacing(
 }
 
 /**
- * Check if rectangles are already evenly distributed
- * Used to provide user feedback about distribution state
+ * Determines if rectangles already have uniform spacing within tolerance.
+ * Used for UI state indication and preventing redundant operations.
  */
 export function areEvenlyDistributed(
   rectangles: Rectangle[], 
