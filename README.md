@@ -5,7 +5,7 @@
   <p>
     <a href="https://thomasrohde.github.io/domain-designer/"><strong>🚀 Live Demo</strong></a>
     •
-    <a href="https://thomasrohde.github.io/domain-designer/viewer/https%3A//thomasrohde.github.io/domain-designer/test-models/sample-diagram.json"><strong>🔗 Try URL Viewer</strong></a>
+    <a href="https://thomasrohde.github.io/domain-designer/viewer?url=https%3A//thomasrohde.github.io/domain-designer/test-models/sample-diagram.json"><strong>🔗 Try URL Viewer</strong></a>
     •
     <a href="#features"><strong>Features</strong></a>
     •
@@ -223,7 +223,7 @@ For advanced positioning control:
 Share your exported JSON diagrams instantly with the URL viewer:
 
 ```
-https://yourdomain.com/viewer/https://example.com/path/to/diagram.json
+https://yourdomain.com/viewer?url=https://example.com/path/to/diagram.json
 ```
 
 **Features:**
@@ -238,12 +238,12 @@ https://yourdomain.com/viewer/https://example.com/path/to/diagram.json
 # Export your diagram to JSON
 # Upload to GitHub, Gist, or any web server
 # Share the viewer URL:
-/viewer/https://raw.githubusercontent.com/user/repo/main/diagram.json
+/viewer?url=https://raw.githubusercontent.com/user/repo/main/diagram.json
 ```
 
 **🎯 Try It Now:**
 <div align="center">
-  <a href="https://thomasrohde.github.io/domain-designer/viewer/https%3A//thomasrohde.github.io/domain-designer/test-models/sample-diagram.json">
+  <a href="https://thomasrohde.github.io/domain-designer/viewer?url=https%3A//thomasrohde.github.io/domain-designer/test-models/sample-diagram.json">
     <img src="https://img.shields.io/badge/🔗%20View%20Sample%20Diagram-blue?style=for-the-badge" alt="View Sample Diagram">
   </a>
 </div>

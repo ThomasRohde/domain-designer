@@ -257,16 +257,16 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <ol className="text-sm space-y-1 list-decimal list-inside">
               <li>Export your diagram as JSON</li>
               <li>Upload the JSON file to any web-accessible location (GitHub, Gist, etc.)</li>
-              <li>Share the URL in this format: <code className="bg-gray-100 px-1 rounded">/viewer/[JSON_URL]</code></li>
+              <li>Share the URL in this format: <code className="bg-gray-100 px-1 rounded">/viewer?url=[JSON_URL]</code></li>
             </ol>
           </div>
           
           <div>
             <h4 className="font-semibold text-gray-800 mb-2">URL Format</h4>
             <pre className="text-xs bg-gray-100 p-3 rounded-md overflow-x-auto">
-{`https://yourdomain.com/viewer/https://example.com/diagram.json
-https://yourdomain.com/viewer/https://gist.githubusercontent.com/user/id/raw/diagram.json
-https://yourdomain.com/viewer/https://raw.githubusercontent.com/user/repo/main/diagram.json`}
+{`https://yourdomain.com/viewer?url=https://example.com/diagram.json
+https://yourdomain.com/viewer?url=https://gist.githubusercontent.com/user/id/raw/diagram.json
+https://yourdomain.com/viewer?url=https://raw.githubusercontent.com/user/repo/main/diagram.json`}
             </pre>
           </div>
           
@@ -298,7 +298,7 @@ https://yourdomain.com/viewer/https://raw.githubusercontent.com/user/repo/main/d
               <li>Export as JSON using the export dialog</li>
               <li>Upload to GitHub Gist or repository</li>
               <li>Copy the raw file URL</li>
-              <li>Share: <code className="bg-gray-100 px-1 rounded">/viewer/[your-raw-url]</code></li>
+              <li>Share: <code className="bg-gray-100 px-1 rounded">/viewer?url=[your-raw-url]</code></li>
             </ol>
           </div>
         </div>

@@ -25,10 +25,24 @@ const URLViewerPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Extract URL from pathname (everything after /viewer/)
+  // Extract URL from either path parameters or query parameters
   // Handle both development (/viewer/) and production (/domain-designer/viewer/) paths
   const getUrlFromPath = () => {
     const pathname = location.pathname;
+    const searchParams = new URLSearchParams(location.search);
+    
+    // First, try to get URL from query parameter (GitHub Pages compatible)
+    const queryUrl = searchParams.get('url');
+    if (queryUrl) {
+      try {
+        return decodeURIComponent(queryUrl);
+      } catch (error) {
+        console.warn('Failed to decode query URL parameter:', queryUrl, error);
+        return queryUrl;
+      }
+    }
+    
+    // Fallback to path parameter extraction (for backwards compatibility)
     let extractedUrl = null;
     
     // Check for production path first
