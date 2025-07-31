@@ -15,20 +15,24 @@
         // If we're in the domain-designer subdirectory, preserve the full path
         if (path.startsWith('/domain-designer/')) {
           console.log('🔍 Redirecting domain-designer path:', path, 'search:', l.search);
-          // Replace the current URL in history with the index.html version
-          // This allows React Router to handle the routing client-side
+          
+          // Store the original path in sessionStorage for React Router to handle
+          sessionStorage.setItem('github-pages-redirect', path.substring('/domain-designer'.length) + l.search + l.hash);
+          
+          // Replace the current URL in history with the full preserved path
           window.history.replaceState(null, null, path + l.search + l.hash);
           
-          // Redirect to index.html with query parameters and hash preserved
+          // Redirect to index.html - React Router will handle the actual routing
           var redirectUrl = '/domain-designer/' + l.search + l.hash;
-          console.log('🔍 Redirecting to:', redirectUrl);
+          console.log('🔍 Redirecting to:', redirectUrl, 'stored route:', path.substring('/domain-designer'.length));
           window.location.replace(redirectUrl);
         } else {
           console.log('🔍 Redirecting root path:', path, 'search:', l.search);
           // Fallback for root domain deployment
+          sessionStorage.setItem('github-pages-redirect', path + l.search + l.hash);
           window.history.replaceState(null, null, path + l.search + l.hash);
           var redirectUrl = '/' + l.search + l.hash;
-          console.log('🔍 Redirecting to:', redirectUrl);
+          console.log('🔍 Redirecting to:', redirectUrl, 'stored route:', path);
           window.location.replace(redirectUrl);
         }
       }(window.location))
