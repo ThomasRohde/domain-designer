@@ -1,5 +1,6 @@
 import React, { RefObject } from 'react';
 import { useAppStore } from '../stores/useAppStore';
+import SelectionBox from './SelectionBox';
 
 interface CanvasProps {
   /** Reference to the canvas container element for drag/pan operations */
@@ -31,6 +32,9 @@ const Canvas: React.FC<CanvasProps> = ({
   const panState = useAppStore(state => state.canvas.panState);
   const hierarchyDragState = useAppStore(state => state.canvas.hierarchyDragState);
   const zoomState = useAppStore(state => state.canvas.zoomState);
+  
+  // Multi-select and selection box state
+  const selectionBoxState = useAppStore(state => state.ui.selectionBoxState);
   
   // Canvas interaction handlers
   const handleCanvasMouseDown = useAppStore(state => state.canvasActions.handleCanvasMouseDown);
@@ -84,6 +88,18 @@ const Canvas: React.FC<CanvasProps> = ({
             {/* Overlay content (like action buttons) positioned within the zoomed coordinate system */}
             {overlay}
           </div>
+          
+          {/* Selection box for drag selection - positioned outside transformed container */}
+          {selectionBoxState && selectionBoxState.isActive && (
+            <SelectionBox
+              startX={selectionBoxState.startX}
+              startY={selectionBoxState.startY}
+              currentX={selectionBoxState.currentX}
+              currentY={selectionBoxState.currentY}
+              zoom={zoomState.level}
+              panOffset={panOffset}
+            />
+          )}
           
           {/* Active drop zone visual feedback for hierarchy rearrangement */}
           {isCanvasCurrentDropTarget && (

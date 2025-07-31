@@ -11,6 +11,8 @@ import {
   updateRectangleType,
   applyFixedDimensions
 } from '../../utils/rectangleOperations';
+import { alignRectangles } from '../../utils/alignmentUtils';
+import { distributeRectangles } from '../../utils/distributionUtils';
 import type { SliceCreator, RectangleActions } from '../types';
 
 /**
@@ -510,6 +512,196 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
 
     setSelectedId: (id: string | null) => {
       set({ selectedId: id });
+      // Also update UI selectedIds for consistency
+      if (id) {
+        set(state => ({
+          ui: { ...state.ui, selectedIds: [id] }
+        }));
+      } else {
+        set(state => ({
+          ui: { ...state.ui, selectedIds: [] }
+        }));
+      }
+    },
+
+    setSelectedIds: (ids: string[]) => {
+      set(state => ({
+        ui: { ...state.ui, selectedIds: ids },
+        // For backward compatibility, set selectedId to first item or null
+        selectedId: ids.length > 0 ? ids[0] : null
+      }));
+    },
+
+    addToSelection: (id: string) => {
+      const state = get();
+      const { rectangles, ui } = state;
+      
+      // Validate selection constraints before adding
+      const currentSelection = ui.selectedIds;
+      if (currentSelection.length === 0) {
+        // First selection, just add it
+        set(state => ({
+          ui: { ...state.ui, selectedIds: [id] },
+          selectedId: id
+        }));
+        return true;
+      }
+      
+      // Check if we can add this rectangle to the current selection
+      const targetRect = rectangles.find(r => r.id === id);
+      if (!targetRect) return false;
+      
+      // Check same parent constraint
+      const firstSelectedRect = rectangles.find(r => r.id === currentSelection[0]);
+      if (!firstSelectedRect) return false;
+      
+      if (targetRect.parentId !== firstSelectedRect.parentId) {
+        return false; // Different parents, cannot multi-select
+      }
+      
+      // Check text label constraint
+      if (targetRect.isTextLabel) {
+        return false; // Text labels cannot be multi-selected
+      }
+      
+      // Add to selection if not already selected
+      if (!currentSelection.includes(id)) {
+        set(state => ({
+          ui: { ...state.ui, selectedIds: [...currentSelection, id] }
+        }));
+      }
+      return true;
+    },
+
+    removeFromSelection: (id: string) => {
+      const state = get();
+      const currentSelection = state.ui.selectedIds;
+      const newSelection = currentSelection.filter(selectedId => selectedId !== id);
+      
+      set(state => ({
+        ui: { ...state.ui, selectedIds: newSelection },
+        selectedId: newSelection.length > 0 ? newSelection[0] : null
+      }));
+    },
+
+    clearSelection: () => {
+      set(state => ({
+        ui: { ...state.ui, selectedIds: [] },
+        selectedId: null
+      }));
+    },
+
+    toggleSelection: (id: string) => {
+      const state = get();
+      const currentSelection = state.ui.selectedIds;
+      
+      if (currentSelection.includes(id)) {
+        get().rectangleActions.removeFromSelection(id);
+      } else {
+        get().rectangleActions.addToSelection(id);
+      }
+    },
+
+    bulkUpdateColor: (ids: string[], color: string) => {
+      updateRectanglesWithHistory(set, get, (currentRectangles) => {
+        return currentRectangles.map(rect => 
+          ids.includes(rect.id) ? { ...rect, color } : rect
+        );
+      });
+    },
+
+    bulkDelete: (ids: string[]) => {
+      updateRectanglesWithHistory(set, get, (currentRectangles) => {
+        // Get all descendants of rectangles to be deleted
+        let toDelete = new Set(ids);
+        
+        for (const id of ids) {
+          const descendants = getAllDescendants(id, currentRectangles);
+          descendants.forEach(descId => toDelete.add(descId));
+        }
+        
+        // Remove all rectangles and their descendants
+        const remaining = currentRectangles.filter(rect => !toDelete.has(rect.id));
+        
+        // Update parent types for any parents that no longer have children
+        let updated = remaining;
+        for (const rect of remaining) {
+          if (rect.type === 'parent') {
+            const hasChildren = remaining.some(r => r.parentId === rect.id);
+            if (!hasChildren) {
+              updated = updated.map(r => r.id === rect.id ? { ...r, type: 'leaf' as RectangleType } : r);
+            }
+          }
+        }
+        
+        return updated;
+      });
+      
+      // Clear selection after bulk delete
+      get().rectangleActions.clearSelection();
+    },
+
+    bulkMove: (ids: string[], deltaX: number, deltaY: number) => {
+      const state = get();
+      const { rectangles } = state;
+      
+      // Check if bulk movement is allowed (all parents must have manual positioning enabled)
+      const selectedRects = rectangles.filter(r => ids.includes(r.id));
+      const parentIds = [...new Set(selectedRects.map(r => r.parentId).filter(Boolean))];
+      
+      for (const parentId of parentIds) {
+        const parent = rectangles.find(r => r.id === parentId);
+        if (parent && !parent.isManualPositioningEnabled) {
+          return false; // Parent doesn't allow manual positioning
+        }
+      }
+      
+      updateRectanglesWithHistory(set, get, (currentRectangles) => {
+        return currentRectangles.map(rect => 
+          ids.includes(rect.id) 
+            ? { ...rect, x: rect.x + deltaX, y: rect.y + deltaY }
+            : rect
+        );
+      });
+      
+      return true;
+    },
+
+    alignRectangles: (ids: string[], type: import('../types').AlignmentType) => {
+      const state = get();
+      const rectangles = state.rectangles.filter(r => ids.includes(r.id));
+      
+      if (rectangles.length < 2) return;
+      
+      // Use the sophisticated alignment utility with grid snapping
+      const alignedRectangles = alignRectangles(rectangles, type, state.settings);
+      
+      updateRectanglesWithHistory(set, get, (currentRectangles) => {
+        const alignedMap = new Map(alignedRectangles.map(r => [r.id, r]));
+        return currentRectangles.map(rect => 
+          alignedMap.get(rect.id) || rect
+        );
+      });
+    },
+
+    distributeRectangles: (ids: string[], direction: import('../types').DistributionDirection) => {
+      const state = get();
+      
+      // Get rectangles in SELECTION ORDER - this is crucial for determining boundaries
+      // The first and last selected rectangles will be the fixed boundaries
+      const rectangles = ids.map(id => state.rectangles.find(r => r.id === id)).filter(Boolean) as Rectangle[];
+      
+      if (rectangles.length < 3) return;
+      
+      // Use the sophisticated distribution utility with selection-order boundaries
+      const distributedRectangles = distributeRectangles(rectangles, direction, state.settings);
+      
+      updateRectanglesWithHistory(set, get, (currentRectangles) => {
+        const distributedMap = new Map(distributedRectangles.map(r => [r.id, r]));
+        return currentRectangles.map(rect => 
+          distributedMap.get(rect.id) || rect
+        );
+      });
     },
 
     setRectangles: (rectangles: Rectangle[]) => {

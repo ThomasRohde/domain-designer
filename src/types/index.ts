@@ -354,6 +354,8 @@ export interface ContextMenuState {
   y: number;
   /** ID of rectangle that triggered the menu */
   rectangleId: string;
+  /** IDs of selected rectangles for multi-select context menu */
+  selectedIds?: string[];
 }
 
 /**

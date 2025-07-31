@@ -50,7 +50,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     isKeyboardMoving: false,      // Keyboard movement feedback state
     initialPositions: null,       // Cached positions for drag operations
     needsLayoutUpdate: null,      // Layout update requirements
-    keyboardTimeoutId: null       // Debounce timer for keyboard feedback
+    keyboardTimeoutId: null,      // Debounce timer for keyboard feedback
+    multiSelectDragInitialPositions: null  // Initial positions for bulk drag operations
   },
 
   // Canvas interaction actions
@@ -678,6 +679,76 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
 
     isHierarchyDragging: () => {
       return get().canvas.hierarchyDragState !== null;
+    },
+
+    /**
+     * Multi-select drag operations
+     * Manages bulk drag state and initial positions for multi-select operations
+     */
+    startMultiSelectDrag: (initialPositions: Record<string, { x: number; y: number }>) => {
+      set(state => ({
+        canvas: {
+          ...state.canvas,
+          multiSelectDragInitialPositions: initialPositions
+        }
+      }));
+    },
+
+    updateMultiSelectDrag: (deltaX: number, deltaY: number) => {
+      const state = get();
+      const { multiSelectDragInitialPositions } = state.canvas;
+      const { selectedIds } = state.ui;
+      
+      if (!multiSelectDragInitialPositions || selectedIds.length === 0) return;
+
+      // Update positions for all selected rectangles
+      get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
+        return rectangles.map(rect => {
+          if (selectedIds.includes(rect.id) && multiSelectDragInitialPositions[rect.id]) {
+            const initial = multiSelectDragInitialPositions[rect.id];
+            return {
+              ...rect,
+              x: initial.x + deltaX,
+              y: initial.y + deltaY
+            };
+          }
+          return rect;
+        });
+      });
+    },
+
+    endMultiSelectDrag: (applyChanges: boolean = true) => {
+      const state = get();
+      const { multiSelectDragInitialPositions } = state.canvas;
+      const { selectedIds } = state.ui;
+      
+      if (applyChanges && multiSelectDragInitialPositions && selectedIds.length > 0) {
+        // Apply final positions with history
+        const finalPositions = new Map<string, { x: number; y: number }>();
+        
+        // Calculate final positions
+        state.rectangles.forEach(rect => {
+          if (selectedIds.includes(rect.id)) {
+            finalPositions.set(rect.id, { x: rect.x, y: rect.y });
+          }
+        });
+        
+        // Apply changes to get the final rectangle state with history
+        get().rectangleActions.setRectanglesWithHistory(
+          state.rectangles.map(rect => {
+            const finalPos = finalPositions.get(rect.id);
+            return finalPos ? { ...rect, x: finalPos.x, y: finalPos.y } : rect;
+          })
+        );
+      }
+      
+      // Clear multi-select drag state
+      set(state => ({
+        canvas: {
+          ...state.canvas,
+          multiSelectDragInitialPositions: null
+        }
+      }));
     },
 
     /**

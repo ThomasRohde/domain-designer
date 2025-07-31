@@ -20,6 +20,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   // Core data from centralized store
   const rectangles = useAppStore(state => state.rectangles);
   const selectedId = useAppStore(state => state.selectedId);
+  const selectedIds = useAppStore(state => state.ui.selectedIds);
   const gridSize = useAppStore(state => state.settings.gridSize);
   const fontFamily = useAppStore(state => state.settings.fontFamily);
   const borderRadius = useAppStore(state => state.settings.borderRadius);
@@ -49,7 +50,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const resizeConstraintState = useAppStore(state => state.canvas.resizeConstraintState);
   
   // Rectangle manipulation actions from store
-  const { setSelectedId, updateRectangleLabel } = useAppStore(state => state.rectangleActions);
+  const { setSelectedId, updateRectangleLabel, toggleSelection } = useAppStore(state => state.rectangleActions);
   const handleRectangleMouseDown = useAppStore(state => state.canvasActions.handleRectangleMouseDown);
   
   /**
@@ -59,6 +60,19 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
    */
   const onMouseDown = (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => {
     handleRectangleMouseDown(e, rect, action || 'drag', containerRef);
+  };
+  
+  /**
+   * Selection handler that supports both regular selection and multi-select toggle.
+   * Handles the special case where rectangle ID has "|toggle" suffix for Ctrl+Click.
+   */
+  const handleRectangleSelect = (idOrToggle: string) => {
+    if (idOrToggle.endsWith('|toggle')) {
+      const id = idOrToggle.replace('|toggle', '');
+      toggleSelection(id);
+    } else {
+      setSelectedId(idOrToggle);
+    }
   };
   return (
     <>
@@ -79,15 +93,21 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
         const isAtMinSize = resizeConstraintState?.rectangleId === rect.id && 
                            (resizeConstraintState?.isAtMinWidth || resizeConstraintState?.isAtMinHeight);
         
+        // Multi-select state calculation
+        const isMultiSelected = selectedIds.includes(rect.id);
+        const selectionCount = selectedIds.length;
+        
         return (
           <RectangleComponent
             key={rect.id}
             rectangle={rect}
             isSelected={selectedId === rect.id}
+            isMultiSelected={isMultiSelected}
+            selectionCount={selectionCount}
             zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState, hierarchyDragState)}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}
-            onSelect={setSelectedId}
+            onSelect={handleRectangleSelect}
             onUpdateLabel={updateRectangleLabel}
             // Drag/resize permissions based on hierarchy and manual positioning settings
             canDrag={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}

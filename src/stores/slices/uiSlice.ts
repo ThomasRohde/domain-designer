@@ -94,7 +94,11 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
       updateNotification: {
         isUpdateAvailable: false,
         isUpdating: false,
-      }
+      },
+      // Multi-select state
+      selectedIds: [],
+      selectionBoxState: null,
+      bulkOperationInProgress: false
     },
 
   // Actions
@@ -161,6 +165,17 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
         ui: {
           ...state.ui,
           contextMenu: { x, y, rectangleId }
+        }
+      }));
+      // Set up click-outside listener when context menu is shown
+      setupContextMenuListener();
+    },
+
+    showMultiSelectContextMenu: (x: number, y: number, selectedIds: string[]) => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          contextMenu: { x, y, rectangleId: '', selectedIds }
         }
       }));
       // Set up click-outside listener when context menu is shown
@@ -306,6 +321,44 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
             isUpdateAvailable: false,
             isUpdating: false,
           }
+        }
+      }));
+    },
+
+    // Selection box actions
+    startSelectionBox: (startX: number, startY: number) => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          selectionBoxState: {
+            isActive: true,
+            startX,
+            startY,
+            currentX: startX,
+            currentY: startY
+          }
+        }
+      }));
+    },
+
+    updateSelectionBox: (currentX: number, currentY: number) => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          selectionBoxState: state.ui.selectionBoxState ? {
+            ...state.ui.selectionBoxState,
+            currentX,
+            currentY
+          } : null
+        }
+      }));
+    },
+
+    endSelectionBox: () => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          selectionBoxState: null
         }
       }));
     },

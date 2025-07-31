@@ -19,6 +19,27 @@ import type {
 import type { LayoutAlgorithmType } from '../utils/layout/interfaces';
 
 /**
+ * Multi-select alignment types for PowerPoint-style operations
+ */
+export type AlignmentType = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
+
+/**
+ * Distribution direction for equal spacing operations
+ */
+export type DistributionDirection = 'horizontal' | 'vertical';
+
+/**
+ * Selection box state for drag selection operations
+ */
+export interface SelectionBoxState {
+  isActive: boolean;
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+}
+
+/**
  * User interface state slice - manages modal visibility and navigation
  * Centralizes UI state to prevent prop drilling and improve performance
  */
@@ -32,6 +53,10 @@ export interface UIState {
   templatePageOpen: boolean;
   helpModalOpen: boolean;
   updateNotification: UpdateNotificationState;
+  // Multi-select state
+  selectedIds: string[];
+  selectionBoxState: SelectionBoxState | null;
+  bulkOperationInProgress: boolean;
 }
 
 /**
@@ -53,6 +78,8 @@ export interface CanvasState {
   initialPositions: Record<string, { x: number; y: number }> | null;  // Drag start positions for multi-select
   needsLayoutUpdate: { type: 'reparent' | 'resize'; rectangleId?: string } | null;  // Deferred layout recalculation
   keyboardTimeoutId: number | null;  // Debounce timer for keyboard navigation
+  // Multi-select specific state
+  multiSelectDragInitialPositions: Record<string, { x: number; y: number }> | null;  // Initial positions for bulk drag
 }
 
 /**
@@ -98,6 +125,16 @@ export interface RectangleActions {
   moveRectangle: (id: string, deltaX: number, deltaY: number) => void;
   reparentRectangle: (childId: string, newParentId: string | null) => boolean;
   setSelectedId: (id: string | null) => void;
+  setSelectedIds: (ids: string[]) => void;
+  addToSelection: (id: string) => boolean;
+  removeFromSelection: (id: string) => void;
+  clearSelection: () => void;
+  toggleSelection: (id: string) => void;
+  bulkUpdateColor: (ids: string[], color: string) => void;
+  bulkDelete: (ids: string[]) => void;
+  bulkMove: (ids: string[], deltaX: number, deltaY: number) => boolean;
+  alignRectangles: (ids: string[], type: AlignmentType) => void;
+  distributeRectangles: (ids: string[], direction: DistributionDirection) => void;
   setRectangles: (rectangles: Rectangle[]) => void;
   setRectanglesWithHistory: (rectangles: Rectangle[]) => void;
   generateId: () => string;
@@ -118,6 +155,7 @@ export interface UIActions {
   openLeftMenu: () => void;
   closeLeftMenu: () => void;
   showContextMenu: (x: number, y: number, rectangleId: string) => void;
+  showMultiSelectContextMenu: (x: number, y: number, selectedIds: string[]) => void;
   hideContextMenu: () => void;
   openExportModal: () => void;
   closeExportModal: () => void;
@@ -131,6 +169,10 @@ export interface UIActions {
   closeHelpModal: () => void;
   showUpdateNotification: (updateServiceWorker: () => void) => void;
   hideUpdateNotification: () => void;
+  // Selection box actions
+  startSelectionBox: (startX: number, startY: number) => void;
+  updateSelectionBox: (currentX: number, currentY: number) => void;
+  endSelectionBox: () => void;
   // Internal lifecycle methods - prefixed to indicate private usage
   _handleResize: () => void;  // Window resize handler for responsive UI
   _cleanupContextMenuListener: () => void;  // Event cleanup on component unmount
@@ -224,6 +266,11 @@ export interface CanvasActions {
   
   // Drop target calculation - validates reparenting operations during drag
   detectDropTargets: (mouseX: number, mouseY: number, draggedRectId: string) => DropTarget[];
+  
+  // Multi-select drag operations
+  startMultiSelectDrag: (initialPositions: Record<string, { x: number; y: number }>) => void;
+  updateMultiSelectDrag: (deltaX: number, deltaY: number) => void;
+  endMultiSelectDrag: (applyChanges?: boolean) => void;
 }
 
 /**
@@ -284,7 +331,7 @@ export interface StoreGetters {
 export interface AppStore {
   // State
   rectangles: Rectangle[];
-  selectedId: string | null;
+  selectedId: string | null; // Legacy - kept for backward compatibility during transition
   nextId: number;
   ui: UIState;
   settings: GlobalSettings;

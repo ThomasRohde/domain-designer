@@ -60,6 +60,19 @@
   color: white;
 }
 
+/* Multi-select visual feedback */
+.multi-selected {
+  @apply border-blue-500 border-2 shadow-lg;
+}
+
+.selection-box {
+  @apply border-dashed border-blue-400 bg-blue-100/20 pointer-events-none;
+}
+
+.selection-count {
+  @apply bg-blue-500 text-white text-xs rounded-full px-2 py-1 font-bold;
+}
+
 /* Focus styles */
 .focus-visible {
   @apply outline-none ring-2 ring-blue-500 ring-offset-2;

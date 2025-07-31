@@ -49,7 +49,12 @@ const HierarchicalDrawingApp = () => {
     // reparentRectangle, // MIGRATION: Not used directly anymore
     setRectangles,
     setRectanglesWithHistory,
-    updateNextId
+    updateNextId,
+    // Multi-select operations
+    alignRectangles,
+    distributeRectangles,
+    bulkUpdateColor,
+    bulkDelete
   } = useAppStore(state => state.rectangleActions);
   const { findRectangle /* , canReparent */ } = useAppStore(state => state.getters); // MIGRATION: canReparent not used directly anymore
   const { undo, redo, initializeHistory } = useAppStore(state => state.historyActions);
@@ -89,8 +94,18 @@ const HierarchicalDrawingApp = () => {
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    uiActions.showContextMenu(e.clientX, e.clientY, rectangleId);
-  }, [uiActions]);
+    
+    // Check if right-clicked rectangle is part of multi-selection
+    const isMultiSelected = ui.selectedIds && ui.selectedIds.includes(rectangleId) && ui.selectedIds.length > 1;
+    
+    if (isMultiSelected) {
+      // Use multi-select context menu
+      uiActions.showMultiSelectContextMenu(e.clientX, e.clientY, ui.selectedIds);
+    } else {
+      // Use regular single-select context menu
+      uiActions.showContextMenu(e.clientX, e.clientY, rectangleId);
+    }
+  }, [uiActions, ui.selectedIds]);
 
   const handleAddRectangle = useCallback((parentId: string | null = null) => {
     addRectangle(parentId || undefined);
@@ -220,6 +235,35 @@ const HierarchicalDrawingApp = () => {
       uiActions.showDescriptionEditModal(rectangleId, rectangle.label, rectangle.description || '');
     }
   }, [findRectangle, uiActions]);
+
+  // Multi-select context menu handlers
+  const handleAlign = useCallback((type: import('../stores/types').AlignmentType) => {
+    if (ui.selectedIds && ui.selectedIds.length > 1) {
+      alignRectangles(ui.selectedIds, type);
+    }
+  }, [ui.selectedIds, alignRectangles]);
+
+  const handleDistribute = useCallback((direction: import('../stores/types').DistributionDirection) => {
+    if (ui.selectedIds && ui.selectedIds.length > 2) {
+      distributeRectangles(ui.selectedIds, direction);
+    }
+  }, [ui.selectedIds, distributeRectangles]);
+
+  const handleBulkUpdateColor = useCallback(() => {
+    // For now, just use the first predefined color as an example
+    // In a real implementation, this would open a color picker
+    if (ui.selectedIds && ui.selectedIds.length > 1) {
+      const color = settings.predefinedColors[0] || '#3B82F6';
+      bulkUpdateColor(ui.selectedIds, color);
+    }
+  }, [ui.selectedIds, bulkUpdateColor, settings.predefinedColors]);
+
+  const handleBulkDelete = useCallback(() => {
+    if (ui.selectedIds && ui.selectedIds.length > 1) {
+      // TODO: Add confirmation dialog
+      bulkDelete(ui.selectedIds);
+    }
+  }, [ui.selectedIds, bulkDelete]);
 
   const handleSaveDescription = useCallback((description: string) => {
     if (ui.descriptionEditModal) {
@@ -510,10 +554,15 @@ const HierarchicalDrawingApp = () => {
           x={ui.contextMenu.x}
           y={ui.contextMenu.y}
           rectangleId={ui.contextMenu.rectangleId}
+          selectedIds={ui.contextMenu.selectedIds}
           onAddChild={addRectangle}
           onRemove={removeRectangle}
           onEditDescription={handleEditDescription}
           onClose={uiActions.hideContextMenu}
+          onAlign={handleAlign}
+          onDistribute={handleDistribute}
+          onBulkUpdateColor={handleBulkUpdateColor}
+          onBulkDelete={handleBulkDelete}
         />
       )}
 

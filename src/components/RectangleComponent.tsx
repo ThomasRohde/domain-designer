@@ -8,6 +8,10 @@ interface RectangleComponentProps {
   rectangle: Rectangle;
   /** Whether this rectangle is currently selected */
   isSelected: boolean;
+  /** Whether this rectangle is part of a multi-selection */
+  isMultiSelected: boolean;
+  /** Number of rectangles in the current multi-selection (0 if not multi-selected) */
+  selectionCount?: number;
   /** Z-index for proper layering (calculated based on hierarchy depth) */
   zIndex: number;
   /** Mouse interaction handler supporting drag, resize, and hierarchy-drag modes */
@@ -70,6 +74,8 @@ interface RectangleComponentProps {
 const RectangleComponent: React.FC<RectangleComponentProps> = ({
   rectangle,
   isSelected,
+  isMultiSelected,
+  selectionCount = 0,
   zIndex,
   onMouseDown,
   onContextMenu,
@@ -190,8 +196,16 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     boxShadow = '0 20px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(99, 102, 241, 0.1)';
   } else if (isSelected && !isHierarchyDragActive) {
     // Standard selection highlight when not in drag mode
-    finalBorderColor = '#3b82f6';
-    boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.04)';
+    if (isMultiSelected) {
+      // Multi-select styling - thicker border and different color
+      finalBorderColor = '#3b82f6';
+      finalBorderWidth = `${borderWidth + 2}px`;
+      boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.4), 0 10px 10px -5px rgba(59, 130, 246, 0.1)';
+    } else {
+      // Single selection styling
+      finalBorderColor = '#3b82f6';
+      boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.3), 0 10px 10px -5px rgba(59, 130, 246, 0.04)';
+    }
   } else if (isCurrentDropTarget) {
     // Active drop target - solid border with enhanced shadow
     if (isValidDropTarget) {
@@ -269,7 +283,15 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       onDoubleClick={handleDoubleClick}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(rectangle.id);
+        
+        // Handle Ctrl+Click for multi-select toggle
+        if (e.ctrlKey || e.metaKey) {
+          // For multi-select, we need to toggle selection instead of direct select
+          // This will be handled by the parent component through onSelect
+          onSelect(rectangle.id + '|toggle');
+        } else {
+          onSelect(rectangle.id);
+        }
       }}
     >
       {/* Adaptive label positioning: parent rectangles vs leaf rectangles have different layouts */}
@@ -392,6 +414,13 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       {isCurrentDropTarget && (
         <div className="absolute inset-0 bg-green-200 bg-opacity-30 rounded-lg flex items-center justify-center">
           <div className="text-green-800 font-bold text-sm">Drop Here</div>
+        </div>
+      )}
+      
+      {/* Multi-selection count indicator */}
+      {isMultiSelected && selectionCount > 1 && (
+        <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center z-10 shadow-lg">
+          {selectionCount}
         </div>
       )}
     </div>
