@@ -60,8 +60,10 @@ const ViewerPage: React.FC = () => {
   });
   
   if (urlParam) {
-    console.log('Rendering URLViewerPage with URL:', urlParam);
+    console.log('✅ URL parameter detected, rendering URLViewerPage with URL:', urlParam);
     return <URLViewerPage />;
+  } else {
+    console.log('❌ No URL parameter found, rendering local storage viewer');
   }
 
   /**

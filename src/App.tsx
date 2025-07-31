@@ -7,16 +7,16 @@ import URLViewerPage from './components/URLViewerPage';
  * Root application component with routing configuration
  * 
  * Provides three main routes:
- * - "/" - Full editor interface with all editing capabilities
- * - "/viewer" - Read-only viewer for displaying saved diagrams from local storage
- * - "/viewer/*" - Read-only viewer for displaying diagrams loaded from URL parameter
+ * - "/" - Full editor interface with all editing capabilities  
+ * - "/viewer" - Read-only viewer that handles both local storage and URL-based diagrams
+ * - "/viewer/*" - Legacy path-based URL viewer (kept for backward compatibility)
  */
 function App() {
   return (
     <Routes>
       <Route path="/" element={<HierarchicalDrawingApp />} />
-      <Route path="/viewer/*" element={<URLViewerPage />} />
       <Route path="/viewer" element={<ViewerPage />} />
+      <Route path="/viewer/*" element={<URLViewerPage />} />
     </Routes>
   );
 }
