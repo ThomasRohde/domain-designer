@@ -14,6 +14,8 @@
     <a href="#contributing"><strong>Contributing</strong></a>
   </p>
 
+  <img src="Screenshot.png" alt="Domain Designer Application Screenshot - showing hierarchical rectangles with layout controls and settings panel" width="800">
+
   <p>
     <img src="https://img.shields.io/badge/React-18-blue?logo=react" alt="React 18">
     <img src="https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript" alt="TypeScript">
@@ -502,38 +504,6 @@ This project features **fully automated deployment** to GitHub Pages:
 - **CDN**: Global content delivery via GitHub Pages
 - **HTTPS**: Secure connection with SSL certificate
 - **Performance**: Optimized static assets with Vite
-
-## 🤝 Contributing
-
-<div align="center">
-  <img src="https://img.shields.io/badge/Contributions-Welcome-brightgreen?style=for-the-badge" alt="Contributions Welcome">
-  <img src="https://img.shields.io/badge/Code-Review-blue?style=for-the-badge" alt="Code Review">
-  <img src="https://img.shields.io/badge/Issues-Open-red?style=for-the-badge" alt="Issues Open">
-</div>
-
-### 🛠️ Development Process
-
-1. **🍴 Fork** the repository
-2. **🌿 Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **📝 Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **📤 Push** to the branch (`git push origin feature/amazing-feature`)
-5. **🔄 Open** a Pull Request
-
-### 📋 Before Contributing
-
-- [ ] Run `npm run typecheck` to ensure TypeScript compliance
-- [ ] Run `npm run lint` to check code style
-- [ ] Test your changes thoroughly
-- [ ] Update documentation if needed
-- [ ] Follow the existing code patterns
-
-### 🎯 Areas for Contribution
-
-- 🐛 **Bug Fixes**: Check the issues tab for reported bugs
-- ✨ **New Features**: Layout algorithms, export formats, UI improvements
-- 📚 **Documentation**: README improvements, code comments
-- 🎨 **Design**: UI/UX enhancements, accessibility improvements
-- 🧪 **Testing**: Unit tests, integration tests, E2E tests
 
 ## 📄 License
 
