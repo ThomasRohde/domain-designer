@@ -1,0 +1,316 @@
+{
+  "version": "2.0",
+  "rectangles": [
+    {
+      "id": "rect-1",
+      "x": 10,
+      "y": 10,
+      "w": 16,
+      "h": 10,
+      "label": "Test",
+      "color": "#4ECDC4",
+      "type": "root",
+      "isEditing": false,
+      "isLockedAsIs": false
+    },
+    {
+      "id": "rect-2",
+      "x": 27,
+      "y": 10,
+      "w": 16,
+      "h": 10,
+      "label": "Rectangle rect-2",
+      "color": "#4ECDC4",
+      "type": "root",
+      "isEditing": false,
+      "isLockedAsIs": false
+    },
+    {
+      "id": "rect-3",
+      "x": 44,
+      "y": 10,
+      "w": 16,
+      "h": 10,
+      "label": "Rectangle rect-3",
+      "color": "#4ECDC4",
+      "type": "root",
+      "isEditing": false,
+      "isLockedAsIs": false
+    }
+  ],
+  "globalSettings": {
+    "gridSize": 10,
+    "showGrid": false,
+    "leafFixedWidth": true,
+    "leafFixedHeight": true,
+    "leafWidth": 20,
+    "leafHeight": 4,
+    "rootFontSize": 15,
+    "dynamicFontSizing": true,
+    "fontFamily": "Inter",
+    "borderRadius": 4,
+    "borderColor": "#374151",
+    "borderWidth": 1,
+    "margin": 1,
+    "labelMargin": 2.7,
+    "layoutAlgorithm": "grid",
+    "predefinedColors": [
+      "#7dca90",
+      "#98D8C8",
+      "#ededed",
+      "#F0E68C",
+      "#FFB6C1",
+      "#B0E0E6",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FFEAA7",
+      "#DDA0DD",
+      "#F7DC6F",
+      "#BB8FCE",
+      "#85C1E9",
+      "#F8C471",
+      "#ededed"
+    ],
+    "customColors": [],
+    "fontsLoading": false,
+    "isRestoring": false,
+    "availableFonts": [
+      {
+        "value": "Inter",
+        "label": "Inter (Web)",
+        "category": "web"
+      },
+      {
+        "value": "monospace",
+        "label": "Monospace (Generic)",
+        "category": "system"
+      },
+      {
+        "value": "sans-serif",
+        "label": "Sans-serif (Generic)",
+        "category": "system"
+      },
+      {
+        "value": "serif",
+        "label": "Serif (Generic)",
+        "category": "system"
+      },
+      {
+        "value": "Arial",
+        "label": "Arial",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Arial Black",
+        "label": "Arial Black",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Avenir",
+        "label": "Avenir",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Calibri",
+        "label": "Calibri",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Comic Sans MS",
+        "label": "Comic Sans MS",
+        "category": "sans-serif"
+      },
+      {
+        "value": "DanskeLight",
+        "label": "DanskeLight",
+        "category": "sans-serif"
+      },
+      {
+        "value": "DanskeMedium",
+        "label": "DanskeMedium",
+        "category": "sans-serif"
+      },
+      {
+        "value": "DanskeRegular",
+        "label": "DanskeRegular",
+        "category": "sans-serif"
+      },
+      {
+        "value": "DejaVu Sans",
+        "label": "DejaVu Sans",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Helvetica",
+        "label": "Helvetica",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Helvetica Neue",
+        "label": "Helvetica Neue",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Impact",
+        "label": "Impact",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Liberation Sans",
+        "label": "Liberation Sans",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Lucida Grande",
+        "label": "Lucida Grande",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Microsoft Sans Serif",
+        "label": "Microsoft Sans Serif",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Noto Sans",
+        "label": "Noto Sans",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Optima",
+        "label": "Optima",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Roboto",
+        "label": "Roboto",
+        "category": "sans-serif"
+      },
+      {
+        "value": "San Francisco",
+        "label": "San Francisco",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Segoe UI",
+        "label": "Segoe UI",
+        "category": "sans-serif"
+      },
+      {
+        "value": "SF Pro Display",
+        "label": "SF Pro Display",
+        "category": "sans-serif"
+      },
+      {
+        "value": "SF Pro Text",
+        "label": "SF Pro Text",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Source Sans Pro",
+        "label": "Source Sans Pro",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Tahoma",
+        "label": "Tahoma",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Trebuchet MS",
+        "label": "Trebuchet MS",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Ubuntu",
+        "label": "Ubuntu",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Verdana",
+        "label": "Verdana",
+        "category": "sans-serif"
+      },
+      {
+        "value": "Cambria",
+        "label": "Cambria",
+        "category": "serif"
+      },
+      {
+        "value": "DejaVu Serif",
+        "label": "DejaVu Serif",
+        "category": "serif"
+      },
+      {
+        "value": "Georgia",
+        "label": "Georgia",
+        "category": "serif"
+      },
+      {
+        "value": "Liberation Serif",
+        "label": "Liberation Serif",
+        "category": "serif"
+      },
+      {
+        "value": "Times",
+        "label": "Times",
+        "category": "serif"
+      },
+      {
+        "value": "Times New Roman",
+        "label": "Times New Roman",
+        "category": "serif"
+      },
+      {
+        "value": "Consolas",
+        "label": "Consolas",
+        "category": "monospace"
+      },
+      {
+        "value": "Courier",
+        "label": "Courier",
+        "category": "monospace"
+      },
+      {
+        "value": "Courier New",
+        "label": "Courier New",
+        "category": "monospace"
+      },
+      {
+        "value": "DejaVu Sans Mono",
+        "label": "DejaVu Sans Mono",
+        "category": "monospace"
+      },
+      {
+        "value": "Liberation Mono",
+        "label": "Liberation Mono",
+        "category": "monospace"
+      },
+      {
+        "value": "Menlo",
+        "label": "Menlo",
+        "category": "monospace"
+      },
+      {
+        "value": "Monaco",
+        "label": "Monaco",
+        "category": "monospace"
+      },
+      {
+        "value": "Ubuntu Mono",
+        "label": "Ubuntu Mono",
+        "category": "monospace"
+      }
+    ]
+  },
+  "layoutMetadata": {
+    "algorithm": "grid",
+    "isUserArranged": false,
+    "preservePositions": true,
+    "boundingBox": {
+      "w": 50,
+      "h": 10
+    }
+  },
+  "timestamp": 1753957261107
+}

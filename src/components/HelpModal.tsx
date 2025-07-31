@@ -230,7 +230,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <div>
               <h4 className="font-semibold text-gray-800 mb-1">JSON</h4>
               <p className="text-sm text-gray-600">
-                Raw diagram data for backup, sharing, or importing into other tools. Preserves all diagram information.
+                Raw diagram data for backup, sharing, or importing into other tools. Preserves all diagram information and enables URL-based sharing.
               </p>
             </div>
             
@@ -240,6 +240,66 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 Diagram notation format for documentation and version control. Compatible with GitHub, GitLab, and other platforms.
               </p>
             </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'url-sharing',
+      title: 'URL Sharing',
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Share Diagrams via URL</h4>
+            <p className="text-sm text-gray-600 mb-2">
+              After exporting a diagram as JSON, you can share it directly using the URL viewer:
+            </p>
+            <ol className="text-sm space-y-1 list-decimal list-inside">
+              <li>Export your diagram as JSON</li>
+              <li>Upload the JSON file to any web-accessible location (GitHub, Gist, etc.)</li>
+              <li>Share the URL in this format: <code className="bg-gray-100 px-1 rounded">/viewer/[JSON_URL]</code></li>
+            </ol>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">URL Format</h4>
+            <pre className="text-xs bg-gray-100 p-3 rounded-md overflow-x-auto">
+{`https://yourdomain.com/viewer/https://example.com/diagram.json
+https://yourdomain.com/viewer/https://gist.githubusercontent.com/user/id/raw/diagram.json
+https://yourdomain.com/viewer/https://raw.githubusercontent.com/user/repo/main/diagram.json`}
+            </pre>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">URL Viewer Features</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Read-only viewing</strong> - Safe to share publicly</li>
+              <li>• <strong>No data storage</strong> - Diagrams load directly from your URL</li>
+              <li>• <strong>Editor button</strong> - Recipients can import diagrams to edit</li>
+              <li>• <strong>Full functionality</strong> - Pan, zoom, and view all diagram details</li>
+              <li>• <strong>Universal access</strong> - Works with any publicly accessible JSON file</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Best Practices</h4>
+            <ul className="text-sm space-y-1">
+              <li>• Use stable URLs that won't change over time</li>
+              <li>• Ensure your JSON files are publicly accessible (no authentication required)</li>
+              <li>• Consider using GitHub repositories or Gists for reliable hosting</li>
+              <li>• Test your shared URLs before distributing them</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Example Workflow</h4>
+            <ol className="text-sm space-y-1 list-decimal list-inside">
+              <li>Create your diagram in Domain Designer</li>
+              <li>Export as JSON using the export dialog</li>
+              <li>Upload to GitHub Gist or repository</li>
+              <li>Copy the raw file URL</li>
+              <li>Share: <code className="bg-gray-100 px-1 rounded">/viewer/[your-raw-url]</code></li>
+            </ol>
           </div>
         </div>
       )

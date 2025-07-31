@@ -5,6 +5,8 @@
   <p>
     <a href="https://thomasrohde.github.io/domain-designer/"><strong>🚀 Live Demo</strong></a>
     •
+    <a href="https://thomasrohde.github.io/domain-designer/viewer/https://thomasrohde.github.io/domain-designer/test-models/sample-diagram.json"><strong>🔗 Try URL Viewer</strong></a>
+    •
     <a href="#features"><strong>Features</strong></a>
     •
     <a href="#getting-started"><strong>Getting Started</strong></a>
@@ -53,12 +55,14 @@
 - **Auto-save**: Automatic IndexedDB persistence
 - **Undo/Redo**: Full history management
 - **Templates**: Load hierarchical templates from JSON
+- **URL Viewer**: Share and view diagrams via direct URLs
 
-### 🚀 Export Options
+### 🚀 Export & Sharing Options
 - **HTML**: Interactive web documents with zoom/pan
 - **SVG**: Scalable vector graphics
-- **JSON**: Raw diagram data
+- **JSON**: Raw diagram data with URL sharing capabilities
 - **Mermaid**: Diagram notation for documentation
+- **URL Sharing**: View any JSON diagram directly via URL
 
 </td>
 </tr>
@@ -211,8 +215,40 @@ For advanced positioning control:
 |--------|----------|----------|
 | **HTML** | Web sharing | Interactive zoom/pan, standalone document |
 | **SVG** | High-quality prints | Vector graphics, infinite scalability |
-| **JSON** | Backup/sharing | Raw data, version control friendly |
+| **JSON** | Backup/sharing | Raw data, version control friendly, URL sharing |
 | **Mermaid** | Documentation | Code-based diagrams, GitHub integration |
+
+### 🌐 URL-Based Diagram Sharing
+
+Share your exported JSON diagrams instantly with the URL viewer:
+
+```
+https://yourdomain.com/viewer/https://example.com/path/to/diagram.json
+```
+
+**Features:**
+- 📖 **Read-only viewing** of any publicly accessible JSON diagram
+- 🔗 **Direct URL sharing** - no uploads or accounts needed  
+- ✏️ **"Editor" button** - import diagram directly into the main application
+- 🌍 **Universal access** - works with any web-hosted JSON file
+- 🔒 **No data storage** - diagrams load directly from the provided URL
+
+**Example Usage:**
+```bash
+# Export your diagram to JSON
+# Upload to GitHub, Gist, or any web server
+# Share the viewer URL:
+/viewer/https://raw.githubusercontent.com/user/repo/main/diagram.json
+```
+
+**🎯 Try It Now:**
+<div align="center">
+  <a href="https://thomasrohde.github.io/domain-designer/viewer/https://thomasrohde.github.io/domain-designer/test-models/sample-diagram.json">
+    <img src="https://img.shields.io/badge/🔗%20View%20Sample%20Diagram-blue?style=for-the-badge" alt="View Sample Diagram">
+  </a>
+</div>
+
+Click the link above to see the URL viewer in action with a live sample diagram. Use the "Editor" button to import and modify it!
 
 ### 📋 Template System
 
