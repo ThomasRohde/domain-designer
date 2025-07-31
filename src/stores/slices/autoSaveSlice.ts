@@ -21,7 +21,7 @@ const DB_NAME = 'DomainDesigner_v2_DB';
 const DB_VERSION = 1;
 const STORE_NAME = 'diagrams';
 const AUTOSAVE_KEY = 'current_diagram';
-const SAVE_DELAY = 2000; // 2 second debounce
+const SAVE_DELAY = 1000; // 1 second debounce (reduced for better responsiveness)
 
 /**
  * Auto-save state slice interface
@@ -31,6 +31,7 @@ export interface AutoSaveSlice {
     lastGoodSave: number | null;
     hasAutoRestored: boolean;
     isValidating: boolean;
+    manualClearInProgress: boolean;
   };
   autoSaveActions: AutoSaveActions & {
     validate: (rectangles: Rectangle[], settings: AppSettings) => ValidationResult;
@@ -39,6 +40,7 @@ export interface AutoSaveSlice {
     setLastGoodSave: (timestamp: number | null) => void;
     setIsValidating: (validating: boolean) => void;
     setHasAutoRestored: (restored: boolean) => void;
+    setManualClearInProgress: (inProgress: boolean) => void;
   };
 }
 
@@ -122,12 +124,16 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
   // Debounced save function
   const debouncedSave = (data: AutoSaveData) => {
     if (saveTimeoutRef) {
+      console.log('🔄 Clearing previous save timeout');
       window.clearTimeout(saveTimeoutRef);
     }
 
+    console.log('⏰ Scheduling save in', SAVE_DELAY, 'ms');
     saveTimeoutRef = window.setTimeout(async () => {
+      console.log('💾 Executing debounced save...');
       const success = await saveDataToIndexedDB(data);
       if (success) {
+        console.log('✅ Save completed successfully');
         set(state => ({
           autoSave: {
             ...state.autoSave,
@@ -135,7 +141,10 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             hasSavedData: true
           }
         }));
+      } else {
+        console.error('❌ Save failed');
       }
+      saveTimeoutRef = null;
     }, SAVE_DELAY);
   };
 
@@ -147,7 +156,8 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
       hasSavedData: false,
       lastGoodSave: null,
       hasAutoRestored: false,
-      isValidating: false
+      isValidating: false,
+      manualClearInProgress: false
     },
 
     // Actions
@@ -218,6 +228,15 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         }));
       },
 
+      setManualClearInProgress: (inProgress: boolean) => {
+        set(state => ({
+          autoSave: {
+            ...state.autoSave,
+            manualClearInProgress: inProgress
+          }
+        }));
+      },
+
       resetAutoRestoreFlag: () => {
         set(state => ({
           autoSave: {
@@ -259,7 +278,30 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         const state = get();
         const { rectangles, settings, autoSave } = state;
         
-        if (!autoSave.enabled || autoSave.isValidating) return;
+        console.log('📝 saveData called with', rectangles.length, 'rectangles');
+        
+        if (!autoSave.enabled) {
+          console.log('❌ Auto-save disabled, skipping');
+          return;
+        }
+        
+        if (autoSave.isValidating) {
+          console.log('❌ Validation in progress, skipping');
+          return;
+        }
+
+        // Check if this is a manual clear (empty rectangles) or if we should reset the flag
+        const isManualClear = rectangles.length === 0;
+        const hasContent = rectangles.length > 0;
+        
+        if (isManualClear) {
+          console.log('🗑️ Manual clear detected');
+          get().autoSaveActions.setManualClearInProgress(true);
+        } else if (hasContent && autoSave.manualClearInProgress) {
+          console.log('➕ Content added after clear, resetting flag');
+          // Reset the flag when user adds content after a clear
+          get().autoSaveActions.setManualClearInProgress(false);
+        }
 
         // Validate before saving
         const validation = get().autoSaveActions.validate(rectangles, settings);
@@ -278,6 +320,11 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           appSettings: settings,
           timestamp: Date.now()
         };
+
+        console.log('📊 Prepared data for save:', {
+          rectangleCount: data.rectangles.length,
+          timestamp: new Date(data.timestamp).toLocaleTimeString()
+        });
 
         // Store as last good data before saving
         lastGoodDataRef = {
@@ -443,7 +490,8 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             hasSavedData: false,
             lastSaved: null,
             lastGoodSave: null,
-            hasAutoRestored: false
+            hasAutoRestored: false,
+            manualClearInProgress: false
           }
         }));
       },
@@ -455,6 +503,12 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         // Prevent multiple auto-restores
         if (state.autoSave.hasAutoRestored) {
           console.log('🚫 Skipping auto-restore - already restored this session');
+          return false;
+        }
+
+        // Skip auto-restore if a manual clear is in progress
+        if (state.autoSave.manualClearInProgress) {
+          console.log('🚫 Skipping auto-restore - manual clear in progress');
           return false;
         }
         

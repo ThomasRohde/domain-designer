@@ -301,6 +301,14 @@ export const useAutoSaveManager = ({
   // Check for existing data on mount and auto-restore (only once)
   useEffect(() => {
     const checkAndRestoreSavedData = async () => {
+      // Check if new Zustand auto-save system is being used
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((window as any).__ZUSTAND_AUTO_SAVE_ENABLED__) {
+        console.log('🚫 Skipping auto-restore - Zustand auto-save system is active');
+        hasAutoRestoredRef.current = true; // Mark as restored to prevent future attempts
+        return;
+      }
+      
       // Prevent multiple auto-restores
       if (hasAutoRestoredRef.current) {
         console.log('🚫 Skipping auto-restore - already restored this session');

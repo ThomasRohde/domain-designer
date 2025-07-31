@@ -167,10 +167,25 @@ export const initializeAutoSaveSubscription = () => {
     autoSaveUnsubscribe();
   }
   
-  // Simple auto-save trigger - will be called from component
-  autoSaveUnsubscribe = () => {
-    // Cleanup function - no actual subscription for now
-  };
+  // Subscribe to changes in rectangles and settings that should trigger auto-save
+  autoSaveUnsubscribe = useAppStore.subscribe(
+    (state) => ({ rectangles: state.rectangles, settings: state.settings }),
+    (current, previous) => {
+      // Only trigger save if rectangles or settings actually changed
+      const rectanglesChanged = JSON.stringify(current.rectangles) !== JSON.stringify(previous.rectangles);
+      const settingsChanged = JSON.stringify(current.settings) !== JSON.stringify(previous.settings);
+      
+      if (rectanglesChanged || settingsChanged) {
+        console.log('🔄 Auto-save triggered by data change');
+        // Get fresh state and trigger save
+        const state = useAppStore.getState();
+        state.autoSaveActions.saveData();
+      }
+    },
+    {
+      equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b)
+    }
+  );
   
   return autoSaveUnsubscribe;
 };

@@ -71,6 +71,7 @@ export interface AutoSaveState {
   lastGoodSave: number | null;
   hasAutoRestored: boolean;
   isValidating: boolean;
+  manualClearInProgress: boolean;
 }
 
 /**
@@ -239,6 +240,7 @@ export interface AutoSaveActions {
   setLastGoodSave: (timestamp: number | null) => void;
   setIsValidating: (validating: boolean) => void;
   setHasAutoRestored: (restored: boolean) => void;
+  setManualClearInProgress: (inProgress: boolean) => void;
   resetAutoRestoreFlag: () => void;
   initialize: () => Promise<void>;
   saveData: () => void;

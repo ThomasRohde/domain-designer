@@ -30,6 +30,11 @@ import ClearDataConfirmationModal from './ClearDataConfirmationModal';
 import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
 
+// Set global flag immediately to prevent old auto-save system conflicts
+// This must be done before any hooks run to prevent race conditions
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).__ZUSTAND_AUTO_SAVE_ENABLED__ = true;
+
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -290,6 +295,7 @@ const HierarchicalDrawingApp = () => {
     return cleanup;
   }, [autoSaveActions]);
 
+
   const handleClearSavedData = useCallback(() => {
     setClearDataModalOpen(true);
   }, []);
@@ -300,9 +306,16 @@ const HierarchicalDrawingApp = () => {
   }, [autoSaveActions]);
 
   const handleConfirmClearModel = useCallback(async () => {
+    // Set manual clear flag to prevent auto-restore
+    autoSaveActions.setManualClearInProgress(true);
+    
     // Clear only rectangles but preserve settings by setting empty rectangles
     setRectanglesWithHistory([]);
+    
+    // Save the empty state - the saveData method will detect this is a clear and maintain the flag
     await autoSaveActions.saveData();
+    
+    // Reload the page - auto-restore will be skipped due to manualClearInProgress flag
     window.location.reload();
   }, [autoSaveActions, setRectanglesWithHistory]);
 
