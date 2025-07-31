@@ -26,8 +26,16 @@ interface MarginsLike {
 }
 
 /**
- * Calculate inner box size after removing margins and padding
- * Enhanced to handle sub-unit margins properly with stability considerations
+ * Calculate usable space within parent rectangle after margin deduction
+ * 
+ * Handles fractional margins with stability rounding to prevent micro-adjustments
+ * during dynamic layout changes. Ensures minimum viable dimensions to prevent
+ * layout collapse.
+ * 
+ * @param maxW - Parent rectangle width
+ * @param maxH - Parent rectangle height 
+ * @param m - Margin configuration object
+ * @returns Inner dimensions with stability rounding applied
  */
 function innerBoxSize(maxW: number, maxH: number, m: MarginsLike) {
   const margin = m.margin ?? 1;
@@ -52,8 +60,14 @@ function innerBoxSize(maxW: number, maxH: number, m: MarginsLike) {
 }
 
 /**
- * Calculate outer offset for positioning children
- * Enhanced to handle sub-unit margins properly
+ * Calculate child positioning offset within parent bounds
+ * 
+ * Accounts for label space at top and uniform margins on sides.
+ * Supports fractional margin values for precise spacing control.
+ * 
+ * @param parent - Parent rectangle providing coordinate system
+ * @param m - Margin configuration with margin and labelMargin values
+ * @returns Absolute positioning offset for child placement
  */
 function outerOffset(parent: Rectangle, m: MarginsLike) {
   const margin = m.margin ?? 1;
@@ -84,9 +98,18 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   readonly description = 'Flow-based hierarchical layout with alternating row/column orientation';
 
   /**
-   * Conditionally snap to grid based on margin values
-   * Disables grid snapping for non-integer margins to preserve consistent spacing
-   * Enhanced with stability considerations to prevent micro-adjustments
+   * Apply precision control with adaptive grid snapping
+   * 
+   * Uses different rounding strategies based on margin types:
+   * - Integer margins: Full grid snapping for pixel-perfect alignment
+   * - Fractional margins: Stability rounding to prevent oscillation
+   * 
+   * Stability threshold prevents micro-adjustments that cause visual jitter
+   * during interactive layout modifications.
+   * 
+   * @param value - Coordinate value to process
+   * @param margins - Margin configuration determining rounding strategy
+   * @returns Precision-controlled coordinate value
    */
   private snapToGrid(value: number, margins?: MarginsLike): number {
     // For very small values, preserve precision to avoid layout collapse
@@ -117,8 +140,16 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
 
 
   /**
-   * Center children within parent for more pleasing, symmetric layouts
-   * Enhanced to handle sub-unit margins properly with stability considerations
+   * Apply centering transformation to child layouts
+   * 
+   * Calculates bounding box of all children and centers the group within
+   * the parent's available space. Uses stability thresholds to prevent
+   * unnecessary micro-adjustments that cause visual instability.
+   * 
+   * @param children - Array of positioned children to center
+   * @param parentW - Parent width for centering calculation
+   * @param parentH - Parent height for centering calculation
+   * @param margins - Margin configuration affecting rounding strategy
    */
   private centerChildrenInParent(children: FlowRectangle[], parentW: number, parentH: number, margins?: MarginsLike): void {
     if (children.length === 0) return;
@@ -149,8 +180,13 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Validate that all coordinates are properly aligned
-   * Updated to handle sub-unit margins appropriately
+   * Debug validation for coordinate precision issues
+   * 
+   * Warns about poorly aligned coordinates that could indicate precision
+   * problems or rounding errors. Only flags significant alignment issues
+   * to avoid noise from legitimate fractional positioning.
+   * 
+   * @param rectangles - Array of rectangles to validate
    */
   private validateGridAlignment(rectangles: { x: number; y: number; w: number; h: number; id?: string }[]): void {
     rectangles.forEach(rect => {
@@ -301,7 +337,16 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Determine orientation based on tree depth following the pattern from FLOW.md
+   * Calculate flow orientation using depth-based alternation
+   * 
+   * Implements hierarchical flow pattern:
+   * - Even depths (0, 2, 4...): Column orientation (vertical stacking)
+   * - Odd depths (1, 3, 5...): Row orientation (horizontal flow)
+   * 
+   * This creates natural reading flow and visual hierarchy.
+   * 
+   * @param depth - Tree depth level (0 = root)
+   * @returns Flow orientation for this depth level
    */
   private determineOrientation(depth: number): FlowOrientation {
     // Pattern: root=COL (0), level1=ROW (1), level2=COL (2), etc.
@@ -309,8 +354,16 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Calculate minimum sizes for rectangles based on text content and fixed dimensions
-   * Updated to handle conditional grid snapping based on margins
+   * Compute minimum required dimensions for all rectangles
+   * 
+   * Applies type-specific sizing strategies:
+   * - Text labels: Calculated from font metrics and content length
+   * - Leaf nodes: Uses fixed dimensions or current size with minimums
+   * - Container nodes: Text-based sizing with space for nested content
+   * 
+   * @param rectangles - Array of rectangles to size (modified in-place)
+   * @param fixedDimensions - Optional fixed sizing for leaf rectangles
+   * @param margins - Margin configuration affecting rounding behavior
    */
   private calculateMinimumSizes(rectangles: FlowRectangle[], fixedDimensions?: {
     leafFixedWidth: boolean;
@@ -349,7 +402,19 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Pack rectangles using the flow algorithm
+   * Recursive layout engine implementing hierarchical flow algorithm
+   * 
+   * Bottom-up approach: sizes children first, then arranges them according
+   * to parent's orientation. Supports infinite available space for size
+   * calculation mode.
+   * 
+   * @param parent - Parent rectangle defining orientation and constraints
+   * @param children - Child rectangles to arrange
+   * @param maxW - Maximum available width (or Infinity for sizing mode)
+   * @param _maxH - Maximum available height (unused in current implementation)
+   * @param margins - Spacing configuration
+   * @param allRectangles - Complete rectangle set for depth calculations
+   * @returns Final parent dimensions after packing
    */
   private pack(parent: FlowRectangle, children: FlowRectangle[], maxW: number, _maxH: number, margins?: MarginsLike, allRectangles?: Rectangle[]): { w: number; h: number } {
     if (children.length === 0) {
@@ -381,8 +446,21 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Pack children in a row with wrapping (horizontal flow)
-   * Enhanced with stability delta to prevent row jumping during dynamic margin changes
+   * Horizontal flow layout with intelligent wrapping behavior
+   * 
+   * Implements multi-tier stability system to prevent oscillation:
+   * 1. Hard limit: Always wrap when significantly exceeding maxW
+   * 2. Soft limit: Normal wrapping threshold  
+   * 3. Hysteresis zone: Sticky behavior to prevent jumping between rows
+   * 
+   * The stability system prevents visual jitter during dynamic resizing
+   * by using different thresholds for wrap decisions.
+   * 
+   * @param parent - Parent rectangle (updated with final dimensions)
+   * @param children - Children to arrange horizontally with wrapping
+   * @param maxW - Maximum width before wrapping
+   * @param margins - Spacing configuration
+   * @returns Final parent dimensions
    */
   private packRow(parent: FlowRectangle, children: FlowRectangle[], maxW: number, margins?: MarginsLike): { w: number; h: number } {
     const gap = margins?.margin || 1;
@@ -395,19 +473,22 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
       const childW = child.minW || LEAF_W;
       const childH = child.minH || LEAF_H;
 
-      // Enhanced wrapping logic with hysteresis to prevent jumping
+      // Anti-oscillation wrapping algorithm with three-tier threshold system
       const projectedX = currentX + childW;
-      const hasRoomForChild = currentX > PRECISION_EPSILON; // Only wrap if we have at least one child in current row
+      const hasRoomForChild = currentX > PRECISION_EPSILON;
       
-      // Multi-tier stability check to prevent oscillation during dynamic margin changes
+      // Threshold zones for wrap decision stability:
+      // 1. Hard limit: definitive wrap zone (exceeds maxW + stability delta)
+      // 2. Soft limit: normal wrap threshold (exceeds maxW)
+      // 3. Hysteresis zone: sticky behavior zone (within stability + hysteresis range)
       const exceedsHardLimit = projectedX > (maxW + WRAP_STABILITY_DELTA);
       const exceedsSoftLimit = projectedX > maxW;
       const isInHysteresisZone = Math.abs(projectedX - maxW) <= (WRAP_STABILITY_DELTA + HYSTERESIS_FACTOR);
       
-      // Decision matrix for wrapping (prevents jumping between rows):
-      // - If we exceed hard limit, always wrap
-      // - If we're in hysteresis zone, prefer current layout (sticky behavior)
-      // - Only wrap if we clearly exceed and have room for at least one child
+      // Wrap decision matrix prevents row jumping during dynamic changes:
+      // - Hard limit exceeded: always wrap (prevents overflow)
+      // - In hysteresis zone: maintain current layout (sticky behavior)
+      // - Soft limit exceeded but clear: wrap if we have existing content
       const shouldWrap = exceedsHardLimit || (exceedsSoftLimit && !isInHysteresisZone);
       
       if (shouldWrap && hasRoomForChild) {
@@ -453,8 +534,15 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Pack children in a column (vertical stack)
-   * Enhanced to handle sub-unit margins and ensure proper sizing
+   * Vertical stack layout for column orientation
+   * 
+   * Simple vertical stacking with consistent gap spacing.
+   * Width determined by widest child, height by sum of all child heights.
+   * 
+   * @param parent - Parent rectangle (updated with final dimensions)
+   * @param children - Children to stack vertically
+   * @param margins - Spacing configuration
+   * @returns Final parent dimensions
    */
   private packColumn(parent: FlowRectangle, children: FlowRectangle[], margins?: MarginsLike): { w: number; h: number } {
     const gap = margins?.margin || 1;
@@ -495,8 +583,15 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Convert flow rectangles back to regular rectangles with proper positioning
-   * Updated to include conditional grid alignment based on margins
+   * Transform flow coordinates to final positioned rectangles
+   * 
+   * Applies parent offset, margin adjustments, and precision control.
+   * Removes flow-specific properties and validates final alignment.
+   * 
+   * @param flowChildren - Array of flow rectangles with relative coordinates
+   * @param parent - Parent rectangle providing coordinate system
+   * @param margins - Margin configuration for positioning and rounding
+   * @returns Array of final positioned rectangles
    */
   private convertToRectangles(flowChildren: FlowRectangle[], parent: Rectangle, margins?: {
     margin: number;

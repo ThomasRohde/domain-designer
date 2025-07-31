@@ -1,10 +1,17 @@
 import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { ZoomState, PanState } from '../types';
 
+/**
+ * Props for useViewerInteractions hook
+ */
 interface UseViewerInteractionsProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
+/**
+ * Return interface for useViewerInteractions hook
+ * Provides viewer-specific interaction patterns (read-only canvas navigation)
+ */
 interface UseViewerInteractionsReturn {
   panState: PanState | null;
   panOffset: { x: number; y: number };
@@ -17,16 +24,22 @@ export const useViewerInteractions = ({
   containerRef,
 }: UseViewerInteractionsProps): UseViewerInteractionsReturn => {
   
-  // Custom panning state for viewer
+  /**
+   * Viewer-specific panning state management
+   * Optimized for read-only canvas navigation
+   */
   const [panState, setPanState] = useState<PanState | null>(null);
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const panOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const animationFrameRef = useRef<number | null>(null);
   const pendingUpdateRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Custom mouse down handler for viewer - always allow left click panning
+  /**
+   * Viewer mouse down handler: enables immediate left-click panning
+   * Unlike editor mode, no special key combinations required
+   */
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
-    // Start panning on left click (button 0)
+    // Immediate panning activation on primary mouse button
     if (e.button === 0) {
       e.preventDefault();
       e.stopPropagation();
@@ -46,7 +59,10 @@ export const useViewerInteractions = ({
     }
   }, [containerRef]);
 
-  // Handle pan move
+  /**
+   * Processes panning movement with performance optimizations
+   * Uses requestAnimationFrame batching for smooth navigation
+   */
   const handlePanMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
     if (!panState) return;
 
@@ -61,10 +77,10 @@ export const useViewerInteractions = ({
       y: panState.initialOffsetY + deltaY
     };
     
-    // Always update the ref for immediate access
+    // Immediate ref update for synchronous component access
     panOffsetRef.current = newOffset;
     
-    // Schedule React state update using requestAnimationFrame
+    // Batch state updates for performance optimization
     pendingUpdateRef.current = newOffset;
     
     if (animationFrameRef.current === null) {
@@ -78,21 +94,26 @@ export const useViewerInteractions = ({
     }
   }, [panState]);
 
-  // Handle mouse up
+  /**
+   * Completes panning operation with proper cleanup
+   */
   const handleMouseUp = useCallback(() => {
-    // Cancel any pending animation frame
+    // Cancel pending updates to prevent stale state
     if (animationFrameRef.current !== null) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
     
-    // Ensure final state sync when dragging ends
+    // Synchronize final state between ref and React state
     setPanOffset(panOffsetRef.current);
     setPanState(null);
     pendingUpdateRef.current = null;
   }, []);
 
-  // Initialize zoom state
+  /**
+   * Initialize zoom state with viewer-appropriate defaults
+   * Configured for read-only navigation experience
+   */
   const [zoomState, setZoomState] = useState<ZoomState>({
     level: 1.0,
     centerX: 0,
@@ -101,12 +122,17 @@ export const useViewerInteractions = ({
     maxLevel: 5.0,
   });
 
-  // Sync panOffset state with ref for immediate updates
+  /**
+   * Maintains consistency between React state and ref
+   * Ensures immediate access for performance-critical operations
+   */
   useEffect(() => {
     panOffsetRef.current = panOffset;
   }, [panOffset]);
 
-  // Cleanup animation frame on unmount
+  /**
+   * Cleanup: prevents memory leaks from pending animation frames
+   */
   useEffect(() => {
     return () => {
       if (animationFrameRef.current !== null) {
@@ -115,12 +141,15 @@ export const useViewerInteractions = ({
     };
   }, []);
 
-  // Stable wheel event handler using useCallback to prevent stale closures
+  /**
+   * Wheel event handler for zoom operations
+   * Uses stable callback to prevent closure issues
+   */
   const handleWheelEvent = useCallback((e: WheelEvent) => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Check if mouse is over the container bounds
+    // Boundary check: only zoom when cursor is over canvas
     const containerRect = container.getBoundingClientRect();
     const isOverContainer = e.clientX >= containerRect.left && 
                            e.clientX <= containerRect.right && 
@@ -129,15 +158,15 @@ export const useViewerInteractions = ({
     
     if (!isOverContainer) return;
 
-    // Prevent default browser scroll behavior
+    // Override browser scroll to enable custom zoom behavior
     e.preventDefault();
     e.stopPropagation();
     
-    // Calculate mouse position relative to container
+    // Transform mouse coordinates to container space
     const mouseX = e.clientX - containerRect.left;
     const mouseY = e.clientY - containerRect.top;
     
-    // Calculate zoom delta (positive for zoom in, negative for zoom out)
+    // Convert wheel delta to zoom increment/decrement
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     
     setZoomState(prev => {
@@ -152,9 +181,12 @@ export const useViewerInteractions = ({
     });
   }, [containerRef]);
 
-  // Single document wheel event listener - more reliable than container listener
+  /**
+   * Document-level wheel listener for reliable zoom handling
+   * Bypasses potential event blocking from child elements
+   */
   useEffect(() => {
-    // Use document listener to bypass any child element event blocking
+    // Document listener ensures wheel events are never blocked
     document.addEventListener('wheel', handleWheelEvent, { passive: false });
     
     return () => {
@@ -162,23 +194,29 @@ export const useViewerInteractions = ({
     };
   }, [handleWheelEvent]);
 
-  // Coordinate mouse move events
+  /**
+   * Coordinates mouse movement handling during panning
+   */
   const handleMouseMove = useCallback((e: MouseEvent) => {
     const containerRect = containerRef.current?.getBoundingClientRect();
     if (!containerRect) return;
 
-    // Handle panning movement
+    // Process panning movement when active
     if (panState) {
       handlePanMove(e, containerRect);
     }
   }, [panState, containerRef, handlePanMove]);
 
-  // Coordinate mouse up events
+  /**
+   * Coordinates mouse up event handling
+   */
   const handleMouseUpGlobal = useCallback(() => {
     handleMouseUp();
   }, [handleMouseUp]);
 
-  // Set up global mouse event listeners
+  /**
+   * Manages global mouse event listeners during panning operations
+   */
   useEffect(() => {
     if (panState) {
       document.addEventListener('mousemove', handleMouseMove);
@@ -194,7 +232,7 @@ export const useViewerInteractions = ({
   return {
     panState,
     panOffset,
-    isSpacePressed: false, // Never show space cursor for viewer
+    isSpacePressed: false, // Viewer mode: no space key visual feedback needed
     zoomState,
     handleCanvasMouseDown,
   };

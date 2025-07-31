@@ -1,34 +1,43 @@
+// Layout and positioning constants - grid-based system for consistent alignment
 export const GRID_SIZE = 10;
 export const MARGIN = 1; // Margin around rectangles to prevent overlap
 export const LABEL_MARGIN = 1.5; // Extra margin for nodes with children to accommodate labels
+
+// Minimum dimensions to ensure rectangle visibility and usability
 export const MIN_WIDTH = 5;
 export const MIN_HEIGHT = 3;
+
+// History management - limits undo/redo stack size to prevent memory issues
 export const MAX_HISTORY_SIZE = 50;
 
+// Default color scheme for different rectangle types
 export const DEFAULT_COLORS = {
-  root: '#4ECDC4',
-  parent: '#45B7D1', 
-  leaf: '#96CEB4',
-  textLabel: 'transparent'
+  root: '#4ECDC4',        // Teal for top-level containers
+  parent: '#45B7D1',      // Blue for intermediate containers  
+  leaf: '#96CEB4',        // Light green for terminal nodes
+  textLabel: 'transparent' // Transparent background for text-only elements
 };
 
+// Default dimensions in grid units for different rectangle types
 export const DEFAULT_RECTANGLE_SIZE = {
-  root: { w: 16, h: 10 },
-  parent: { w: 6, h: 4 },
-  leaf: { w: 20, h: 4 },
-  textLabel: { w: 8, h: 2 }
+  root: { w: 16, h: 10 },      // Large size for main domain boundaries
+  parent: { w: 6, h: 4 },      // Medium size for container elements
+  leaf: { w: 20, h: 4 },       // Wide aspect for detailed items
+  textLabel: { w: 8, h: 2 }    // Compact size for text annotations
 };
 
+// Typography configuration for hierarchical text scaling
 export const DEFAULT_FONT_SETTINGS = {
-  rootFontSize: 15,
-  dynamicFontSizing: true
+  rootFontSize: 15,           // Base font size for root level elements
+  dynamicFontSizing: true     // Enable automatic font scaling by depth
 };
 
 import type { FontOption } from './fontDetection';
 
+// Safe fallback font that's available on all systems
 export const DEFAULT_FONT_FAMILY = 'Arial';
 
-// Fallback font options if dynamic detection fails
+// Comprehensive fallback font list when system font detection fails
 export const FALLBACK_FONT_OPTIONS: FontOption[] = [
   { value: 'Inter', label: 'Inter', category: 'web' },
   { value: 'Arial', label: 'Arial', category: 'sans-serif' },
@@ -41,30 +50,33 @@ export const FALLBACK_FONT_OPTIONS: FontOption[] = [
   { value: 'system-ui', label: 'System UI', category: 'system' }
 ];
 
-// Re-export for compatibility
+// Legacy alias maintained for backwards compatibility
 export const FONT_OPTIONS = FALLBACK_FONT_OPTIONS;
 
+// Visual styling defaults for rectangle borders
 export const DEFAULT_BORDER_SETTINGS = {
-  borderRadius: 4,
-  borderColor: '#374151',
-  borderWidth: 1
+  borderRadius: 4,            // Rounded corners for modern appearance
+  borderColor: '#374151',     // Neutral gray for professional look
+  borderWidth: 1              // Standard 1px border weight
 };
 
+// Spacing configuration for layout algorithms
 export const DEFAULT_MARGIN_SETTINGS = {
-  margin: 1,
-  labelMargin: 2.7
+  margin: 1,                  // Standard spacing between rectangles
+  labelMargin: 2.7           // Additional space for parent container labels
 };
 
+// Standard keyboard shortcuts for application actions
 export const KEYBOARD_SHORTCUTS = {
-  SAVE: 'Ctrl+S',
-  LOAD: 'Ctrl+O',
-  UNDO: 'Ctrl+Z',
-  REDO: 'Ctrl+Y',
-  DELETE: 'Delete',
-  COPY: 'Ctrl+C',
-  PASTE: 'Ctrl+V',
-  SELECT_ALL: 'Ctrl+A',
-  ZOOM_IN: 'Ctrl+=',
-  ZOOM_OUT: 'Ctrl+-',
-  ZOOM_RESET: 'Ctrl+0'
+  SAVE: 'Ctrl+S',            // Save current diagram
+  LOAD: 'Ctrl+O',            // Open file dialog
+  UNDO: 'Ctrl+Z',            // Undo last action
+  REDO: 'Ctrl+Y',            // Redo undone action
+  DELETE: 'Delete',          // Remove selected rectangle
+  COPY: 'Ctrl+C',            // Copy selection to clipboard
+  PASTE: 'Ctrl+V',           // Paste from clipboard
+  SELECT_ALL: 'Ctrl+A',      // Select all rectangles
+  ZOOM_IN: 'Ctrl+=',         // Increase zoom level
+  ZOOM_OUT: 'Ctrl+-',        // Decrease zoom level
+  ZOOM_RESET: 'Ctrl+0'       // Reset zoom to 100%
 };

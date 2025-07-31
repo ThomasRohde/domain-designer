@@ -1,11 +1,29 @@
 import { Rectangle, GlobalSettings } from '../types';
 
+/**
+ * HTML Export Utilities
+ * 
+ * Generates interactive HTML exports of diagrams with:
+ * - Pan and zoom functionality using mouse/wheel
+ * - Tooltip support for rectangle descriptions  
+ * - Responsive scaling and mobile-friendly controls
+ * - Special Confluence mode for wiki integration
+ * - Faithful reproduction of all visual styling
+ * 
+ * The exported HTML is self-contained with embedded CSS and JavaScript,
+ * making it suitable for sharing, embedding, or archival purposes.
+ */
+
 interface HtmlExportOptions {
-  includeBackground: boolean;
-  scale: number;
-  confluenceMode: boolean;
+  includeBackground: boolean;  // Include white background or transparent
+  scale: number;              // Export scale factor (1.0 = 100%)
+  confluenceMode: boolean;    // Generate embeddable HTML without document structure
 }
 
+/**
+ * Main export function - generates HTML file and triggers browser download
+ * Creates a self-contained HTML file with embedded styling and interactivity
+ */
 export const exportToHTML = (
   rectangles: Rectangle[],
   filename: string,
@@ -14,6 +32,7 @@ export const exportToHTML = (
 ): void => {
   const html = generateInteractiveHTML(rectangles, options, globalSettings);
   
+  // Create downloadable blob and trigger browser download
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   
@@ -22,9 +41,14 @@ export const exportToHTML = (
   link.href = url;
   link.click();
   
+  // Clean up memory
   URL.revokeObjectURL(url);
 };
 
+/**
+ * Core HTML generation function with full interactivity
+ * Creates complete HTML document with pan/zoom controls and styling
+ */
 const generateInteractiveHTML = (
   rectangles: Rectangle[],
   options: HtmlExportOptions,
@@ -32,6 +56,7 @@ const generateInteractiveHTML = (
 ): string => {
   if (rectangles.length === 0) return '';
 
+  // Route to simplified mode for wiki embedding
   if (options.confluenceMode) {
     return generateConfluenceHTML(rectangles, options, globalSettings);
   }

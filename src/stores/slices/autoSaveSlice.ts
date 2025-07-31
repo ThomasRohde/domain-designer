@@ -4,13 +4,21 @@ import { SavedDiagram, ValidationResult } from '../../types/layoutSnapshot';
 import { validateSavedDiagram } from '../../utils/schemaValidation';
 import type { SliceCreator, AutoSaveState, AutoSaveActions } from '../types';
 
+/**
+ * Structure for data persisted to IndexedDB.
+ * Contains rectangle state, settings, and metadata for validation and recovery.
+ */
 interface AutoSaveData {
   rectangles: Rectangle[];
   appSettings: AppSettings;
   timestamp: number;
-  manualClearInProgress?: boolean;
+  manualClearInProgress?: boolean; // Flag to track intentional data clearing
 }
 
+/**
+ * IndexedDB schema definition for type-safe database operations.
+ * Uses IDB library for improved error handling and TypeScript support.
+ */
 interface DomainDesignerDB extends DBSchema {
   diagrams: {
     key: string;
@@ -18,21 +26,24 @@ interface DomainDesignerDB extends DBSchema {
   };
 }
 
+// Database configuration constants
 const DB_NAME = 'DomainDesigner_v2_DB';
 const DB_VERSION = 1;
 const STORE_NAME = 'diagrams';
 const AUTOSAVE_KEY = 'current_diagram';
-const SAVE_DELAY = 1000; // 1 second debounce (reduced for better responsiveness)
+const SAVE_DELAY = 1000; // Debounce delay for auto-save operations (1 second)
 
 /**
- * Auto-save state slice interface
+ * Extended auto-save slice interface with data integrity features.
+ * Includes validation, error recovery, and manual clear handling capabilities
+ * beyond the basic auto-save functionality.
  */
 export interface AutoSaveSlice {
   autoSave: AutoSaveState & {
-    lastGoodSave: number | null;
-    hasAutoRestored: boolean;
-    isValidating: boolean;
-    manualClearInProgress: boolean;
+    lastGoodSave: number | null;       // Timestamp of last validated successful save
+    hasAutoRestored: boolean;          // Prevents multiple auto-restores per session
+    isValidating: boolean;             // Prevents save operations during validation
+    manualClearInProgress: boolean;    // Tracks intentional data clearing operations
   };
   autoSaveActions: AutoSaveActions & {
     validate: (rectangles: Rectangle[], settings: AppSettings) => ValidationResult;
@@ -46,19 +57,26 @@ export interface AutoSaveSlice {
 }
 
 /**
- * Creates the auto-save slice for the store
+ * Creates the auto-save slice with IndexedDB persistence and data validation.
+ * Manages browser storage, error recovery, and data integrity for the application.
+ * Uses debounced saves and validation to ensure reliable data persistence.
  */
 export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
-  let dbRef: IDBPDatabase<DomainDesignerDB> | null = null;
-  let saveTimeoutRef: number | null = null;
-  let lastGoodDataRef: SavedDiagram | null = null;
+  let dbRef: IDBPDatabase<DomainDesignerDB> | null = null;  // Cached database connection
+  let saveTimeoutRef: number | null = null;                // Debounce timer for save operations  
+  let lastGoodDataRef: SavedDiagram | null = null;         // Last validated save for rollback
 
-  // Initialize IndexedDB
+  /**
+   * Initialize IndexedDB connection with error handling and schema migration.
+   * Creates database and object store if they don't exist, providing graceful
+   * fallback when IndexedDB is unavailable (e.g., private browsing mode).
+   */
   const initDB = async (): Promise<IDBPDatabase<DomainDesignerDB> | null> => {
     try {
       if (!dbRef) {
         dbRef = await openDB<DomainDesignerDB>(DB_NAME, DB_VERSION, {
           upgrade(db) {
+            // Create object store on first run or version upgrade
             if (!db.objectStoreNames.contains(STORE_NAME)) {
               db.createObjectStore(STORE_NAME);
             }
@@ -68,11 +86,15 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
       return dbRef;
     } catch (error) {
       console.error('Failed to initialize IndexedDB:', error);
-      return null;
+      return null; // Graceful fallback when IndexedDB is unavailable
     }
   };
 
-  // Save data to IndexedDB
+  /**
+   * Persist data to IndexedDB with error handling.
+   * Returns success status to allow calling code to handle failures gracefully.
+   * Includes fallback behavior when IndexedDB is unavailable.
+   */
   const saveDataToIndexedDB = async (data: AutoSaveData): Promise<boolean> => {
     try {
       const db = await initDB();
@@ -89,7 +111,11 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
     }
   };
 
-  // Load data from IndexedDB
+  /**
+   * Load previously saved data from IndexedDB.
+   * Returns null if no data exists or if IndexedDB is unavailable,
+   * allowing calling code to handle missing data appropriately.
+   */
   const loadDataFromIndexedDB = async (): Promise<AutoSaveData | null> => {
     try {
       const db = await initDB();
@@ -106,7 +132,11 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
     }
   };
 
-  // Clear saved data
+  /**
+   * Remove all saved data from IndexedDB.
+   * Used during manual data clearing and application reset operations.
+   * Fails silently to avoid disrupting user workflows.
+   */
   const clearDataFromIndexedDB = async (): Promise<void> => {
     try {
       const db = await initDB();
@@ -118,7 +148,11 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
     }
   };
 
-  // Debounced save function
+  /**
+   * Debounced save operation to prevent excessive IndexedDB writes.
+   * Delays save operations until user activity stops, improving performance
+   * while ensuring data persistence. Updates UI state on successful saves.
+   */
   const debouncedSave = (data: AutoSaveData) => {
     if (saveTimeoutRef) {
       window.clearTimeout(saveTimeoutRef);
@@ -153,15 +187,20 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
 
     // Actions
     autoSaveActions: {
-      // Initialize the IndexedDB and check for auto-restore on app start
+      /**
+       * Initialize the auto-save system on application startup.
+       * Establishes IndexedDB connection, checks for pending clear operations,
+       * and triggers auto-restore if appropriate. Uses delayed restore to ensure
+       * UI components are fully initialized before data restoration.
+       */
       initialize: async () => {
         try {
           await initDB();
           
-          // First, check if we have a manual clear flag in saved data
+          // Check for manual clear operation in progress
           const data = await loadDataFromIndexedDB();
           if (data?.manualClearInProgress) {
-            // Ensure state reflects this immediately
+            // Update state to reflect ongoing clear operation
             set(state => ({
               rectangles: [],
               autoSave: {
@@ -173,7 +212,7 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             }));
           }
           
-          // Check for auto-restore after a short delay
+          // Delayed auto-restore to ensure UI is ready
           setTimeout(async () => {
             await get().autoSaveActions.checkAndAutoRestore();
           }, 500);
@@ -253,8 +292,14 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         }));
       },
 
+      /**
+       * Validate rectangle and settings data before saving.
+       * Converts data to SavedDiagram format and applies schema validation.
+       * Allows empty states as users can intentionally clear their workspace.
+       * Returns validation result with detailed error information.
+       */
       validate: (rectangles: Rectangle[], settings: AppSettings): ValidationResult => {
-        // Create SavedDiagram format for validation
+        // Convert to standard SavedDiagram format for validation
         const savedData: SavedDiagram = {
           version: '2.0',
           rectangles,
@@ -270,35 +315,39 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
 
         const validation = validateSavedDiagram(savedData);
         
-        // Additional business logic validation
+        // Business rule: empty states are valid (users can clear canvas)
         if (validation.isValid) {
-          // Allow empty states - users can clear their canvas
+          // Additional validation logic can be added here
         }
         
         return validation;
       },
 
+      /**
+       * Save current application state to IndexedDB with validation.
+       * Handles manual clear flag management and validates data before saving.
+       * Uses debounced saves to prevent excessive database operations.
+       * Maintains last known good state for error recovery.
+       */
       saveData: () => {
         const state = get();
         const { rectangles, settings, autoSave } = state;
         
+        // Skip save if disabled or currently validating
         if (!autoSave.enabled || autoSave.isValidating) {
           return;
         }
 
-        // Only set manualClearInProgress if we have content being added after a clear
-        // Don't set it just because rectangles.length === 0 (that could be individual deletions)
         const hasContent = rectangles.length > 0;
-        
         let shouldClearFlag = false;
         
+        // Reset manual clear flag when user adds content after clearing
         if (hasContent && autoSave.manualClearInProgress) {
-          // Reset the flag when user adds content after a clear
           get().autoSaveActions.setManualClearInProgress(false);
           shouldClearFlag = true;
         }
 
-        // Validate before saving
+        // Validate data structure before saving
         const validation = get().autoSaveActions.validate(rectangles, settings);
         
         if (!validation.isValid) {
@@ -306,7 +355,7 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           return;
         }
 
-        // Get the current flag value after potential updates
+        // Determine final manual clear flag state
         const currentManualClearInProgress = shouldClearFlag ? false : autoSave.manualClearInProgress;
 
         const data: AutoSaveData = {
@@ -316,7 +365,7 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           manualClearInProgress: currentManualClearInProgress
         };
 
-        // Store as last good data before saving
+        // Cache validated data for potential rollback
         lastGoodDataRef = {
           version: '2.0',
           rectangles,
@@ -486,16 +535,21 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         }));
       },
 
-      // Clear only the model (rectangles) but preserve app settings
+      /**
+       * Clear rectangle data while preserving application settings.
+       * Sets flags to prevent auto-restore on page refresh and ensures
+       * the cleared state is immediately persisted. Used when user
+       * intentionally clears their workspace.
+       */
       clearModel: async () => {
         const timestamp = Date.now();
         
-        // Set localStorage flag to prevent auto-restore on refresh
+        // Prevent auto-restore on page refresh during clear operation
         localStorage.setItem('domain-designer-clear-in-progress', 'true');
         
-        // Set manual clear flag and timestamp
+        // Update state to reflect intentional clearing
         set(prevState => ({
-          rectangles: [], // Clear all rectangles
+          rectangles: [], // Remove all rectangles
           autoSave: {
             ...prevState.autoSave,
             manualClearInProgress: true,
@@ -503,10 +557,10 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           }
         }));
         
-        // Force save the cleared state directly to IndexedDB (bypass normal saveData logic)
+        // Force immediate save of cleared state (bypassing normal debounce)
         const state = get();
         const data: AutoSaveData = {
-          rectangles: [], // Explicitly empty
+          rectangles: [], // Explicitly empty array
           appSettings: state.settings,
           timestamp: timestamp,
           manualClearInProgress: true

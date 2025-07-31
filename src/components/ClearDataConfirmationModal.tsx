@@ -8,12 +8,17 @@ interface ClearDataConfirmationModalProps {
   onConfirmClearModel: () => void;
 }
 
+/**
+ * Confirmation modal for data clearing operations with granular control.
+ * Offers selective clearing (model only vs. everything) with clear visual warnings.
+ */
 const ClearDataConfirmationModal: React.FC<ClearDataConfirmationModalProps> = ({ 
   isOpen, 
   onClose, 
   onConfirmClearAll,
   onConfirmClearModel
 }) => {
+  // Default to safer 'clear-model' option that preserves user settings
   const [clearType, setClearType] = useState<'clear-all' | 'clear-model'>('clear-model');
 
   if (!isOpen) return null;

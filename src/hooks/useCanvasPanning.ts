@@ -3,10 +3,17 @@ import { PanState } from '../types';
 import { getMousePosition, shouldStartPan, preventEventDefault, isEventTargetEditable } from '../utils/eventUtils';
 import { PanOffset } from '../utils/canvasUtils';
 
+/**
+ * Props for useCanvasPanning hook
+ */
 interface UseCanvasPanningProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
+/**
+ * Return interface for useCanvasPanning hook
+ * Provides panning state and handlers for canvas navigation
+ */
 interface UseCanvasPanningReturn {
   panState: PanState | null;
   panOffset: PanOffset;
@@ -25,9 +32,12 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
   const animationFrameRef = useRef<number | null>(null);
   const pendingUpdateRef = useRef<PanOffset | null>(null);
 
-  // Handle canvas mouse down for panning
+  /**
+   * Initiates panning operation on middle mouse or space+left click
+   * Records initial position and offset for delta calculations
+   */
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
-    // Start panning on middle mouse button or space+left click
+    // Panning triggers: middle mouse or space+left click combination
     if (shouldStartPan(e, isSpacePressed)) {
       preventEventDefault(e);
 
@@ -45,7 +55,10 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
     }
   }, [isSpacePressed, containerRef]);
 
-  // Handle mouse move for panning
+  /**
+   * Processes mouse movement during panning operations
+   * Uses performance optimizations: ref updates and requestAnimationFrame batching
+   */
   const handlePanMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
     if (!panState) return;
 
@@ -60,15 +73,15 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
       y: panState.initialOffsetY + deltaY
     };
     
-    // Always update the ref for immediate access
+    // Immediate ref update for synchronous access by other components
     panOffsetRef.current = newOffset;
     
-    // Update background position immediately for canvas grid
+    // Apply background position immediately for smooth grid movement
     if (containerRef.current) {
       containerRef.current.style.backgroundPosition = `${newOffset.x}px ${newOffset.y}px`;
     }
     
-    // Schedule React state update using requestAnimationFrame
+    // Batch React state updates using requestAnimationFrame for performance
     pendingUpdateRef.current = newOffset;
     
     if (animationFrameRef.current === null) {
@@ -82,21 +95,26 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
     }
   }, [panState, containerRef]);
 
-  // Handle mouse up for panning
+  /**
+   * Completes panning operation and ensures final state synchronization
+   */
   const handleMouseUp = useCallback(() => {
-    // Cancel any pending animation frame
+    // Cancel pending frame to prevent stale updates
     if (animationFrameRef.current !== null) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
     
-    // Ensure final state sync when dragging ends
+    // Ensure React state matches ref for consistency
     setPanOffset(panOffsetRef.current);
     setPanState(null);
     pendingUpdateRef.current = null;
   }, []);
 
-  // Handle keyboard events for space key panning
+  /**
+   * Manages space key state for space+drag panning mode
+   * Includes editable element detection to prevent interference
+   */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !isSpacePressed && !isEventTargetEditable(e)) {
@@ -124,12 +142,17 @@ export const useCanvasPanning = ({ containerRef }: UseCanvasPanningProps): UseCa
     };
   }, [isSpacePressed]);
 
-  // Sync panOffset state with ref for immediate updates
+  /**
+   * Synchronizes React state with ref to maintain consistency
+   * Ensures ref always has current offset for immediate access
+   */
   useEffect(() => {
     panOffsetRef.current = panOffset;
   }, [panOffset]);
 
-  // Cleanup animation frame on unmount
+  /**
+   * Cleanup: cancels pending animation frames to prevent memory leaks
+   */
   useEffect(() => {
     return () => {
       if (animationFrameRef.current !== null) {

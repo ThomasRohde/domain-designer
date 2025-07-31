@@ -74,7 +74,11 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
 
 
   /**
-   * Calculate outer offset for positioning children
+   * Calculate positioning offset within parent bounds, accounting for margins
+   * 
+   * @param parent - Parent rectangle providing boundaries
+   * @param m - Margin configuration with margin and labelMargin values
+   * @returns Offset coordinates for child positioning
    */
   private outerOffset(parent: Rectangle, m: MarginsLike) {
     const margin = m.margin ?? 1;
@@ -87,7 +91,13 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Snap to grid for consistent alignment
+   * Snap coordinate values to avoid floating-point precision issues
+   * 
+   * Rounds very small values to zero and applies precision truncation
+   * to prevent layout instability from accumulated floating-point errors.
+   * 
+   * @param value - Coordinate value to snap
+   * @returns Precision-adjusted coordinate value
    */
   private snapToGrid(value: number): number {
     if (Math.abs(value) < PRECISION_EPSILON) return 0;
@@ -156,7 +166,17 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Compute sizes for all children recursively
+   * Calculate minimum required dimensions for all child rectangles
+   * 
+   * Handles three rectangle types with different sizing strategies:
+   * - Text labels: Calculated from font size and text content length
+   * - Leaf nodes: Uses fixed dimensions or maintains current size with minimums
+   * - Container nodes: Text-based sizing with space for child content
+   * 
+   * @param children - Array of child rectangles to size
+   * @param fixedDimensions - Optional fixed sizing configuration for leaf nodes
+   * @param _margins - Margin configuration (unused in current implementation)
+   * @returns Array of MixedFlowRectangles with calculated minimum dimensions
    */
   private computeChildrenSizes(
     children: Rectangle[], 
@@ -206,7 +226,17 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Calculate optimal grid dimensions for a given number of children
+   * Generate matrix grid configurations for optimal space utilization
+   * 
+   * Creates grid layout options based on child count, favoring:
+   * - Perfect grids (4→2x2, 9→3x3) for visual symmetry
+   * - Balanced aspect ratios to minimize whitespace
+   * - Rectangular grids for non-perfect counts
+   * 
+   * Algorithm complexity: O(√n) where n is child count
+   * 
+   * @param childCount - Number of children to arrange in grid
+   * @returns Array of grid dimension options sorted by efficiency
    */
   private calculateOptimalGridDimensions(childCount: number): Array<{ cols: number; rows: number }> {
     const gridOptions: Array<{ cols: number; rows: number }> = [];
@@ -248,7 +278,17 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Create matrix grid layout option
+   * Generate matrix grid layout with uniform cell sizing
+   * 
+   * Creates a grid where all cells have the same dimensions (determined by the
+   * largest child), with children centered within their assigned cells.
+   * Provides excellent visual consistency for mixed-size content.
+   * 
+   * @param children - Rectangles to arrange in grid
+   * @param cols - Number of columns in grid
+   * @param rows - Number of rows in grid  
+   * @param gap - Spacing between grid cells
+   * @returns Complete layout option with positioned children
    */
   private createMatrixGridOption(children: MixedFlowRectangle[], cols: number, rows: number, gap: number): LayoutOption {
     const childPositions: Array<{ rect: MixedFlowRectangle; x: number; y: number }> = [];
@@ -296,7 +336,20 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Generate different layout options for evaluation
+   * Generate all possible layout configurations for scoring evaluation
+   * 
+   * Creates up to 7 layout options:
+   * 1. Single row (horizontal flow)
+   * 2. Single column (vertical stack)
+   * 3. Two-column layout with height balancing
+   * 4. Two-row layout with width balancing  
+   * 5-7. Matrix grids (2x2, 3x2, 2x3, etc.) for appropriate child counts
+   * 
+   * Each option is scored for space efficiency, aspect ratio, and visual balance.
+   * 
+   * @param children - Rectangles to arrange
+   * @param margins - Spacing configuration
+   * @returns Array of layout options with calculated scores
    */
   private generateLayoutOptions(children: MixedFlowRectangle[], margins?: MarginsLike): LayoutOption[] {
     const options: LayoutOption[] = [];
@@ -513,7 +566,16 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Balance children into two groups by total height
+   * Distribute children into two groups with balanced total heights
+   * 
+   * Uses greedy bin-packing algorithm: assigns each child to the group with
+   * smaller current total height. This minimizes height difference between
+   * columns in two-column layouts, reducing wasted whitespace.
+   * 
+   * Time complexity: O(n)
+   * 
+   * @param children - Array of rectangles to distribute
+   * @returns Two groups with approximately equal total heights
    */
   private balanceChildrenByHeight(children: MixedFlowRectangle[]): { group1: MixedFlowRectangle[]; group2: MixedFlowRectangle[] } {
     const group1: MixedFlowRectangle[] = [];
@@ -538,7 +600,15 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Balance children into two groups by total width
+   * Distribute children into two groups with balanced total widths
+   * 
+   * Mirror of height balancing algorithm for two-row layouts.
+   * Minimizes width difference between rows to optimize horizontal space usage.
+   * 
+   * Time complexity: O(n)
+   * 
+   * @param children - Array of rectangles to distribute
+   * @returns Two groups with approximately equal total widths
    */
   private balanceChildrenByWidth(children: MixedFlowRectangle[]): { group1: MixedFlowRectangle[]; group2: MixedFlowRectangle[] } {
     const group1: MixedFlowRectangle[] = [];
@@ -563,7 +633,20 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Evaluate layout quality and assign score
+   * Multi-criteria scoring algorithm for layout quality assessment
+   * 
+   * Scoring factors (higher scores = better layouts):
+   * 1. Space efficiency (50% weight): Used area / total parent area
+   * 2. Aspect ratio penalty (20% weight): Deviation from square aspect ratio
+   * 3. Balance penalty (10% weight): Height/width balance for multi-column/row layouts
+   * 4. Grid bonus (variable): Special scoring for matrix layouts
+   * 5. Layout type bonus: Slight preference adjustments by layout type
+   * 
+   * The algorithm reduces single-column bias and encourages efficient matrix
+   * layouts when appropriate.
+   * 
+   * @param option - Layout option to evaluate
+   * @returns Composite quality score (higher = better)
    */
   private evaluateLayout(option: LayoutOption): number {
     const parentArea = option.parentW * option.parentH;
@@ -636,7 +719,13 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Select the optimal layout from available options
+   * Choose layout with highest composite quality score
+   * 
+   * Simple maximum selection after multi-criteria evaluation.
+   * Breaks ties by preferring the first option (typically single-row).
+   * 
+   * @param options - Array of scored layout options
+   * @returns Best layout option based on scoring algorithm
    */
   private selectOptimalLayout(options: LayoutOption[]): LayoutOption {
     let bestOption = options[0];
@@ -653,7 +742,16 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Position children according to chosen layout with proper centering
+   * Transform layout coordinates to final positioned rectangles
+   * 
+   * Applies parent positioning, margin offsets, and centering within available space.
+   * If the chosen layout is smaller than the parent's available space,
+   * the layout is centered within the parent boundaries.
+   * 
+   * @param option - Selected layout option with relative coordinates
+   * @param parent - Parent rectangle providing coordinate system and bounds
+   * @param margins - Margin configuration for positioning
+   * @returns Array of rectangles with final absolute coordinates
    */
   private positionChildren(option: LayoutOption, parent: Rectangle, margins?: MarginsLike): Rectangle[] {
     const offset = this.outerOffset(parent, margins || {});

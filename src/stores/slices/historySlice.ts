@@ -4,7 +4,9 @@ import type { Rectangle } from '../../types';
 const MAX_HISTORY_SIZE = 50;
 
 /**
- * History state slice interface
+ * History state slice managing undo/redo functionality.
+ * Provides time-travel debugging and user error recovery with
+ * efficient state comparison and memory management.
  */
 export interface HistorySlice {
   history: HistoryState;
@@ -12,7 +14,9 @@ export interface HistorySlice {
 }
 
 /**
- * Compares two rectangle states for equality to avoid duplicate history entries
+ * Deep equality comparison for rectangle states to prevent duplicate history entries.
+ * Compares all relevant rectangle properties to detect meaningful changes.
+ * This optimization prevents history bloat from reference changes without content changes.
  */
 const areRectangleStatesEqual = (state1: Rectangle[], state2: Rectangle[]): boolean => {
   if (state1.length !== state2.length) {
@@ -96,30 +100,34 @@ export const createHistorySlice: SliceCreator<HistorySlice> = (set, get) => ({
       }));
     },
 
+    /**
+     * Save current rectangle state to history with duplicate detection.
+     * Manages history stack size, removes future states when branching,
+     * and prevents duplicate entries to optimize memory usage.
+     */
     saveToHistory: () => {
       const state = get();
       const { rectangles, history } = state;
       
       let newStack = [...history.stack];
       
-      // If we're not at the end of history, remove all states after current index
+      // Remove future states when creating a new branch (standard undo/redo behavior)
       if (history.index < newStack.length - 1) {
         newStack = newStack.slice(0, history.index + 1);
       }
       
-      // Enhanced duplicate detection - check if the new state is identical to the current state
+      // Skip duplicate states to prevent history bloat
       const currentState = newStack[history.index];
       if (currentState && areRectangleStatesEqual(rectangles, currentState)) {
-        // Skip adding duplicate state - no changes needed
-        return;
+        return; // No meaningful changes to save
       }
       
-      // Add the new state (deep copy to prevent mutations)
+      // Add new state with deep copy to prevent mutation issues
       newStack.push(JSON.parse(JSON.stringify(rectangles)));
       
       let newIndex = newStack.length - 1;
       
-      // Limit history size
+      // Maintain bounded history size for memory management
       if (newStack.length > MAX_HISTORY_SIZE) {
         newStack.shift();
         newIndex = newStack.length - 1;

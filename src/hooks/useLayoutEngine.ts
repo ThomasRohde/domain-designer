@@ -4,11 +4,18 @@ import { LayoutMetadata, shouldPreserveExactLayout } from '../types/layoutSnapsh
 import { updateChildrenLayout, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
 import { layoutManager, LayoutAlgorithmType } from '../utils/layout';
 
+/**
+ * Props for useLayoutEngine hook
+ */
 export interface UseLayoutEngineProps {
   getFixedDimensions: () => FixedDimensions;
   getMargins: () => { margin: number; labelMargin: number };
 }
 
+/**
+ * Return interface for useLayoutEngine hook
+ * Provides layout management operations with metadata awareness
+ */
 export interface UseLayoutEngineReturn {
   updateLayout: (rectangles: Rectangle[], layoutMetadata?: LayoutMetadata) => Rectangle[];
   fitParentToChildren: (rectangles: Rectangle[], parentId: string, layoutMetadata?: LayoutMetadata) => Rectangle[];
@@ -22,40 +29,52 @@ export const useLayoutEngine = ({
   getMargins
 }: UseLayoutEngineProps): UseLayoutEngineReturn => {
   
-  // Check if layout can be updated based on metadata
+  /**
+   * Determines if layout operations should proceed based on metadata
+   * Respects layout preservation flags from import/restore operations
+   */
   const canLayoutUpdate = useCallback((layoutMetadata?: LayoutMetadata): boolean => {
     if (!layoutMetadata) return true;
     
-    // Don't update layout if it should be preserved exactly
+    // Preserve exact layouts during sensitive operations (import/restore)
     return !shouldPreserveExactLayout(layoutMetadata);
   }, []);
 
-  // Set the layout algorithm
+  /**
+   * Configures the active layout algorithm for subsequent operations
+   * Integrates with the global layout manager system
+   */
   const setLayoutAlgorithm = useCallback((algorithm: LayoutAlgorithmType) => {
     layoutManager.setAlgorithm(algorithm);
   }, []);
 
-  // Update layout for all rectangles that need it
+  /**
+   * Applies layout algorithm to all rectangles requiring positioning
+   * Respects metadata constraints and manual positioning settings
+   */
   const updateLayout = useCallback((
     rectangles: Rectangle[], 
     layoutMetadata?: LayoutMetadata
   ): Rectangle[] => {
-    // Don't modify layout if it should be preserved
+    // Skip layout modifications when preservation is required
     if (!canLayoutUpdate(layoutMetadata)) {
       return rectangles;
     }
 
-    // Use the existing updateChildrenLayout utility
+    // Delegate to layout utilities for algorithm application
     return updateChildrenLayout(rectangles, getFixedDimensions(), getMargins());
   }, [canLayoutUpdate, getFixedDimensions, getMargins]);
 
-  // Fit a parent rectangle to its children
+  /**
+   * Resizes parent rectangle to minimum size needed for children
+   * Maintains proper containment while respecting layout constraints
+   */
   const fitParentToChildren = useCallback((
     rectangles: Rectangle[], 
     parentId: string,
     layoutMetadata?: LayoutMetadata
   ): Rectangle[] => {
-    // Don't modify layout if it should be preserved
+    // Skip layout modifications when preservation is required
     if (!canLayoutUpdate(layoutMetadata)) {
       return rectangles;
     }
@@ -68,22 +87,25 @@ export const useLayoutEngine = ({
 
     const newSize = calculateMinimumParentSize(parentId, rectangles, getFixedDimensions(), getMargins());
 
-    // Update parent size
+    // Apply calculated minimum dimensions to parent
     const updated = rectangles.map(rect => 
       rect.id === parentId ? { ...rect, w: newSize.w, h: newSize.h } : rect
     );
 
-    // Recalculate children layout after parent resize
+    // Ensure children are properly positioned after parent resize
     return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
   }, [canLayoutUpdate, getFixedDimensions, getMargins]);
 
-  // Recalculate layout for children of a specific parent
+  /**
+   * Recalculates positioning for children of specified parent
+   * Respects manual positioning and lock settings
+   */
   const recalculateChildrenLayout = useCallback((
     rectangles: Rectangle[], 
     parentId: string,
     layoutMetadata?: LayoutMetadata
   ): Rectangle[] => {
-    // Don't modify layout if it should be preserved
+    // Skip layout modifications when preservation is required
     if (!canLayoutUpdate(layoutMetadata)) {
       return rectangles;
     }
@@ -96,7 +118,7 @@ export const useLayoutEngine = ({
     const children = getChildren(parentId, rectangles);
     if (children.length === 0) return rectangles;
 
-    // Use the existing updateChildrenLayout utility
+    // Apply layout algorithm to children
     return updateChildrenLayout(rectangles, getFixedDimensions(), getMargins());
   }, [canLayoutUpdate, getFixedDimensions, getMargins]);
 

@@ -4,8 +4,11 @@ import { FlowLayoutAlgorithm } from './FlowLayoutAlgorithm';
 import { MixedFlowLayoutAlgorithm } from './MixedFlowLayoutAlgorithm';
 
 /**
- * Factory for creating layout algorithms using the Factory pattern
- * Provides a centralized way to create and manage different layout algorithms
+ * Factory for layout algorithm instantiation and registry management
+ * 
+ * Implements the Factory pattern with dynamic registration capabilities.
+ * Maintains a registry of available algorithms and provides type-safe
+ * instantiation with error handling for missing algorithms.
  */
 export class LayoutAlgorithmFactory implements ILayoutAlgorithmFactory {
   private algorithms = new Map<LayoutAlgorithmType, new () => ILayoutAlgorithm>();
@@ -18,7 +21,11 @@ export class LayoutAlgorithmFactory implements ILayoutAlgorithmFactory {
   }
 
   /**
-   * Create a layout algorithm instance by type
+   * Instantiate algorithm by type with error handling
+   * 
+   * @param type - Algorithm identifier to instantiate
+   * @returns New algorithm instance
+   * @throws Error if algorithm type is not registered
    */
   createAlgorithm(type: LayoutAlgorithmType): ILayoutAlgorithm {
     const AlgorithmClass = this.algorithms.get(type);
@@ -31,35 +38,52 @@ export class LayoutAlgorithmFactory implements ILayoutAlgorithmFactory {
   }
 
   /**
-   * Get all available algorithm types
+   * List all registered algorithm identifiers
+   * 
+   * @returns Array of available algorithm type strings
    */
   getAvailableTypes(): LayoutAlgorithmType[] {
     return Array.from(this.algorithms.keys());
   }
 
   /**
-   * Register a new layout algorithm
+   * Add algorithm to registry for future instantiation
+   * 
+   * @param type - Unique identifier for the algorithm
+   * @param algorithmClass - Constructor for algorithm instances
    */
   registerAlgorithm(type: LayoutAlgorithmType, algorithmClass: new () => ILayoutAlgorithm): void {
     this.algorithms.set(type, algorithmClass);
   }
 
   /**
-   * Check if an algorithm type is registered
+   * Verify algorithm availability
+   * 
+   * @param type - Algorithm identifier to check
+   * @returns true if algorithm is registered and available
    */
   isRegistered(type: LayoutAlgorithmType): boolean {
     return this.algorithms.has(type);
   }
 
   /**
-   * Unregister an algorithm type
+   * Remove algorithm from registry
+   * 
+   * @param type - Algorithm identifier to remove
+   * @returns true if algorithm was registered and removed
    */
   unregisterAlgorithm(type: LayoutAlgorithmType): boolean {
     return this.algorithms.delete(type);
   }
 
   /**
-   * Get algorithm information without instantiating
+   * Retrieve algorithm metadata without instantiation overhead
+   * 
+   * Creates temporary instance to access name and description.
+   * Used for UI display of available algorithms.
+   * 
+   * @param type - Algorithm identifier
+   * @returns Algorithm metadata or null if not registered
    */
   getAlgorithmInfo(type: LayoutAlgorithmType): { name: string; description: string } | null {
     const AlgorithmClass = this.algorithms.get(type);

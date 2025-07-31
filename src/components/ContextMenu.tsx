@@ -11,6 +11,10 @@ interface ContextMenuProps {
   onClose: () => void;
 }
 
+/**
+ * Right-click context menu for rectangle operations.
+ * Positioned absolutely at cursor location and auto-closes after action selection.
+ */
 const ContextMenu: React.FC<ContextMenuProps> = ({
   x,
   y,
@@ -42,6 +46,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
       style={{ left: x, top: y }}
       onClick={(e) => e.stopPropagation()}
     >
+      {/* Display rectangle ID for user context */}
       <div className="px-3 py-2 text-sm font-medium text-gray-700 border-b border-gray-100">
         {rectangleId}
       </div>
@@ -64,6 +69,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         </button>
       </div>
       
+      {/* Destructive action separated and styled with warning colors */}
       <div className="border-t border-gray-100 py-1">
         <button
           onClick={handleRemove}

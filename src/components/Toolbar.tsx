@@ -4,14 +4,25 @@ import { useAppStore } from '../stores/useAppStore';
 import OfflineIndicator from './OfflineIndicator';
 
 interface ToolbarProps {
+  /** Handler for creating new rectangles (null parentId = root rectangle) */
   onAddRectangle: (parentId: string | null) => void;
+  /** Export functionality trigger */
   onExport: () => void;
+  /** Import functionality trigger */
   onImport: () => void;
+  /** Currently selected rectangle ID (enables "Add Child" button) */
   selectedId: string | null;
+  /** Timestamp of last auto-save operation for offline indicator */
   lastSaved?: number | null;
+  /** Whether auto-save is currently enabled */
   autoSaveEnabled?: boolean;
 }
 
+/**
+ * Main application toolbar with responsive design and context-aware controls.
+ * Features mobile-first layout with progressive enhancement for larger screens.
+ * Includes auto-save status indicator and adaptive button groupings.
+ */
 const Toolbar: React.FC<ToolbarProps> = ({
   onAddRectangle,
   onExport,
@@ -27,6 +38,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-3">
       <div className="flex items-center justify-between">
+        {/* Left section: Navigation and branding */}
         <div className="flex items-center space-x-2">
           <button
             onClick={onToggleLeftMenu}
@@ -35,15 +47,18 @@ const Toolbar: React.FC<ToolbarProps> = ({
           >
             <Menu size={20} className="sm:w-6 sm:h-6" />
           </button>
+          {/* Responsive title with different text lengths for different screen sizes */}
           <h1 className="text-lg sm:text-xl font-bold text-gray-800 hidden sm:block">Domain Modeling Tool</h1>
           <h1 className="text-sm font-bold text-gray-800 sm:hidden">Domain Tool</h1>
+          {/* Auto-save indicator hidden on mobile to preserve space */}
           <div className="hidden sm:block">
             <OfflineIndicator lastSaved={lastSaved} autoSaveEnabled={autoSaveEnabled} />
           </div>
         </div>
         
+        {/* Right section: Action buttons with responsive grouping */}
         <div className="flex items-center space-x-1 sm:space-x-2">
-          {/* Mobile-first responsive controls */}
+          {/* Primary action buttons - always visible with context-aware enablement */}
           <div className="flex items-center space-x-1">
             <button
               onClick={() => onAddRectangle(null)}
@@ -53,6 +68,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <span className="hidden sm:inline">Add Root</span>
             </button>
             
+            {/* Conditional child button - only shown when rectangle is selected */}
             {selectedId && (
               <button
                 onClick={() => onAddRectangle(selectedId)}
@@ -64,8 +80,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
             )}
           </div>
           
+          {/* Visual separator for desktop */}
           <div className="w-px h-6 bg-gray-300 hidden sm:block"></div>
           
+          {/* Secondary actions - hidden on mobile to prioritize primary functions */}
           <div className="hidden sm:flex items-center space-x-1">
             <button
               onClick={onImport}
@@ -85,7 +103,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             </button>
           </div>
 
-          {/* Sidebar toggle button */}
+          {/* Settings panel toggle - always available for accessing properties */}
           {onToggleSidebar && (
             <>
               <div className="w-px h-6 bg-gray-300"></div>

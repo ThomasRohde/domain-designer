@@ -2,12 +2,18 @@ import { useEffect, useCallback, useRef } from 'react';
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { Rectangle, AppSettings } from '../types';
 
+/**
+ * Data structure for auto-save persistence
+ */
 interface AutoSaveData {
   rectangles: Rectangle[];
   appSettings: AppSettings;
   timestamp: number;
 }
 
+/**
+ * IndexedDB schema definition for domain designer data
+ */
 interface DomainDesignerDB extends DBSchema {
   diagrams: {
     key: string;
@@ -15,17 +21,25 @@ interface DomainDesignerDB extends DBSchema {
   };
 }
 
+// IndexedDB configuration constants
 const DB_NAME = 'DomainDesigner_v2_DB';
 const DB_VERSION = 1;
 const STORE_NAME = 'diagrams';
 const AUTOSAVE_KEY = 'current_diagram';
-const SAVE_DELAY = 2000; // 2 second debounce
+const SAVE_DELAY = 2000; // Debounce delay to prevent excessive saves
 
+/**
+ * Custom hook for auto-save functionality using IndexedDB
+ * Provides debounced saving with error handling and cleanup
+ */
 export const useAutoSave = () => {
   const dbRef = useRef<IDBPDatabase<DomainDesignerDB> | null>(null);
   const saveTimeoutRef = useRef<number | null>(null);
 
-  // Initialize IndexedDB
+  /**
+   * Initializes IndexedDB connection with error handling
+   * Creates object store if it doesn't exist
+   */
   const initDB = useCallback(async () => {
     try {
       if (!dbRef.current) {
@@ -44,7 +58,10 @@ export const useAutoSave = () => {
     }
   }, []);
 
-  // Save data to IndexedDB
+  /**
+   * Saves data to IndexedDB with error handling
+   * Gracefully degrades when IndexedDB is unavailable
+   */
   const saveData = useCallback(async (data: AutoSaveData) => {
     try {
       const db = await initDB();
@@ -60,7 +77,10 @@ export const useAutoSave = () => {
     }
   }, [initDB]);
 
-  // Load data from IndexedDB
+  /**
+   * Loads saved data from IndexedDB
+   * Returns null if no data exists or on error
+   */
   const loadData = useCallback(async (): Promise<AutoSaveData | null> => {
     try {
       const db = await initDB();
@@ -80,7 +100,10 @@ export const useAutoSave = () => {
     }
   }, [initDB]);
 
-  // Clear saved data
+  /**
+   * Clears all saved data from IndexedDB
+   * Used for cleanup operations
+   */
   const clearData = useCallback(async () => {
     try {
       const db = await initDB();
@@ -92,7 +115,10 @@ export const useAutoSave = () => {
     }
   }, [initDB]);
 
-  // Debounced save function
+  /**
+   * Debounced save function to prevent excessive write operations
+   * Cancels previous saves and schedules new one after delay
+   */
   const debouncedSave = useCallback((data: AutoSaveData, onComplete?: () => void) => {
     if (saveTimeoutRef.current) {
       window.clearTimeout(saveTimeoutRef.current);
@@ -104,7 +130,9 @@ export const useAutoSave = () => {
     }, SAVE_DELAY);
   }, [saveData]);
 
-  // Cleanup timeout on unmount
+  /**
+   * Cleanup: prevents memory leaks from pending timeouts
+   */
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
@@ -113,10 +141,12 @@ export const useAutoSave = () => {
     };
   }, []);
 
-  // Initialize DB on mount
+  /**
+   * Initialize database connection on hook mount
+   */
   useEffect(() => {
     initDB();
-  }, [initDB]); // Include initDB dependency
+  }, [initDB]);
 
   return {
     saveData: debouncedSave,

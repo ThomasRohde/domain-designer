@@ -45,27 +45,30 @@ const ViewerPage: React.FC = () => {
     loadSavedData();
   }, [loadData]);
 
-  // Calculate font size for rectangles using app settings
+  /**
+   * Dynamic font size calculation based on hierarchy depth.
+   * Provides visual hierarchy through progressive font scaling while maintaining readability.
+   */
   const calculateFontSize = (rectangleId: string, rectangles: Rectangle[]) => {
-    if (!appSettings) return 16; // Default fallback
+    if (!appSettings) return 16; // Safe fallback when settings not loaded
     
     if (!appSettings.dynamicFontSizing) {
       return appSettings.rootFontSize;
     }
     
-    // Calculate depth for dynamic sizing
     const rectangle = rectangles.find(r => r.id === rectangleId);
     if (!rectangle) return appSettings.rootFontSize;
     
+    // Calculate hierarchy depth by traversing parent chain
     let depth = 0;
     let currentRect = rectangle;
     while (currentRect.parentId) {
       depth++;
       currentRect = rectangles.find(r => r.id === currentRect.parentId) || currentRect;
-      if (depth > 10) break; // Safety check
+      if (depth > 10) break; // Prevent infinite loops in malformed data
     }
     
-    // Reduce font size by 10% per depth level, minimum 8px
+    // Apply 10% size reduction per level with minimum size constraint
     const scaleFactor = Math.pow(0.9, depth);
     return Math.max(8, Math.round(appSettings.rootFontSize * scaleFactor));
   };
@@ -78,37 +81,39 @@ const ViewerPage: React.FC = () => {
     borderWidth: 1
   };
 
-  // Detect if running in PWA mode
+  /**
+   * PWA detection utility - checks if app is running in standalone mode.
+   * Important for proper navigation behavior in installed PWA vs browser.
+   */
   const isPWA = () => {
     return window.matchMedia('(display-mode: standalone)').matches ||
            window.matchMedia('(display-mode: fullscreen)').matches ||
            'standalone' in window.navigator && (window.navigator as { standalone?: boolean }).standalone === true;
   };
 
-  // Handle back to editor navigation for PWA compatibility
+  /**
+   * Context-aware navigation handler that adapts to PWA vs browser environment.
+   * Ensures proper navigation within PWA scope constraints.
+   */
   const handleBackToEditor = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Get the correct navigation path based on environment
     const getNavigationPath = () => {
-      // For PWA in production with GitHub Pages, we need to navigate within scope
+      // PWA in production (GitHub Pages) requires scope-aware navigation
       if (isPWA() && import.meta.env.PROD && import.meta.env.BASE_URL === '/domain-designer/') {
-        // Navigate to the base URL (root of PWA scope)
         return '/domain-designer/';
       }
-      // For development or regular browser, use root
       return '/';
     };
     
     const navigationPath = getNavigationPath();
     
-    // Use window.location.href for PWA to ensure we stay within scope
+    // Different navigation methods for PWA vs browser to maintain proper context
     if (isPWA()) {
-      window.location.href = navigationPath;
+      window.location.href = navigationPath; // Ensures PWA scope compliance
     } else {
-      // Use React Router for regular browser navigation
-      navigate(navigationPath, { replace: true });
+      navigate(navigationPath, { replace: true }); // Standard React Router navigation
     }
   };
 

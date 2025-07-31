@@ -34,7 +34,22 @@ interface TemplatePageProps {
 }
 
 /**
- * Template Page component for loading and inserting hierarchical templates
+ * Advanced template management interface for hierarchical diagram creation:
+ * 
+ * Key Features:
+ * - JSON template file loading with validation and error handling
+ * - Interactive tree visualization of template hierarchies
+ * - Configurable insertion depth control (0 = root only, 1+ = include children)
+ * - Smart hierarchy-based color assignment system
+ * - Automatic layout calculation and parent fitting
+ * - Real-time insertion preview and feedback
+ * 
+ * Template Insertion Process:
+ * 1. Load and parse JSON template files containing hierarchical node data
+ * 2. Display interactive tree view for node selection
+ * 3. Configure insertion parameters (depth levels, colors)
+ * 4. Generate rectangles with calculated positioning and sizing
+ * 5. Apply fit-to-children layout optimization for proper hierarchy display
  */
 const TemplatePage: React.FC<TemplatePageProps> = ({
   isOpen,
@@ -45,7 +60,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
   predefinedColors,
   globalSettings
 }) => {
-  // Template loading state
+  // Template loading and processing state management
   const [loadingState, setLoadingState] = useState<TemplateLoadingState>({
     isLoading: false,
     error: null,
@@ -54,28 +69,31 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     rootItems: []
   });
   
-  // Selection state
+  // User interaction state for template selection and insertion
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isInserting, setIsInserting] = useState(false);
   const [insertionResult, setInsertionResult] = useState<TemplateInsertionResult | null>(null);
   const [insertionLevels, setInsertionLevels] = useState(1);
   
-  // Color settings for hierarchy levels
+  // Hierarchy-based color scheme configuration
   const [hierarchyColors, setHierarchyColors] = useState({
     root: predefinedColors[0] || '#3b82f6',
     parent: predefinedColors[1] || '#10b981', 
     leaf: predefinedColors[2] || '#f59e0b'
   });
   
-  // File input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   
-  // Load template file
+  /**
+   * Template file upload handler with comprehensive error handling and state management.
+   * Supports JSON files containing hierarchical template node structures.
+   */
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Reset UI state for new template loading
     setLoadingState(prev => ({ ...prev, isLoading: true, error: null }));
     setSelectedItems([]);
     setInsertionResult(null);
@@ -87,8 +105,8 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
         isLoading: false,
         error: null,
         templateData,
-        treeData: null, // Not needed anymore
-        rootItems: [] // Not needed anymore
+        treeData: null, // Legacy field - no longer used
+        rootItems: [] // Legacy field - no longer used
       });
     } catch (error) {
       setLoadingState(prev => ({
@@ -98,7 +116,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       }));
     }
     
-    // Clear the file input
+    // Clear file input to allow re-upload of same file
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -115,7 +133,12 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     setInsertionResult(null); // Clear previous insertion result
   }, []);
   
-  // Sort template nodes by hierarchy level (parents before children)
+  /**
+   * Topological sort for template nodes ensuring parents are processed before children.
+   * Critical for proper rectangle creation order when building hierarchical structures.
+   * 
+   * Algorithm prevents circular dependencies and handles orphaned nodes gracefully.
+   */
   const sortNodesByHierarchy = (nodes: TemplateNode[]): TemplateNode[] => {
     const sorted: TemplateNode[] = [];
     const remaining = [...nodes];
@@ -124,6 +147,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     while (remaining.length > 0) {
       const beforeLength = remaining.length;
       
+      // Process nodes whose parents have already been processed (or have no parent)
       for (let i = remaining.length - 1; i >= 0; i--) {
         const node = remaining[i];
         
@@ -134,8 +158,8 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
         }
       }
       
+      // Safety check: if no progress made, add remaining nodes to prevent infinite loop
       if (remaining.length === beforeLength) {
-        // Prevent infinite loop
         sorted.push(...remaining);
         break;
       }
@@ -144,14 +168,26 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     return sorted;
   };
   
-  // Direct template insertion using basic rectangles and fit-to-children
+  /**
+   * Core template insertion algorithm that transforms template nodes into canvas rectangles.
+   * Handles depth-limited insertion, hierarchy-based sizing, and automatic layout optimization.
+   * 
+   * Process Flow:
+   * 1. Filter nodes by insertion depth level
+   * 2. Calculate optimal insertion position on canvas
+   * 3. Generate rectangles with hierarchy-appropriate sizing
+   * 4. Apply fit-to-children layout algorithm for proper nesting
+   */
   const insertTemplateDirectly = useCallback(async (
     selectedNode: TemplateNode,
     templateData: TemplateNode[],
     options: TemplateInsertionOptions
   ): Promise<TemplateInsertionResult> => {
     
-    // Get nodes to insert based on levels (0 = root only, 1 = root + direct children, etc.)
+    /**
+     * Recursive node collection with depth limiting.
+     * Ensures controlled template insertion size based on user preferences.
+     */
     const getNodesUpToLevel = (rootNode: TemplateNode, maxLevels: number): TemplateNode[] => {
       const result: TemplateNode[] = [rootNode];
       
@@ -175,10 +211,10 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
     
     const nodesToInsert = getNodesUpToLevel(selectedNode, options.insertionLevels);
     
-    // Calculate starting position
+    // Calculate optimal insertion position to avoid overlapping existing rectangles
     const startPosition = calculateInsertionPosition(rectangles, globalSettings);
     
-    // Generate unique ID function
+    // Unique ID generation with timestamp and counter for collision avoidance
     let idCounter = 1;
     const generateUniqueId = () => {
       const id = `template-rect-${Date.now()}-${idCounter}`;
@@ -186,13 +222,14 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       return id;
     };
     
-    // Sort nodes by hierarchy (parents before children)
+    // Ensure proper creation order for parent-child relationships
     const sortedNodes = sortNodesByHierarchy(nodesToInsert);
     
-    // Create basic rectangles with default sizes
+    // Rectangle creation with hierarchy-aware configuration
     const newRectangles: Rectangle[] = [];
-    const rectangleIdMap = new Map<string, string>();
+    const rectangleIdMap = new Map<string, string>(); // Maps template node IDs to rectangle IDs
     
+    // Generate rectangles for each template node with appropriate hierarchy configuration
     sortedNodes.forEach(node => {
       const rectangleId = generateUniqueId();
       rectangleIdMap.set(node.id, rectangleId);
@@ -200,9 +237,13 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       const parentTemplateId = node.parent;
       const parentRectangleId = parentTemplateId ? rectangleIdMap.get(parentTemplateId) : undefined;
       
-      // Determine node type
+      /**
+       * Intelligent type classification based on insertion context:
+       * - Selected node becomes root regardless of original template hierarchy
+       * - Nodes with children in insertion set become parents
+       * - Nodes without children become leaves
+       */
       let type: 'root' | 'parent' | 'leaf';
-      // The first node in the insertion (selected node) should be treated as root
       if (node.id === selectedNode.id) {
         type = 'root';
       } else {
@@ -210,11 +251,11 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
         type = hasChildren ? 'parent' : 'leaf';
       }
       
-      // Use basic default sizes
+      // Hierarchy-appropriate default sizing for optimal visual balance
       const defaultSizes = {
-        root: { w: 16, h: 10 },
-        parent: { w: 12, h: 8 },
-        leaf: { w: 8, h: 6 }
+        root: { w: 16, h: 10 },   // Largest for main container
+        parent: { w: 12, h: 8 },   // Medium for sub-containers
+        leaf: { w: 8, h: 6 }       // Smallest for end nodes
       };
       
       const { w, h } = defaultSizes[type];
@@ -239,13 +280,16 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       newRectangles.push(rectangle);
     });
     
-    // Add rectangles to the canvas
+    // Add all generated rectangles to the canvas in a single operation
     setRectangles(prev => [...prev, ...newRectangles]);
     
-    // Apply fit-to-children to all parent rectangles (bottom-up)
+    /**
+     * Automatic layout optimization using fit-to-children algorithm.
+     * Applied in bottom-up order to ensure proper parent sizing.
+     */
     const parentRectangles = newRectangles.filter(r => r.type === 'parent' || r.type === 'root');
     
-    // Sort by hierarchy depth (deepest first) to ensure proper bottom-up fitting
+    // Calculate hierarchy depth for proper layout ordering
     const sortedParents = parentRectangles.sort((a, b) => {
       const getDepth = (rect: Rectangle): number => {
         let depth = 0;
@@ -253,14 +297,14 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
         while (current.parentId) {
           depth++;
           current = newRectangles.find(r => r.id === current.parentId!)!;
-          if (!current) break;
+          if (!current) break; // Safety check for orphaned rectangles
         }
         return depth;
       };
-      return getDepth(b) - getDepth(a); // Deepest first
+      return getDepth(b) - getDepth(a); // Process deepest parents first
     });
     
-    // Apply fit-to-children to each parent
+    // Delayed layout application to ensure DOM updates have completed
     setTimeout(() => {
       sortedParents.forEach(parent => {
         fitToChildren(parent.id);

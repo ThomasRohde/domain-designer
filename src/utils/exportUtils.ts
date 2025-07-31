@@ -4,6 +4,22 @@ import { validateDiagramAuto, sanitizeDiagramData } from './schemaValidation';
 import { exportToHTML } from './htmlExport';
 import pako from 'pako';
 
+/**
+ * Main export dispatcher supporting multiple output formats
+ * 
+ * Coordinates export process by delegating to format-specific handlers.
+ * Generates timestamped filenames and handles browser download initiation.
+ * 
+ * @param containerElement - Canvas container (used for certain formats)
+ * @param rectangles - Rectangle data to export
+ * @param options - Export configuration including format and scaling
+ * @param globalSettings - Application settings for export context
+ * @param gridSize - Grid unit size for coordinate scaling
+ * @param borderRadius - Visual styling parameter
+ * @param borderColor - Border color for rendered formats
+ * @param borderWidth - Border thickness for rendered formats
+ * @param predefinedColors - Color palette for JSON exports
+ */
 export const exportDiagram = async (
   containerElement: HTMLElement,
   rectangles: Rectangle[],
@@ -39,6 +55,25 @@ export const exportDiagram = async (
 };
 
 
+/**
+ * Generate SVG vector graphics export with precise rendering
+ * 
+ * Creates scalable vector representation of the diagram with:
+ * - Accurate coordinate transformation
+ * - Text wrapping and font handling
+ * - Hierarchical rendering order
+ * - Customizable styling parameters
+ * 
+ * @param _element - Container element (unused in current implementation)
+ * @param rectangles - Rectangle data to render
+ * @param filename - Output filename for download
+ * @param options - Scale and background options
+ * @param globalSettings - Font and styling preferences
+ * @param gridSize - Grid unit size for coordinate conversion
+ * @param borderRadius - Corner radius for rectangles
+ * @param borderColor - Border color
+ * @param borderWidth - Border thickness
+ */
 const exportToSVG = async (
   _element: HTMLElement,
   rectangles: Rectangle[],
@@ -68,6 +103,22 @@ const exportToSVG = async (
 };
 
 
+/**
+ * Export diagram data in JSON format with schema versioning
+ * 
+ * Creates v2.0 schema-compliant JSON export with:
+ * - Complete rectangle data and relationships
+ * - Global settings preservation
+ * - Layout preservation metadata
+ * - Bounding box calculations
+ * - Timestamp for version tracking
+ * 
+ * @param rectangles - Rectangle data to export
+ * @param globalSettings - Application settings to include
+ * @param filename - Output filename for download
+ * @param predefinedColors - Color palette to include
+ * @param preserveLayout - Whether to preserve current positioning
+ */
 const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[], preserveLayout = true): void => {
   // Create default settings with all required properties
   const defaultSettings = {
@@ -122,6 +173,17 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
   URL.revokeObjectURL(url);
 };
 
+/**
+ * Export diagram as Mermaid flowchart with live preview
+ * 
+ * Generates Mermaid syntax and opens interactive preview using:
+ * - Mermaid.ink online renderer
+ * - Pako compression for URL encoding
+ * - Fallback to base64 encoding if compression fails
+ * 
+ * @param rectangles - Rectangle data to convert
+ * @param filename - Output filename for download
+ */
 const exportToMermaid = (rectangles: Rectangle[], filename: string): void => {
   const mermaidDiagram = generateMermaidDiagram(rectangles);
   
@@ -140,6 +202,17 @@ const exportToMermaid = (rectangles: Rectangle[], filename: string): void => {
   openMermaidPreview(mermaidDiagram);
 };
 
+/**
+ * Open Mermaid diagram in online renderer with compression
+ * 
+ * Implements two-tier URL encoding strategy:
+ * 1. Primary: Pako deflate compression for optimal URL length
+ * 2. Fallback: Base64 encoding if compression fails
+ * 
+ * URL encoding reduces diagram size by ~60-80% for complex diagrams.
+ * 
+ * @param mermaidDiagram - Mermaid syntax string to render
+ */
 const openMermaidPreview = (mermaidDiagram: string): void => {
   try {
     // Create the JSON structure that Mermaid Live Editor expects
@@ -151,21 +224,21 @@ const openMermaidPreview = (mermaidDiagram: string): void => {
     // Convert to JSON string
     const jsonString = JSON.stringify(jGraph);
     
-    // Convert to bytes (UTF-8 encoded)
+    // UTF-8 encode JSON string to byte array for compression
     const encoder = new TextEncoder();
     const byteArray = encoder.encode(jsonString);
     
-    // Compress with pako (deflate)
+    // Apply Deflate compression using Pako library (typically 60-80% size reduction)
     const compressed = pako.deflate(byteArray);
     
-    // Convert to base64
+    // Convert compressed bytes to base64 string
     let binary = '';
     for (let i = 0; i < compressed.length; i++) {
       binary += String.fromCharCode(compressed[i]);
     }
     const base64 = btoa(binary);
     
-    // Make URL-safe by replacing + with - and / with _
+    // Convert to URL-safe base64 (RFC 4648 §5) for safe URL embedding
     const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_');
     
     // Create Mermaid Ink SVG URL
@@ -199,16 +272,28 @@ const openMermaidPreview = (mermaidDiagram: string): void => {
   }
 };
 
+/**
+ * Convert rectangle hierarchy to Mermaid flowchart syntax
+ * 
+ * Generates complete Mermaid diagram with:
+ * - Node definitions with appropriate shapes
+ * - Parent-child relationships as directed edges
+ * - Custom styling with original colors
+ * - Sanitized labels for Mermaid compatibility
+ * 
+ * @param rectangles - Rectangle data to convert
+ * @returns Complete Mermaid flowchart syntax string
+ */
 const generateMermaidDiagram = (rectangles: Rectangle[]): string => {
 
   let mermaidContent = 'graph TD\n';
   
-  // Function to sanitize labels for Mermaid
+  // Remove problematic characters that break Mermaid syntax
   const sanitizeLabel = (label: string): string => {
     return label.replace(/["\n\r]/g, ' ').trim();
   };
   
-  // Function to generate a valid Mermaid node ID
+  // Create Mermaid-safe node identifiers from rectangle IDs
   const getNodeId = (rect: Rectangle): string => {
     return `node_${rect.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
   };
@@ -262,6 +347,12 @@ const generateMermaidDiagram = (rectangles: Rectangle[]): string => {
   return mermaidContent;
 };
 
+/**
+ * Escape special characters for XML/SVG safety
+ * 
+ * @param text - Text to escape
+ * @returns XML-safe text string
+ */
 const escapeXML = (text: string): string => {
   return text
     .replace(/&/g, '&amp;')
@@ -271,12 +362,23 @@ const escapeXML = (text: string): string => {
     .replace(/'/g, '&#39;');
 };
 
+/**
+ * Break text into lines that fit within specified width
+ * 
+ * Uses character width approximation to estimate line lengths.
+ * Prevents overflow in fixed-width containers like SVG rectangles.
+ * 
+ * @param text - Text to wrap
+ * @param maxWidth - Maximum line width in pixels
+ * @param fontSize - Font size for width calculation
+ * @returns Array of text lines
+ */
 const wrapText = (text: string, maxWidth: number, fontSize: number): string[] => {
   const words = text.split(' ');
   const lines: string[] = [];
   let currentLine = '';
   
-  // Approximate character width (rough estimation)
+  // Character width approximation: 0.6 * fontSize is typical for most fonts
   const charWidth = fontSize * 0.6;
   const maxChars = Math.floor(maxWidth / charWidth);
   
@@ -304,6 +406,25 @@ const wrapText = (text: string, maxWidth: number, fontSize: number): string[] =>
   return lines;
 };
 
+/**
+ * Generate complete SVG document from rectangle data
+ * 
+ * Creates production-ready SVG with:
+ * - Proper coordinate transformation from grid to pixels
+ * - Hierarchical rendering order (parents before children)
+ * - Text wrapping and alignment
+ * - Custom styling and fonts
+ * - Scalable dimensions with margin padding
+ * 
+ * @param rectangles - Rectangle data to render
+ * @param options - Scaling and background options
+ * @param globalSettings - Font and styling preferences
+ * @param gridSize - Grid unit to pixel conversion factor
+ * @param borderRadius - Rectangle corner radius
+ * @param borderColor - Default border color
+ * @param borderWidth - Border thickness
+ * @returns Complete SVG markup string
+ */
 const createSVGFromRectangles = (
   rectangles: Rectangle[],
   options: { scale: number; includeBackground: boolean },
@@ -444,11 +565,30 @@ export interface ImportedDiagramData {
   };
 }
 
+/**
+ * Validate imported data against diagram schema
+ * 
+ * @param data - Raw imported data to validate
+ * @returns Validation result with success/failure and error details
+ */
 export const validateImportedData = (data: unknown): ValidationResult => {
-  // Use the comprehensive schema validation
+  // Delegate to comprehensive schema validation system
   return validateDiagramAuto(data);
 };
 
+/**
+ * Import and validate JSON diagram file with error handling
+ * 
+ * Process:
+ * 1. Read file contents asynchronously
+ * 2. Parse JSON with error handling
+ * 3. Validate against diagram schema
+ * 4. Attempt data sanitization if validation fails
+ * 5. Re-validate sanitized data
+ * 
+ * @param file - JSON file to import
+ * @returns Promise resolving to validated diagram data
+ */
 export const importDiagramFromJSON = (file: File): Promise<ImportedDiagramData> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -499,8 +639,13 @@ export const importDiagramFromJSON = (file: File): Promise<ImportedDiagramData> 
 };
 
 /**
- * Validates and fixes rectangle relationships in imported data
- * Removes orphaned rectangles and ensures all parentId references are valid
+ * Repair hierarchy integrity by fixing invalid parent references
+ * 
+ * Validates that all parentId references point to existing rectangles.
+ * Converts orphaned rectangles (invalid parent) to root rectangles.
+ * 
+ * @param rectangles - Rectangle data to validate
+ * @returns Rectangles with fixed parent relationships
  */
 export const validateAndFixRectangleRelationships = (rectangles: Rectangle[]): Rectangle[] => {
   const rectMap = new Map(rectangles.map(r => [r.id, r]));
@@ -516,7 +661,10 @@ export const validateAndFixRectangleRelationships = (rectangles: Rectangle[]): R
 };
 
 /**
- * Updates rectangle types based on actual parent-child relationships
+ * Infer correct rectangle types from hierarchy relationships
+ * 
+ * @param rectangles - Rectangles to update
+ * @returns Rectangles with corrected type assignments
  */
 export const updateRectangleTypes = (rectangles: Rectangle[]): Rectangle[] => {
   return rectangles.map(rect => {
@@ -537,8 +685,16 @@ export const updateRectangleTypes = (rectangles: Rectangle[]): Rectangle[] => {
 };
 
 /**
- * Validates and fixes rectangle IDs to prevent conflicts
- * Returns both the fixed rectangles and the maximum ID number found
+ * Ensure unique rectangle IDs and track maximum ID for future allocation
+ * 
+ * Handles:
+ * - Duplicate ID detection and reassignment
+ * - Invalid/empty ID correction
+ * - Maximum ID tracking for next available ID calculation
+ * 
+ * @param rectangles - Rectangles to validate
+ * @param currentNextId - Current next available ID number
+ * @returns Fixed rectangles and updated maximum ID
  */
 export const validateAndFixRectangleIds = (rectangles: Rectangle[], currentNextId: number): { rectangles: Rectangle[], maxId: number } => {
   const idSet = new Set<string>();
@@ -569,7 +725,17 @@ export const validateAndFixRectangleIds = (rectangles: Rectangle[], currentNextI
 };
 
 /**
- * Comprehensive import processing that validates and fixes all issues
+ * Complete import data processing pipeline with multi-stage validation
+ * 
+ * Processing stages:
+ * 1. Fix parent-child relationship integrity
+ * 2. Update rectangle types based on relationships
+ * 3. Ensure unique IDs and track maximum
+ * 4. Calculate next available ID for future use
+ * 
+ * @param importedData - Raw imported diagram data
+ * @param currentNextId - Current next available ID
+ * @returns Processed rectangles and updated next ID
  */
 export const processImportedDiagram = (importedData: ImportedDiagramData, currentNextId: number): { rectangles: Rectangle[], nextId: number } => {
   // Step 1: Validate and fix rectangle relationships

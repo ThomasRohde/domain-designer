@@ -4,6 +4,10 @@ import { MIN_WIDTH, MIN_HEIGHT } from '../utils/constants';
 import { updateChildrenLayout, getAllDescendants, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
 import { getMousePosition, preventEventDefault } from '../utils/eventUtils';
 
+/**
+ * Props for the useDragAndResize hook
+ * Manages complex drag, resize, and hierarchy operations for rectangles
+ */
 interface UseDragAndResizeProps {
   rectangles: Rectangle[];
   setRectangles: React.Dispatch<React.SetStateAction<Rectangle[]>>;
@@ -24,7 +28,10 @@ interface UseDragAndResizeProps {
   triggerSave?: () => void;
 }
 
-
+/**
+ * Return interface for useDragAndResize hook
+ * Provides state and handlers for drag/resize operations
+ */
 interface UseDragAndResizeReturn {
   dragState: DragState | null;
   resizeState: ResizeState | null;
@@ -65,7 +72,12 @@ export const useDragAndResize = ({
   const [initialPositions, setInitialPositions] = useState<Map<string, { x: number; y: number }> | null>(null);
   const mouseMoveHandlerRef = useRef<((e: MouseEvent, panOffset: { x: number; y: number }, zoomLevel: number) => void) | null>(null);
 
-  // Handle mouse down for dragging and resizing
+  /**
+   * Initiates drag or resize operations based on action type
+   * - 'drag': Standard position movement for root rectangles
+   * - 'resize': Size adjustment with constraint enforcement
+   * - 'hierarchy-drag': Reparenting operation with visual feedback
+   */
   const handleMouseDown = useCallback((e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' | 'hierarchy-drag' = 'drag') => {
     preventEventDefault(e);
 
@@ -156,7 +168,11 @@ export const useDragAndResize = ({
     }
   }, [containerRef, rectangles, saveToHistory]);
 
-  // Detect drop targets during hierarchy drag
+  /**
+   * Detects valid drop targets during hierarchy drag operations
+   * Uses z-index calculation to prioritize deepest rectangles
+   * Prevents circular hierarchy relationships
+   */
   const detectDropTargets = useCallback((mouseX: number, mouseY: number, draggedRectId: string, panOffset: { x: number; y: number }, zoomLevel: number): DropTarget[] => {
     const targets: DropTarget[] = [];
     
@@ -227,7 +243,8 @@ export const useDragAndResize = ({
   }, [rectangles, gridSize, canReparent]);
 
   /**
-   * Common logic for calculating new position and moving rectangle with descendants
+   * Moves rectangle and all descendants as a cohesive unit
+   * Maintains spatial relationships during drag operations
    */
   const moveRectangleWithDescendants = useCallback((
     draggedId: string,
@@ -262,7 +279,8 @@ export const useDragAndResize = ({
   }, []);
 
   /**
-   * Common logic for calculating grid-snapped position from mouse coordinates
+   * Converts mouse movement to grid-aligned position changes
+   * Accounts for zoom level and pan offset transformations
    */
   const calculateNewPosition = useCallback((
     currentX: number,
@@ -272,7 +290,7 @@ export const useDragAndResize = ({
     const deltaX = currentX - dragState.startX;
     const deltaY = currentY - dragState.startY;
     
-    // Account for zoom level - at lower zoom levels, screen movement needs to be scaled
+    // Scale mouse movement by zoom level for consistent behavior
     const zoomAdjustedDeltaX = deltaX / zoomLevel;
     const zoomAdjustedDeltaY = deltaY / zoomLevel;
     
@@ -285,10 +303,10 @@ export const useDragAndResize = ({
   }, [gridSize, zoomLevel]);
 
   /**
-   * Handle drag movement for both regular and hierarchy drag operations
+   * Processes mouse movement during drag operations
    * 
-   * Regular drag: Moves only root rectangles and their descendants in real-time
-   * Hierarchy drag: Moves any rectangle for reparenting, with drop target detection
+   * Regular drag: Real-time position updates for root rectangles
+   * Hierarchy drag: Position updates with drop target detection for reparenting
    */
   const handleDragMove = useCallback((e: MouseEvent, containerRect: DOMRect, panOffset: { x: number; y: number }, zoomLevel: number) => {
     if (!dragState) return;
@@ -346,7 +364,10 @@ export const useDragAndResize = ({
     }
   }, [dragState, setRectangles, detectDropTargets, calculateNewPosition, moveRectangleWithDescendants]);
 
-  // Handle resize movement
+  /**
+   * Processes mouse movement during resize operations
+   * Enforces size constraints and updates visual feedback
+   */
   const handleResizeMove = useCallback((e: MouseEvent, containerRect: DOMRect) => {
     if (!resizeState) return;
 
@@ -392,10 +413,10 @@ export const useDragAndResize = ({
       }
     }
     
-    // Update resize constraint state for visual feedback (only when constraints are active)
+    // Provide visual feedback for size constraints
     setResizeConstraintState({
       rectangleId: rect.id,
-      isAtMinWidth: !rect.isManualPositioningEnabled && !rect.isLockedAsIs && newW <= minRequiredW + 1, // +1 for slight tolerance
+      isAtMinWidth: !rect.isManualPositioningEnabled && !rect.isLockedAsIs && newW <= minRequiredW + 1,
       isAtMinHeight: !rect.isManualPositioningEnabled && !rect.isLockedAsIs && newH <= minRequiredH + 1,
       minRequiredWidth: minRequiredW,
       minRequiredHeight: minRequiredH
@@ -406,7 +427,9 @@ export const useDragAndResize = ({
     ));
   }, [resizeState, rectangles, gridSize, leafFixedWidth, leafFixedHeight, leafWidth, leafHeight, setRectangles, getFixedDimensions, getMargins]);
 
-  // Handle mouse movement
+  /**
+   * Coordinates mouse movement handling between drag and resize modes
+   */
   const handleMouseMove = useCallback((e: MouseEvent, panOffset: { x: number; y: number }, zoomLevel: number) => {
     if (!dragState && !resizeState) return;
 
@@ -420,7 +443,10 @@ export const useDragAndResize = ({
     }
   }, [dragState, resizeState, handleDragMove, handleResizeMove, containerRef]);
 
-  // Handle mouse up
+  /**
+   * Completes drag/resize operations and manages state cleanup
+   * Handles reparenting, layout updates, and history tracking
+   */
   const handleMouseUp = useCallback(() => {
     const wasResizing = resizeState;
     const wasHierarchyDrag = dragState?.isHierarchyDrag;
@@ -517,12 +543,15 @@ export const useDragAndResize = ({
     triggerSave?.();
   }, [resizeState, dragState, hierarchyDragState, rectangles, setRectangles, reparentRectangle, saveToHistory, triggerSave, getFixedDimensions, getMargins]);
 
-  // Store the mouse move handler in a ref to ensure proper cleanup
+  // Maintain stable reference for event cleanup
   React.useEffect(() => {
     mouseMoveHandlerRef.current = handleMouseMove;
   }, [handleMouseMove]);
 
-  // Add and remove global mouse event listeners
+  /**
+   * Manages global mouse event listeners during drag/resize operations
+   * Uses closure to capture current pan/zoom state
+   */
   useEffect(() => {
     if (dragState || resizeState) {
       const currentHandler = (e: MouseEvent) => {
@@ -541,7 +570,10 @@ export const useDragAndResize = ({
     }
   }, [dragState, resizeState, handleMouseUp, panOffset, zoomLevel]);
 
-  // Cancel drag operation - reset to original position without state changes
+  /**
+   * Cancels active drag operation and restores original positions
+   * Provides escape mechanism for unwanted operations
+   */
   const cancelDrag = useCallback(() => {
     if (dragState && initialPositions) {
       // Reset all rectangles to their stored initial positions
@@ -570,10 +602,13 @@ export const useDragAndResize = ({
     triggerSave?.();
   }, [dragState, initialPositions, rectangles, setRectangles, saveToHistory, triggerSave]);
 
-  // Handle layout updates after reparenting or resize operations
+  /**
+   * Manages deferred layout updates after state-changing operations
+   * Uses microtask scheduling to ensure state consistency
+   */
   useEffect(() => {
     if (needsLayoutUpdate) {
-      // Use a microtask to ensure state has settled
+      // Defer layout calculation until state stabilizes
       Promise.resolve().then(() => {
         setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions(), getMargins()));
         setNeedsLayoutUpdate(null);

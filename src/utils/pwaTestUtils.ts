@@ -1,9 +1,17 @@
 /**
- * PWA Update Testing Utilities
- * Utilities for testing and validating PWA update functionality
+ * PWA Testing and Validation Utilities
+ * 
+ * Provides development tools for testing Progressive Web App functionality including:
+ * - Service worker update simulation and validation
+ * - Installation status checking and diagnostics
+ * - Offline capability testing across storage APIs
+ * - Update notification flow testing
+ * 
+ * All functions are development-mode only and provide console logging
+ * for debugging PWA integration issues during development.
  */
 
-// Development-only flag to simulate update scenarios
+// Safety check - these utilities only function in development environment
 const isDevelopment = import.meta.env.DEV;
 
 /**

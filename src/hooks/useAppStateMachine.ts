@@ -1,13 +1,18 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-// Application state types
+/**
+ * Application state types for managing complex operations
+ * Prevents layout updates during sensitive operations like import/restore
+ */
 export type AppState = 
   | { type: 'IDLE' }
   | { type: 'IMPORTING', stage: 'loading' | 'processing' | 'applying' }
   | { type: 'RESTORING', stage: 'loading' | 'applying' }
   | { type: 'LAYOUT_LOCKED', reason: 'import' | 'restore' };
 
-// State transition events
+/**
+ * State transition events for controlling application flow
+ */
 export type StateEvent = 
   | { type: 'START_IMPORT' }
   | { type: 'IMPORT_PROCESSING' }
@@ -18,6 +23,10 @@ export type StateEvent =
   | { type: 'COMPLETE' }
   | { type: 'ERROR' };
 
+/**
+ * Return interface for useAppStateMachine hook
+ * Provides state machine functionality for application flow control
+ */
 export interface UseAppStateMachineReturn {
   state: AppState;
   transition: (event: StateEvent) => void;
@@ -32,7 +41,9 @@ export const useAppStateMachine = (): UseAppStateMachineReturn => {
   const [state, setState] = useState<AppState>({ type: 'IDLE' });
   const timeoutRef = useRef<number | null>(null);
 
-  // Clear any pending timeouts on unmount
+  /**
+   * Cleanup: prevents memory leaks from pending timeout operations
+   */
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -43,7 +54,7 @@ export const useAppStateMachine = (): UseAppStateMachineReturn => {
 
   const transition = useCallback((event: StateEvent) => {
     setState(currentState => {
-      // Clear any existing timeout
+      // Cancel pending transitions to prevent race conditions
       if (timeoutRef.current) {
         window.clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
@@ -75,7 +86,7 @@ export const useAppStateMachine = (): UseAppStateMachineReturn => {
               }
               return currentState;
             case 'COMPLETE':
-              // Auto-transition to IDLE after a brief delay to ensure all effects settle
+              // Delayed transition ensures all import effects settle before unlocking
               timeoutRef.current = window.setTimeout(() => {
                 setState({ type: 'IDLE' });
               }, 100);
@@ -94,7 +105,7 @@ export const useAppStateMachine = (): UseAppStateMachineReturn => {
               }
               return currentState;
             case 'COMPLETE':
-              // Auto-transition to IDLE after a brief delay to ensure all effects settle
+              // Longer delay for restore operations to ensure stability
               timeoutRef.current = window.setTimeout(() => {
                 setState({ type: 'IDLE' });
               }, 200);
@@ -129,7 +140,10 @@ export const useAppStateMachine = (): UseAppStateMachineReturn => {
     setState({ type: 'IDLE' });
   }, []);
 
-  // Computed properties for easy consumption
+  /**
+   * Computed state flags for convenient component consumption
+   * Avoids complex state checking in components
+   */
   const isImporting = state.type === 'IMPORTING';
   const isRestoring = state.type === 'RESTORING';
   const isLayoutLocked = state.type === 'LAYOUT_LOCKED';

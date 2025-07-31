@@ -2,7 +2,7 @@ import { Rectangle } from '../types';
 import { GRID_SIZE, MARGIN } from './constants';
 
 /**
- * Pan offset interface
+ * Canvas viewport translation coordinates
  */
 export interface PanOffset {
   x: number;
@@ -10,7 +10,7 @@ export interface PanOffset {
 }
 
 /**
- * Viewport bounds interface
+ * Visible area boundaries in grid coordinate space
  */
 export interface ViewportBounds {
   x: number;
@@ -20,7 +20,18 @@ export interface ViewportBounds {
 }
 
 /**
- * Convert screen coordinates to grid coordinates
+ * Transform screen pixel coordinates to logical grid coordinates
+ * 
+ * Applies pan offset compensation and zoom level scaling before
+ * converting to discrete grid units. Essential for mouse interaction
+ * and drag/drop operations.
+ * 
+ * @param screenX - Mouse X coordinate in screen pixels
+ * @param screenY - Mouse Y coordinate in screen pixels
+ * @param gridSize - Size of one grid unit in pixels
+ * @param panOffset - Current canvas pan offset
+ * @param zoomLevel - Current zoom multiplier
+ * @returns Grid coordinates for logical positioning
  */
 export const screenToGrid = (
   screenX: number,
@@ -39,7 +50,17 @@ export const screenToGrid = (
 };
 
 /**
- * Convert grid coordinates to screen coordinates
+ * Transform logical grid coordinates to screen pixel coordinates
+ * 
+ * Inverse of screenToGrid transformation. Used for rendering
+ * rectangles at correct screen positions.
+ * 
+ * @param gridX - Logical grid X coordinate
+ * @param gridY - Logical grid Y coordinate
+ * @param gridSize - Size of one grid unit in pixels
+ * @param panOffset - Current canvas pan offset
+ * @param zoomLevel - Current zoom multiplier
+ * @returns Screen pixel coordinates for rendering
  */
 export const gridToScreen = (
   gridX: number,
@@ -55,7 +76,16 @@ export const gridToScreen = (
 };
 
 /**
- * Get viewport bounds in grid coordinates
+ * Calculate visible area boundaries in grid coordinate space
+ * 
+ * Determines which grid cells are currently visible on screen.
+ * Used for viewport culling and optimized rendering of large diagrams.
+ * 
+ * @param containerRect - Canvas container dimensions
+ * @param panOffset - Current pan offset
+ * @param gridSize - Grid unit size in pixels
+ * @param zoomLevel - Current zoom level
+ * @returns Viewport boundaries in grid coordinates
  */
 export const getViewportBounds = (
   containerRect: DOMRect,
@@ -75,7 +105,21 @@ export const getViewportBounds = (
 };
 
 /**
- * Calculate optimal position for a new rectangle to avoid overlaps
+ * Find optimal placement for new rectangles using collision avoidance
+ * 
+ * Implements a grid-based placement algorithm that tries to find
+ * non-overlapping positions starting from the top-left of the viewport.
+ * Falls back to slightly offset positions if no perfect placement is found.
+ * 
+ * Algorithm complexity: O(attempts × existingRectangles)
+ * 
+ * @param existingRectangles - Rectangles to avoid overlapping
+ * @param containerRect - Container boundaries for viewport calculation
+ * @param panOffset - Current pan offset
+ * @param gridSize - Grid unit size for positioning
+ * @param newRectSize - Dimensions of rectangle to place
+ * @param zoomLevel - Current zoom level
+ * @returns Optimal position with minimal overlaps
  */
 export const calculateOptimalPosition = (
   existingRectangles: Rectangle[],
@@ -130,7 +174,14 @@ export const calculateOptimalPosition = (
 };
 
 /**
- * Check if a rectangle is visible in the viewport
+ * Test rectangle visibility within viewport bounds
+ * 
+ * Uses bounding box intersection test to determine if any part
+ * of the rectangle overlaps with the visible viewport area.
+ * 
+ * @param rect - Rectangle to test
+ * @param viewport - Current viewport boundaries
+ * @returns true if rectangle is at least partially visible
  */
 export const isRectangleVisible = (
   rect: Rectangle,
@@ -145,7 +196,14 @@ export const isRectangleVisible = (
 };
 
 /**
- * Get rectangles that are visible in the current viewport
+ * Filter rectangles to only those visible in viewport
+ * 
+ * Viewport culling optimization for large diagrams.
+ * Only returns rectangles that intersect with the visible area.
+ * 
+ * @param rectangles - All rectangles to filter
+ * @param viewport - Current viewport boundaries
+ * @returns Array of visible rectangles
  */
 export const getVisibleRectangles = (
   rectangles: Rectangle[],
@@ -155,7 +213,10 @@ export const getVisibleRectangles = (
 };
 
 /**
- * Calculate the center point of a rectangle
+ * Calculate geometric center of a rectangle
+ * 
+ * @param rect - Rectangle to find center of
+ * @returns Center point coordinates
  */
 export const getRectangleCenter = (rect: Rectangle): { x: number; y: number } => {
   return {
@@ -165,7 +226,11 @@ export const getRectangleCenter = (rect: Rectangle): { x: number; y: number } =>
 };
 
 /**
- * Calculate distance between two points
+ * Calculate Euclidean distance between two points
+ * 
+ * @param point1 - First point coordinates
+ * @param point2 - Second point coordinates
+ * @returns Distance in grid units
  */
 export const getDistance = (
   point1: { x: number; y: number },
@@ -177,7 +242,14 @@ export const getDistance = (
 };
 
 /**
- * Find the closest rectangle to a given point
+ * Find rectangle with center point closest to given coordinates
+ * 
+ * Uses center-to-center distance calculation. Useful for
+ * smart selection and proximity-based interactions.
+ * 
+ * @param point - Reference point coordinates
+ * @param rectangles - Rectangles to search
+ * @returns Closest rectangle or null if array is empty
  */
 export const findClosestRectangle = (
   point: { x: number; y: number },
@@ -202,7 +274,15 @@ export const findClosestRectangle = (
 };
 
 /**
- * Snap a position to the grid
+ * Snap coordinates to nearest grid intersection
+ * 
+ * Ensures positions align with grid boundaries for consistent
+ * visual appearance and precise positioning.
+ * 
+ * @param x - X coordinate to snap
+ * @param y - Y coordinate to snap  
+ * @param gridSize - Grid unit size for snapping
+ * @returns Grid-aligned coordinates
  */
 export const snapToGrid = (
   x: number,
@@ -216,7 +296,13 @@ export const snapToGrid = (
 };
 
 /**
- * Get the bounds of all rectangles
+ * Calculate minimal bounding box containing all rectangles
+ * 
+ * Computes the smallest rectangle that encompasses all provided
+ * rectangles. Used for export bounds calculation and fit-to-view operations.
+ * 
+ * @param rectangles - Rectangles to bound
+ * @returns Minimal bounding box coordinates and dimensions
  */
 export const getAllRectanglesBounds = (
   rectangles: Rectangle[]
@@ -246,7 +332,16 @@ export const getAllRectanglesBounds = (
 };
 
 /**
- * Calculate optimal zoom level to fit all rectangles in viewport
+ * Calculate zoom level to fit all content within viewport
+ * 
+ * Determines the maximum zoom level that displays all rectangles
+ * within the container with specified padding. Used for "fit to view"
+ * functionality.
+ * 
+ * @param rectangles - All rectangles to fit
+ * @param containerRect - Container dimensions
+ * @param padding - Minimum padding around content in pixels
+ * @returns Optimal zoom level (capped at 2x)
  */
 export const calculateFitZoom = (
   rectangles: Rectangle[],

@@ -1,5 +1,9 @@
 import { useEffect } from 'react';
 
+/**
+ * Interface defining available keyboard shortcuts and their handlers
+ * Supports standard editing operations and precise movement controls
+ */
 interface KeyboardShortcuts {
   onSave?: () => void;
   onLoad?: () => void;
@@ -16,13 +20,17 @@ interface KeyboardShortcuts {
   onMoveRight?: (deltaPixels: number) => void;
 }
 
+/**
+ * Custom hook for managing global keyboard shortcuts
+ * Handles context-aware shortcut processing with modal and input detection
+ */
 export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const { ctrlKey, metaKey, key } = event;
       const isCtrlOrCmd = ctrlKey || metaKey;
 
-      // Check if user is typing in an input field or modal
+      // Context detection: prevent shortcuts during text editing or modal interactions
       const isTyping = (event.target as Element)?.matches('input, textarea, [contenteditable="true"]');
       const isInModal = (event.target as Element)?.closest('[role="dialog"], .modal, [data-modal]');
 
@@ -34,13 +42,13 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           event.preventDefault();
           shortcuts.onCancel();
         } else if (!isTyping && !isInModal) {
-          // Handle arrow key movement with modifier support
-          let deltaPixels = 1; // Default: 1 pixel movement
+          // Arrow key movement with precision control via modifiers
+          let deltaPixels = 1; // Precise movement by default
           
           if (event.shiftKey) {
-            deltaPixels = 10; // Shift: 10 pixel movement (fast)
+            deltaPixels = 10; // Fast movement with Shift modifier
           } else if (!event.ctrlKey && !event.metaKey) {
-            deltaPixels = 1; // No modifier: 1 pixel movement (precise)
+            deltaPixels = 1; // Fine-grained positioning
           }
           
           switch (key) {
@@ -106,18 +114,15 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           break;
         case 'z':
           if (event.shiftKey && shortcuts.onRedo) {
-            console.log('Executing redo shortcut (Ctrl+Shift+Z)');
             event.preventDefault();
             shortcuts.onRedo();
           } else if (!event.shiftKey && shortcuts.onUndo) {
-            console.log('Executing undo shortcut (Ctrl+Z)');
             event.preventDefault();
             shortcuts.onUndo();
           }
           break;
         case 'y':
           if (shortcuts.onRedo) {
-            console.log('Executing redo shortcut (Ctrl+Y)');
             event.preventDefault();
             shortcuts.onRedo();
           }

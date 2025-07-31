@@ -17,7 +17,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   containerRef,
   onContextMenu,
 }) => {
-  // Get data from store
+  // Core data from centralized store
   const rectangles = useAppStore(state => state.rectangles);
   const selectedId = useAppStore(state => state.selectedId);
   const gridSize = useAppStore(state => state.settings.gridSize);
@@ -26,31 +26,48 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const borderColor = useAppStore(state => state.settings.borderColor);
   const borderWidth = useAppStore(state => state.settings.borderWidth);
   const calculateFontSize = useAppStore(state => state.getters.calculateFontSize);
-  // Subscribe to font settings to trigger re-renders when they change
+  
+  /**
+   * Font settings subscriptions for reactive re-rendering.
+   * These subscriptions ensure the component re-renders when font settings change,
+   * enabling dynamic font size recalculation across all rectangles.
+   */
   const _rootFontSize = useAppStore(state => state.settings.rootFontSize);
   const _dynamicFontSizing = useAppStore(state => state.settings.dynamicFontSizing);
-  // Force usage to avoid unused variable warnings
+  // Void usage prevents ESLint unused variable warnings while maintaining subscriptions
   void _rootFontSize;
   void _dynamicFontSizing;
   
-  // Get canvas states from store
+  /**
+   * Canvas interaction states for visual feedback during operations.
+   * These states control visual indicators like drag highlights, resize handles,
+   * and hierarchy drag drop targets for enhanced user experience.
+   */
   const dragState = useAppStore(state => state.canvas.dragState);
   const resizeState = useAppStore(state => state.canvas.resizeState);
   const hierarchyDragState = useAppStore(state => state.canvas.hierarchyDragState);
   const resizeConstraintState = useAppStore(state => state.canvas.resizeConstraintState);
   
-  // Get actions from store
+  // Rectangle manipulation actions from store
   const { setSelectedId, updateRectangleLabel } = useAppStore(state => state.rectangleActions);
   const handleRectangleMouseDown = useAppStore(state => state.canvasActions.handleRectangleMouseDown);
   
-  // Create an onMouseDown handler that includes the containerRef
+  /**
+   * Mouse event handler factory that injects containerRef for coordinate calculations.
+   * Bridges component-level containerRef with store-level mouse handling logic,
+   * enabling accurate screen-to-canvas coordinate transformations.
+   */
   const onMouseDown = (e: React.MouseEvent, rect: Rectangle, action?: 'drag' | 'resize' | 'hierarchy-drag') => {
     handleRectangleMouseDown(e, rect, action || 'drag', containerRef);
   };
   return (
     <>
       {sortRectanglesByDepth(rectangles).map(rect => {
-        // Check if this rectangle is a potential drop target during hierarchy drag
+        /**
+         * Calculate rectangle interaction states for visual feedback.
+         * These states determine visual appearance during drag operations,
+         * hierarchy reparenting, and resize constraints.
+         */
         const dropTarget = hierarchyDragState?.potentialTargets.find(target => target.targetId === rect.id);
         const isDropTarget = dropTarget !== undefined;
         const isValidDropTarget = dropTarget?.isValid || false;
@@ -72,6 +89,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             onContextMenu={onContextMenu}
             onSelect={setSelectedId}
             onUpdateLabel={updateRectangleLabel}
+            // Drag/resize permissions based on hierarchy and manual positioning settings
             canDrag={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
             canResize={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
             childCount={getChildren(rect.id, rectangles).length}

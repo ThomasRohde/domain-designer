@@ -10,6 +10,10 @@ interface DescriptionEditModalProps {
   currentDescription: string;
 }
 
+/**
+ * Modal for editing rectangle descriptions with keyboard shortcuts support.
+ * Provides textarea input with auto-focus and real-time preview of changes.
+ */
 const DescriptionEditModal: React.FC<DescriptionEditModalProps> = ({
   isOpen,
   onClose,
@@ -20,6 +24,7 @@ const DescriptionEditModal: React.FC<DescriptionEditModalProps> = ({
 }) => {
   const [description, setDescription] = useState(currentDescription);
 
+  // Sync local state with current description when modal opens
   useEffect(() => {
     if (isOpen) {
       setDescription(currentDescription);
@@ -33,6 +38,7 @@ const DescriptionEditModal: React.FC<DescriptionEditModalProps> = ({
     onClose();
   };
 
+  // Enhanced keyboard shortcuts for modal interaction
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose();

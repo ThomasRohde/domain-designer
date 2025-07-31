@@ -8,10 +8,15 @@ interface ExportModalProps {
   onExport: (options: ExportOptions) => void;
 }
 
+/**
+ * Modal for configuring diagram export options across multiple formats.
+ * Supports HTML (with Confluence compatibility), SVG, JSON data, and Mermaid diagram exports.
+ */
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
   const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'mermaid'>('html');
   const [scale, setScale] = useState(1);
   const [includeBackground, setIncludeBackground] = useState(true);
+  // Confluence Server HTML Macro requires specific formatting constraints
   const [confluenceMode, setConfluenceMode] = useState(false);
 
   if (!isOpen) return null;
@@ -84,6 +89,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             </div>
           </div>
           
+          {/* Visual export formats (HTML/SVG) support scaling and background options */}
           {format !== 'json' && format !== 'mermaid' && (
             <>
               <div>
@@ -114,6 +120,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
                 </label>
               </div>
               
+              {/* Confluence mode generates HTML compatible with server macro constraints */}
               {format === 'html' && (
                 <div className="flex items-center space-x-2">
                   <input

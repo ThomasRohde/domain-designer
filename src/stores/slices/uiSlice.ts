@@ -1,7 +1,9 @@
 import type { SliceCreator, UIState, UIActions } from '../types';
 
 /**
- * UI state slice interface
+ * UI state slice managing modals, menus, and responsive behavior.
+ * Handles context menus, export dialogs, responsive sidebar behavior,
+ * and PWA update notifications for the application interface.
  */
 export interface UISlice {
   ui: UIState;
@@ -12,9 +14,13 @@ export interface UISlice {
  * Creates the UI slice for the store
  */
 export const createUISlice: SliceCreator<UISlice> = (set, get) => {
-  // Handle responsive sidebar and left menu behavior - auto-close on mobile when clicking outside
+  /**
+   * Responsive behavior handler for mobile viewport changes.
+   * Automatically closes sidebar and left menu on mobile to prevent
+   * UI overlap issues. Only affects mobile viewports (< 768px).
+   */
   const handleResize = () => {
-    // Only auto-close sidebar and left menu on mobile, don't auto-open on desktop
+    // Auto-close overlays on mobile to prevent UI blocking
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       const currentState = get();
       if (currentState.ui.sidebarOpen || currentState.ui.leftMenuOpen) {
@@ -29,13 +35,17 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
     }
   };
 
-  // Handle context menu click outside to close
+  /**
+   * Context menu click-outside handling for automatic closure.
+   * Manages event listeners and timing to prevent immediate closure
+   * from the triggering right-click event.
+   */
   let contextMenuListener: ((e: MouseEvent) => void) | null = null;
   let contextMenuTimeoutId: number | null = null;
 
   const setupContextMenuListener = () => {
     const handleClick = (e: MouseEvent) => {
-      // Check if the click is outside the context menu
+      // Close context menu when clicking outside its boundaries
       const target = e.target as Element;
       if (!target.closest('[data-context-menu]')) {
         get().uiActions.hideContextMenu();
@@ -48,7 +58,7 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
 
     contextMenuListener = handleClick;
     
-    // Add a small delay to prevent the right-click event from immediately closing the menu
+    // Delayed listener setup to prevent immediate closure from triggering event
     contextMenuTimeoutId = window.setTimeout(() => {
       document.addEventListener('mousedown', handleClick, true);
     }, 10);

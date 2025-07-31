@@ -19,7 +19,8 @@ import type {
 import type { LayoutAlgorithmType } from '../utils/layout/interfaces';
 
 /**
- * UI state managed by the store
+ * User interface state slice - manages modal visibility and navigation
+ * Centralizes UI state to prevent prop drilling and improve performance
  */
 export interface UIState {
   sidebarOpen: boolean;
@@ -34,7 +35,8 @@ export interface UIState {
 }
 
 /**
- * Canvas state managed by the store
+ * Canvas interaction state slice - tracks real-time user operations
+ * Manages complex multi-step interactions like drag-drop and resize
  */
 export interface CanvasState {
   panOffset: PanOffset;
@@ -47,14 +49,15 @@ export interface CanvasState {
   resizeConstraintState: ResizeConstraintState | null;
   isSpacePressed: boolean;
   isKeyboardMoving: boolean;
-  // Internal state for complex interactions
-  initialPositions: Record<string, { x: number; y: number }> | null;
-  needsLayoutUpdate: { type: 'reparent' | 'resize'; rectangleId?: string } | null;
-  keyboardTimeoutId: number | null;
+  // Internal state for complex multi-step interactions
+  initialPositions: Record<string, { x: number; y: number }> | null;  // Drag start positions for multi-select
+  needsLayoutUpdate: { type: 'reparent' | 'resize'; rectangleId?: string } | null;  // Deferred layout recalculation
+  keyboardTimeoutId: number | null;  // Debounce timer for keyboard navigation
 }
 
 /**
- * History state managed by the store
+ * Undo/redo history slice - implements command pattern for state changes
+ * Maintains bounded stack with efficient serialization
  */
 export interface HistoryState {
   stack: Rectangle[][];
@@ -62,7 +65,8 @@ export interface HistoryState {
 }
 
 /**
- * Auto-save state managed by the store
+ * Auto-save functionality slice - provides data persistence and recovery
+ * Handles validation, corruption detection, and graceful degradation
  */
 export interface AutoSaveState {
   enabled: boolean;
@@ -75,7 +79,8 @@ export interface AutoSaveState {
 }
 
 /**
- * Rectangle actions slice
+ * Rectangle CRUD operations slice - core domain logic for diagram manipulation
+ * Maintains referential integrity and triggers layout recalculation
  */
 export interface RectangleActions {
   addRectangle: (parentId?: string) => void;
@@ -102,7 +107,8 @@ export interface RectangleActions {
 }
 
 /**
- * UI actions slice
+ * User interface action slice - handles modal state and navigation events
+ * Provides consistent interaction patterns across components
  */
 export interface UIActions {
   toggleSidebar: () => void;
@@ -125,13 +131,14 @@ export interface UIActions {
   closeHelpModal: () => void;
   showUpdateNotification: (updateServiceWorker: () => void) => void;
   hideUpdateNotification: () => void;
-  // Internal methods for UI management
-  _handleResize: () => void;
-  _cleanupContextMenuListener: () => void;
+  // Internal lifecycle methods - prefixed to indicate private usage
+  _handleResize: () => void;  // Window resize handler for responsive UI
+  _cleanupContextMenuListener: () => void;  // Event cleanup on component unmount
 }
 
 /**
- * Settings actions slice
+ * Global settings management slice - configuration with persistence
+ * Triggers layout updates and manages font detection lifecycle
  */
 export interface SettingsActions {
   updateSettings: (settings: Partial<GlobalSettings>) => void;
@@ -153,15 +160,16 @@ export interface SettingsActions {
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;
   handleShowGridChange: (show: boolean) => void;
-  // Additional computed values and utilities
-  getFixedDimensions: () => FixedDimensions;
-  calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
-  setIsRestoring: (isRestoring: boolean) => void;
-  reloadFonts: () => Promise<void>;
+  // Computed utilities and lifecycle management
+  getFixedDimensions: () => FixedDimensions;  // Current leaf rectangle sizing rules
+  calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;  // Dynamic font scaling by hierarchy
+  setIsRestoring: (isRestoring: boolean) => void;  // Loading state during data restoration
+  reloadFonts: () => Promise<void>;  // Re-scan system fonts after changes
 }
 
 /**
- * Canvas actions slice
+ * Canvas interaction management slice - coordinates complex user operations
+ * Handles event delegation and state transitions for drag/resize/pan operations
  */
 export interface CanvasActions {
   // Drag actions
@@ -195,7 +203,7 @@ export interface CanvasActions {
   setIsKeyboardMoving: (moving: boolean) => void;
   startKeyboardMovement: () => void;
   
-  // Complex interaction handlers
+  // High-level interaction orchestration - manages complex multi-step operations
   handleCanvasMouseDown: (e: React.MouseEvent, containerRef: React.RefObject<HTMLDivElement | null>) => void;
   handleRectangleMouseDown: (e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' | 'hierarchy-drag', containerRef: React.RefObject<HTMLDivElement | null>) => void;
   handleMouseMove: (e: MouseEvent, containerRef: React.RefObject<HTMLDivElement | null>) => void;
@@ -203,23 +211,24 @@ export interface CanvasActions {
   handleWheel: (e: WheelEvent, containerRef: React.RefObject<HTMLDivElement | null>) => void;
   cancelDrag: () => void;
   
-  // Internal state management
-  setInitialPositions: (positions: Record<string, { x: number; y: number }> | null) => void;
-  setNeedsLayoutUpdate: (update: { type: 'reparent' | 'resize'; rectangleId?: string } | null) => void;
-  setResizeConstraintState: (state: ResizeConstraintState | null) => void;
+  // Internal state coordination - manages interaction lifecycle
+  setInitialPositions: (positions: Record<string, { x: number; y: number }> | null) => void;  // Multi-select drag preparation
+  setNeedsLayoutUpdate: (update: { type: 'reparent' | 'resize'; rectangleId?: string } | null) => void;  // Deferred layout trigger
+  setResizeConstraintState: (state: ResizeConstraintState | null) => void;  // Visual feedback for size limits
   
-  // Computed values for interactions
-  isDragging: () => boolean;
-  isResizing: () => boolean;
-  isPanning: () => boolean;
-  isHierarchyDragging: () => boolean;
+  // Interaction state queries - computed boolean flags for UI logic
+  isDragging: () => boolean;  // Active rectangle drag operation
+  isResizing: () => boolean;  // Active resize handle manipulation
+  isPanning: () => boolean;  // Active canvas pan/zoom operation
+  isHierarchyDragging: () => boolean;  // Active drag-and-drop reparenting
   
-  // Drop target detection (for hierarchy drag)
+  // Drop target calculation - validates reparenting operations during drag
   detectDropTargets: (mouseX: number, mouseY: number, draggedRectId: string) => DropTarget[];
 }
 
 /**
- * History actions slice
+ * History management slice - implements undo/redo with state snapshots
+ * Optimizes memory usage and provides operation grouping
  */
 export interface HistoryActions {
   undo: () => void;
@@ -231,7 +240,8 @@ export interface HistoryActions {
 }
 
 /**
- * Auto-save actions slice
+ * Persistent storage slice - automated backup and recovery system
+ * Includes data validation and corruption recovery mechanisms
  */
 export interface AutoSaveActions {
   setEnabled: (enabled: boolean) => void;
@@ -253,7 +263,8 @@ export interface AutoSaveActions {
 }
 
 /**
- * Computed getters for the store
+ * Computed selectors slice - derived state calculations with memoization
+ * Provides consistent business logic queries across components
  */
 export interface StoreGetters {
   canUndo: () => boolean;
@@ -267,7 +278,8 @@ export interface StoreGetters {
 }
 
 /**
- * Complete app store interface combining all slices
+ * Root store interface - unified Zustand store combining all feature slices
+ * Provides type-safe access to all application state and operations
  */
 export interface AppStore {
   // State
@@ -293,7 +305,8 @@ export interface AppStore {
 }
 
 /**
- * State setter function type for Zustand
+ * Zustand state mutation function - enables immutable state updates
+ * Supports both partial updates and functional transformations
  */
 export type SetState = (
   partial: AppStore | Partial<AppStore> | ((state: AppStore) => AppStore | Partial<AppStore>),
@@ -301,12 +314,14 @@ export type SetState = (
 ) => void;
 
 /**
- * State getter function type for Zustand
+ * Zustand state accessor function - provides current store snapshot
+ * Used for computed values and cross-slice dependencies
  */
 export type GetState = () => AppStore;
 
 /**
- * Store API type for Zustand
+ * Zustand store instance interface - low-level store control
+ * Provides subscription management and lifecycle methods
  */
 export interface StoreApi {
   setState: SetState;
@@ -316,7 +331,8 @@ export interface StoreApi {
 }
 
 /**
- * Slice creator function type
+ * Zustand slice factory function - creates feature-specific store slices
+ * Enables modular store composition with shared dependencies
  */
 export type SliceCreator<T> = (
   set: SetState,

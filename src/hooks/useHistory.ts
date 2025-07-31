@@ -1,6 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { Rectangle } from '../types';
 
+/**
+ * Return interface for useHistory hook
+ * Provides undo/redo functionality with optimized state management
+ */
 export interface UseHistoryReturn {
   // History state
   canUndo: boolean;
@@ -14,36 +18,43 @@ export interface UseHistoryReturn {
   initializeHistory: (initialState: Rectangle[]) => void;
 }
 
+// Maximum history entries to prevent memory issues
 const MAX_HISTORY_SIZE = 50;
 
 export const useHistory = (): UseHistoryReturn => {
   const [history, setHistory] = useState<Rectangle[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
   
-  // Use refs to track current values for consistent access in callbacks
+  /**
+   * Refs provide stable access to current values in callbacks
+   * Prevents stale closure issues in useCallback dependencies
+   */
   const historyRef = useRef<Rectangle[][]>([[]]);
   const historyIndexRef = useRef(0);
   
-  // Keep refs in sync with state
+  // Maintain ref synchronization with React state
   historyRef.current = history;
   historyIndexRef.current = historyIndex;
 
   const pushState = useCallback((rectangles: Rectangle[]) => {
-    // Use refs for current values to avoid stale closures
+    // Access current values via refs to prevent stale state
     const currentHistory = historyRef.current;
     const currentIndex = historyIndexRef.current;
     
     let newHistory = [...currentHistory];
     
-    // If we're not at the end of history, remove all states after current index
+    // Branching: remove future states when adding after undo
     if (currentIndex < newHistory.length - 1) {
       newHistory = newHistory.slice(0, currentIndex + 1);
     }
     
-    // Enhanced duplicate detection - check if the new state is identical to the current state
+    /**
+     * Optimized duplicate detection using field-by-field comparison
+     * Avoids expensive JSON serialization for performance
+     */
     const currentState = newHistory[currentIndex];
     if (currentState) {
-      // Optimized comparison - avoid expensive JSON serialization
+      // Fast comparison: check length first, then field-by-field
       if (rectangles.length === currentState.length && 
           rectangles.every((rect, i) => {
             const current = currentState[i];
@@ -58,18 +69,18 @@ export const useHistory = (): UseHistoryReturn => {
                    rect.parentId === current.parentId &&
                    rect.type === current.type;
           })) {
-        // Skip adding duplicate state - no changes needed
+        // Skip duplicate: no actual changes detected
         return;
       }
     }
     
-    // Add the new state (deep copy to prevent mutations)
+    // Store immutable copy to prevent external mutations
     newHistory.push(JSON.parse(JSON.stringify(rectangles)));
     
-    // Limit history size
+    // Memory management: enforce size limits
     if (newHistory.length > MAX_HISTORY_SIZE) {
       newHistory.shift();
-      // Index needs to be adjusted since we removed from the beginning
+      // Adjust index after removing oldest entry
       setHistoryIndex(newHistory.length - 1);
     } else {
       setHistoryIndex(newHistory.length - 1);
@@ -86,7 +97,7 @@ export const useHistory = (): UseHistoryReturn => {
     const newIndex = historyIndex - 1;
     setHistoryIndex(newIndex);
     
-    // Return deep copy to prevent mutations
+    // Return immutable copy to prevent external mutations
     return JSON.parse(JSON.stringify(history[newIndex]));
   }, [history, historyIndex]);
 
@@ -98,7 +109,7 @@ export const useHistory = (): UseHistoryReturn => {
     const newIndex = historyIndex + 1;
     setHistoryIndex(newIndex);
     
-    // Return deep copy to prevent mutations
+    // Return immutable copy to prevent external mutations
     return JSON.parse(JSON.stringify(history[newIndex]));
   }, [history, historyIndex]);
 
@@ -108,7 +119,7 @@ export const useHistory = (): UseHistoryReturn => {
   }, []);
 
   const initializeHistory = useCallback((initialState: Rectangle[]) => {
-    // Initialize history with the given state as the first entry
+    // Reset history with provided initial state as base entry
     const newHistory = [JSON.parse(JSON.stringify(initialState))];
     setHistory(newHistory);
     setHistoryIndex(0);

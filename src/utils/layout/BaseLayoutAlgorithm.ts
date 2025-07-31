@@ -3,20 +3,26 @@ import { LayoutMetadata, shouldPreserveExactLayout } from '../../types/layoutSna
 import { ILayoutAlgorithm, LayoutInput, LayoutResult } from './interfaces';
 
 /**
- * Base class for layout algorithms with layout preservation support
+ * Abstract base class providing common layout algorithm infrastructure
  * 
- * This abstract class provides common functionality for all layout algorithms,
- * including layout preservation logic and standard utilities.
+ * Implements the Template Method pattern with layout preservation capabilities.
+ * Provides utility methods for bounds checking, coordinate calculations, and
+ * layout metadata handling. All concrete algorithms inherit preservation logic
+ * and standard geometric operations.
  */
 export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
   abstract readonly name: string;
   abstract readonly description: string;
   
   /**
-   * Check if layout can be modified based on metadata
+   * Determine if algorithm should modify existing layout
    * 
-   * This is the standard implementation that checks for layout preservation flags.
-   * Subclasses can override this if they need custom preservation logic.
+   * Checks layout preservation flags to prevent unwanted automatic relayout
+   * of user-positioned content. Standard implementation defers to metadata
+   * preservation flags.
+   * 
+   * @param layoutMetadata - Optional layout state and preservation flags
+   * @returns true if layout modifications are allowed
    */
   canApplyLayout(layoutMetadata?: LayoutMetadata): boolean {
     if (!layoutMetadata) return true;
@@ -26,10 +32,15 @@ export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
   }
   
   /**
-   * Calculate layout for children within a parent rectangle
+   * Main layout calculation with preservation checks (Template Method)
    * 
-   * This method checks preservation rules before delegating to the concrete
-   * implementation. If layout should be preserved, it returns the original rectangles.
+   * Implements the preservation-aware layout workflow:
+   * 1. Check if layout modifications are allowed
+   * 2. If preserved, return existing rectangles unchanged
+   * 3. Otherwise, delegate to concrete algorithm implementation
+   * 
+   * @param input - Complete layout parameters and constraints
+   * @returns Layout result with positioned rectangles and parent sizing
    */
   calculateLayout(input: LayoutInput): LayoutResult {
     // Check if we should preserve the current layout
@@ -45,34 +56,52 @@ export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
   }
   
   /**
-   * Abstract method for concrete layout calculation
+   * Abstract method for algorithm-specific layout implementation
    * 
-   * Subclasses must implement this method to provide the actual layout logic.
-   * This method is only called when layout preservation allows modifications.
+   * Called by calculateLayout() after preservation checks pass.
+   * Concrete algorithms implement their positioning logic here without
+   * concern for preservation rules.
+   * 
+   * @param input - Layout parameters validated for modification
+   * @returns Algorithm-specific layout result
    */
   protected abstract doCalculateLayout(input: LayoutInput): LayoutResult;
   
   /**
-   * Calculate minimum dimensions needed for parent to fit children
+   * Calculate minimum parent dimensions for content (always callable)
    * 
-   * This method is always available regardless of preservation rules,
-   * as it doesn't modify positions, only calculates requirements.
+   * This calculation is always performed regardless of preservation state
+   * since it doesn't modify existing layouts, only computes space requirements.
+   * Used for fit-to-children operations and parent sizing validation.
+   * 
+   * @param input - Layout parameters for size calculation
+   * @returns Minimum required parent dimensions
    */
   abstract calculateMinimumParentSize(input: LayoutInput): { w: number; h: number };
   
   /**
-   * Calculate grid dimensions based on children count and preferences
+   * Compute grid dimensions for given constraints (always callable)
    * 
-   * This method is always available regardless of preservation rules,
-   * as it only performs calculations without modifying layout.
+   * Pure calculation method that doesn't modify layouts, only determines
+   * optimal grid structure based on content count and user preferences.
+   * 
+   * @param childrenCount - Number of items to arrange
+   * @param layoutPreferences - Optional grid constraints and fill strategy
+   * @returns Optimal grid dimensions
    */
   abstract calculateGridDimensions(childrenCount: number, layoutPreferences?: LayoutPreferences): { cols: number; rows: number };
   
   /**
-   * Utility method to ensure rectangles fit within parent bounds
+   * Clamp child rectangles within parent boundaries
    * 
-   * This helper method can be used by subclasses to ensure child rectangles
-   * don't exceed the parent boundaries while respecting margins.
+   * Utility for subclasses to prevent child overflow beyond parent edges.
+   * Applies margin constraints and moves rectangles to valid positions
+   * without changing their dimensions.
+   * 
+   * @param rectangles - Child rectangles to constrain
+   * @param parentRect - Parent boundaries
+   * @param margins - Margin constraints for positioning
+   * @returns Rectangles with positions clamped to valid bounds
    */
   protected ensureWithinBounds(rectangles: Rectangle[], parentRect: Rectangle, margins: { margin: number; labelMargin: number }): Rectangle[] {
     return rectangles.map(rect => {
@@ -90,10 +119,13 @@ export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
   }
   
   /**
-   * Utility method to calculate total content area of rectangles
+   * Calculate minimal bounding box containing all rectangles
    * 
-   * This helper calculates the bounding box containing all rectangles,
-   * useful for parent size calculations.
+   * Computes the smallest rectangle that encompasses all provided rectangles.
+   * Useful for parent sizing calculations and content bounds determination.
+   * 
+   * @param rectangles - Array of rectangles to bound
+   * @returns Minimal bounding box coordinates and dimensions
    */
   protected calculateBoundingBox(rectangles: Rectangle[]): { x: number; y: number; w: number; h: number } {
     if (rectangles.length === 0) {

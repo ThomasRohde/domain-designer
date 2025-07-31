@@ -2,7 +2,6 @@ import { Rectangle, DragState, ResizeState, HierarchyDragState, LayoutPreference
 import { layoutManager } from './layout';
 
 /**
- * Calculate grid dimensions based on layout preferences
  * @deprecated Use layoutManager.calculateGridDimensions instead
  */
 export const calculateGridDimensions = (
@@ -13,7 +12,6 @@ export const calculateGridDimensions = (
 };
 
 /**
- * Calculate auto-sized dimensions and positions for child rectangles
  * @deprecated Use layoutManager.calculateChildLayout instead
  */
 export const calculateChildLayout = (
@@ -35,7 +33,16 @@ export const calculateChildLayout = (
 };
 
 /**
- * Update child rectangles layout when parent changes
+ * Recursively update child layouts throughout the hierarchy
+ * 
+ * Processes rectangles level by level to maintain parent-child dependencies.
+ * Skips automatic layout for manually positioned or locked rectangles.
+ * Implements parent auto-sizing based on child requirements.
+ * 
+ * @param rectangles - Complete rectangle set to process
+ * @param fixedDimensions - Optional fixed sizing for leaf nodes
+ * @param margins - Spacing configuration
+ * @returns Updated rectangles with recalculated layouts
  */
 export const updateChildrenLayout = (
   rectangles: Rectangle[],
@@ -133,7 +140,6 @@ export const updateChildrenLayout = (
 };
 
 /**
- * Calculate initial position and size for a new rectangle
  * @deprecated Use layoutManager.calculateNewRectangleLayout instead
  */
 export const calculateNewRectangleLayout = (
@@ -149,7 +155,15 @@ export const calculateNewRectangleLayout = (
 };
 
 /**
- * Get all descendants of a rectangle (recursive)
+ * Recursively collect all descendant rectangle IDs
+ * 
+ * Traverses the hierarchy tree depth-first to gather all children,
+ * grandchildren, etc. Implements cycle detection to prevent infinite
+ * loops in malformed hierarchies.
+ * 
+ * @param parentId - Root rectangle ID to start traversal
+ * @param rectangles - Complete rectangle set for relationship lookup
+ * @returns Array of descendant rectangle IDs
  */
 export const getAllDescendants = (parentId: string, rectangles: Rectangle[]): string[] => {
   const descendants: string[] = [];
@@ -177,28 +191,55 @@ export const getAllDescendants = (parentId: string, rectangles: Rectangle[]): st
 };
 
 /**
- * Get children of a rectangle
+ * Find direct children of a rectangle
+ * 
+ * @param parentId - Parent rectangle ID
+ * @param rectangles - Rectangle set to search
+ * @returns Array of direct child rectangles
  */
 export const getChildren = (parentId: string, rectangles: Rectangle[]): Rectangle[] => {
   return rectangles.filter(rect => rect.parentId === parentId);
 };
 
 /**
- * Check if rectangle is a leaf (has no children)
+ * Determine if rectangle has no children
+ * 
+ * @param id - Rectangle ID to check
+ * @param rectangles - Rectangle set for relationship lookup
+ * @returns true if rectangle has no children
  */
 export const isLeaf = (id: string, rectangles: Rectangle[]): boolean => {
   return getChildren(id, rectangles).length === 0;
 };
 
 /**
- * Get root rectangles (no parent)
+ * Filter rectangles to find top-level (parentless) rectangles
+ * 
+ * @param rectangles - Rectangle set to filter
+ * @returns Array of root rectangles
  */
 export const getRootRectangles = (rectangles: Rectangle[]): Rectangle[] => {
   return rectangles.filter(rect => !rect.parentId);
 };
 
 /**
- * Calculate z-index based on hierarchy depth
+ * Calculate layering order for proper rectangle rendering
+ * 
+ * Implements depth-based z-indexing with special handling for:
+ * - Dragged rectangles and their descendants (elevated above all)
+ * - Resized rectangles (elevated above normal but below dragged)
+ * - Selected rectangles (slight elevation, reduced for parents with children)
+ * 
+ * Ensures children always render above their parents while maintaining
+ * interaction state visibility.
+ * 
+ * @param rect - Rectangle to calculate z-index for
+ * @param rectangles - Complete rectangle set for hierarchy traversal
+ * @param selectedId - Currently selected rectangle ID
+ * @param dragState - Current drag operation state
+ * @param resizeState - Current resize operation state
+ * @param hierarchyDragState - Hierarchy drag operation state
+ * @returns Z-index value for CSS layering
  */
 export const getZIndex = (
   rect: Rectangle, 
@@ -252,7 +293,6 @@ export const getZIndex = (
 };
 
 /**
- * Calculate minimum size needed to fit all children snugly
  * @deprecated Use layoutManager.calculateMinimumParentSize instead
  */
 export const calculateMinimumParentSize = (
@@ -273,11 +313,19 @@ export const calculateMinimumParentSize = (
 };
 
 /**
- * Sort rectangles by depth (deepest first) to ensure parents render after children
- * Optimized to cache depth calculations and handle numeric ID sorting
+ * Sort rectangles for optimal rendering order (deepest first)
+ * 
+ * Ensures children render before their parents to prevent visual occlusion.
+ * Uses caching to avoid recalculating depths and implements stable sorting
+ * with numeric ID ordering for consistent results.
+ * 
+ * Performance: O(n log n) with O(n) space for depth cache
+ * 
+ * @param rectangles - Rectangles to sort
+ * @returns Sorted array with deepest rectangles first
  */
 export const sortRectanglesByDepth = (rectangles: Rectangle[]): Rectangle[] => {
-  // Cache depth calculations to avoid recalculating for each comparison
+  // Depth cache prevents O(n²) recalculation during sorting
   const depthCache = new Map<string, number>();
   
   const getDepth = (rect: Rectangle): number => {
@@ -298,7 +346,7 @@ export const sortRectanglesByDepth = (rectangles: Rectangle[]): Rectangle[] => {
     return depth;
   };
   
-  // Helper to extract numeric part of ID for proper sorting
+  // Extract numeric suffix for stable sorting (rect-2 before rect-10)
   const getNumericId = (id: string): number => {
     const match = id.match(/\d+$/);
     return match ? parseInt(match[0], 10) : 0;

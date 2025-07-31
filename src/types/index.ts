@@ -2,12 +2,20 @@ import React from 'react';
 import type { LayoutAlgorithmType } from '../utils/layout/interfaces';
 
 /**
- * Type of rectangle in the hierarchy
+ * Rectangle type determines visual styling and layout behavior
+ * - root: Top-level containers with no parent, typically larger
+ * - parent: Containers with children, auto-size to fit contents
+ * - leaf: Terminal nodes with optional fixed dimensions
+ * - textLabel: Text-only elements with transparent background
  */
 export type RectangleType = 'root' | 'parent' | 'leaf' | 'textLabel';
 
 /**
- * Interaction types for canvas operations
+ * Canvas interaction modes for mouse/touch handling
+ * - drag: Moving rectangles within the canvas
+ * - resize: Adjusting rectangle dimensions via handles
+ * - pan: Navigating the canvas viewport
+ * - select: Choosing rectangles for property editing
  */
 export type InteractionType = 'drag' | 'resize' | 'pan' | 'select';
 
@@ -27,21 +35,23 @@ export type LayoutFillStrategy = 'fill-columns-first' | 'fill-rows-first';
 export type FlowOrientation = 'ROW' | 'COL';
 
 /**
- * Layout preferences for a rectangle's children
+ * Layout configuration for child arrangement within parent rectangles
+ * Controls how the layout algorithm arranges child elements
  */
 export interface LayoutPreferences {
-  /** How to arrange children - fill columns first or rows first */
+  /** Primary arrangement strategy - affects space utilization */
   fillStrategy: LayoutFillStrategy;
-  /** Maximum number of columns (only used when fillStrategy is 'fill-rows-first') */
+  /** Column limit for row-first layouts - prevents excessive horizontal spread */
   maxColumns?: number;
-  /** Maximum number of rows (only used when fillStrategy is 'fill-columns-first') */
+  /** Row limit for column-first layouts - prevents excessive vertical growth */
   maxRows?: number;
-  /** Flow orientation for flow-based layouts */
+  /** Flow direction for hierarchical layouts - alternates by depth */
   orientation?: FlowOrientation;
 }
 
 /**
- * Rectangle data structure for hierarchical drawing
+ * Core rectangle entity representing hierarchical diagram elements
+ * Supports both container (parent) and terminal (leaf) nodes with flexible styling
  */
 export interface Rectangle {
   /** Unique identifier for the rectangle */
@@ -66,13 +76,13 @@ export interface Rectangle {
   isEditing?: boolean;
   /** Layout preferences for arranging children */
   layoutPreferences?: LayoutPreferences;
-  /** Whether manual positioning is enabled for direct children (unlocked padlock) */
+  /** Disables automatic layout for children - enables drag-and-drop positioning */
   isManualPositioningEnabled?: boolean;
-  /** Whether the rectangle is locked as-is (positions preserved but not editable) */
+  /** Preserves exact position/size during layout updates - for imported diagrams */
   isLockedAsIs?: boolean;
   /** Optional description for tooltips and metadata */
   description?: string;
-  /** Optional metadata for extensibility */
+  /** Extensible metadata for templates, descriptions, and custom properties */
   metadata?: {
     tags?: string[];
     [key: string]: unknown;
@@ -108,7 +118,8 @@ export interface DragState {
 }
 
 /**
- * Information about a potential drop target during hierarchy drag
+ * Drop target validation during drag-and-drop reparenting operations
+ * Prevents invalid hierarchy modifications (cycles, self-parenting)
  */
 export interface DropTarget {
   /** ID of the target rectangle (null for canvas background) */
@@ -127,7 +138,8 @@ export interface DropTarget {
 }
 
 /**
- * State during hierarchy drag and drop operation
+ * Real-time state tracking for drag-and-drop reparenting
+ * Manages visual feedback and validation during hierarchy modifications
  */
 export interface HierarchyDragState {
   /** ID of the rectangle being dragged */
@@ -203,12 +215,13 @@ export interface ZoomState {
 }
 
 /**
- * Global application settings for the drawing app
+ * Centralized configuration affecting layout, styling, and behavior
+ * Persisted to localStorage and synchronized across components
  */
 export interface GlobalSettings {
-  /** Grid size in pixels for snapping */
+  /** Canvas grid unit size - affects positioning precision and visual alignment */
   gridSize: number;
-  /** Whether to display the grid overlay on canvas */
+  /** Visual grid overlay toggle - helps with manual positioning */
   showGrid: boolean;
   /** Whether leaf rectangles have fixed width */
   leafFixedWidth: boolean;
@@ -218,9 +231,9 @@ export interface GlobalSettings {
   leafWidth: number;
   /** Fixed height for leaf rectangles when enabled */
   leafHeight: number;
-  /** Base font size for root rectangles */
+  /** Base text size for root elements - scales down for nested levels */
   rootFontSize: number;
-  /** Whether to use dynamic font sizing based on rectangle size */
+  /** Automatically adjusts text size based on hierarchy depth and container size */
   dynamicFontSizing: boolean;
   /** Font family for all text in the application and exports */
   fontFamily: string;
@@ -240,7 +253,7 @@ export interface GlobalSettings {
   margin: number;
   /** Extra margin for nodes with children to accommodate labels */
   labelMargin: number;
-  /** Layout algorithm type to use */
+  /** Active layout algorithm - affects child arrangement strategy and space utilization */
   layoutAlgorithm: LayoutAlgorithmType;
   /** Custom colors array for tracking user-added colors */
   customColors?: string[];
@@ -292,7 +305,8 @@ export interface ViewportBounds {
 }
 
 /**
- * Complete diagram state for serialization
+ * Full application state snapshot for save/load operations
+ * Includes all rectangles, selection, history, and configuration
  */
 export interface DiagramState {
   /** All rectangles in the diagram */
@@ -314,7 +328,8 @@ export interface DiagramState {
 }
 
 /**
- * Export configuration options
+ * Output format settings for diagram export functionality
+ * Controls visual fidelity and compatibility with external tools
  */
 export interface ExportOptions {
   /** Export format */
@@ -325,7 +340,7 @@ export interface ExportOptions {
   scale?: number;
   /** Whether to include background in export */
   includeBackground?: boolean;
-  /** Whether to generate Confluence-compatible HTML (no html, head, body tags) */
+  /** Generates embeddable HTML without document structure - for wiki integration */
   confluenceMode?: boolean;
 }
 
@@ -355,10 +370,11 @@ export interface UpdateNotificationState {
   dismiss?: () => void;
 }
 
-// Hook Return Types
+// Hook Return Types - Interface contracts for custom React hooks
 
 /**
- * Return type for useRectangleManager hook
+ * Rectangle CRUD operations and hierarchy management
+ * Central interface for all rectangle manipulation logic
  */
 export interface RectangleManagerHook {
   rectangles: Rectangle[];
@@ -380,7 +396,8 @@ export interface RectangleManagerHook {
 }
 
 /**
- * Return type for useAppSettings hook
+ * Global settings management with persistence and validation
+ * Handles configuration changes and layout recalculation triggers
  */
 export interface AppSettingsHook {
   gridSize: number;
@@ -443,10 +460,11 @@ export interface DescriptionEditModalState {
   currentDescription: string;
 }
 
-// MIGRATION: UIStateHook removed - UI state now managed by Zustand store
+// MIGRATION NOTE: UIStateHook removed in favor of Zustand store for better performance
 
 /**
- * Return type for useCanvasInteractions hook
+ * Canvas interaction state and event handling
+ * Manages mouse/touch operations for drag, resize, pan, and zoom
  */
 export interface CanvasInteractionsHook {
   // Canvas state
@@ -474,17 +492,18 @@ export interface CanvasInteractionsHook {
   startKeyboardMovement: () => void;
 }
 
-// Error Handling Types
+// Error Handling Types - Structured error management for robust operation
 
 /**
- * Application error types
+ * Categorized error types for proper handling and user feedback
+ * Enables specific recovery strategies and meaningful error messages
  */
 export type AppErrorType = 
-  | 'VALIDATION_ERROR'
-  | 'EXPORT_ERROR'
-  | 'IMPORT_ERROR'
-  | 'LAYOUT_ERROR'
-  | 'UNKNOWN_ERROR';
+  | 'VALIDATION_ERROR'    // Data structure violations
+  | 'EXPORT_ERROR'       // File generation failures
+  | 'IMPORT_ERROR'       // File parsing/loading issues
+  | 'LAYOUT_ERROR'       // Algorithm calculation problems
+  | 'UNKNOWN_ERROR';     // Unexpected runtime errors
 
 /**
  * Application error structure
@@ -497,14 +516,16 @@ export interface AppError {
 }
 
 /**
- * Result type for operations that can fail
+ * Type-safe result wrapper for fallible operations
+ * Enforces explicit error handling without throwing exceptions
  */
 export type Result<T, E = AppError> = 
   | { success: true; data: T }
   | { success: false; error: E };
 
 /**
- * Validation result for rectangle operations
+ * Structured validation feedback with severity levels
+ * Distinguishes between blocking errors and informational warnings
  */
 export interface ValidationResult {
   isValid: boolean;

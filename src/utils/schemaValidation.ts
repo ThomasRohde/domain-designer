@@ -1,16 +1,36 @@
 import { ValidationResult } from '../types/layoutSnapshot';
 
-// Note: We use 'any' types for validation functions since they need to validate
-// potentially invalid data that doesn't conform to our types yet
+/**
+ * Schema Validation Utilities
+ * 
+ * Provides comprehensive validation for diagram data structures including:
+ * - Rectangle object validation with field-level error reporting
+ * - Global settings validation with range and type checking  
+ * - Complete diagram format validation with referential integrity
+ * - Data sanitization and corruption recovery mechanisms
+ * 
+ * All validation functions are designed to handle malformed data gracefully
+ * and provide detailed error reporting for debugging and user feedback.
+ */
+
+// Validation functions intentionally use 'any' types to handle potentially 
+// malformed data before type safety can be established through validation
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Schema validation for Rectangle objects
+/**
+ * Validates rectangle object structure and data integrity
+ * Performs comprehensive field validation for all required and optional properties
+ * 
+ * @param rect - Potentially invalid rectangle object to validate
+ * @param index - Optional index for error reporting context
+ * @returns ValidationResult with errors and warnings categorized by severity
+ */
 export const validateRectangle = (rect: any, index?: number): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
   const prefix = index !== undefined ? `Rectangle at index ${index}` : 'Rectangle';
 
-  // Required fields validation
+  // Validate essential fields required for rectangle functionality
   if (!rect || typeof rect !== 'object') {
     errors.push(`${prefix}: Invalid rectangle object`);
     return { isValid: false, errors, warnings };
@@ -44,7 +64,7 @@ export const validateRectangle = (rect: any, index?: number): ValidationResult =
     errors.push(`${prefix}: Invalid type "${rect.type}"`);
   }
 
-  // Optional field validation
+  // Validate optional fields for type safety and consistency
   if (rect.parentId !== undefined && typeof rect.parentId !== 'string') {
     errors.push(`${prefix}: Invalid parentId`);
   }
@@ -57,14 +77,14 @@ export const validateRectangle = (rect: any, index?: number): ValidationResult =
     warnings.push(`${prefix}: Invalid description`);
   }
 
-  // Boolean field validation
+  // Validate boolean flags that control rectangle behavior
   ['isManualPositioningEnabled', 'isLockedAsIs', 'isTextLabel'].forEach(field => {
     if (rect[field] !== undefined && typeof rect[field] !== 'boolean') {
       warnings.push(`${prefix}: Invalid ${field}`);
     }
   });
 
-  // Text label property validation
+  // Validate text label specific properties for formatting and display
   if (rect.textFontFamily !== undefined && typeof rect.textFontFamily !== 'string') {
     warnings.push(`${prefix}: Invalid textFontFamily`);
   }
@@ -84,7 +104,13 @@ export const validateRectangle = (rect: any, index?: number): ValidationResult =
   return { isValid: errors.length === 0, errors, warnings };
 };
 
-// Schema validation for AppSettings
+/**
+ * Validates global application settings structure and value ranges
+ * Ensures all configuration values are within acceptable bounds
+ * 
+ * @param settings - Potentially invalid settings object to validate
+ * @returns ValidationResult indicating validation success and any issues found
+ */
 export const validateAppSettings = (settings: any): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -94,7 +120,7 @@ export const validateAppSettings = (settings: any): ValidationResult => {
     return { isValid: false, errors, warnings };
   }
 
-  // Numeric field validation
+  // Validate numeric configuration values for positive range constraints
   const numericFields = [
     'gridSize', 'leafWidth', 'leafHeight', 'rootFontSize', 
     'borderRadius', 'borderWidth', 'margin', 'labelMargin'
@@ -107,7 +133,7 @@ export const validateAppSettings = (settings: any): ValidationResult => {
     }
   });
 
-  // Boolean field validation
+  // Validate boolean configuration flags
   const booleanFields = [
     'leafFixedWidth', 'leafFixedHeight', 'dynamicFontSizing'
   ];
@@ -118,7 +144,7 @@ export const validateAppSettings = (settings: any): ValidationResult => {
     }
   });
 
-  // String field validation
+  // Validate string configuration values
   const stringFields = ['fontFamily', 'borderColor', 'layoutAlgorithm'];
   
   stringFields.forEach(field => {
@@ -127,7 +153,7 @@ export const validateAppSettings = (settings: any): ValidationResult => {
     }
   });
 
-  // Array validation
+  // Validate array fields for structure and element types
   if (settings.predefinedColors !== undefined) {
     if (!Array.isArray(settings.predefinedColors)) {
       warnings.push('Invalid predefinedColors: expected array');
@@ -143,7 +169,14 @@ export const validateAppSettings = (settings: any): ValidationResult => {
   return { isValid: errors.length === 0, errors, warnings };
 };
 
-// Comprehensive validation for SavedDiagram (v2.0 schema)
+/**
+ * Validates complete saved diagram data structure for v2.0 format
+ * Performs deep validation of rectangles, settings, and metadata
+ * Ensures referential integrity between parent-child relationships
+ * 
+ * @param data - Raw diagram data from file or storage
+ * @returns ValidationResult with comprehensive error and warning reporting
+ */
 export const validateSavedDiagram = (data: any): ValidationResult => {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -153,12 +186,12 @@ export const validateSavedDiagram = (data: any): ValidationResult => {
     return { isValid: false, errors, warnings };
   }
 
-  // Version validation - only v2.0 supported
+  // Enforce strict version compatibility for data format consistency
   if (!data.version || data.version !== '2.0') {
     errors.push(`Invalid version: ${data.version || 'missing'}. Only v2.0 is supported.`);
   }
 
-  // Rectangles validation
+  // Deep validation of rectangle array and individual elements
   if (!Array.isArray(data.rectangles)) {
     errors.push('Invalid or missing rectangles array');
   } else {
@@ -166,21 +199,21 @@ export const validateSavedDiagram = (data: any): ValidationResult => {
       warnings.push('Empty rectangles array');
     }
 
-    // Validate each rectangle
+    // Validate individual rectangles with contextual error reporting
     data.rectangles.forEach((rect: any, index: number) => {
       const rectValidation = validateRectangle(rect, index);
       errors.push(...rectValidation.errors);
       warnings.push(...rectValidation.warnings);
     });
 
-    // Check for duplicate IDs
+    // Ensure unique identifiers across all rectangles
     const ids = data.rectangles.map((r: any) => r?.id).filter(Boolean);
     const uniqueIds = new Set(ids);
     if (ids.length !== uniqueIds.size) {
       errors.push('Duplicate rectangle IDs found');
     }
 
-    // Check parent-child relationships
+    // Validate parent-child relationship integrity
     const rectMap = new Map(data.rectangles.map((r: any) => [r.id, r]));
     data.rectangles.forEach((rect: any) => {
       if (rect.parentId && !rectMap.has(rect.parentId)) {
@@ -189,7 +222,7 @@ export const validateSavedDiagram = (data: any): ValidationResult => {
     });
   }
 
-  // Global settings validation
+  // Validate configuration settings with delegation to specialized validator
   if (data.globalSettings || data.appSettings) {
     const settings = data.globalSettings || data.appSettings;
     const settingsValidation = validateAppSettings(settings);
@@ -197,7 +230,7 @@ export const validateSavedDiagram = (data: any): ValidationResult => {
     warnings.push(...settingsValidation.warnings);
   }
 
-  // Layout metadata validation (v2.0 only)
+  // Validate v2.0 layout metadata for position preservation and algorithm tracking
   if (data.version === '2.0' && data.layoutMetadata) {
     const meta = data.layoutMetadata;
     
@@ -221,7 +254,7 @@ export const validateSavedDiagram = (data: any): ValidationResult => {
     }
   }
 
-  // Timestamp validation
+  // Validate timestamp for data integrity and version tracking
   if (data.timestamp !== undefined && 
       (typeof data.timestamp !== 'number' || !isFinite(data.timestamp))) {
     warnings.push('Invalid timestamp');
@@ -230,13 +263,19 @@ export const validateSavedDiagram = (data: any): ValidationResult => {
   return { isValid: errors.length === 0, errors, warnings };
 };
 
-// Validate diagram format (v2.0 only)
+/**
+ * Auto-detects and validates diagram format with version-specific logic
+ * Currently only supports v2.0 format with comprehensive validation
+ * 
+ * @param data - Raw diagram data of unknown format
+ * @returns ValidationResult with format-specific validation results
+ */
 export const validateDiagramAuto = (data: any): ValidationResult => {
   if (!data || typeof data !== 'object') {
     return { isValid: false, errors: ['Invalid data'], warnings: [] };
   }
 
-  // Only support v2.0 format
+  // Enforce v2.0 format requirement for data consistency
   if (!data.version || data.version !== '2.0') {
     return { 
       isValid: false, 
@@ -248,7 +287,13 @@ export const validateDiagramAuto = (data: any): ValidationResult => {
   return validateSavedDiagram(data);
 };
 
-// Sanitize and fix common issues in diagram data
+/**
+ * Repairs common data corruption issues and normalizes diagram structure
+ * Provides graceful degradation for partially corrupted data
+ * 
+ * @param data - Potentially corrupted diagram data
+ * @returns Sanitized data structure or null if unrepairable
+ */
 export const sanitizeDiagramData = (data: any): any => {
   if (!data || typeof data !== 'object') {
     return null;
@@ -256,34 +301,34 @@ export const sanitizeDiagramData = (data: any): any => {
 
   const sanitized = { ...data };
 
-  // Ensure rectangles array exists
+  // Initialize rectangles array if missing or corrupted
   if (!Array.isArray(sanitized.rectangles)) {
     sanitized.rectangles = [];
   }
 
-  // Sanitize rectangles
+  // Repair individual rectangle data with sensible defaults
   sanitized.rectangles = sanitized.rectangles
     .filter((rect: any) => rect && typeof rect === 'object')
     .map((rect: any) => {
       const sanitizedRect: any = { ...rect };
 
-      // Ensure numeric fields are valid
+      // Repair coordinate and dimension fields with fallback values
       ['x', 'y', 'w', 'h'].forEach(field => {
         if (typeof sanitizedRect[field] !== 'number' || !isFinite(sanitizedRect[field])) {
-          sanitizedRect[field] = field === 'w' || field === 'h' ? 100 : 0;
+          sanitizedRect[field] = field === 'w' || field === 'h' ? 100 : 0;  // Default size or zero position
         }
       });
 
-      // Ensure positive dimensions
+      // Enforce minimum dimensions for visibility
       if (sanitizedRect.w <= 0) sanitizedRect.w = 100;
       if (sanitizedRect.h <= 0) sanitizedRect.h = 100;
 
-      // Ensure label exists
+      // Generate default label if missing or invalid
       if (!sanitizedRect.label || typeof sanitizedRect.label !== 'string') {
         sanitizedRect.label = `Rectangle ${sanitizedRect.id || 'Unknown'}`;
       }
 
-      // Ensure type is valid
+      // Infer rectangle type from hierarchy position if invalid
       if (!['root', 'parent', 'leaf'].includes(sanitizedRect.type)) {
         sanitizedRect.type = sanitizedRect.parentId ? 'leaf' : 'root';
       }
@@ -291,7 +336,7 @@ export const sanitizeDiagramData = (data: any): any => {
       return sanitizedRect;
     });
 
-  // Add timestamp if missing
+  // Ensure timestamp exists for version tracking
   if (typeof sanitized.timestamp !== 'number') {
     sanitized.timestamp = Date.now();
   }

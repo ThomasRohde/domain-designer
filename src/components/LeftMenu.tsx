@@ -5,18 +5,26 @@ import { useAppStore } from '../stores/useAppStore';
 import MobileOverlay from './MobileOverlay';
 
 interface LeftMenuProps {
+  /** Handler for opening about dialog */
   onAboutClick: () => void;
+  /** Handler for opening templates interface */
   onTemplatesClick: () => void;
+  /** Optional handler for clearing saved application data */
   onClearSavedData?: () => void;
 }
 
+/**
+ * Left-side slide-out navigation menu with consistent styling and responsive behavior.
+ * Provides access to secondary application features and navigation options.
+ * Features include templates, viewer mode, help system, and data management.
+ */
 const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onClearSavedData }) => {
   const isOpen = useAppStore(state => state.ui.leftMenuOpen);
   const onClose = useAppStore(state => state.uiActions.closeLeftMenu);
   const onHelpClick = useAppStore(state => state.uiActions.openHelpModal);
   return (
     <>
-      {/* Left-side Menu */}
+      {/* Left-side navigation menu with slide-in animation */}
       <div className={`
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         fixed lg:fixed
@@ -38,6 +46,7 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
           </button>
         </div>
 
+        {/* Navigation menu items with consistent styling and hover effects */}
         <div className="flex-1 p-4 space-y-2 overflow-y-auto">
           <button
             onClick={onTemplatesClick}
@@ -47,6 +56,7 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
             <span>Templates</span>
           </button>
           
+          {/* Router Link for viewer mode with automatic menu close */}
           <Link
             to="/viewer"
             onClick={onClose}
@@ -72,6 +82,7 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
             <span>About</span>
           </button>
 
+          {/* Destructive action separated by visual divider and styled with warning colors */}
           {onClearSavedData && (
             <>
               <div className="border-t border-gray-200 my-2"></div>

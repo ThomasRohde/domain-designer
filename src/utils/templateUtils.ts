@@ -3,7 +3,12 @@ import { TemplateNode, TreeData, TemplateInsertionOptions, TemplateInsertionResu
 import { DEFAULT_RECTANGLE_SIZE } from './constants';
 
 /**
- * Load and parse template data from JSON file
+ * Asynchronously loads and validates template hierarchy from JSON file
+ * Performs comprehensive schema validation to ensure data integrity
+ * 
+ * @param file - File object containing JSON template data
+ * @returns Promise resolving to validated TemplateNode array
+ * @throws Error with descriptive message for parsing or validation failures
  */
 export const loadTemplateFromFile = async (file: File): Promise<TemplateNode[]> => {
   return new Promise((resolve, reject) => {
@@ -14,12 +19,12 @@ export const loadTemplateFromFile = async (file: File): Promise<TemplateNode[]> 
         const content = e.target?.result as string;
         const data = JSON.parse(content);
         
-        // Validate that data is an array
+        // Ensure root structure is an array of template nodes
         if (!Array.isArray(data)) {
           throw new Error('Template file must contain an array of template nodes');
         }
         
-        // Validate each template node
+        // Validate each node's required fields and structure
         const validatedNodes: TemplateNode[] = data.map((node, index) => {
           if (!node.id || typeof node.id !== 'string') {
             throw new Error(`Template node at index ${index} is missing required 'id' field`);
@@ -57,13 +62,17 @@ export const loadTemplateFromFile = async (file: File): Promise<TemplateNode[]> 
 };
 
 /**
- * Convert template nodes to tree data structure for react-complex-tree
+ * Transforms flat template array into hierarchical tree structure
+ * Creates virtual root for react-complex-tree component compatibility
+ * 
+ * @param templateNodes - Flat array of template nodes with parent references
+ * @returns Object with tree data structure and root item identifiers
  */
 export const convertToTreeData = (templateNodes: TemplateNode[]): { treeData: TreeData; rootItems: string[] } => {
   const treeData: TreeData = {};
   const actualRootItems: string[] = [];
   
-  // Build tree structure for all actual nodes
+  // Transform flat structure into hierarchical tree with computed children
   templateNodes.forEach(node => {
     const children = templateNodes
       .filter(child => child.parent === node.id)
@@ -86,7 +95,7 @@ export const convertToTreeData = (templateNodes: TemplateNode[]): { treeData: Tr
     }
   });
   
-  // Create a virtual root that contains all actual root items
+  // Create synthetic root node to satisfy react-complex-tree requirements
   const VIRTUAL_ROOT_ID = '__virtual_root__';
   treeData[VIRTUAL_ROOT_ID] = {
     index: VIRTUAL_ROOT_ID,
@@ -106,7 +115,12 @@ export const convertToTreeData = (templateNodes: TemplateNode[]): { treeData: Tr
 };
 
 /**
- * Get all descendants of a template node
+ * Recursively collects all descendant nodes in the template hierarchy
+ * Used for bulk operations and hierarchy validation
+ * 
+ * @param nodeId - Parent node identifier to start traversal from
+ * @param templateNodes - Complete array of template nodes to search
+ * @returns Array of all descendant nodes in depth-first order
  */
 export const getTemplateDescendants = (nodeId: string, templateNodes: TemplateNode[]): TemplateNode[] => {
   const descendants: TemplateNode[] = [];
@@ -121,7 +135,12 @@ export const getTemplateDescendants = (nodeId: string, templateNodes: TemplateNo
 };
 
 /**
- * Calculate intelligent position for template insertion
+ * Determines optimal insertion position to avoid overlapping existing rectangles
+ * Uses grid-aligned positioning with intelligent spacing calculation
+ * 
+ * @param existingRectangles - Current rectangles in the diagram
+ * @param globalSettings - Grid size and dimension settings for alignment
+ * @returns Calculated x,y coordinates for new template root
  */
 export const calculateTemplateInsertionPosition = (
   existingRectangles: Rectangle[],
@@ -135,10 +154,10 @@ export const calculateTemplateInsertionPosition = (
     return { x: 0, y: 0 };
   }
   
-  // Find the rightmost position
+  // Calculate rightmost boundary to avoid overlap
   const rightmost = Math.max(...existingRectangles.map(r => r.x + r.w));
   
-  // Calculate grid-aligned position with some spacing
+  // Apply grid-aligned spacing for visual consistency
   const spacing = globalSettings.gridSize * 2;
   const x = Math.ceil((rightmost + spacing) / globalSettings.gridSize) * globalSettings.gridSize;
   const y = 0; // Start at top
@@ -147,7 +166,17 @@ export const calculateTemplateInsertionPosition = (
 };
 
 /**
- * Convert template node to rectangle
+ * Transforms template node into diagram rectangle with proper styling and metadata
+ * Applies consistent sizing based on rectangle type and hierarchy position
+ * 
+ * @param templateNode - Source template node with name and description
+ * @param position - Target position coordinates in grid units
+ * @param size - Rectangle dimensions in grid units
+ * @param parentId - Parent rectangle ID for hierarchy establishment
+ * @param generateId - ID generation function for uniqueness
+ * @param type - Rectangle type determining visual appearance
+ * @param color - Background color for the rectangle
+ * @returns Complete Rectangle object ready for diagram insertion
  */
 export const templateNodeToRectangle = (
   templateNode: TemplateNode,
@@ -170,14 +199,29 @@ export const templateNodeToRectangle = (
     type,
     metadata: {
       description: templateNode.description,
-      tags: ['template'],
-      templateId: templateNode.id
+      tags: ['template'],  // Mark as template-derived for tracking
+      templateId: templateNode.id  // Preserve original template reference
     }
   };
 };
 
 /**
- * Insert template node and its descendants as rectangles
+ * Converts template hierarchy into rectangle diagram with intelligent layout
+ * Handles parent-child relationships, sizing, and positioning automatically
+ * 
+ * This is the main template-to-diagram conversion function that:
+ * - Maintains hierarchical relationships
+ * - Applies consistent sizing rules
+ * - Calculates intelligent positioning
+ * - Handles error recovery gracefully
+ * 
+ * @param templateNode - Root node of template subtree to insert
+ * @param templateNodes - Complete template node array for relationship resolution
+ * @param options - Insertion configuration (depth, positioning, styling)
+ * @param existingRectangles - Current diagram rectangles for collision avoidance
+ * @param generateId - Unique ID generator function
+ * @param globalSettings - Grid and sizing configuration
+ * @returns Result object with success status and created rectangle IDs
  */
 export const insertTemplateAsRectangles = (
   templateNode: TemplateNode,
@@ -195,12 +239,12 @@ export const insertTemplateAsRectangles = (
     const newRectangles: Rectangle[] = [];
     const rectangleIdMap = new Map<string, string>(); // template ID -> rectangle ID
     
-    // Get all nodes to insert (target node + descendants if requested)
+    // Determine insertion scope based on user preferences
     const nodesToInsert = options.includeChildren
       ? [templateNode, ...getTemplateDescendants(templateNode.id, templateNodes)]
       : [templateNode];
     
-    // Sort nodes by hierarchy level (parents first)
+    // Ensure parents are created before children to maintain referential integrity
     const sortedNodes = sortNodesByHierarchy(nodesToInsert);
     
     // Calculate starting position
@@ -209,12 +253,12 @@ export const insertTemplateAsRectangles = (
     
     let currentPosition = { ...startPosition };
     
-    // Convert each template node to rectangle
+    // Transform each template node into a positioned rectangle
     sortedNodes.forEach((node, index) => {
       const parentTemplateId = node.parent;
       const parentRectangleId = parentTemplateId ? rectangleIdMap.get(parentTemplateId) : undefined;
       
-      // Determine rectangle type
+      // Classify rectangle type based on hierarchy position and children
       const hasChildren = nodesToInsert.some(n => n.parent === node.id);
       const type: RectangleType = !node.parent ? 'root' : hasChildren ? 'parent' : 'leaf';
       
@@ -223,17 +267,17 @@ export const insertTemplateAsRectangles = (
         ? { w: globalSettings.leafWidth, h: globalSettings.leafHeight }
         : DEFAULT_RECTANGLE_SIZE.root;
       
-      // Calculate position
+      // Calculate optimal position based on hierarchy and existing layout
       let position = currentPosition;
       if (parentRectangleId) {
-        // For child nodes, use layout calculation
+        // Child positioning - use grid layout within parent bounds
         const parentRect = newRectangles.find(r => r.id === parentRectangleId);
         if (parentRect) {
           const siblingCount = newRectangles.filter(r => r.parentId === parentRectangleId).length;
           position = calculateChildPosition(parentRect, siblingCount, size, globalSettings.gridSize);
         }
       } else if (index > 0) {
-        // For root nodes after the first, offset horizontally
+        // Multiple root nodes - arrange horizontally with spacing
         currentPosition.x += size.w + globalSettings.gridSize * 2;
         position = currentPosition;
       }
@@ -275,7 +319,12 @@ export const insertTemplateAsRectangles = (
 };
 
 /**
- * Sort template nodes by hierarchy level (parents before children)
+ * Topologically sorts template nodes ensuring parents precede children
+ * Prevents referential integrity issues during rectangle creation
+ * Includes cycle detection to handle malformed template data gracefully
+ * 
+ * @param nodes - Array of template nodes to sort
+ * @returns Sorted array with parents before their children
  */
 const sortNodesByHierarchy = (nodes: TemplateNode[]): TemplateNode[] => {
   const sorted: TemplateNode[] = [];
@@ -296,10 +345,10 @@ const sortNodesByHierarchy = (nodes: TemplateNode[]): TemplateNode[] => {
       }
     }
     
-    // Prevent infinite loop if there are circular dependencies
+    // Detect circular dependencies and fail gracefully
     if (remaining.length === beforeLength) {
       console.warn('Circular dependency detected in template nodes, processing remaining nodes anyway');
-      sorted.push(...remaining);
+      sorted.push(...remaining);  // Include problematic nodes to prevent data loss
       break;
     }
   }
@@ -308,7 +357,14 @@ const sortNodesByHierarchy = (nodes: TemplateNode[]): TemplateNode[] => {
 };
 
 /**
- * Calculate position for child rectangle within parent
+ * Calculates grid-aligned position for child rectangle within parent bounds
+ * Uses simple grid layout with consistent margins and label spacing
+ * 
+ * @param parentRect - Parent rectangle defining container bounds
+ * @param childIndex - Zero-based index of child for grid positioning
+ * @param childSize - Dimensions of child rectangle in grid units
+ * @param gridSize - Base grid unit for alignment calculations
+ * @returns Calculated position coordinates within parent
  */
 const calculateChildPosition = (
   parentRect: Rectangle,
@@ -319,17 +375,19 @@ const calculateChildPosition = (
   const margin = gridSize;
   const labelMargin = gridSize * 2;
   
-  // Simple grid layout within parent
+  // Calculate grid dimensions based on available space
   const availableWidth = parentRect.w - (margin * 2);
   
   const cols = Math.floor(availableWidth / (childSize.w + margin));
-  const maxCols = Math.max(1, cols);
+  const maxCols = Math.max(1, cols);  // Ensure at least one column
   
+  // Convert linear index to 2D grid coordinates
   const col = childIndex % maxCols;
   const row = Math.floor(childIndex / maxCols);
   
+  // Calculate absolute position with proper margins
   const x = parentRect.x + margin + (col * (childSize.w + margin));
-  const y = parentRect.y + labelMargin + (row * (childSize.h + margin));
+  const y = parentRect.y + labelMargin + (row * (childSize.h + margin));  // Account for parent label space
   
   return { x, y };
 };

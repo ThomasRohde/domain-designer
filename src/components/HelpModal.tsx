@@ -6,11 +6,16 @@ interface HelpModalProps {
   onClose: () => void;
 }
 
+/**
+ * Comprehensive help documentation modal with tabbed navigation.
+ * Provides detailed guidance for all application features, keyboard shortcuts, and best practices.
+ */
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState<string>('getting-started');
 
   if (!isOpen) return null;
 
+  // Structured help content organized by functional areas
   const sections = [
     {
       id: 'getting-started',
@@ -368,7 +373,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         </div>
         
         <div className="flex-1 flex overflow-hidden">
-          {/* Sidebar */}
+          {/* Navigation sidebar with section selection */}
           <div className="w-64 border-r border-gray-200 overflow-y-auto">
             <nav className="p-4 space-y-1">
               {sections.map((section) => (

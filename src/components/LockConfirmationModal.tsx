@@ -9,6 +9,10 @@ interface LockConfirmationModalProps {
   rectangleLabel: string;
 }
 
+/**
+ * Modal for confirming layout lock behavior with two distinct options.
+ * Critical for preserving user manual positioning vs. applying automatic layout.
+ */
 const LockConfirmationModal: React.FC<LockConfirmationModalProps> = ({ 
   isOpen, 
   onClose, 
@@ -16,6 +20,7 @@ const LockConfirmationModal: React.FC<LockConfirmationModalProps> = ({
   onConfirmLockAsIs,
   rectangleLabel 
 }) => {
+  // Default to re-layout option as it's more commonly desired behavior
   const [lockType, setLockType] = useState<'lock-as-is' | 'lock-and-relayout'>('lock-and-relayout');
 
   if (!isOpen) return null;

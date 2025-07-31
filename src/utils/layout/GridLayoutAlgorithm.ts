@@ -117,15 +117,15 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
       const col = index % cols;
       const row = Math.floor(index / cols);
 
-      // Use individual child dimensions instead of uniform sizing
+      // Individual child dimensions within uniform grid cells
       const childWidth = childDimensions[index].width;
       const childHeight = childDimensions[index].height;
 
-      // Calculate grid cell position with proper spacing
+      // Calculate grid cell position with consistent spacing
       const gridCellX = parentRect.x + sideMargin + horizontalOffset + (col * (maxChildWidth + childSpacing));
       const gridCellY = parentRect.y + topMargin + verticalOffset + (row * (maxChildHeight + childSpacing));
       
-      // Center the individual rectangle within its grid cell, ensuring minimum margins
+      // Center child within its assigned grid cell for visual balance
       const availableCellWidth = maxChildWidth;
       const availableCellHeight = maxChildHeight;
       const centerOffsetX = Math.max(0, (availableCellWidth - childWidth) / 2);

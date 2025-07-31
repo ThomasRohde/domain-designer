@@ -2,6 +2,20 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAppStore } from '../stores/useAppStore';
 import type { Rectangle } from '../types/index';
 
+/**
+ * Zustand Store Integration Tests
+ * 
+ * Comprehensive test suite for the application's Zustand store covering:
+ * - Rectangle CRUD operations and hierarchy management
+ * - History system with undo/redo functionality
+ * - Settings management and persistence
+ * - Store getters and computed state
+ * 
+ * Tests use mocked dependencies (font detection, layout manager) to focus
+ * on store logic in isolation. All tests reset store state before running
+ * to ensure test independence.
+ */
+
 // Mock the font detection utility
 vi.mock('../utils/fontDetection', () => ({
   getAvailableFonts: vi.fn().mockResolvedValue([

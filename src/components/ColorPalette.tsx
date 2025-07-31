@@ -8,6 +8,10 @@ interface ColorPaletteProps {
   onUpdateColorSquare: (index: number, color: string) => void;
 }
 
+/**
+ * Interactive color palette with predefined colors and custom color picker.
+ * Supports both square selection and direct hex input for precise color control.
+ */
 const ColorPalette: React.FC<ColorPaletteProps> = ({
   selectedColor,
   onColorChange,
@@ -18,17 +22,16 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
   const [selectedSquareIndex, setSelectedSquareIndex] = useState<number | null>(null);
   const [hexInput, setHexInput] = useState('');
 
-  // Find if the selected rectangle color matches any predefined color
+  // Sync UI state with selected rectangle color and predefined palette
   useEffect(() => {
     if (selectedColor) {
       const matchingIndex = predefinedColors.findIndex(color => color === selectedColor);
       if (matchingIndex !== -1) {
         setSelectedSquareIndex(matchingIndex);
       } else {
-        // No match found, don't auto-select any square
+        // Custom color not in predefined palette
         setSelectedSquareIndex(null);
       }
-      // Update hex input to match selected color
       setHexInput(selectedColor);
     }
   }, [selectedColor, predefinedColors]);
@@ -54,16 +57,12 @@ const ColorPalette: React.FC<ColorPaletteProps> = ({
   };
 
   const handleCustomColorChange = (newColor: string) => {
-    // If no square is selected, select the bottom-right square (last index)
+    // Auto-select bottom-right square if no square currently selected
     const targetIndex = selectedSquareIndex !== null ? selectedSquareIndex : predefinedColors.length - 1;
     
-    // Update the specific color square
+    // Update both the palette square and apply color to rectangle
     onUpdateColorSquare(targetIndex, newColor);
-    
-    // Update the rectangle color
     onColorChange(newColor);
-    
-    // Keep the same square selected
     setSelectedSquareIndex(targetIndex);
   };
 

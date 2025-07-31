@@ -6,44 +6,64 @@ import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import './utils/pwaTestUtils' // Initialize PWA test utilities in development
 
-// Global update notification handler - will be set by App component
+/**
+ * Global PWA update notification handler state.
+ * Maintains connection between service worker update events and UI components.
+ * Set by the main App component during initialization.
+ */
 let globalShowUpdateNotification: ((updateSW: () => void) => void) | null = null;
 
-// Export function to set the update notification handler
+/**
+ * Configures the global update notification handler for PWA updates.
+ * Allows the service worker to trigger UI notifications when updates are available.
+ * @param handler Function to display update notifications to users
+ */
 export const setGlobalUpdateNotificationHandler = (handler: (updateSW: () => void) => void) => {
   globalShowUpdateNotification = handler;
   
-  // Make handler available for testing in development
+  // Expose handler globally in development for testing PWA update flows
   if (import.meta.env.DEV) {
     (window as typeof window & { globalShowUpdateNotification?: typeof handler }).globalShowUpdateNotification = handler;
   }
 };
 
-// Register service worker with enhanced update handling
+/**
+ * Progressive Web App service worker registration with update handling.
+ * Manages caching strategies, offline functionality, and version updates.
+ * Provides user-friendly notifications for available updates.
+ */
 const updateSW = registerSW({
   onNeedRefresh() {
     console.log('New content available - showing update notification');
-    // Show user-friendly update notification instead of just logging
+    // Display user-friendly update notification with action button
     if (globalShowUpdateNotification) {
       globalShowUpdateNotification(() => {
         console.log('User requested immediate update');
-        updateSW(true); // Force update immediately
+        updateSW(true); // Force immediate update and reload
       });
     } else {
-      // Fallback for when notification handler isn't ready yet
+      // Graceful fallback when UI handler isn't initialized yet
       console.log('Update notification handler not ready, will update on next app start');
     }
   },
   onOfflineReady() {
     console.log('App ready to work offline');
   },
-  immediate: true
+  immediate: true // Enable immediate SW registration for faster offline capability
 });
 
-// Get base path for GitHub Pages deployment
+/**
+ * Dynamic base path configuration for deployment environments.
+ * Handles GitHub Pages deployment with custom path while maintaining
+ * local development compatibility with root path.
+ */
 const basename = import.meta.env.PROD && import.meta.env.BASE_URL === '/domain-designer/' ? '/domain-designer' : '/';
 
-// Create root instance only once
+/**
+ * React 18 concurrent root initialization with rehydration safety.
+ * Prevents multiple root creation during hot module replacement in development.
+ * Caches root instance on DOM element to ensure single root per container.
+ */
 interface ContainerWithRoot extends HTMLElement {
   _reactRoot?: ReactDOM.Root;
 }

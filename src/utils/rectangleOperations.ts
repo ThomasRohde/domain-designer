@@ -3,7 +3,7 @@ import { DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE, MIN_WIDTH, MIN_HEIGHT } from '.
 import { getChildren } from './layoutUtils';
 
 /**
- * Fixed dimensions interface for rectangle operations
+ * Configuration for leaf rectangle dimension constraints
  */
 export interface FixedDimensions {
   leafFixedWidth: boolean;
@@ -13,7 +13,22 @@ export interface FixedDimensions {
 }
 
 /**
- * Create a new rectangle with proper defaults
+ * Factory function for rectangle creation with type inference
+ * 
+ * Automatically determines rectangle type based on context:
+ * - Text labels: Special rendering and sizing behavior
+ * - Root rectangles: No parent, can contain children
+ * - Leaf rectangles: Have parent, typically end nodes
+ * 
+ * @param id - Unique identifier for the rectangle
+ * @param x - X coordinate in grid units
+ * @param y - Y coordinate in grid units
+ * @param w - Width in grid units (enforced minimum)
+ * @param h - Height in grid units (enforced minimum)
+ * @param parentId - Optional parent rectangle ID
+ * @param label - Display text for the rectangle
+ * @param isTextLabel - Special text-only rectangle flag
+ * @returns Complete rectangle with inferred properties
  */
 export const createRectangle = (
   id: string,
@@ -49,7 +64,17 @@ export const createRectangle = (
 };
 
 /**
- * Update rectangle type based on its parent-child relationships
+ * Infer and update rectangle type based on hierarchy relationships
+ * 
+ * Type inference rules:
+ * - Root: No parent, may have children
+ * - Parent: Has parent and has children
+ * - Leaf: Has parent but no children
+ * - Text labels: Type preserved regardless of relationships
+ * 
+ * @param rectangles - Complete rectangle set for relationship analysis
+ * @param rectangleId - ID of rectangle to update
+ * @returns Updated rectangle array with corrected type
  */
 export const updateRectangleType = (
   rectangles: Rectangle[],
@@ -84,7 +109,17 @@ export const updateRectangleType = (
 };
 
 /**
- * Validate rectangle position within container bounds
+ * Clamp rectangle position within visible container bounds
+ * 
+ * Converts screen coordinates to grid coordinates and applies boundary
+ * constraints to prevent rectangles from being dragged outside the
+ * visible viewport area.
+ * 
+ * @param rect - Rectangle with current position
+ * @param containerRect - Container boundaries in screen coordinates
+ * @param panOffset - Current pan offset for coordinate conversion
+ * @param gridSize - Grid unit size for coordinate conversion
+ * @returns Clamped position in grid coordinates
  */
 export const validateRectanglePosition = (
   rect: Rectangle,
@@ -105,7 +140,14 @@ export const validateRectanglePosition = (
 };
 
 /**
- * Apply fixed dimensions to a rectangle based on settings
+ * Apply dimensional constraints to leaf rectangles
+ * 
+ * Only affects leaf rectangles when fixed dimensions are enabled.
+ * Enforces minimum size constraints to prevent unusably small rectangles.
+ * 
+ * @param rect - Rectangle to modify
+ * @param fixedDimensions - Dimension constraint configuration
+ * @returns Rectangle with applied size constraints
  */
 export const applyFixedDimensions = (
   rect: Rectangle,
@@ -134,14 +176,24 @@ export const applyFixedDimensions = (
 };
 
 /**
- * Get default size for a rectangle based on its type
+ * Retrieve type-specific default dimensions
+ * 
+ * @param type - Rectangle type identifier
+ * @returns Default width and height for the type
  */
 export const getDefaultRectangleSize = (type: RectangleType): { w: number; h: number } => {
   return DEFAULT_RECTANGLE_SIZE[type];
 };
 
 /**
- * Update all rectangle types in a collection based on their relationships
+ * Batch update all rectangle types based on current relationships
+ * 
+ * Processes entire rectangle set to ensure all types reflect current
+ * parent-child relationships. Used after bulk operations that may
+ * change hierarchy structure.
+ * 
+ * @param rectangles - Rectangle set to process
+ * @returns Updated rectangles with corrected types
  */
 export const updateAllRectangleTypes = (rectangles: Rectangle[]): Rectangle[] => {
   let updated = [...rectangles];
@@ -155,7 +207,16 @@ export const updateAllRectangleTypes = (rectangles: Rectangle[]): Rectangle[] =>
 };
 
 /**
- * Clone a rectangle with a new ID
+ * Create a copy of a rectangle with new identity and position
+ * 
+ * Preserves all properties except ID and position. Automatically
+ * resets editing state and adds copy indicator to label.
+ * 
+ * @param rect - Source rectangle to clone
+ * @param newId - Unique ID for the cloned rectangle
+ * @param offsetX - X position offset from original
+ * @param offsetY - Y position offset from original
+ * @returns New rectangle instance with copied properties
  */
 export const cloneRectangle = (
   rect: Rectangle,
@@ -174,7 +235,16 @@ export const cloneRectangle = (
 };
 
 /**
- * Check if a rectangle can be moved to a new parent
+ * Validate parent-child relationship changes for hierarchy integrity
+ * 
+ * Prevents:
+ * - Self-parenting (rectangle becoming its own parent)
+ * - Circular dependencies (moving rectangle to its own descendant)
+ * 
+ * @param rectangleId - Rectangle being moved
+ * @param newParentId - Proposed new parent (undefined for root)
+ * @param rectangles - Complete rectangle set for relationship validation
+ * @returns true if the parent change is valid
  */
 export const canMoveToParent = (
   rectangleId: string,
@@ -207,7 +277,15 @@ export const canMoveToParent = (
 };
 
 /**
- * Get rectangle bounds including all descendants
+ * Calculate bounding box encompassing rectangle and all descendants
+ * 
+ * Recursively traverses hierarchy to find the minimal bounding box
+ * that contains the specified rectangle and all its children, grandchildren, etc.
+ * Used for hierarchy drag operations and export bounds calculation.
+ * 
+ * @param rectangleId - Root rectangle ID for bounds calculation
+ * @param rectangles - Complete rectangle set for traversal
+ * @returns Bounding box coordinates and dimensions
  */
 export const getRectangleBounds = (
   rectangleId: string,

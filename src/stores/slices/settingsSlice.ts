@@ -34,17 +34,19 @@ const INITIAL_PREDEFINED_COLORS = [
 ];
 
 /**
- * Settings state slice interface
+ * Settings state slice managing global application configuration.
+ * Handles font detection, color management, layout algorithms, and
+ * visual styling with automatic layout updates and state persistence.
  */
 export interface SettingsSlice {
   settings: GlobalSettings & {
-    availableFonts: FontOption[];
-    fontsLoading: boolean;
-    customColors: string[];
-    isRestoring: boolean;
+    availableFonts: FontOption[];      // Detected system fonts
+    fontsLoading: boolean;             // Font detection in progress
+    customColors: string[];            // User-defined color palette additions
+    isRestoring: boolean;              // Prevents layout updates during data restore
   };
   settingsActions: SettingsActions & {
-    // Additional computed values and utilities
+    // Computed values and specialized utilities
     getFixedDimensions: () => FixedDimensions;
     calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
     setIsRestoring: (isRestoring: boolean) => void;
@@ -56,7 +58,11 @@ export interface SettingsSlice {
  * Creates the settings slice for the store
  */
 export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
-  // Initialize font loading
+  /**
+   * Asynchronous font detection with fallback handling.
+   * Detects available system fonts for the font picker UI.
+   * Falls back to standard web fonts if detection fails.
+   */
   const loadFonts = async () => {
     try {
       const fonts = await getAvailableFonts();
@@ -68,6 +74,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         }
       }));
     } catch {
+      // Fallback to web-safe fonts if detection fails
       set(state => ({
         settings: {
           ...state.settings,
@@ -194,6 +201,11 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         });
       },
 
+      /**
+       * Toggle fixed width for leaf rectangles with automatic layout updates.
+       * When enabled, applies the fixed width to all existing leaf rectangles
+       * and triggers parent layout recalculation to maintain visual consistency.
+       */
       handleLeafFixedWidthChange: (enabled: boolean, skipLayoutUpdates = false) => {
         const state = get();
         
@@ -205,23 +217,23 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         }));
 
         if (enabled) {
-          // Apply fixed width to all existing leaf nodes
+          // Apply fixed width constraint to all existing leaf rectangles
           const updatedRectangles = state.rectangles.map(rect => 
             rect.type === 'leaf' ? { ...rect, w: state.settings.leafWidth } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));
           
-          // Trigger layout update for parents if needed
+          // Cascade layout updates to parent rectangles (unless restoring)
           if (!state.settings.isRestoring && !skipLayoutUpdates) {
-            // Find parents that need layout updates
+            // Identify parents requiring layout recalculation
             const parentsToUpdate = updatedRectangles.filter(rect => 
               (rect.type === 'parent' || rect.type === 'root') && 
               !rect.isManualPositioningEnabled &&
               getChildren(rect.id, updatedRectangles).length > 0
             );
             
-            // Use fitToChildren for each parent
+            // Trigger automatic resizing for affected parents
             parentsToUpdate.forEach(parent => {
               state.rectangleActions.fitToChildren(parent.id);
             });
@@ -520,13 +532,18 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         };
       },
 
+      /**
+       * Calculate dynamic font size based on rectangle hierarchy depth.
+       * Implements visual hierarchy by scaling font size down with nesting depth.
+       * Prevents infinite recursion and maintains readability with minimum size limits.
+       */
       calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => {
         const state = get();
         const { dynamicFontSizing, rootFontSize } = state.settings;
         
         if (!dynamicFontSizing) return rootFontSize;
         
-        // Helper function to calculate hierarchy depth
+        // Calculate hierarchy depth with cycle detection
         const getDepth = (rectId: string): number => {
           const rect = rectangles.find(r => r.id === rectId);
           if (!rect || !rect.parentId) return 0;
@@ -537,7 +554,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
           while (current && current.parentId) {
             depth++;
             const parent = rectangles.find(r => r.id === current!.parentId);
-            if (!parent || depth > 10) break; // Prevent infinite loops
+            if (!parent || depth > 10) break; // Prevent infinite loops in corrupted data
             current = parent;
           }
           
@@ -545,7 +562,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         };
         
         const depth = getDepth(rectangleId);
-        // Scale down font size by 10% for each level of depth, minimum 60% of root size
+        // Progressive font scaling: 10% smaller per level, minimum 60% of root size
         return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
       },
 

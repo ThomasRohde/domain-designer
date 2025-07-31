@@ -15,15 +15,15 @@ export const UpdateNotification: React.FC<UpdateNotificationProps> = ({ updateNo
 
   const handleUpdateNow = useCallback(() => {
     if (updateServiceWorker && !isUpdating) {
-      // Set updating state
+      // Set updating state to provide immediate user feedback
       updateNotification.isUpdating = true;
       
       try {
         updateServiceWorker();
-        // The page will reload automatically after service worker update
+        // PWA will automatically reload page after service worker activates
       } catch (error) {
         console.error('Failed to update service worker:', error);
-        // Reset updating state on error
+        // Reset updating state on error to allow retry
         updateNotification.isUpdating = false;
       }
     }

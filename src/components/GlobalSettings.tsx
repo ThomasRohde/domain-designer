@@ -23,6 +23,11 @@ interface GlobalSettingsProps {
   fontsLoading: boolean;
 }
 
+/**
+ * Global Settings panel providing comprehensive configuration for the diagram application.
+ * Manages layout algorithms, visual styling, font settings, and spacing controls.
+ * All settings are persisted and affect both canvas display and export output.
+ */
 const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   gridSize,
   showGrid,
@@ -42,7 +47,6 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
   availableFonts,
   fontsLoading
 }) => {
-  // Access store actions
   const settingsActions = useAppStore(state => state.settingsActions);
   return (
     <div className="bg-white rounded-lg shadow p-3 lg:p-4">
@@ -54,9 +58,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
         </h3>
       </div>
 
-      {/* Layout Algorithm Control */}
       <div className="space-y-3">
-        {/* Layout Algorithm Selector */}
+        {/* Primary layout algorithm selection affects all container arrangements */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Layout Algorithm
@@ -70,6 +73,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             <option value="flow">Flow Layout</option>
             <option value="mixed-flow">Mixed Flow Layout</option>
           </select>
+          {/* Algorithm descriptions help users understand layout behavior differences */}
           <div className="text-xs text-gray-500 mt-1">
             {layoutAlgorithm === 'grid' ? 
               'Traditional grid-based layout with fixed positioning' : 
@@ -124,7 +128,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
         </div>
 
 
-        {/* Leaf Node Settings */}
+        {/* Leaf node constraints override auto-sizing for terminal rectangles */}
         <div className="border-t pt-2 mt-2">
           <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <Lock size={12} className="text-gray-600" />
@@ -274,7 +278,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               </div>
             </div>
 
-            {/* Dynamic Font Sizing */}
+            {/* Dynamic font sizing improves readability by reducing font size at deeper hierarchy levels */}
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-xs text-gray-700">Dynamic Font Sizing</label>

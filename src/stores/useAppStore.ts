@@ -14,11 +14,14 @@ import { createHistorySlice } from './slices/historySlice';
 import { createAutoSaveSlice } from './slices/autoSaveSlice';
 
 /**
- * Creates the complete app store by combining all slices
+ * Creates the unified application store by composing domain-specific slices.
+ * Each slice manages a specific aspect of the application state while maintaining
+ * loose coupling and clear separation of concerns. This architecture enables
+ * modular development and easier testing of individual domains.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createAppStore = (set: any, get: any, api: any): AppStore => {
-  // Create individual slices
+  // Initialize domain-specific state slices
   const rectangleSlice = createRectangleSlice(set, get, api);
   const uiSlice = createUISlice(set, get, api);
   const settingsSlice = createSettingsSlice(set, get, api);
@@ -27,7 +30,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
   const autoSaveSlice = createAutoSaveSlice(set, get, api);
 
   return {
-    // State from slices
+    // Core application state composed from individual slices
     rectangles: rectangleSlice.rectangles,
     selectedId: rectangleSlice.selectedId,
     nextId: rectangleSlice.nextId,
@@ -37,7 +40,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
     history: historySlice.history,
     autoSave: autoSaveSlice.autoSave,
 
-    // Actions from slices
+    // Action collections organized by domain responsibility
     rectangleActions: rectangleSlice.rectangleActions,
     uiActions: uiSlice.uiActions,
     settingsActions: settingsSlice.settingsActions,
@@ -45,7 +48,11 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
     historyActions: historySlice.historyActions,
     autoSaveActions: autoSaveSlice.autoSaveActions,
 
-    // Computed getters
+    /**
+     * Computed getters providing derived state and cross-slice calculations.
+     * These getters encapsulate business logic that spans multiple slices
+     * and provide a consistent API for components to access computed values.
+     */
     getters: {
       canUndo: () => {
         const state = get();
@@ -78,20 +85,25 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
         return descendantIds.map(id => state.rectangles.find((r: Rectangle) => r.id === id)).filter(Boolean) as Rectangle[];
       },
 
+      /**
+       * Validates whether a rectangle can be reparented to a new parent.
+       * Enforces business rules: no circular dependencies, no text label parents,
+       * and maintains hierarchy integrity.
+       */
       canReparent: (childId: string, newParentId: string | null) => {
         const state = get();
         const { rectangles } = state;
         
-        // Can't reparent to itself
+        // Prevent self-parenting (circular reference)
         if (childId === newParentId) return false;
         
-        // Can't reparent to one of its descendants
+        // Prevent reparenting to descendants (would create cycle)
         if (newParentId) {
           const descendants = getAllDescendants(childId, rectangles);
           if (descendants.includes(newParentId)) return false;
         }
         
-        // Can't reparent to text labels
+        // Text labels cannot have children (business rule)
         if (newParentId) {
           const targetParent = rectangles.find((r: Rectangle) => r.id === newParentId);
           if (targetParent?.isTextLabel) return false;
@@ -108,11 +120,17 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
   };
 };
 
-// Auto-save subscription will be initialized separately
+/**
+ * Auto-save subscription management for reactive data persistence.
+ * Tracks changes to rectangles and settings, automatically saving to IndexedDB
+ * when modifications occur. Subscription is managed separately from store creation.
+ */
 let autoSaveUnsubscribe: (() => void) | null = null;
 
 /**
- * Main app store hook with DevTools integration and settings persistence
+ * Main application store with Zustand middleware stack.
+ * Combines subscribeWithSelector for reactive subscriptions, DevTools for debugging,
+ * persist for settings storage, and immer for immutable state updates.
  */
 export const useAppStore = create<AppStore>()(
   subscribeWithSelector(
@@ -122,7 +140,11 @@ export const useAppStore = create<AppStore>()(
         {
           name: 'domain-designer-settings',
           storage: createJSONStorage(() => localStorage),
-          // Only persist settings state
+          /**
+           * Selective state persistence - only settings are persisted.
+           * Rectangle data and UI state are handled by the IndexedDB auto-save system
+           * to separate user preferences from working data.
+           */
           partialize: (state) => ({
             settings: {
               gridSize: state.settings.gridSize,
@@ -144,13 +166,17 @@ export const useAppStore = create<AppStore>()(
               customColors: state.settings.customColors
             }
           }),
-          // Don't persist certain transient state
+          /**
+           * Post-rehydration cleanup and initialization.
+           * Resets transient state that shouldn't persist across sessions
+           * and triggers necessary re-initialization processes.
+           */
           onRehydrateStorage: () => (state) => {
             if (state) {
-              // Reset transient properties after rehydration
+              // Reset transient font loading state
               state.settings.fontsLoading = true;
               state.settings.isRestoring = false;
-              // Reload fonts after rehydration
+              // Re-detect available fonts after browser restart
               state.settingsActions.reloadFonts();
             }
           }
@@ -161,22 +187,27 @@ export const useAppStore = create<AppStore>()(
   )
 );
 
-// Export a function to initialize auto-save subscriptions
+/**
+ * Initializes reactive auto-save subscriptions for data persistence.
+ * Monitors changes to rectangles and settings, automatically triggering
+ * IndexedDB saves when modifications occur. Uses deep equality checking
+ * to prevent unnecessary save operations.
+ */
 export const initializeAutoSaveSubscription = () => {
   if (autoSaveUnsubscribe) {
     autoSaveUnsubscribe();
   }
   
-  // Subscribe to changes in rectangles and settings that should trigger auto-save
+  // Subscribe to state changes that require persistence
   autoSaveUnsubscribe = useAppStore.subscribe(
     (state) => ({ rectangles: state.rectangles, settings: state.settings }),
     (current, previous) => {
-      // Only trigger save if rectangles or settings actually changed
+      // Deep equality check to avoid saves on reference changes without content changes
       const rectanglesChanged = JSON.stringify(current.rectangles) !== JSON.stringify(previous.rectangles);
       const settingsChanged = JSON.stringify(current.settings) !== JSON.stringify(previous.settings);
       
       if (rectanglesChanged || settingsChanged) {
-        // Get fresh state and trigger save
+        // Trigger IndexedDB save with current state
         const state = useAppStore.getState();
         state.autoSaveActions.saveData();
       }
@@ -189,7 +220,11 @@ export const initializeAutoSaveSubscription = () => {
   return autoSaveUnsubscribe;
 };
 
-// Export cleanup function
+/**
+ * Cleanup function for auto-save subscriptions.
+ * Should be called when the application is unmounting or during
+ * testing to prevent memory leaks and unwanted side effects.
+ */
 export const cleanupAutoSaveSubscription = () => {
   if (autoSaveUnsubscribe) {
     autoSaveUnsubscribe();
@@ -197,5 +232,5 @@ export const cleanupAutoSaveSubscription = () => {
   }
 };
 
-// Export store type for use in components
+// Export store type for TypeScript inference in components
 export type { AppStore } from './types';

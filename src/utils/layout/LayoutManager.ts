@@ -4,8 +4,11 @@ import { layoutAlgorithmFactory } from './LayoutAlgorithmFactory';
 import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT } from '../constants';
 
 /**
- * Central layout management class that uses the factory pattern
- * to handle different layout algorithms
+ * Central layout coordinator implementing the Strategy pattern
+ * 
+ * Manages algorithm selection, coordinates layout calculations, and provides
+ * a unified interface for all layout operations. Handles algorithm switching
+ * and delegates complex layout tasks to specialized algorithm implementations.
  */
 export class LayoutManager {
   private currentAlgorithmType: LayoutAlgorithmType = 'grid';
@@ -17,14 +20,21 @@ export class LayoutManager {
   }
 
   /**
-   * Get the current layout algorithm type
+   * Get active algorithm identifier
+   * 
+   * @returns Currently selected algorithm type string
    */
   getCurrentAlgorithmType(): LayoutAlgorithmType {
     return this.currentAlgorithmType;
   }
 
   /**
-   * Switch to a different layout algorithm
+   * Change active layout algorithm with lazy instantiation
+   * 
+   * Only creates new algorithm instance if type differs from current.
+   * Maintains algorithm state consistency across layout operations.
+   * 
+   * @param type - Algorithm identifier to activate
    */
   setAlgorithm(type: LayoutAlgorithmType): void {
     if (type !== this.currentAlgorithmType) {
@@ -34,14 +44,27 @@ export class LayoutManager {
   }
 
   /**
-   * Get available algorithm types
+   * List all registered algorithm types
+   * 
+   * @returns Array of available algorithm identifiers
    */
   getAvailableAlgorithms(): LayoutAlgorithmType[] {
     return layoutAlgorithmFactory.getAvailableTypes();
   }
 
   /**
-   * Calculate layout for children within a parent rectangle
+   * Perform layout calculation using active algorithm
+   * 
+   * Coordinates the layout process by calculating parent depth, preparing
+   * input parameters, and delegating to the active algorithm. Handles
+   * depth-dependent layout decisions (e.g., flow orientation alternation).
+   * 
+   * @param parentRect - Parent rectangle defining boundaries
+   * @param children - Child rectangles to arrange
+   * @param fixedDimensions - Optional fixed sizing for leaf nodes
+   * @param margins - Spacing configuration
+   * @param allRectangles - Complete rectangle set for hierarchy navigation
+   * @returns Array of positioned child rectangles
    */
   calculateChildLayout(
     parentRect: Rectangle,
@@ -75,7 +98,17 @@ export class LayoutManager {
   }
 
   /**
-   * Calculate minimum parent size needed to fit children
+   * Calculate optimal parent sizing for fit-to-children operations
+   * 
+   * Finds parent rectangle, determines its children, and delegates to
+   * the active algorithm for minimum size calculation. Used for automatic
+   * parent resizing and validation of space requirements.
+   * 
+   * @param parentId - ID of parent rectangl to size
+   * @param rectangles - Complete rectangle set for relationship lookup
+   * @param fixedDimensions - Optional fixed sizing for leaf nodes
+   * @param margins - Spacing configuration
+   * @returns Minimum required parent dimensions
    */
   calculateMinimumParentSize(
     parentId: string,
@@ -116,7 +149,11 @@ export class LayoutManager {
   }
 
   /**
-   * Calculate grid dimensions based on layout preferences
+   * Delegate grid dimension calculation to active algorithm
+   * 
+   * @param childrenCount - Number of items to arrange
+   * @param layoutPreferences - Optional grid constraints
+   * @returns Optimal grid dimensions for current algorithm
    */
   calculateGridDimensions(
     childrenCount: number,
@@ -126,7 +163,17 @@ export class LayoutManager {
   }
 
   /**
-   * Calculate initial position and size for a new rectangle
+   * Calculate optimal placement for newly created rectangles
+   * 
+   * Determines appropriate position and size for new rectangles based on
+   * parent context. For child rectangles, calculates grid-based positioning
+   * within parent bounds. For root rectangles, places adjacent to existing content.
+   * 
+   * @param parentId - Parent ID (null for root rectangles)
+   * @param rectangles - Existing rectangles for context
+   * @param defaultSizes - Default dimensions by rectangle type
+   * @param margins - Spacing configuration
+   * @returns Initial position and dimensions for new rectangle
    */
   calculateNewRectangleLayout(
     parentId: string | null,
@@ -200,7 +247,9 @@ export class LayoutManager {
   }
 
   /**
-   * Get information about the current algorithm
+   * Get metadata about the active algorithm
+   * 
+   * @returns Name and description of currently selected algorithm
    */
   getCurrentAlgorithmInfo(): { name: string; description: string } {
     return {
@@ -210,7 +259,9 @@ export class LayoutManager {
   }
 
   /**
-   * Get information about all available algorithms
+   * Get metadata for all registered algorithms
+   * 
+   * @returns Array of algorithm metadata for UI display
    */
   getAllAlgorithmInfo(): Array<{ type: LayoutAlgorithmType; name: string; description: string }> {
     return this.getAvailableAlgorithms().map(type => {
@@ -224,7 +275,14 @@ export class LayoutManager {
   }
 
   /**
-   * Calculate the depth of a rectangle in the hierarchy
+   * Traverse parent chain to determine hierarchy depth
+   * 
+   * Used for depth-dependent layout decisions (e.g., flow orientation alternation).
+   * Implements cycle detection to prevent infinite loops in malformed hierarchies.
+   * 
+   * @param rect - Rectangle to calculate depth for
+   * @param allRectangles - Complete rectangle set for parent lookup
+   * @returns Depth level (0 = root, 1 = first child level, etc.)
    */
   private calculateDepth(rect: Rectangle, allRectangles?: Rectangle[]): number {
     // If no parent, this is a root rectangle

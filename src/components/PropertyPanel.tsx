@@ -9,11 +9,24 @@ export interface PropertyPanelProps {
   // No props needed - component will access store directly
 }
 
+/**
+ * Adaptive property panel that displays different content based on selection state:
+ * - When a rectangle is selected: Shows rectangle-specific properties (color, layout, text settings)
+ * - When no selection: Shows global application settings
+ * 
+ * Features context-aware UI sections:
+ * - Color picker with predefined palette and custom color management
+ * - Text label mode controls for typography-focused rectangles
+ * - Layout preferences for parent rectangles with advanced fill strategies
+ * - Rectangle information display with hierarchy details
+ */
 const PropertyPanel: React.FC<PropertyPanelProps> = () => {
-  // Access store state and actions
+  // Core application state for selected rectangle and settings
   const selectedId = useAppStore(state => state.selectedId);
   const rectangles = useAppStore(state => state.rectangles);
   const settings = useAppStore(state => state.settings);
+  
+  // Rectangle manipulation actions
   const updateRectangleColor = useAppStore(state => state.rectangleActions.updateRectangleColor);
   const updateRectangleLayoutPreferences = useAppStore(state => state.rectangleActions.updateRectangleLayoutPreferences);
   const toggleTextLabel = useAppStore(state => state.rectangleActions.toggleTextLabel);
@@ -44,12 +57,13 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   } = settings;
 
 
+  // Conditional rendering: selected rectangle properties vs global settings
   if (selectedId && selectedRectangle) {
-    // Node is selected: Show color picker and node details
     const children = useAppStore.getState().getters.getChildren(selectedId);
     
     return (
       <>
+        {/* Color selection interface with palette and custom color support */}
         <ColorPalette
           selectedColor={selectedRectangle.color}
           onColorChange={(color) => updateRectangleColor(selectedId, color)}
@@ -57,6 +71,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           onUpdateColorSquare={updateColorSquare}
         />
 
+        {/* Rectangle information panel showing key properties and hierarchy context */}
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
           <div className="text-xs lg:text-sm text-gray-600 space-y-1">
@@ -71,7 +86,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           </div>
         </div>
 
-        {/* Text Label Mode Controls - only show for rectangles without children */}
+        {/* Text Label Mode: Typography controls for leaf rectangles (no children) */}
         {children.length === 0 && (
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="font-semibold mb-2 text-sm lg:text-base">Text Label Mode</h3>
@@ -157,6 +172,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           </div>
         )}
 
+        {/* Layout Preferences: Advanced layout controls for parent rectangles */}
         {children.length > 0 && (
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="font-semibold mb-2 text-sm lg:text-base">Layout Preferences</h3>
@@ -169,8 +185,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
                   className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
                   value={selectedRectangle.layoutPreferences?.fillStrategy || 'default'}
                   onChange={(e) => {
+                    /* Layout preference change handler with default fallback logic */
                     if (e.target.value === 'default') {
-                      // Set to default behavior (fill columns first)
                       const newPreferences: LayoutPreferences = {
                         fillStrategy: 'fill-columns-first'
                       };
@@ -190,6 +206,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
                 </select>
               </div>
 
+              {/* Conditional layout constraint controls based on selected fill strategy */}
               {selectedRectangle.layoutPreferences?.fillStrategy === 'fill-rows-first' && (
                 <div>
                   <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
@@ -246,7 +263,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
     );
   }
 
-  // No node selected: Show global settings
+  // Default state: Display global application settings when no rectangle is selected
   return (
     <GlobalSettings
       gridSize={gridSize}

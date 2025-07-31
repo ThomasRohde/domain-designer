@@ -2,10 +2,17 @@ import { useCallback } from 'react';
 import { Rectangle, FixedDimensions } from '../types';
 import { LayoutMetadata, shouldPreserveExactLayout } from '../types/layoutSnapshot';
 
+/**
+ * Props for useDimensionEngine hook
+ */
 export interface UseDimensionEngineProps {
   getFixedDimensions: () => FixedDimensions;
 }
 
+/**
+ * Return interface for useDimensionEngine hook
+ * Provides dimension management operations with metadata awareness
+ */
 export interface UseDimensionEngineReturn {
   applyFixedDimensions: (rectangles: Rectangle[], layoutMetadata?: LayoutMetadata) => Rectangle[];
   updateLeafDimensions: (rectangles: Rectangle[], fixedDimensions: FixedDimensions, layoutMetadata?: LayoutMetadata) => Rectangle[];
@@ -16,20 +23,26 @@ export const useDimensionEngine = ({
   getFixedDimensions
 }: UseDimensionEngineProps): UseDimensionEngineReturn => {
   
-  // Check if dimensions can be updated based on layout metadata
+  /**
+   * Determines if dimension updates should proceed based on metadata
+   * Prevents dimension changes during layout preservation periods
+   */
   const canUpdateDimensions = useCallback((layoutMetadata?: LayoutMetadata): boolean => {
     if (!layoutMetadata) return true;
     
-    // Don't update dimensions if layout should be preserved exactly
+    // Preserve exact dimensions during import/restore operations
     return !shouldPreserveExactLayout(layoutMetadata);
   }, []);
 
-  // Apply fixed dimensions to leaf rectangles only if allowed
+  /**
+   * Applies global fixed dimension settings to leaf rectangles
+   * Enforces consistent sizing for terminal nodes in the hierarchy
+   */
   const applyFixedDimensions = useCallback((
     rectangles: Rectangle[], 
     layoutMetadata?: LayoutMetadata
   ): Rectangle[] => {
-    // Don't modify dimensions if layout should be preserved
+    // Skip dimension modifications when preservation is required
     if (!canUpdateDimensions(layoutMetadata)) {
       return rectangles;
     }
@@ -55,13 +68,16 @@ export const useDimensionEngine = ({
     });
   }, [getFixedDimensions, canUpdateDimensions]);
 
-  // Update leaf dimensions based on settings
+  /**
+   * Updates leaf rectangle dimensions based on provided constraints
+   * Alternative to applyFixedDimensions with explicit parameters
+   */
   const updateLeafDimensions = useCallback((
     rectangles: Rectangle[], 
     fixedDimensions: FixedDimensions,
     layoutMetadata?: LayoutMetadata
   ): Rectangle[] => {
-    // Don't modify dimensions if layout should be preserved
+    // Skip dimension modifications when preservation is required
     if (!canUpdateDimensions(layoutMetadata)) {
       return rectangles;
     }

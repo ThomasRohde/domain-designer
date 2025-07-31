@@ -1,7 +1,18 @@
 import '@testing-library/jest-dom';
 import { vi, beforeEach } from 'vitest';
 
-// Mock localStorage
+/**
+ * Test Environment Setup
+ * 
+ * Configures Vitest testing environment with necessary browser API mocks:
+ * - localStorage for settings persistence testing
+ * - matchMedia for responsive design tests  
+ * - ResizeObserver for component size tracking
+ * 
+ * All mocks are reset before each test to ensure test isolation.
+ */
+
+// Mock browser storage API for settings persistence tests
 const localStorageMock = {
   getItem: vi.fn(),
   setItem: vi.fn(),
@@ -15,7 +26,7 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 });
 
-// Mock matchMedia
+// Mock matchMedia API for responsive design and media query tests
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation(query => ({
@@ -30,14 +41,14 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Mock ResizeObserver
+// Mock ResizeObserver for component size tracking tests
 (globalThis as typeof globalThis & { ResizeObserver: unknown }).ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
 
-// Clear all mocks before each test
+// Reset all mock states before each test to ensure isolation
 beforeEach(() => {
   vi.clearAllMocks();
 });

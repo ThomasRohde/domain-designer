@@ -6,8 +6,11 @@ import { useAppStore } from '../stores/useAppStore';
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ActionButtonsOverlayProps {}
 
+/**
+ * Floating action buttons overlay for selected rectangles.
+ * Provides quick access to common operations: add child, remove, fit to children, and manual positioning toggle.
+ */
 const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
-  // Get state from store
   const selectedId = useAppStore(state => state.selectedId);
   const rectangles = useAppStore(state => state.rectangles);
   const gridSize = useAppStore(state => state.settings.gridSize);
@@ -16,20 +19,18 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const isHierarchyDragging = useAppStore(state => state.canvasActions.isHierarchyDragging());
   const isKeyboardMoving = useAppStore(state => state.canvas.isKeyboardMoving);
   
-  // Get actions from store
   const addRectangle = useAppStore(state => state.rectangleActions.addRectangle);
   const removeRectangle = useAppStore(state => state.rectangleActions.removeRectangle);
   const fitToChildren = useAppStore(state => state.rectangleActions.fitToChildren);
   const toggleManualPositioning = useAppStore(state => state.rectangleActions.toggleManualPositioning);
   const showLockConfirmationModal = useAppStore(state => state.uiActions.showLockConfirmationModal);
   
-  // Get computed values
   const getChildren = useAppStore(state => state.getters.getChildren);
   
-  // Calculate derived state
   const selectedRectangle = selectedId ? rectangles.find(r => r.id === selectedId) : null;
   const childCount = selectedId ? getChildren(selectedId).length : 0;
-  // Hide action buttons during any drag/resize/keyboard movement operation
+  
+  // Hide overlay during interactive operations to prevent interference
   if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging || isKeyboardMoving) {
     return null;
   }
@@ -38,20 +39,20 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const hasChildren = childCount > 0;
   const isManualPositioningEnabled = rect.isManualPositioningEnabled ?? false;
 
-  // Calculate button position (panOffset is now handled by CSS transform)
+  // Position buttons at top-right of rectangle, accounting for label space
   const rectX = rect.x * gridSize;
   const rectY = rect.y * gridSize;
   const rectWidth = rect.w * gridSize;
 
   const buttonStyle: React.CSSProperties = {
     position: 'absolute',
-    left: rectX + rectWidth - 8, // Position 8px from the right edge of the rectangle
-    top: hasChildren ? rectY + (LABEL_MARGIN * 2) : rectY + 4, // 4px from top for leaf nodes
-    zIndex: 100000, // Very high z-index to ensure visibility
+    left: rectX + rectWidth - 8,
+    top: hasChildren ? rectY + (LABEL_MARGIN * 2) : rectY + 4,
+    zIndex: 100000, // Above all other elements
     pointerEvents: 'auto',
     display: 'flex',
     gap: '4px',
-    transform: 'translateX(-100%)' // Move the buttons to align their right edge with the positioning point
+    transform: 'translateX(-100%)' // Right-align buttons
   };
 
   return (

@@ -23,15 +23,18 @@ import ClearDataConfirmationModal from './ClearDataConfirmationModal';
 import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
 
-// Set global flag immediately to prevent old auto-save system conflicts
-// This must be done before any hooks run to prevent race conditions
+/**
+ * Global flag to prevent legacy auto-save system conflicts during migration.
+ * Set immediately before React hooks initialization to avoid race conditions
+ * between old localStorage-based and new Zustand-based auto-save systems.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__ZUSTAND_AUTO_SAVE_ENABLED__ = true;
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Get rectangle data and actions from Zustand store
+  // Core rectangle state and operations from centralized Zustand store
   const rectangles = useAppStore(state => state.rectangles);
   const selectedId = useAppStore(state => state.selectedId);
   const { 
@@ -51,24 +54,28 @@ const HierarchicalDrawingApp = () => {
   const { findRectangle /* , canReparent */ } = useAppStore(state => state.getters); // MIGRATION: canReparent not used directly anymore
   const { undo, redo, initializeHistory } = useAppStore(state => state.historyActions);
 
-  // Get UI state and actions from Zustand store
+  // UI state management for modals, menus, and responsive behavior
   const ui = useAppStore(state => state.ui);
   const uiActions = useAppStore(state => state.uiActions);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [clearDataModalOpen, setClearDataModalOpen] = useState(false);
   
-  // Auto-save state from store
+  // IndexedDB-based auto-save system for data persistence across sessions
   const autoSaveState = useAppStore(state => state.autoSave);
   const autoSaveActions = useAppStore(state => state.autoSaveActions);
   
-  // Get settings from Zustand store
+  // Global application settings including layout, fonts, and visual styling
   const settings = useAppStore(state => state.settings);
   const settingsActions = useAppStore(state => state.settingsActions);
 
-  // Get store state for import functionality
+  // Rectangle ID counter for generating unique identifiers during import
   const nextId = useAppStore(state => state.nextId);
 
-  // Create wrapper for TemplatePage compatibility
+  /**
+   * Wrapper to maintain compatibility with TemplatePage component's setState pattern.
+   * Handles both direct state updates and functional updates while ensuring
+   * all changes are tracked in the undo/redo history system.
+   */
   const setRectanglesWrapper = useCallback((value: React.SetStateAction<Rectangle[]>) => {
     if (typeof value === 'function') {
       const current = useAppStore.getState().rectangles;
@@ -78,11 +85,7 @@ const HierarchicalDrawingApp = () => {
     }
   }, [setRectanglesWithHistory]);
 
-  // Canvas interactions now handled directly by the store
-
-  // Direct store access eliminates need for refs
-
-  // Event handlers
+  // Event handlers for user interactions
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -118,7 +121,11 @@ const HierarchicalDrawingApp = () => {
     }
   }, [selectedId, removeRectangle]);
 
-  // Simplified import handler using direct store access
+  /**
+   * Handles JSON file import with comprehensive validation and error recovery.
+   * Process: file selection → validation → data processing → store update → auto-save.
+   * Includes safeguards against corrupted data and maintains system consistency.
+   */
   const handleImport = useCallback(() => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -128,19 +135,19 @@ const HierarchicalDrawingApp = () => {
       if (!file) return;
       
       try {
-        // Disable auto-save during import
+        // Temporarily disable auto-save to prevent partial state saves during import
         autoSaveActions.setEnabled(false);
         
-        // Import and validate the data
+        // Parse and validate imported JSON against current schema
         const importedData: ImportedDiagramData = await importDiagramFromJSON(file);
         
-        // Process imported data with comprehensive validation and fixing
+        // Validate and repair data structure, generate new IDs to prevent conflicts
         const { rectangles: processedRectangles, nextId: newNextId } = processImportedDiagram(
           importedData, 
           nextId
         );
         
-        // Apply fixed dimensions if needed
+        // Apply global leaf dimension settings to imported rectangles if configured
         let finalRectangles = processedRectangles;
         if (importedData.globalSettings?.leafFixedWidth || importedData.globalSettings?.leafFixedHeight) {
           finalRectangles = processedRectangles.map(rect => {
@@ -158,18 +165,18 @@ const HierarchicalDrawingApp = () => {
           });
         }
         
-        // Update store state
+        // Atomically update all store state with validated imported data
         setRectangles(finalRectangles);
         initializeHistory(finalRectangles);
         updateNextId(newNextId);
         setSelectedId(null);
         
-        // Update global settings if available
+        // Import and apply global settings if present in the imported data
         if (importedData.globalSettings) {
           settingsActions.updateSettings(importedData.globalSettings);
         }
         
-        // Re-enable auto-save and save the imported state
+        // Re-enable auto-save and persist the successfully imported state
         autoSaveActions.setEnabled(true);
         autoSaveActions.resetAutoRestoreFlag();
         autoSaveActions.saveData();
@@ -221,7 +228,11 @@ const HierarchicalDrawingApp = () => {
   }, [updateRectangleDescription, ui.descriptionEditModal]);
 
 
-  // MIGRATION: These memoized calculations no longer needed as components use store directly
+  /**
+   * ZUSTAND MIGRATION: Legacy memoized calculations removed.
+   * Components now access store state directly for better performance
+   * and to eliminate prop drilling patterns.
+   */
   // const selectedRectangle = useMemo(() => 
   //   selectedId ? findRectangle(selectedId) || null : null,
   //   [selectedId, findRectangle]
@@ -233,10 +244,14 @@ const HierarchicalDrawingApp = () => {
   // );
 
 
-  // Initialize auto-save system
+  /**
+   * Initialize IndexedDB-based auto-save system on app startup.
+   * Sets up persistent storage, data validation, and automatic state subscriptions
+   * to save rectangle and settings changes across browser sessions.
+   */
   useEffect(() => {
     autoSaveActions.initialize();
-    // Initialize auto-save subscriptions
+    // Initialize auto-save subscriptions to track state changes
     const cleanup = initializeAutoSaveSubscription();
     return cleanup;
   }, [autoSaveActions]);
@@ -259,7 +274,11 @@ const HierarchicalDrawingApp = () => {
     window.location.reload();
   }, [autoSaveActions]);
 
-  // Debug function for testing IndexedDB directly
+  /**
+   * Development utility for direct IndexedDB testing and debugging.
+   * Creates test database operations to verify IndexedDB availability
+   * and basic read/write functionality independent of the auto-save system.
+   */
   const testIndexedDB = useCallback(async () => {
     try {
       console.log('Testing IndexedDB directly...');
@@ -301,23 +320,31 @@ const HierarchicalDrawingApp = () => {
     }
   }, []);
 
-  // Add this to window for debugging
+  /**
+   * Expose debugging utilities to global window object in development.
+   * Allows direct console access to IndexedDB testing and auto-save actions
+   * for troubleshooting data persistence issues.
+   */
   React.useEffect(() => {
     (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveActions?: typeof autoSaveActions }).testIndexedDB = testIndexedDB;
     (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveActions?: typeof autoSaveActions }).autoSaveActions = autoSaveActions;
   }, [testIndexedDB, autoSaveActions]);
 
-  // Set up PWA update notification handler
+  /**
+   * Configure Progressive Web App (PWA) update notification system.
+   * Connects service worker update events to the UI notification system,
+   * allowing users to be prompted when new app versions are available.
+   */
   useEffect(() => {
     setGlobalUpdateNotificationHandler(uiActions.showUpdateNotification);
     
-    // Cleanup on unmount
+    // Cleanup on unmount to prevent memory leaks
     return () => {
       setGlobalUpdateNotificationHandler(() => {});
     };
   }, [uiActions.showUpdateNotification]);
 
-  // Get canvas actions from store for keyboard shortcuts and mouse handling
+  // Canvas interaction handlers for keyboard shortcuts and global mouse events
   const cancelDrag = useAppStore(state => state.canvasActions.cancelDrag);
   const startKeyboardMovement = useAppStore(state => state.canvasActions.startKeyboardMovement);
   const handleMouseMove = useAppStore(state => state.canvasActions.handleMouseMove);
@@ -325,7 +352,11 @@ const HierarchicalDrawingApp = () => {
   const handleWheel = useAppStore(state => state.canvasActions.handleWheel);
   const setIsSpacePressed = useAppStore(state => state.canvasActions.setIsSpacePressed);
 
-  // Arrow key movement handlers with pixel-level precision
+  /**
+   * Keyboard-driven rectangle movement with precise pixel control.
+   * Handles arrow key navigation with visual feedback and constraint validation.
+   * Movement respects parent boundaries and manual positioning settings.
+   */
   const handleMoveUp = useCallback((deltaPixels: number) => {
     if (!selectedId) return;
     startKeyboardMovement();
@@ -350,7 +381,11 @@ const HierarchicalDrawingApp = () => {
     moveRectangle(selectedId, deltaPixels, 0);
   }, [selectedId, moveRectangle, startKeyboardMovement]);
 
-  // Global mouse event handlers for canvas interactions
+  /**
+   * Global mouse event handlers for canvas interactions.
+   * Manages drag, resize, pan, and zoom operations across the entire document.
+   * Uses passive:false for wheel events to enable custom zoom behavior.
+   */
   useEffect(() => {
     const mouseMove = (e: MouseEvent) => handleMouseMove(e, containerRef);
     const mouseUp = () => handleMouseUp();
@@ -373,7 +408,11 @@ const HierarchicalDrawingApp = () => {
     };
   }, [handleMouseMove, handleMouseUp, handleWheel]);
 
-  // Global keyboard event handlers for space key panning
+  /**
+   * Global keyboard handlers for space-bar canvas panning.
+   * Enables space+drag panning behavior while respecting editable elements.
+   * Prevents space key interference with input fields and text areas.
+   */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !e.repeat) {
@@ -416,7 +455,7 @@ const HierarchicalDrawingApp = () => {
     };
   }, [setIsSpacePressed]);
 
-  // Keyboard shortcuts
+  // Unified keyboard shortcut system with customizable key bindings
   useKeyboardShortcuts(useMemo(() => ({
     onUndo: undo,
     onRedo: redo,
@@ -462,9 +501,7 @@ const HierarchicalDrawingApp = () => {
         </div>
 
         <Sidebar>
-          <PropertyPanel
-            // PropertyPanel now uses store directly - no props needed
-          />
+          <PropertyPanel />
         </Sidebar>
       </div>
 

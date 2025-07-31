@@ -5,6 +5,10 @@ export interface MobileOverlayProps {
   onClick: () => void;
 }
 
+/**
+ * Mobile-only overlay for closing side panels and modals.
+ * Provides tap-to-close functionality for better mobile UX.
+ */
 const MobileOverlay: React.FC<MobileOverlayProps> = ({ isVisible, onClick }) => {
   if (!isVisible) {
     return null;

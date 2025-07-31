@@ -8,15 +8,27 @@ import {
 import RectangleComponent from './RectangleComponent';
 
 interface ViewerRectangleRendererProps {
+  /** Array of rectangles to render in read-only mode */
   rectangles: Rectangle[];
+  /** Grid size for coordinate calculations */
   gridSize: number;
+  /** Font size calculation function based on hierarchy depth */
   calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
+  /** Font family for text rendering */
   fontFamily: string;
+  /** Border radius setting */
   borderRadius: number;
+  /** Border color setting */
   borderColor: string;
+  /** Border width setting */
   borderWidth: number;
 }
 
+/**
+ * Read-only rectangle renderer for viewer mode.
+ * Renders all rectangles with disabled interactions and editing capabilities.
+ * Uses the same RectangleComponent but with all interactive features turned off.
+ */
 const ViewerRectangleRenderer: React.FC<ViewerRectangleRendererProps> = ({
   rectangles,
   gridSize,
@@ -26,7 +38,7 @@ const ViewerRectangleRenderer: React.FC<ViewerRectangleRendererProps> = ({
   borderColor,
   borderWidth,
 }) => {
-  // No-op handlers for viewer mode
+  // Disabled interaction handlers for read-only mode
   const handleSelect = () => {};
   const handleMouseDown = () => {};
   const handleContextMenu = () => {};

@@ -6,6 +6,10 @@ interface OfflineIndicatorProps {
   autoSaveEnabled?: boolean;
 }
 
+/**
+ * Status indicator for network connectivity and auto-save state.
+ * Provides real-time feedback on offline/online status and save operations.
+ */
 const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ 
   lastSaved, 
   autoSaveEnabled = true 
@@ -13,6 +17,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showSavedIndicator, setShowSavedIndicator] = useState(false);
 
+  // Listen for browser network status changes
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -26,6 +31,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
     };
   }, []);
 
+  // Show temporary "Saved" confirmation when lastSaved timestamp updates
   useEffect(() => {
     if (lastSaved) {
       setShowSavedIndicator(true);
@@ -38,6 +44,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
     }
   }, [lastSaved]);
 
+  // Human-readable relative timestamp formatting for save operations
   const formatLastSaved = (timestamp: number) => {
     const now = Date.now();
     const diffMs = now - timestamp;

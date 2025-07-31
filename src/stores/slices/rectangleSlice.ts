@@ -1,13 +1,11 @@
 import { Rectangle, RectangleType } from '../../types';
 import { DEFAULT_RECTANGLE_SIZE } from '../../utils/constants';
 import { 
-  updateChildrenLayout, 
-  calculateNewRectangleLayout,
+  updateChildrenLayout,
   getAllDescendants,
-  getChildren,
-  calculateMinimumParentSize,
-  calculateChildLayout
+  getChildren
 } from '../../utils/layoutUtils';
+import { layoutManager } from '../../utils/layout';
 import { 
   createRectangle,
   updateRectangleType,
@@ -99,7 +97,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         leafHeight: settings.leafHeight
       });
       
-      let { x, y, w, h } = calculateNewRectangleLayout(parentId || null, rectangles, DEFAULT_RECTANGLE_SIZE, getMargins());
+      let { x, y, w, h } = layoutManager.calculateNewRectangleLayout(parentId || null, rectangles, DEFAULT_RECTANGLE_SIZE, getMargins());
       
       // Position root rectangles in visible area
       if (!parentId) {
@@ -134,7 +132,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
             
             // Resize parent if needed
             if (allChildren.length > 0) {
-              const minParentSize = calculateMinimumParentSize(parentId, updated, getFixedDimensions(), getMargins());
+              const minParentSize = layoutManager.calculateMinimumParentSize(parentId, updated, getFixedDimensions(), getMargins());
               
               if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
                 updated = updated.map(rect => 
@@ -149,7 +147,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
             if (allChildren.length > 0) {
               const updatedParent = updated.find(r => r.id === parentId);
               if (updatedParent) {
-                const newChildLayout = calculateChildLayout(updatedParent, allChildren, getFixedDimensions(), getMargins(), updated);
+                const newChildLayout = layoutManager.calculateChildLayout(updatedParent, allChildren, getFixedDimensions(), getMargins(), updated);
                 
                 newChildLayout.forEach(layoutChild => {
                   const childIndex = updated.findIndex(r => r.id === layoutChild.id);
@@ -263,7 +261,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         if (parent && !parent.isLockedAsIs) {
           const children = getChildren(id, updated);
           if (children.length > 0) {
-            const optimalSize = calculateMinimumParentSize(id, updated, getFixedDimensions(), getMargins());
+            const optimalSize = layoutManager.calculateMinimumParentSize(id, updated, getFixedDimensions(), getMargins());
             
             const resizedUpdated = updated.map(rect => 
               rect.id === id 
@@ -330,7 +328,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       if (children.length === 0) return;
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
-        const optimalSize = calculateMinimumParentSize(id, currentRectangles, getFixedDimensions(), getMargins());
+        const optimalSize = layoutManager.calculateMinimumParentSize(id, currentRectangles, getFixedDimensions(), getMargins());
         const updated = currentRectangles.map(rect => 
           rect.id === id ? { 
             ...rect, 
@@ -419,11 +417,17 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       });
     },
 
+    /**
+     * Reparent a rectangle to a new parent with comprehensive validation.
+     * Handles hierarchy changes, type updates, layout recalculation, and
+     * constraint enforcement. Prevents circular dependencies and maintains
+     * data integrity throughout the reparenting operation.
+     */
     reparentRectangle: (childId: string, newParentId: string | null): boolean => {
       const state = get();
       const { rectangles, settings } = state;
       
-      // Validation logic
+      // Validate reparenting operation using business rules
       if (!get().getters.canReparent(childId, newParentId)) {
         return false;
       }
@@ -431,7 +435,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const childRect = rectangles.find(r => r.id === childId);
       if (!childRect) return false;
       
-      // Guard against no-op reparenting
+      // Skip no-op reparenting operations
       const currentParentId = childRect.parentId || null;
       if (currentParentId === newParentId) {
         return true; // No change needed
@@ -485,7 +489,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           const newParentChildren = updated.filter(r => r.parentId === newParentId);
           
           if (newParentChildren.length > 0 && newParent && !newParent.isLockedAsIs) {
-            const minParentSize = calculateMinimumParentSize(newParentId, updated, getFixedDimensions(), getMargins());
+            const minParentSize = layoutManager.calculateMinimumParentSize(newParentId, updated, getFixedDimensions(), getMargins());
             
             if (newParent.w < minParentSize.w || newParent.h < minParentSize.h) {
               updated = updated.map(rect => 

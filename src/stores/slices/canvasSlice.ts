@@ -15,7 +15,9 @@ import { getAllDescendants } from '../../utils/layoutUtils';
 import { getMousePosition, preventEventDefault, shouldStartPan } from '../../utils/eventUtils';
 
 /**
- * Canvas state slice interface
+ * Canvas state slice managing all user interactions with the drawing surface.
+ * Handles drag/drop, resize, pan, zoom, and hierarchy operations with
+ * coordinate transformations and constraint validation.
  */
 export interface CanvasSlice {
   canvas: CanvasState;
@@ -23,35 +25,40 @@ export interface CanvasSlice {
 }
 
 /**
- * Creates the canvas slice for the store
+ * Creates the canvas slice managing all drawing surface interactions.
+ * Provides comprehensive state management for mouse/keyboard interactions,
+ * coordinate transformations, and visual feedback systems.
  */
 export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
-  // Initial state
+  // Initial canvas state with default viewport and interaction settings
   canvas: {
-    panOffset: { x: 0, y: 0 },
-    zoomLevel: 1.0,
-    zoomState: {
+    panOffset: { x: 0, y: 0 },     // Current viewport pan offset
+    zoomLevel: 1.0,               // Legacy zoom level (maintained for compatibility)
+    zoomState: {                  // Enhanced zoom state with constraints
       level: 1.0,
       centerX: 0,
       centerY: 0,
-      minLevel: 0.1,
-      maxLevel: 3.0
+      minLevel: 0.1,              // Prevent excessive zoom-out
+      maxLevel: 3.0               // Prevent excessive zoom-in
     },
-    panState: null,
-    dragState: null,
-    resizeState: null,
-    hierarchyDragState: null,
-    resizeConstraintState: null,
-    isSpacePressed: false,
-    isKeyboardMoving: false,
-    initialPositions: null,
-    needsLayoutUpdate: null,
-    keyboardTimeoutId: null
+    panState: null,               // Active panning operation state
+    dragState: null,              // Active drag operation state
+    resizeState: null,            // Active resize operation state
+    hierarchyDragState: null,     // Active hierarchy reparenting state
+    resizeConstraintState: null,  // Resize constraint feedback state
+    isSpacePressed: false,        // Space key state for pan mode
+    isKeyboardMoving: false,      // Keyboard movement feedback state
+    initialPositions: null,       // Cached positions for drag operations
+    needsLayoutUpdate: null,      // Layout update requirements
+    keyboardTimeoutId: null       // Debounce timer for keyboard feedback
   },
 
-  // Actions
+  // Canvas interaction actions
   canvasActions: {
-    // Drag actions
+    /**
+     * Drag operation management
+     * Handles both regular dragging and hierarchy reparenting operations
+     */
     startDrag: (dragState: DragState) => {
       set(state => ({
         canvas: {
@@ -80,7 +87,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }));
     },
 
-    // Resize actions
+    /**
+     * Resize operation management
+     * Handles rectangle resizing with constraint validation and visual feedback
+     */
     startResize: (resizeState: ResizeState) => {
       set(state => ({
         canvas: {
@@ -109,7 +119,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }));
     },
 
-    // Hierarchy drag actions
+    /**
+     * Hierarchy drag operation management
+     * Handles reparenting operations with drop target detection and validation
+     */
     startHierarchyDrag: (hierarchyDragState: HierarchyDragState) => {
       set(state => ({
         canvas: {
@@ -139,7 +152,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }));
     },
 
-    // Pan actions
+    /**
+     * Viewport panning management
+     * Controls canvas pan offset for navigation across large diagrams
+     */
     setPanOffset: (offset: PanOffset) => {
       set(state => ({
         canvas: {
@@ -176,7 +192,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }));
     },
 
-    // Zoom actions
+    /**
+     * Zoom level management with constraint enforcement
+     * Maintains zoom within usable bounds to prevent UI issues
+     */
     setZoomLevel: (level: number) => {
       set(state => ({
         canvas: {
@@ -200,6 +219,11 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }));
     },
 
+    /**
+     * Mouse-wheel zoom with center-point preservation.
+     * Updates zoom level based on mouse position to provide intuitive
+     * zoom-to-cursor behavior. Includes bounds checking and no-op optimization.
+     */
     updateZoom: (delta: number, mouseX: number, mouseY: number) => {
       set(state => {
         const newLevel = Math.max(
@@ -207,7 +231,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           Math.min(state.canvas.zoomState.maxLevel, state.canvas.zoomState.level + delta)
         );
         
-        // Only update if zoom level actually changed
+        // Skip update if zoom level unchanged (performance optimization)
         if (newLevel === state.canvas.zoomState.level) return state;
         
         const newZoomState = {
@@ -227,7 +251,11 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       });
     },
 
-    // Keyboard and interaction state
+    /**
+     * Space key state management for pan mode activation.
+     * Automatically ends panning when space is released to ensure
+     * consistent interaction state.
+     */
     setIsSpacePressed: (pressed: boolean) => {
       set(state => ({
         canvas: {
@@ -236,7 +264,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         }
       }));
       
-      // If space is released, end any active pan
+      // Auto-end panning when space key is released
       if (!pressed) {
         get().canvasActions.endPan();
       }
@@ -259,15 +287,21 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       });
     },
 
+    /**
+     * Keyboard movement feedback system with debounced reset.
+     * Provides visual feedback during arrow key movement and automatically
+     * clears the feedback state after movement stops. Uses debouncing to
+     * prevent flickering during rapid key presses.
+     */
     startKeyboardMovement: () => {
       const state = get();
       
-      // Clear any existing timeout
+      // Clear existing timeout to reset debounce timer
       if (state.canvas.keyboardTimeoutId) {
         clearTimeout(state.canvas.keyboardTimeoutId);
       }
       
-      // Set keyboard moving state
+      // Activate keyboard movement feedback
       set(prevState => ({
         canvas: {
           ...prevState.canvas,
@@ -275,7 +309,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         }
       }));
       
-      // Set a debounced timeout to reset the state
+      // Debounced reset after movement stops
       const timeoutId = window.setTimeout(() => {
         get().canvasActions.setIsKeyboardMoving(false);
       }, 150); // 150ms delay after last arrow key press
@@ -288,11 +322,15 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }));
     },
 
-    // Complex interaction handlers
+    /**
+     * Canvas mouse down handler for panning and selection clearing.
+     * Manages pan initiation and deselection of rectangles when clicking
+     * empty canvas areas. Handles both middle-click and space+click panning.
+     */
     handleCanvasMouseDown: (e: React.MouseEvent, containerRef: React.RefObject<HTMLDivElement | null>) => {
       const state = get();
       
-      // Handle panning on middle mouse button or space+left click
+      // Initialize panning for middle-click or space+left-click
       if (shouldStartPan(e, state.canvas.isSpacePressed)) {
         preventEventDefault(e);
 
@@ -309,18 +347,23 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         });
       }
       
-      // Handle selection clearing for normal left clicks
+      // Clear selection when clicking empty canvas area
       if (e.button === 0 && !state.canvas.isSpacePressed) {
         get().rectangleActions.setSelectedId(null);
       }
     },
 
+    /**
+     * Rectangle mouse down handler for drag, resize, and hierarchy operations.
+     * Manages coordinate transformation, history saving, and operation-specific
+     * initialization. Handles constraint validation and position caching.
+     */
     handleRectangleMouseDown: (e: React.MouseEvent, rect: Rectangle, action: 'drag' | 'resize' | 'hierarchy-drag' = 'drag', containerRef: React.RefObject<HTMLDivElement | null>) => {
       preventEventDefault(e);
       
       const state = get();
       
-      // Save current state to history before starting drag/resize operation
+      // Save state to history before starting any modification operation
       get().historyActions.saveToHistory();
 
       const containerRect = containerRef.current?.getBoundingClientRect();
@@ -329,22 +372,22 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       const { x: startX, y: startY } = getMousePosition(e, containerRect);
 
       if (action === 'drag') {
-        // Regular drag - allow for root rectangles and child rectangles when parent has manual positioning enabled
+        // Validate drag permissions based on hierarchy and manual positioning
         if (rect.parentId) {
           const parent = state.rectangles.find(r => r.id === rect.parentId);
           if (!parent?.isManualPositioningEnabled) {
-            return;
+            return; // Cannot drag children of auto-layout parents
           }
         }
         
-        // Store initial positions for regular drag too (in case of descendants)
+        // Cache initial positions for the entire subtree (for group movement)
         const descendantIds = new Set(getAllDescendants(rect.id, state.rectangles));
         const positions: Record<string, { x: number; y: number }> = {};
         
-        // Store position of the dragged rectangle itself
+        // Store position of the primary dragged rectangle
         positions[rect.id] = { x: rect.x, y: rect.y };
         
-        // Store positions of all descendants
+        // Store positions of all descendants for consistent group movement
         state.rectangles.forEach(r => {
           if (descendantIds.has(r.id)) {
             positions[r.id] = { x: r.x, y: r.y };
@@ -357,8 +400,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           id: rect.id,
           startX,
           startY,
-          initialX: rect.x, // Store as grid coordinates
-          initialY: rect.y  // Store as grid coordinates
+          initialX: rect.x, // Grid coordinates for precise positioning
+          initialY: rect.y  // Grid coordinates for precise positioning
         });
       } else if (action === 'hierarchy-drag') {
         // Hierarchy drag - allow for any rectangle
@@ -404,6 +447,11 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }
     },
 
+    /**
+     * Global mouse move handler for all canvas interactions.
+     * Manages panning, dragging, resizing, and hierarchy operations with
+     * coordinate transformations and real-time visual feedback.
+     */
     handleMouseMove: (e: MouseEvent, containerRef: React.RefObject<HTMLDivElement | null>) => {
       const state = get();
       const containerRect = containerRef.current?.getBoundingClientRect();
@@ -411,7 +459,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
 
       const { x: currentX, y: currentY } = getMousePosition(e, containerRect);
 
-      // Handle panning movement
+      // Handle viewport panning with immediate visual feedback
       if (state.canvas.panState) {
         const deltaX = currentX - state.canvas.panState.startX;
         const deltaY = currentY - state.canvas.panState.startY;
@@ -423,7 +471,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         
         get().canvasActions.setPanOffset(newOffset);
         
-        // Update background position immediately for canvas grid
+        // Immediate background grid update for smooth panning feedback
         if (containerRef.current) {
           containerRef.current.style.backgroundPosition = `${newOffset.x}px ${newOffset.y}px`;
         }
@@ -446,22 +494,22 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         const newY = Math.round(state.canvas.dragState.initialY + gridDeltaY);
         
         if (state.canvas.dragState.isHierarchyDrag) {
-          // Hierarchy drag - detect drop targets and update hierarchy state
+          // Hierarchy drag: detect valid drop targets and provide visual feedback
           const potentialTargets = get().canvasActions.detectDropTargets(currentX, currentY, state.canvas.dragState.id);
           
-          // Find the best drop target
+          // Prioritize rectangle targets over canvas background
           let currentDropTarget: DropTarget | null = null;
           const rectTargets = potentialTargets.filter(target => target.targetId !== null && target.isValid);
           if (rectTargets.length > 0) {
-            currentDropTarget = rectTargets[0];
+            currentDropTarget = rectTargets[0]; // Use deepest valid target
           } else {
             const canvasTarget = potentialTargets.find(target => target.targetId === null);
             if (canvasTarget) {
-              currentDropTarget = canvasTarget;
+              currentDropTarget = canvasTarget; // Fallback to canvas (make root)
             }
           }
           
-          // Update hierarchy drag state
+          // Update hierarchy drag state with current drop target information
           set(state => ({
             canvas: {
               ...state.canvas,
@@ -632,20 +680,25 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       return get().canvas.hierarchyDragState !== null;
     },
 
-    // Drop target detection (for hierarchy drag)
+    /**
+     * Drop target detection for hierarchy drag operations.
+     * Finds all valid drop targets under the mouse cursor, considering
+     * z-order, reparenting constraints, and coordinate transformations.
+     * Returns targets sorted by priority (deepest valid targets first).
+     */
     detectDropTargets: (mouseX: number, mouseY: number, draggedRectId: string): DropTarget[] => {
       const state = get();
       const targets: DropTarget[] = [];
       
-      // Add canvas background as a potential drop target (makes rectangle a root)
+      // Canvas background as root parent option (always available)
       targets.push({
         targetId: null,
         isValid: true,
         dropType: 'root',
-        bounds: { x: 0, y: 0, width: 0, height: 0 } // Canvas background bounds
+        bounds: { x: 0, y: 0, width: 0, height: 0 } // Infinite canvas bounds
       });
       
-      // Transform mouse coordinates to canvas space (accounting for pan and zoom)
+      // Transform screen coordinates to canvas space (accounting for pan and zoom)
       const canvasMouseX = (mouseX - state.canvas.panOffset.x) / state.canvas.zoomLevel;
       const canvasMouseY = (mouseY - state.canvas.panOffset.y) / state.canvas.zoomLevel;
       
