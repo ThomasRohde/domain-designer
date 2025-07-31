@@ -26,6 +26,13 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const borderColor = useAppStore(state => state.settings.borderColor);
   const borderWidth = useAppStore(state => state.settings.borderWidth);
   const calculateFontSize = useAppStore(state => state.getters.calculateFontSize);
+  // Subscribe to font settings to trigger re-renders when they change
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-ignore TS6133
+  const _rootFontSize = useAppStore(state => state.settings.rootFontSize);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-ignore TS6133
+  const _dynamicFontSizing = useAppStore(state => state.settings.dynamicFontSizing);
   
   // Get canvas states from store
   const dragState = useAppStore(state => state.canvas.dragState);
