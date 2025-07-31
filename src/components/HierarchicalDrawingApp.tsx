@@ -306,18 +306,12 @@ const HierarchicalDrawingApp = () => {
   }, [autoSaveActions]);
 
   const handleConfirmClearModel = useCallback(async () => {
-    // Set manual clear flag to prevent auto-restore
-    autoSaveActions.setManualClearInProgress(true);
+    // Use the Zustand clearModel function which handles all the flags and persistence
+    await autoSaveActions.clearModel();
     
-    // Clear only rectangles but preserve settings by setting empty rectangles
-    setRectanglesWithHistory([]);
-    
-    // Save the empty state - the saveData method will detect this is a clear and maintain the flag
-    await autoSaveActions.saveData();
-    
-    // Reload the page - auto-restore will be skipped due to manualClearInProgress flag
+    // Reload immediately - the clearModel function sets the localStorage flag to prevent auto-restore
     window.location.reload();
-  }, [autoSaveActions, setRectanglesWithHistory]);
+  }, [autoSaveActions]);
 
   // Debug function for testing IndexedDB directly
   const testIndexedDB = useCallback(async () => {

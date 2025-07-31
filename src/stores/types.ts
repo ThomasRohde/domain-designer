@@ -247,6 +247,7 @@ export interface AutoSaveActions {
   restoreData: () => Promise<boolean>;
   rollbackToLastGood: () => Promise<boolean>;
   clearData: () => Promise<void>;
+  clearModel: () => Promise<void>;
   checkAndAutoRestore: () => Promise<boolean>;
   validate: (rectangles: Rectangle[], settings: GlobalSettings) => { isValid: boolean; errors: string[]; warnings: string[] };
 }

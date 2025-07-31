@@ -176,7 +176,6 @@ export const initializeAutoSaveSubscription = () => {
       const settingsChanged = JSON.stringify(current.settings) !== JSON.stringify(previous.settings);
       
       if (rectanglesChanged || settingsChanged) {
-        console.log('🔄 Auto-save triggered by data change');
         // Get fresh state and trigger save
         const state = useAppStore.getState();
         state.autoSaveActions.saveData();

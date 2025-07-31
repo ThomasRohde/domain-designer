@@ -8,6 +8,7 @@ interface AutoSaveData {
   rectangles: Rectangle[];
   appSettings: AppSettings;
   timestamp: number;
+  manualClearInProgress?: boolean;
 }
 
 interface DomainDesignerDB extends DBSchema {
@@ -81,7 +82,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
       }
 
       await db.put(STORE_NAME, data, AUTOSAVE_KEY);
-      console.log('Auto-save complete:', data.rectangles.length, 'rectangles');
       return true;
     } catch (error) {
       console.error('Failed to save data:', error);
@@ -99,9 +99,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
       }
 
       const data = await db.get(STORE_NAME, AUTOSAVE_KEY);
-      if (data) {
-        console.log('Loaded saved data:', data.rectangles.length, 'rectangles from', new Date(data.timestamp).toLocaleString());
-      }
       return data || null;
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -124,16 +121,12 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
   // Debounced save function
   const debouncedSave = (data: AutoSaveData) => {
     if (saveTimeoutRef) {
-      console.log('🔄 Clearing previous save timeout');
       window.clearTimeout(saveTimeoutRef);
     }
 
-    console.log('⏰ Scheduling save in', SAVE_DELAY, 'ms');
     saveTimeoutRef = window.setTimeout(async () => {
-      console.log('💾 Executing debounced save...');
       const success = await saveDataToIndexedDB(data);
       if (success) {
-        console.log('✅ Save completed successfully');
         set(state => ({
           autoSave: {
             ...state.autoSave,
@@ -141,8 +134,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             hasSavedData: true
           }
         }));
-      } else {
-        console.error('❌ Save failed');
       }
       saveTimeoutRef = null;
     }, SAVE_DELAY);
@@ -166,6 +157,23 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
       initialize: async () => {
         try {
           await initDB();
+          
+          // First, check if we have a manual clear flag in saved data
+          const data = await loadDataFromIndexedDB();
+          if (data?.manualClearInProgress) {
+            console.log('🚫 Manual clear flag detected during initialization');
+            // Ensure state reflects this immediately
+            set(state => ({
+              rectangles: [],
+              autoSave: {
+                ...state.autoSave,
+                manualClearInProgress: true,
+                hasSavedData: true,
+                lastSaved: data.timestamp
+              }
+            }));
+          }
+          
           // Check for auto-restore after a short delay
           setTimeout(async () => {
             await get().autoSaveActions.checkAndAutoRestore();
@@ -266,9 +274,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         // Additional business logic validation
         if (validation.isValid) {
           // Allow empty states - users can clear their canvas
-          if (rectangles.length === 0) {
-            validation.warnings.push('Saving empty canvas state');
-          }
         }
         
         return validation;
@@ -278,29 +283,20 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         const state = get();
         const { rectangles, settings, autoSave } = state;
         
-        console.log('📝 saveData called with', rectangles.length, 'rectangles');
-        
-        if (!autoSave.enabled) {
-          console.log('❌ Auto-save disabled, skipping');
-          return;
-        }
-        
-        if (autoSave.isValidating) {
-          console.log('❌ Validation in progress, skipping');
+        if (!autoSave.enabled || autoSave.isValidating) {
           return;
         }
 
-        // Check if this is a manual clear (empty rectangles) or if we should reset the flag
-        const isManualClear = rectangles.length === 0;
+        // Only set manualClearInProgress if we have content being added after a clear
+        // Don't set it just because rectangles.length === 0 (that could be individual deletions)
         const hasContent = rectangles.length > 0;
         
-        if (isManualClear) {
-          console.log('🗑️ Manual clear detected');
-          get().autoSaveActions.setManualClearInProgress(true);
-        } else if (hasContent && autoSave.manualClearInProgress) {
-          console.log('➕ Content added after clear, resetting flag');
+        let shouldClearFlag = false;
+        
+        if (hasContent && autoSave.manualClearInProgress) {
           // Reset the flag when user adds content after a clear
           get().autoSaveActions.setManualClearInProgress(false);
+          shouldClearFlag = true;
         }
 
         // Validate before saving
@@ -310,21 +306,16 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           console.warn('Skipping save due to validation errors:', validation.errors);
           return;
         }
-        
-        if (validation.warnings.length > 0) {
-          console.warn('Save warnings:', validation.warnings);
-        }
+
+        // Get the current flag value after potential updates
+        const currentManualClearInProgress = shouldClearFlag ? false : autoSave.manualClearInProgress;
 
         const data: AutoSaveData = {
           rectangles,
           appSettings: settings,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          manualClearInProgress: currentManualClearInProgress
         };
-
-        console.log('📊 Prepared data for save:', {
-          rectangleCount: data.rectangles.length,
-          timestamp: new Date(data.timestamp).toLocaleTimeString()
-        });
 
         // Store as last good data before saving
         lastGoodDataRef = {
@@ -491,17 +482,68 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             lastSaved: null,
             lastGoodSave: null,
             hasAutoRestored: false,
-            manualClearInProgress: false
+            manualClearInProgress: false  // Reset flag when clearing all data
           }
         }));
+      },
+
+      // Clear only the model (rectangles) but preserve app settings
+      clearModel: async () => {
+        const timestamp = Date.now();
+        
+        // Set localStorage flag to prevent auto-restore on refresh
+        localStorage.setItem('domain-designer-clear-in-progress', 'true');
+        
+        // Set manual clear flag and timestamp
+        set(prevState => ({
+          rectangles: [], // Clear all rectangles
+          autoSave: {
+            ...prevState.autoSave,
+            manualClearInProgress: true,
+            clearInProgressTimestamp: timestamp
+          }
+        }));
+        
+        // Force save the cleared state directly to IndexedDB (bypass normal saveData logic)
+        const state = get();
+        const data: AutoSaveData = {
+          rectangles: [], // Explicitly empty
+          appSettings: state.settings,
+          timestamp: timestamp,
+          manualClearInProgress: true
+        };
+        
+        const success = await saveDataToIndexedDB(data);
+        if (success) {
+          set(state => ({
+            autoSave: {
+              ...state.autoSave,
+              lastSaved: timestamp,
+              hasSavedData: true
+            }
+          }));
+        } else {
+          console.error('Failed to save cleared model to IndexedDB');
+        }
       },
 
       // Auto-restore functionality - check for existing data on initialization
       checkAndAutoRestore: async (): Promise<boolean> => {
         const state = get();
         
-        // Prevent multiple auto-restores
-        if (state.autoSave.hasAutoRestored) {
+        // Check localStorage flag first (highest priority)
+        const clearInProgress = localStorage.getItem('domain-designer-clear-in-progress');
+        if (clearInProgress === 'true') {
+          console.log('🚫 Skipping auto-restore - clear in progress flag detected');
+          // Remove the flag now that we've seen it
+          localStorage.removeItem('domain-designer-clear-in-progress');
+          // Ensure the state reflects this
+          get().autoSaveActions.setManualClearInProgress(true);
+          return false;
+        }
+        
+        // Prevent multiple auto-restores - but always check for manual clear flag first
+        if (state.autoSave.hasAutoRestored && !state.autoSave.manualClearInProgress) {
           console.log('🚫 Skipping auto-restore - already restored this session');
           return false;
         }
@@ -511,13 +553,25 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           console.log('🚫 Skipping auto-restore - manual clear in progress');
           return false;
         }
-        
-        console.log('🔍 Checking for saved data to auto-restore...');
 
         try {
           const data = await loadDataFromIndexedDB();
           if (data) {
-            console.log('📦 Found saved data:', data.rectangles.length, 'rectangles');
+            // Check if manual clear was in progress when data was saved
+            if (data.manualClearInProgress) {
+              console.log('🚫 Skipping auto-restore - saved data has manual clear flag');
+              // Update our state to reflect the saved flag AND ensure empty rectangles
+              set(state => ({
+                rectangles: [], // Ensure rectangles are empty
+                autoSave: {
+                  ...state.autoSave,
+                  manualClearInProgress: true,
+                  hasSavedData: true,
+                  lastSaved: data.timestamp
+                }
+              }));
+              return false;
+            }
             
             // Convert to SavedDiagram format for validation
             const savedData: SavedDiagram = {
@@ -539,7 +593,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
               lastGoodDataRef = savedData;
               
               // Auto-restore validated data (once per session)
-              console.log('🔄 Auto-restoring saved data:', savedData.rectangles.length, 'rectangles');
               
               set({
                 rectangles: savedData.rectangles,
@@ -560,7 +613,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
               return false;
             }
           } else {
-            console.log('📭 No saved data found');
             return false;
           }
         } catch (error) {
