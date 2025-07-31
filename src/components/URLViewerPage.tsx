@@ -29,20 +29,40 @@ const URLViewerPage: React.FC = () => {
   // Handle both development (/viewer/) and production (/domain-designer/viewer/) paths
   const getUrlFromPath = () => {
     const pathname = location.pathname;
+    let extractedUrl = null;
     
     // Check for production path first
     if (pathname.startsWith('/domain-designer/viewer/')) {
-      return pathname.substring('/domain-designer/viewer/'.length);
+      extractedUrl = pathname.substring('/domain-designer/viewer/'.length);
     }
     // Check for development path
-    if (pathname.startsWith('/viewer/')) {
-      return pathname.substring('/viewer/'.length);
+    else if (pathname.startsWith('/viewer/')) {
+      extractedUrl = pathname.substring('/viewer/'.length);
+    }
+    
+    // Decode the URL if it was URL-encoded
+    if (extractedUrl) {
+      try {
+        return decodeURIComponent(extractedUrl);
+      } catch (error) {
+        console.warn('Failed to decode URL parameter:', extractedUrl, error);
+        return extractedUrl; // Return original if decoding fails
+      }
     }
     
     return null;
   };
   
   const url = getUrlFromPath();
+  
+  // Debug logging for URL extraction
+  useEffect(() => {
+    console.log('URLViewerPage Debug:', {
+      pathname: location.pathname,
+      extractedUrl: url,
+      fullLocation: location
+    });
+  }, [location, url]);
   
   // Store actions for importing data to editor
   const { rectangleActions, settingsActions } = useAppStore();
@@ -67,8 +87,8 @@ const URLViewerPage: React.FC = () => {
       try {
         setLoadingState({ isLoading: true, error: null, success: false });
         
-        // Decode the URL parameter (in case it was encoded)
-        const decodedUrl = decodeURIComponent(url);
+        // The URL should already be decoded by getUrlFromPath()
+        const decodedUrl = url;
         
         // Fetch the JSON from the URL
         const response = await fetch(decodedUrl);
