@@ -1,16 +1,9 @@
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
 import { ExportOptions, Rectangle } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
-// import { getChildren } from '../utils/layoutUtils'; // MIGRATION: Now using store getters
-// MIGRATION: useRectangleManager replaced by Zustand store
-// import { useRectangleManager } from '../hooks/useRectangleManager';
-// MIGRATION: useAppSettings replaced by Zustand store
-// import { useAppSettings } from '../hooks/useAppSettings';
-// MIGRATION: useUIState replaced by Zustand store
-// import { useUIState } from '../hooks/useUIState';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
-import { useAppCore } from '../hooks/useAppCore';
 import { useAppStore } from '../stores/useAppStore';
+import { importDiagramFromJSON, processImportedDiagram, ImportedDiagramData } from '../utils/exportUtils';
 import { initializeAutoSaveSubscription } from '../stores/useAppStore';
 import { setGlobalUpdateNotificationHandler } from '../main';
 import RectangleRenderer from './RectangleRenderer';
@@ -72,36 +65,11 @@ const HierarchicalDrawingApp = () => {
   const settings = useAppStore(state => state.settings);
   const settingsActions = useAppStore(state => state.settingsActions);
 
-  // Memoize the getMargins function to avoid inline object creation
-  const getMargins = useCallback(() => ({ 
-    margin: settings.margin, 
-    labelMargin: settings.labelMargin 
-  }), [settings.margin, settings.labelMargin]);
-  
-  // MIGRATION: rectangleManager is now replaced by Zustand store
-  // const rectangleManager = useRectangleManager({
-  //   gridSize: appSettings.gridSize,
-  //   panOffsetRef,
-  //   containerRef,
-  //   getFixedDimensions: appSettings.getFixedDimensions,
-  //   getMargins,
-  //   triggerSave
-  // });
-
-  // Initialize app core systems
+  // Get store state for import functionality
   const nextId = useAppStore(state => state.nextId);
-  
-  // Create wrappers to match expected signatures
-  const setRectanglesWrapper = useCallback((value: React.SetStateAction<Rectangle[]>) => {
-    if (typeof value === 'function') {
-      const current = useAppStore.getState().rectangles;
-      setRectangles(value(current));
-    } else {
-      setRectangles(value);
-    }
-  }, [setRectangles]);
 
-  const setRectanglesWithHistoryWrapper = useCallback((value: React.SetStateAction<Rectangle[]>) => {
+  // Create wrapper for TemplatePage compatibility
+  const setRectanglesWrapper = useCallback((value: React.SetStateAction<Rectangle[]>) => {
     if (typeof value === 'function') {
       const current = useAppStore.getState().rectangles;
       setRectanglesWithHistory(value(current));
@@ -110,65 +78,9 @@ const HierarchicalDrawingApp = () => {
     }
   }, [setRectanglesWithHistory]);
 
-  const appCore = useAppCore({
-    rectangles,
-    setRectangles: setRectanglesWrapper,
-    setRectanglesWithHistory: setRectanglesWithHistoryWrapper,
-    initializeHistory,
-    updateNextId,
-    nextId,
-    setSelectedId,
-    getFixedDimensions: settingsActions.getFixedDimensions,
-    getMargins,
-    appSettings: {
-      ...settings,
-      // Ensure required arrays are defined
-      availableFonts: settings.availableFonts || [],
-      fontsLoading: settings.fontsLoading || false,
-      // Add legacy compatibility methods that useAppCore expects
-      getFixedDimensions: settingsActions.getFixedDimensions,
-      calculateFontSize: settingsActions.calculateFontSize,
-      handleLeafFixedWidthChange: settingsActions.handleLeafFixedWidthChange,
-      handleLeafFixedHeightChange: settingsActions.handleLeafFixedHeightChange,
-      handleLeafWidthChange: settingsActions.handleLeafWidthChange,
-      handleLeafHeightChange: settingsActions.handleLeafHeightChange,
-      handleRootFontSizeChange: settingsActions.handleRootFontSizeChange,
-      handleDynamicFontSizingChange: settingsActions.handleDynamicFontSizingChange,
-      handleFontFamilyChange: settingsActions.handleFontFamilyChange,
-      handleBorderRadiusChange: settingsActions.handleBorderRadiusChange,
-      handleBorderColorChange: settingsActions.handleBorderColorChange,
-      handleBorderWidthChange: settingsActions.handleBorderWidthChange,
-      handleMarginChange: settingsActions.handleMarginChange,
-      handleLabelMarginChange: settingsActions.handleLabelMarginChange,
-      handleLayoutAlgorithmChange: settingsActions.handleLayoutAlgorithmChange,
-      addCustomColor: settingsActions.addCustomColor,
-      updateColorSquare: settingsActions.updateColorSquare,
-      handlePredefinedColorsChange: settingsActions.handlePredefinedColorsChange,
-      setGridSize: settingsActions.setGridSize,
-      handleShowGridChange: settingsActions.handleShowGridChange,
-      setRectanglesRef: () => {}, // No-op since store manages this directly
-      setFitToChildrenRef: () => {}, // No-op since store manages this directly
-      setIsRestoring: settingsActions.setIsRestoring
-    }
-  });
-
-  // Canvas interactions with proper setSelectedId wrapper
-  // MIGRATION: setSelectedIdWrapper no longer needed as we use store directly
-  // const setSelectedIdWrapper = useCallback((value: React.SetStateAction<string | null>) => {
-  //   if (typeof value === 'function') {
-  //     setSelectedId(value(selectedId));
-  //   } else {
-  //     setSelectedId(value);
-  //   }
-  // }, [selectedId, setSelectedId]);
-
   // Canvas interactions now handled directly by the store
 
-  // App settings no longer need refs - they use the store directly
-  // React.useEffect(() => {
-  //   appSettings.setRectanglesRef(setRectanglesWrapper);
-  //   appSettings.setFitToChildrenRef(fitToChildren);
-  // }, [setRectanglesWrapper, fitToChildren, appSettings]);
+  // Direct store access eliminates need for refs
 
   // Event handlers
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
@@ -181,32 +93,6 @@ const HierarchicalDrawingApp = () => {
     addRectangle(parentId || undefined);
   }, [addRectangle]);
 
-  // Memoize export settings to avoid recreating object and reduce dependency array
-  const exportSettings = useMemo(() => ({
-    gridSize: settings.gridSize,
-    showGrid: settings.showGrid,
-    leafFixedWidth: settings.leafFixedWidth,
-    leafFixedHeight: settings.leafFixedHeight,
-    leafWidth: settings.leafWidth,
-    leafHeight: settings.leafHeight,
-    rootFontSize: settings.rootFontSize,
-    dynamicFontSizing: settings.dynamicFontSizing,
-    fontFamily: settings.fontFamily,
-    borderRadius: settings.borderRadius,
-    borderColor: settings.borderColor,
-    borderWidth: settings.borderWidth,
-    predefinedColors: settings.predefinedColors,
-    margin: settings.margin,
-    labelMargin: settings.labelMargin,
-    layoutAlgorithm: settings.layoutAlgorithm
-  }), [
-    settings.gridSize, settings.showGrid, settings.leafFixedWidth, settings.leafFixedHeight, 
-    settings.leafWidth, settings.leafHeight, settings.rootFontSize, 
-    settings.dynamicFontSizing, settings.fontFamily, settings.borderRadius, 
-    settings.borderColor, settings.borderWidth, settings.predefinedColors, 
-    settings.layoutAlgorithm, settings.margin, settings.labelMargin
-  ]);
-
   const handleExport = useCallback(async (options: ExportOptions) => {
     if (!containerRef.current) return;
     try {
@@ -214,17 +100,17 @@ const HierarchicalDrawingApp = () => {
         containerRef.current, 
         rectangles, 
         options, 
-        exportSettings,
-        exportSettings.gridSize,
-        exportSettings.borderRadius,
-        exportSettings.borderColor,
-        exportSettings.borderWidth,
-        exportSettings.predefinedColors
+        settings,
+        settings.gridSize,
+        settings.borderRadius,
+        settings.borderColor,
+        settings.borderWidth,
+        settings.predefinedColors
       );
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangles, exportSettings]);
+  }, [rectangles, settings]);
 
   const handleDeleteSelected = useCallback(() => {
     if (selectedId) {
@@ -232,22 +118,82 @@ const HierarchicalDrawingApp = () => {
     }
   }, [selectedId, removeRectangle]);
 
-  // Use the app core settings handler
-  // Settings are now managed by the store directly
-  // const handleSettingsChange = appCore.handleSettingsChange;
+  // Simplified import handler using direct store access
+  const handleImport = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        // Disable auto-save during import
+        autoSaveActions.setEnabled(false);
+        
+        // Import and validate the data
+        const importedData: ImportedDiagramData = await importDiagramFromJSON(file);
+        
+        // Process imported data with comprehensive validation and fixing
+        const { rectangles: processedRectangles, nextId: newNextId } = processImportedDiagram(
+          importedData, 
+          nextId
+        );
+        
+        // Apply fixed dimensions if needed
+        let finalRectangles = processedRectangles;
+        if (importedData.globalSettings?.leafFixedWidth || importedData.globalSettings?.leafFixedHeight) {
+          finalRectangles = processedRectangles.map(rect => {
+            if (rect.type === 'leaf') {
+              const updatedRect = { ...rect };
+              if (importedData.globalSettings!.leafFixedWidth) {
+                updatedRect.w = importedData.globalSettings!.leafWidth;
+              }
+              if (importedData.globalSettings!.leafFixedHeight) {
+                updatedRect.h = importedData.globalSettings!.leafHeight;
+              }
+              return updatedRect;
+            }
+            return rect;
+          });
+        }
+        
+        // Update store state
+        setRectangles(finalRectangles);
+        initializeHistory(finalRectangles);
+        updateNextId(newNextId);
+        setSelectedId(null);
+        
+        // Update global settings if available
+        if (importedData.globalSettings) {
+          settingsActions.updateSettings(importedData.globalSettings);
+        }
+        
+        // Re-enable auto-save and save the imported state
+        autoSaveActions.setEnabled(true);
+        autoSaveActions.resetAutoRestoreFlag();
+        autoSaveActions.saveData();
+        
+        console.log('✅ Successfully imported diagram');
+        
+      } catch (error) {
+        console.error('❌ Failed to import diagram:', error);
+        autoSaveActions.setEnabled(true);
+        alert(`Failed to import diagram: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    };
+    input.click();
+  }, [nextId, setRectangles, initializeHistory, updateNextId, setSelectedId, settingsActions, autoSaveActions]);
 
-  // Use the app core import handler
-  const handleImport = appCore.handleImport;
-
-  const handleAboutClick = useCallback(() => {
+  const handleAboutClick = () => {
     setAboutModalOpen(true);
     uiActions.closeLeftMenu();
-  }, [uiActions]);
+  };
 
-  const handleTemplatesClick = useCallback(() => {
+  const handleTemplatesClick = () => {
     uiActions.openTemplatePage();
     uiActions.closeLeftMenu();
-  }, [uiActions]);
+  };
 
   const handleLockConfirmation = useCallback(() => {
     if (ui.lockConfirmationModal) {
@@ -296,9 +242,9 @@ const HierarchicalDrawingApp = () => {
   }, [autoSaveActions]);
 
 
-  const handleClearSavedData = useCallback(() => {
+  const handleClearSavedData = () => {
     setClearDataModalOpen(true);
-  }, []);
+  };
 
   const handleConfirmClearAll = useCallback(async () => {
     await autoSaveActions.clearData();
@@ -578,7 +524,7 @@ const HierarchicalDrawingApp = () => {
         isOpen={ui.templatePageOpen}
         onClose={uiActions.closeTemplatePage}
         rectangles={rectangles}
-        setRectangles={setRectanglesWithHistoryWrapper}
+        setRectangles={setRectanglesWrapper}
         fitToChildren={fitToChildren}
         predefinedColors={settings.predefinedColors}
         globalSettings={{
