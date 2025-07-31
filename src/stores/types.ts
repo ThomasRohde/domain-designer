@@ -80,6 +80,7 @@ export interface CanvasState {
   keyboardTimeoutId: number | null;  // Debounce timer for keyboard navigation
   // Multi-select specific state
   multiSelectDragInitialPositions: Record<string, { x: number; y: number }> | null;  // Initial positions for bulk drag
+  multiSelectRelativePositions: Map<string, { x: number; y: number; relativeX: number; relativeY: number }> | null;  // Relative positions for bulk drag
 }
 
 /**

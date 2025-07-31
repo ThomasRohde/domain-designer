@@ -13,6 +13,11 @@ import type {
 import type { SliceCreator, CanvasState, CanvasActions } from '../types';
 import { getAllDescendants } from '../../utils/layoutUtils';
 import { getMousePosition, preventEventDefault, shouldStartPan } from '../../utils/eventUtils';
+import { 
+  constrainBulkMovement, 
+  captureRelativePositions,
+  applyRelativePositioning 
+} from '../../utils/collisionUtils';
 
 /**
  * Canvas state slice managing all user interactions with the drawing surface.
@@ -51,7 +56,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     initialPositions: null,       // Cached positions for drag operations
     needsLayoutUpdate: null,      // Layout update requirements
     keyboardTimeoutId: null,      // Debounce timer for keyboard feedback
-    multiSelectDragInitialPositions: null  // Initial positions for bulk drag operations
+    multiSelectDragInitialPositions: null,  // Initial positions for bulk drag operations
+    multiSelectRelativePositions: null      // Relative positions for bulk drag operations
   },
 
   // Canvas interaction actions
@@ -686,34 +692,55 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
      * Manages bulk drag state and initial positions for multi-select operations
      */
     startMultiSelectDrag: (initialPositions: Record<string, { x: number; y: number }>) => {
+      const state = get();
+      const { selectedIds } = state.ui;
+      
+      // Capture relative positions for preserving spacing
+      const relativePositions = captureRelativePositions(selectedIds, state.rectangles);
+      
       set(state => ({
         canvas: {
           ...state.canvas,
-          multiSelectDragInitialPositions: initialPositions
+          multiSelectDragInitialPositions: initialPositions,
+          multiSelectRelativePositions: relativePositions
         }
       }));
     },
 
     updateMultiSelectDrag: (deltaX: number, deltaY: number) => {
       const state = get();
-      const { multiSelectDragInitialPositions } = state.canvas;
+      const { multiSelectDragInitialPositions, multiSelectRelativePositions } = state.canvas;
       const { selectedIds } = state.ui;
+      const { settings } = state;
       
-      if (!multiSelectDragInitialPositions || selectedIds.length === 0) return;
+      if (!multiSelectDragInitialPositions || !multiSelectRelativePositions || selectedIds.length === 0) return;
 
-      // Update positions for all selected rectangles
+      // Apply collision detection and constraint the movement
+      const marginSettings = { margin: settings.margin, labelMargin: settings.labelMargin };
+      const constrainedMovement = constrainBulkMovement(selectedIds, deltaX, deltaY, state.rectangles, marginSettings);
+      
+      const finalDeltaX = constrainedMovement.deltaX;
+      const finalDeltaY = constrainedMovement.deltaY;
+
+      // Calculate new reference position (top-left of selection bounds)
+      const selectedRects = state.rectangles.filter(r => selectedIds.includes(r.id));
+      if (selectedRects.length === 0) return;
+      
+      const minX = Math.min(...selectedRects.map(r => r.x));
+      const minY = Math.min(...selectedRects.map(r => r.y));
+      
+      const newReferenceX = minX + finalDeltaX;
+      const newReferenceY = minY + finalDeltaY;
+
+      // Apply relative positioning to maintain spacing
       get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
-        return rectangles.map(rect => {
-          if (selectedIds.includes(rect.id) && multiSelectDragInitialPositions[rect.id]) {
-            const initial = multiSelectDragInitialPositions[rect.id];
-            return {
-              ...rect,
-              x: initial.x + deltaX,
-              y: initial.y + deltaY
-            };
-          }
-          return rect;
-        });
+        return applyRelativePositioning(
+          selectedIds,
+          newReferenceX,
+          newReferenceY,
+          multiSelectRelativePositions,
+          rectangles
+        );
       });
     },
 
@@ -746,7 +773,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       set(state => ({
         canvas: {
           ...state.canvas,
-          multiSelectDragInitialPositions: null
+          multiSelectDragInitialPositions: null,
+          multiSelectRelativePositions: null
         }
       }));
     },

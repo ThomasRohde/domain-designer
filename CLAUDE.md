@@ -74,11 +74,13 @@ Users can choose between three layout algorithms in Global Settings:
 
 ### State Management
 
-State is managed through React hooks with clear separation:
-- Rectangle data and operations in `useRectangleManager`
-- Canvas interactions (drag/resize/pan) in `useCanvasInteractions`
-- Global settings persistence in `useAppSettings`
-- UI state (modals, sidebar) in `useUIState`
+State is managed through Zustand store with modular slices:
+- **Rectangle data and operations**: CRUD, selection, bulk operations in `rectangleSlice`
+- **Canvas interactions**: Drag/resize/pan, selection box state in `canvasSlice`  
+- **UI state**: Modals, sidebar, multi-select context menus in `uiSlice`
+- **Global settings**: Layout algorithms, appearance in `settingsSlice`
+- **History management**: Undo/redo with bulk operation support in `historySlice`
+- **Auto-save**: IndexedDB persistence in `autoSaveSlice`
 
 ### Export System
 
@@ -86,6 +88,41 @@ The application supports multiple export formats through `src/utils/exportUtils.
 - HTML, SVG, JSON, and Mermaid formats
 - Interactive HTML exports with zoom and pan functionality
 - Maintains layout integrity across all formats
+
+### Multi-Select System
+
+The application includes comprehensive PowerPoint-style multi-select operations implemented in Phase 1-10 of the @MULTISELECT.md plan:
+
+**Core Architecture:**
+- **Zustand Store Integration**: Multi-select state managed through `selectedIds: string[]` in UI slice
+- **Selection Validation**: Constraint enforcement through `src/utils/selectionUtils.ts` 
+- **PowerPoint-Style Operations**: Alignment and distribution algorithms in `src/utils/alignmentUtils.ts` and `src/utils/distributionUtils.ts`
+- **Visual Feedback**: Selection box component and enhanced rectangle styling with count badges
+
+**Selection Constraints:**
+- **Same-Parent Rule**: Only rectangles with identical `parentId` can be multi-selected
+- **Root Grouping**: Root rectangles (`parentId: undefined`) can only be selected with other roots
+- **Text Label Exclusion**: Text labels (`isTextLabel: true`) cannot be part of multi-selection
+- **Manual Positioning Requirement**: Bulk movement only allowed when parent has `isManualPositioningEnabled: true`
+
+**Key Components:**
+- `SelectionBox` - Drag selection visualization with zoom/pan coordinate transformation
+- `ContextMenu` - Dynamic single/multi-select menu with PowerPoint-style 3×2 alignment grid
+- `PropertyPanel` - Multi-select property editing with bulk operations and mixed value indicators
+- Enhanced `RectangleComponent` - Ctrl+Click support and multi-select visual styling
+
+**Bulk Operations:**
+- **Alignment**: Left, Center, Right, Top, Middle, Bottom with selection bounds calculation
+- **Distribution**: Horizontal/vertical equal spacing with perfect symmetry priority
+- **Bulk Editing**: Color, label, and description changes with confirmation dialogs
+- **Bulk Movement**: Maintains relative positions with collision detection
+- **Bulk Delete**: Cascading delete validation with hierarchy management
+
+**Performance Optimizations:**
+- O(1) Selection lookup using Set data structure for efficient rendering
+- Grid snapping integration for precise positioning
+- Comprehensive constraint validation with user-friendly error messages
+- Undo/redo integration for all bulk operations with single history entries
 
 ## Technology Stack
 

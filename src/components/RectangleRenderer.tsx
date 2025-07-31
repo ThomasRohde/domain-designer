@@ -21,6 +21,8 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const rectangles = useAppStore(state => state.rectangles);
   const selectedId = useAppStore(state => state.selectedId);
   const selectedIds = useAppStore(state => state.ui.selectedIds);
+  // Performance optimization: Convert selectedIds to Set for O(1) lookup
+  const selectedIdsSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
   const gridSize = useAppStore(state => state.settings.gridSize);
   const fontFamily = useAppStore(state => state.settings.fontFamily);
   const borderRadius = useAppStore(state => state.settings.borderRadius);
@@ -93,8 +95,8 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
         const isAtMinSize = resizeConstraintState?.rectangleId === rect.id && 
                            (resizeConstraintState?.isAtMinWidth || resizeConstraintState?.isAtMinHeight);
         
-        // Multi-select state calculation
-        const isMultiSelected = selectedIds.includes(rect.id);
+        // Multi-select state calculation (optimized with Set for O(1) lookup)
+        const isMultiSelected = selectedIdsSet.has(rect.id);
         const selectionCount = selectedIds.length;
         
         return (

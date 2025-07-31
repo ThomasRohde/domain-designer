@@ -13,6 +13,14 @@ import {
 } from '../../utils/rectangleOperations';
 import { alignRectangles } from '../../utils/alignmentUtils';
 import { distributeRectangles } from '../../utils/distributionUtils';
+import { 
+  detectBulkMovementCollisions, 
+  constrainBulkMovement
+} from '../../utils/collisionUtils';
+import {
+  validateBulkOperationConstraints,
+  triggerLayoutRecalculation
+} from '../../utils/bulkOperationUtils';
 import type { SliceCreator, RectangleActions } from '../types';
 
 /**
@@ -603,19 +611,58 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     },
 
     bulkUpdateColor: (ids: string[], color: string) => {
+      const state = get();
+      const { rectangles, settings } = state;
+      
+      // Validate the color update operation
+      const validation = validateBulkOperationConstraints('color', ids, rectangles, {
+        margin: settings.margin,
+        labelMargin: settings.labelMargin,
+        gridSize: settings.gridSize
+      });
+      
+      if (!validation.isValid) {
+        console.warn('Bulk color update failed validation:', validation.errorMessage);
+        return false;
+      }
+      
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         return currentRectangles.map(rect => 
           ids.includes(rect.id) ? { ...rect, color } : rect
         );
       });
+      
+      return true;
     },
 
     bulkDelete: (ids: string[]) => {
+      const state = get();
+      const { rectangles, settings } = state;
+      
+      // Validate the delete operation
+      const validation = validateBulkOperationConstraints('delete', ids, rectangles, {
+        margin: settings.margin,
+        labelMargin: settings.labelMargin,
+        gridSize: settings.gridSize
+      });
+      
+      if (!validation.isValid) {
+        console.warn('Bulk delete failed validation:', validation.errorMessage);
+        return false;
+      }
+      
+      // Validate that all rectangles to be deleted exist
+      const existingIds = ids.filter(id => rectangles.some(r => r.id === id));
+      if (existingIds.length === 0) {
+        console.warn('No valid rectangles found for bulk delete');
+        return false;
+      }
+      
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
-        // Get all descendants of rectangles to be deleted
-        let toDelete = new Set(ids);
+        // Get all descendants of rectangles to be deleted (cascade delete)
+        let toDelete = new Set(existingIds);
         
-        for (const id of ids) {
+        for (const id of existingIds) {
           const descendants = getAllDescendants(id, currentRectangles);
           descendants.forEach(descId => toDelete.add(descId));
         }
@@ -634,16 +681,44 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           }
         }
         
+        // Trigger layout recalculation for affected parents
+        const affectedParentIds = [...new Set(existingIds.map(id => {
+          const rect = currentRectangles.find(r => r.id === id);
+          return rect?.parentId;
+        }).filter(Boolean) as string[])];
+        
+        updated = triggerLayoutRecalculation(affectedParentIds, updated, {
+          margin: settings.margin,
+          labelMargin: settings.labelMargin,
+          leafFixedWidth: settings.leafFixedWidth,
+          leafFixedHeight: settings.leafFixedHeight,
+          leafWidth: settings.leafWidth,
+          leafHeight: settings.leafHeight
+        });
+        
         return updated;
       });
       
       // Clear selection after bulk delete
       get().rectangleActions.clearSelection();
+      return true;
     },
 
     bulkMove: (ids: string[], deltaX: number, deltaY: number) => {
       const state = get();
-      const { rectangles } = state;
+      const { rectangles, settings } = state;
+      
+      // Validate the move operation
+      const validation = validateBulkOperationConstraints('move', ids, rectangles, {
+        margin: settings.margin,
+        labelMargin: settings.labelMargin,
+        gridSize: settings.gridSize
+      });
+      
+      if (!validation.isValid) {
+        console.warn('Bulk move failed validation:', validation.errorMessage);
+        return false;
+      }
       
       // Check if bulk movement is allowed (all parents must have manual positioning enabled)
       const selectedRects = rectangles.filter(r => ids.includes(r.id));
@@ -656,10 +731,33 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         }
       }
       
+      // Detect collisions and constrain movement if necessary
+      const marginSettings = { margin: settings.margin, labelMargin: settings.labelMargin };
+      const collision = detectBulkMovementCollisions(ids, deltaX, deltaY, rectangles, marginSettings);
+      
+      let finalDeltaX = deltaX;
+      let finalDeltaY = deltaY;
+      
+      if (collision.hasCollision) {
+        // Constrain movement to avoid collisions
+        const constrainedMovement = constrainBulkMovement(ids, deltaX, deltaY, rectangles, marginSettings);
+        finalDeltaX = constrainedMovement.deltaX;
+        finalDeltaY = constrainedMovement.deltaY;
+        
+        // If no movement is possible, return false
+        if (finalDeltaX === 0 && finalDeltaY === 0) {
+          return false;
+        }
+      }
+      
+      // Apply grid snapping to final movement
+      finalDeltaX = Math.round(finalDeltaX);
+      finalDeltaY = Math.round(finalDeltaY);
+      
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         return currentRectangles.map(rect => 
           ids.includes(rect.id) 
-            ? { ...rect, x: rect.x + deltaX, y: rect.y + deltaY }
+            ? { ...rect, x: rect.x + finalDeltaX, y: rect.y + finalDeltaY }
             : rect
         );
       });
@@ -669,39 +767,94 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
 
     alignRectangles: (ids: string[], type: import('../types').AlignmentType) => {
       const state = get();
-      const rectangles = state.rectangles.filter(r => ids.includes(r.id));
+      const { rectangles, settings } = state;
       
-      if (rectangles.length < 2) return;
+      // Validate the alignment operation
+      const validation = validateBulkOperationConstraints('align', ids, rectangles, {
+        margin: settings.margin,
+        labelMargin: settings.labelMargin,
+        gridSize: settings.gridSize
+      });
+      
+      if (!validation.isValid) {
+        console.warn('Alignment operation failed validation:', validation.errorMessage);
+        return false;
+      }
+      
+      const selectedRectangles = rectangles.filter(r => ids.includes(r.id));
+      
+      if (selectedRectangles.length < 2) return false;
       
       // Apply professional alignment algorithms with grid snapping
-      const alignedRectangles = alignRectangles(rectangles, type, state.settings);
+      const alignedRectangles = alignRectangles(selectedRectangles, type, settings);
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         const alignedMap = new Map(alignedRectangles.map(r => [r.id, r]));
-        return currentRectangles.map(rect => 
+        let updated = currentRectangles.map(rect => 
           alignedMap.get(rect.id) || rect
         );
+        
+        // Trigger layout recalculation if needed
+        updated = triggerLayoutRecalculation(ids, updated, {
+          margin: settings.margin,
+          labelMargin: settings.labelMargin,
+          leafFixedWidth: settings.leafFixedWidth,
+          leafFixedHeight: settings.leafFixedHeight,
+          leafWidth: settings.leafWidth,
+          leafHeight: settings.leafHeight
+        });
+        
+        return updated;
       });
+      
+      return true;
     },
 
     distributeRectangles: (ids: string[], direction: import('../types').DistributionDirection) => {
       const state = get();
+      const { rectangles, settings } = state;
+      
+      // Validate the distribution operation
+      const validation = validateBulkOperationConstraints('distribute', ids, rectangles, {
+        margin: settings.margin,
+        labelMargin: settings.labelMargin,
+        gridSize: settings.gridSize
+      });
+      
+      if (!validation.isValid) {
+        console.warn('Distribution operation failed validation:', validation.errorMessage);
+        return false;
+      }
       
       // Preserve selection order - critical for boundary determination
       // First and last selected rectangles become fixed boundaries
-      const rectangles = ids.map(id => state.rectangles.find(r => r.id === id)).filter(Boolean) as Rectangle[];
+      const selectedRectangles = ids.map(id => rectangles.find(r => r.id === id)).filter(Boolean) as Rectangle[];
       
-      if (rectangles.length < 3) return;
+      if (selectedRectangles.length < 3) return false;
       
       // Apply professional distribution algorithms with white space focus
-      const distributedRectangles = distributeRectangles(rectangles, direction, state.settings);
+      const distributedRectangles = distributeRectangles(selectedRectangles, direction, settings);
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         const distributedMap = new Map(distributedRectangles.map(r => [r.id, r]));
-        return currentRectangles.map(rect => 
+        let updated = currentRectangles.map(rect => 
           distributedMap.get(rect.id) || rect
         );
+        
+        // Trigger layout recalculation if needed
+        updated = triggerLayoutRecalculation(ids, updated, {
+          margin: settings.margin,
+          labelMargin: settings.labelMargin,
+          leafFixedWidth: settings.leafFixedWidth,
+          leafFixedHeight: settings.leafFixedHeight,
+          leafWidth: settings.leafWidth,
+          leafHeight: settings.leafHeight
+        });
+        
+        return updated;
       });
+      
+      return true;
     },
 
     setRectangles: (rectangles: Rectangle[]) => {

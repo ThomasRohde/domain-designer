@@ -115,6 +115,79 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       )
     },
     {
+      id: 'multi-select',
+      title: 'Multi-Select Operations',
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Selection Methods</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Ctrl + Click</strong> - Toggle individual rectangles in/out of selection</li>
+              <li>• <strong>Drag Selection Box</strong> - Draw selection box on empty canvas area</li>
+              <li>• <strong>Ctrl + A</strong> - Select all sibling rectangles at same level</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">PowerPoint-Style Context Menu</h4>
+            <p className="text-sm text-gray-600 mb-2">
+              Right-click on any selected rectangle to access the multi-select context menu:
+            </p>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Alignment</strong> - Left, Center, Right, Top, Middle, Bottom (3×2 grid layout)</li>
+              <li>• <strong>Distribution</strong> - Horizontal/Vertical equal spacing (minimum 3 rectangles)</li>
+              <li>• <strong>Bulk Operations</strong> - Change color, delete selected with confirmation</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Selection Rules & Constraints</h4>
+            <ul className="text-sm space-y-1">
+              <li>• ✅ <strong>Same-level only</strong> - Only rectangles with same parent can be selected together</li>
+              <li>• ✅ <strong>Root grouping</strong> - Root rectangles can only be selected with other roots</li>
+              <li>• ❌ <strong>Text labels excluded</strong> - Text labels cannot be multi-selected</li>
+              <li>• ⚠️ <strong>Manual positioning required</strong> - Bulk movement only when parent is unlocked</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Alignment & Distribution Features</h4>
+            <div className="space-y-2">
+              <div>
+                <strong className="text-sm">Alignment Behavior:</strong>
+                <ul className="text-xs text-gray-600 ml-4 mt-1">
+                  <li>• Left/Right/Top/Bottom align to selection bounds</li>
+                  <li>• Center/Middle align to mathematical center</li>
+                  <li>• All positions snap to application grid system</li>
+                </ul>
+              </div>
+              <div>
+                <strong className="text-sm">Distribution Logic:</strong>
+                <ul className="text-xs text-gray-600 ml-4 mt-1">
+                  <li>• Perfect equal spacing between rectangle centers</li>
+                  <li>• Boundary rectangles may adjust for symmetry</li>
+                  <li>• Grid-aligned spacing values for precision</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Property Panel Integration</h4>
+            <p className="text-sm text-gray-600">
+              When multiple rectangles are selected, the property panel shows:
+            </p>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Selection count</strong> - "Multiple Selected (X rectangles)" header</li>
+              <li>• <strong>Bulk color picker</strong> - Apply color to all selected rectangles</li>
+              <li>• <strong>Mixed value indicators</strong> - Shows when properties differ across selection</li>
+              <li>• <strong>Bulk editing options</strong> - Append or replace labels and descriptions</li>
+            </ul>
+          </div>
+        </div>
+      )
+    },
+    {
       id: 'keyboard-shortcuts',
       title: 'Keyboard Shortcuts',
       content: (
@@ -132,9 +205,23 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <ul className="text-sm space-y-1 font-mono">
               <li>• <strong>Ctrl+Z</strong> - Undo</li>
               <li>• <strong>Ctrl+Y</strong> or <strong>Ctrl+Shift+Z</strong> - Redo</li>
-              <li>• <strong>Delete</strong> - Remove selected rectangle</li>
-              <li>• <strong>Escape</strong> - Cancel current drag operation</li>
+              <li>• <strong>Delete</strong> - Remove selected rectangle(s)</li>
+              <li>• <strong>Escape</strong> - Cancel operation / Clear selection</li>
             </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Multi-Select Operations ✨</h4>
+            <ul className="text-sm space-y-1 font-mono">
+              <li>• <strong>Ctrl+A</strong> - Select all sibling rectangles</li>
+              <li>• <strong>Ctrl+Click</strong> - Toggle rectangle in/out of selection</li>
+              <li>• <strong>Delete</strong> - Bulk delete with confirmation dialog</li>
+              <li>• <strong>Arrow Keys</strong> - Bulk movement (when parent allows)</li>
+              <li>• <strong>Shift+Arrow Keys</strong> - Fast bulk movement (10px)</li>
+            </ul>
+            <p className="text-sm text-gray-600 mt-2">
+              <strong>Note:</strong> Bulk movement maintains relative positions and includes collision detection.
+            </p>
           </div>
           
           <div>

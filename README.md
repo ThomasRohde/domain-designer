@@ -61,6 +61,13 @@
 - **Context Menus**: Right-click for advanced options
 - **Keyboard Navigation**: Arrow keys for precise positioning (1px/10px)
 
+### ✨ Multi-Select Operations
+- **PowerPoint-Style Selection**: Ctrl+Click and drag selection box
+- **Bulk Alignment**: Align Left, Center, Right, Top, Middle, Bottom
+- **Equal Distribution**: Horizontal/vertical spacing with perfect symmetry
+- **Bulk Editing**: Change colors, labels, and properties for multiple rectangles
+- **Group Operations**: Move, delete, and modify selections together
+
 </td>
 <td>
 
@@ -184,6 +191,89 @@ For advanced positioning control:
 
 > **💡 Pro Tip**: Manual positioning is perfect for fine-tuning specific layouts while keeping the overall structure intact.
 
+### 🎯 Multi-Select Operations
+
+<div align="center">
+  <img src="https://img.shields.io/badge/PowerPoint-Style-blue?style=for-the-badge" alt="PowerPoint Style">
+  <img src="https://img.shields.io/badge/Bulk-Operations-green?style=for-the-badge" alt="Bulk Operations">
+  <img src="https://img.shields.io/badge/Perfect-Alignment-purple?style=for-the-badge" alt="Perfect Alignment">
+</div>
+
+Bring PowerPoint-style efficiency to your diagrams with advanced multi-select operations!
+
+#### 🖱️ Selection Methods
+
+| Method | Description | Visual Feedback |
+|--------|-------------|-----------------|
+| **Ctrl+Click** | Toggle individual rectangles in/out of selection | Blue selection borders with count badges |
+| **Drag Selection** | Draw selection box on empty canvas area | Dashed selection rectangle |
+| **Ctrl+A** | Select all sibling rectangles at same level | Instant multi-select of valid rectangles |
+
+#### 🎯 PowerPoint-Style Context Menu
+
+Right-click on any selected rectangle to access the multi-select context menu:
+
+<table>
+<tr>
+<td width="50%">
+
+**Alignment Operations**
+- **Left/Center/Right**: Align to selection bounds
+- **Top/Middle/Bottom**: Vertical alignment options
+- **Grid Layout**: 3×2 button arrangement
+- **Instant Application**: No confirmation required
+
+</td>
+<td width="50%">
+
+**Distribution & Bulk Operations**
+- **Distribute Horizontally**: Equal spacing between centers
+- **Distribute Vertically**: Perfect symmetrical distribution
+- **Bulk Color Change**: Apply color to all selected
+- **Bulk Delete**: Remove entire selection with confirmation
+
+</td>
+</tr>
+</table>
+
+#### 📏 Advanced Alignment Features
+
+<details>
+<summary><strong>🎯 Alignment Algorithms</strong></summary>
+
+**PowerPoint-Compatible Behavior:**
+- **Boundary Alignment**: Left/Right/Top/Bottom align to selection extremes
+- **Center Alignment**: Mathematical center of all selected rectangles
+- **Grid Snapping**: All final positions snap to application grid
+- **Property Preservation**: Colors, labels, and hierarchy maintained
+
+**Distribution Logic:**
+- **Equal Spacing**: Perfect gaps between rectangle centers
+- **Boundary Preservation**: Outermost rectangles stay in place
+- **Symmetrical Results**: Guaranteed equal spacing with grid alignment
+- **Minimum 3 Rectangles**: Required for distribution operations
+
+</details>
+
+<div align="center">
+  <details>
+  <summary><strong>📊 Multi-Select Constraints & Rules</strong></summary>
+  
+  **Selection Rules:**
+  - ✅ Same-level siblings only (identical parent)
+  - ✅ Root rectangles can only group with other roots
+  - ❌ Text labels excluded from multi-select operations
+  - ❌ Cross-hierarchy selection not permitted
+  
+  **Operation Requirements:**
+  - **Alignment**: Minimum 2 rectangles
+  - **Distribution**: Minimum 3 rectangles  
+  - **Bulk Movement**: Parent must have manual positioning enabled
+  - **Layout Respect**: All operations work with Grid, Flow, and Mixed Flow algorithms
+  
+  </details>
+</div>
+
 ### ⌨️ Keyboard Shortcuts
 
 <table>
@@ -197,8 +287,14 @@ For advanced positioning control:
 **Editing**
 - `Ctrl+Z` - Undo
 - `Ctrl+Y` / `Ctrl+Shift+Z` - Redo
-- `Delete` - Remove selected rectangle
-- `Escape` - Cancel current operation
+- `Delete` - Remove selected rectangle(s)
+- `Escape` - Cancel operation / Clear selection
+
+**Multi-Select** ✨
+- `Ctrl+A` - Select all siblings
+- `Ctrl+Click` - Toggle selection
+- `Delete` - Bulk delete with confirmation
+- `Arrow Keys` - Bulk movement (when allowed)
 
 </td>
 <td>
@@ -211,6 +307,12 @@ For advanced positioning control:
 - Works for root rectangles always
 - Works for children when parent is unlocked
 - Moving parent moves all children together
+
+**Multi-Select Movement** ✨
+- `Arrow Keys` - Move entire selection together
+- `Shift+Arrow Keys` - Fast bulk movement (10px)
+- Maintains relative positions during movement
+- Automatic collision detection and prevention
 
 </td>
 </tr>

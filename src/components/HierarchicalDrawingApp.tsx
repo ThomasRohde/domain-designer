@@ -42,7 +42,10 @@ const HierarchicalDrawingApp = () => {
     removeRectangle, 
     updateRectangleDescription,
     setSelectedId,
+    setSelectedIds,
+    clearSelection,
     moveRectangle,
+    bulkMove,
     fitToChildren,
     toggleManualPositioning,
     lockAsIs,
@@ -131,10 +134,45 @@ const HierarchicalDrawingApp = () => {
   }, [rectangles, settings]);
 
   const handleDeleteSelected = useCallback(() => {
-    if (selectedId) {
+    const selectedIds = ui.selectedIds;
+    if (selectedIds.length > 1) {
+      // Multi-select bulk delete
+      bulkDelete(selectedIds);
+    } else if (selectedId) {
+      // Single rectangle delete
       removeRectangle(selectedId);
     }
-  }, [selectedId, removeRectangle]);
+  }, [selectedId, ui.selectedIds, removeRectangle, bulkDelete]);
+
+  /**
+   * Select all sibling rectangles of the currently selected rectangle.
+   * Useful for quickly selecting all rectangles at the same hierarchy level.
+   */
+  const handleSelectAllSiblings = useCallback(() => {
+    if (!selectedId) return;
+    
+    const currentRect = rectangles.find(r => r.id === selectedId);
+    if (!currentRect) return;
+    
+    // Find all siblings (rectangles with same parentId)
+    const siblings = rectangles.filter(r => 
+      r.parentId === currentRect.parentId && 
+      !r.isTextLabel && // Exclude text labels from multi-select
+      r.id !== selectedId // Don't include the currently selected rectangle
+    );
+    
+    // Include the current selection and all valid siblings
+    const allSiblingIds = [selectedId, ...siblings.map(r => r.id)];
+    setSelectedIds(allSiblingIds);
+  }, [selectedId, rectangles, setSelectedIds]);
+
+  /**
+   * Clear all selections and return to no-selection state.
+   * Useful for canceling multi-select operations.
+   */
+  const handleClearSelection = useCallback(() => {
+    clearSelection();
+  }, [clearSelection]);
 
   /**
    * Handles JSON file import with comprehensive validation and error recovery.
@@ -239,31 +277,55 @@ const HierarchicalDrawingApp = () => {
   // Multi-select context menu handlers
   const handleAlign = useCallback((type: import('../stores/types').AlignmentType) => {
     if (ui.selectedIds && ui.selectedIds.length > 1) {
-      alignRectangles(ui.selectedIds, type);
+      try {
+        alignRectangles(ui.selectedIds, type);
+      } catch (error) {
+        console.error('Error during alignment operation:', error);
+        // Graceful degradation: clear invalid selection
+        clearSelection();
+      }
     }
-  }, [ui.selectedIds, alignRectangles]);
+  }, [ui.selectedIds, alignRectangles, clearSelection]);
 
   const handleDistribute = useCallback((direction: import('../stores/types').DistributionDirection) => {
     if (ui.selectedIds && ui.selectedIds.length > 2) {
-      distributeRectangles(ui.selectedIds, direction);
+      try {
+        distributeRectangles(ui.selectedIds, direction);
+      } catch (error) {
+        console.error('Error during distribution operation:', error);
+        // Graceful degradation: clear invalid selection
+        clearSelection();
+      }
     }
-  }, [ui.selectedIds, distributeRectangles]);
+  }, [ui.selectedIds, distributeRectangles, clearSelection]);
 
   const handleBulkUpdateColor = useCallback(() => {
     // For now, just use the first predefined color as an example
     // In a real implementation, this would open a color picker
     if (ui.selectedIds && ui.selectedIds.length > 1) {
-      const color = settings.predefinedColors[0] || '#3B82F6';
-      bulkUpdateColor(ui.selectedIds, color);
+      try {
+        const color = settings.predefinedColors[0] || '#3B82F6';
+        bulkUpdateColor(ui.selectedIds, color);
+      } catch (error) {
+        console.error('Error updating bulk color:', error);
+        // Graceful degradation: clear invalid selection
+        clearSelection();
+      }
     }
-  }, [ui.selectedIds, bulkUpdateColor, settings.predefinedColors]);
+  }, [ui.selectedIds, bulkUpdateColor, settings.predefinedColors, clearSelection]);
 
   const handleBulkDelete = useCallback(() => {
     if (ui.selectedIds && ui.selectedIds.length > 1) {
-      // TODO: Add confirmation dialog
-      bulkDelete(ui.selectedIds);
+      try {
+        // TODO: Add confirmation dialog
+        bulkDelete(ui.selectedIds);
+      } catch (error) {
+        console.error('Error during bulk delete:', error);
+        // Graceful degradation: clear invalid selection
+        clearSelection();
+      }
     }
-  }, [ui.selectedIds, bulkDelete]);
+  }, [ui.selectedIds, bulkDelete, clearSelection]);
 
   const handleSaveDescription = useCallback((description: string) => {
     if (ui.descriptionEditModal) {
@@ -389,7 +451,6 @@ const HierarchicalDrawingApp = () => {
   }, [uiActions.showUpdateNotification]);
 
   // Canvas interaction handlers for keyboard shortcuts and global mouse events
-  const cancelDrag = useAppStore(state => state.canvasActions.cancelDrag);
   const startKeyboardMovement = useAppStore(state => state.canvasActions.startKeyboardMovement);
   const handleMouseMove = useAppStore(state => state.canvasActions.handleMouseMove);
   const handleMouseUp = useAppStore(state => state.canvasActions.handleMouseUp);
@@ -398,32 +459,60 @@ const HierarchicalDrawingApp = () => {
 
   /**
    * Keyboard-driven rectangle movement with precise pixel control.
-   * Handles arrow key navigation with visual feedback and constraint validation.
+   * Handles both single rectangle and multi-select bulk movement.
    * Movement respects parent boundaries and manual positioning settings.
    */
   const handleMoveUp = useCallback((deltaPixels: number) => {
-    if (!selectedId) return;
-    startKeyboardMovement();
-    moveRectangle(selectedId, 0, -deltaPixels);
-  }, [selectedId, moveRectangle, startKeyboardMovement]);
+    const selectedIds = ui.selectedIds;
+    if (selectedIds.length > 1) {
+      // Multi-select bulk movement
+      startKeyboardMovement();
+      bulkMove(selectedIds, 0, -deltaPixels);
+    } else if (selectedId) {
+      // Single rectangle movement
+      startKeyboardMovement();
+      moveRectangle(selectedId, 0, -deltaPixels);
+    }
+  }, [selectedId, ui.selectedIds, moveRectangle, bulkMove, startKeyboardMovement]);
 
   const handleMoveDown = useCallback((deltaPixels: number) => {
-    if (!selectedId) return;
-    startKeyboardMovement();
-    moveRectangle(selectedId, 0, deltaPixels);
-  }, [selectedId, moveRectangle, startKeyboardMovement]);
+    const selectedIds = ui.selectedIds;
+    if (selectedIds.length > 1) {
+      // Multi-select bulk movement
+      startKeyboardMovement();
+      bulkMove(selectedIds, 0, deltaPixels);
+    } else if (selectedId) {
+      // Single rectangle movement
+      startKeyboardMovement();
+      moveRectangle(selectedId, 0, deltaPixels);
+    }
+  }, [selectedId, ui.selectedIds, moveRectangle, bulkMove, startKeyboardMovement]);
 
   const handleMoveLeft = useCallback((deltaPixels: number) => {
-    if (!selectedId) return;
-    startKeyboardMovement();
-    moveRectangle(selectedId, -deltaPixels, 0);
-  }, [selectedId, moveRectangle, startKeyboardMovement]);
+    const selectedIds = ui.selectedIds;
+    if (selectedIds.length > 1) {
+      // Multi-select bulk movement
+      startKeyboardMovement();
+      bulkMove(selectedIds, -deltaPixels, 0);
+    } else if (selectedId) {
+      // Single rectangle movement
+      startKeyboardMovement();
+      moveRectangle(selectedId, -deltaPixels, 0);
+    }
+  }, [selectedId, ui.selectedIds, moveRectangle, bulkMove, startKeyboardMovement]);
 
   const handleMoveRight = useCallback((deltaPixels: number) => {
-    if (!selectedId) return;
-    startKeyboardMovement();
-    moveRectangle(selectedId, deltaPixels, 0);
-  }, [selectedId, moveRectangle, startKeyboardMovement]);
+    const selectedIds = ui.selectedIds;
+    if (selectedIds.length > 1) {
+      // Multi-select bulk movement
+      startKeyboardMovement();
+      bulkMove(selectedIds, deltaPixels, 0);
+    } else if (selectedId) {
+      // Single rectangle movement
+      startKeyboardMovement();
+      moveRectangle(selectedId, deltaPixels, 0);
+    }
+  }, [selectedId, ui.selectedIds, moveRectangle, bulkMove, startKeyboardMovement]);
 
   /**
    * Global mouse event handlers for canvas interactions.
@@ -504,12 +593,13 @@ const HierarchicalDrawingApp = () => {
     onUndo: undo,
     onRedo: redo,
     onDelete: handleDeleteSelected,
-    onCancel: cancelDrag,
+    onCancel: handleClearSelection, // Escape now clears selection
+    onSelectAll: handleSelectAllSiblings, // Ctrl+A selects all siblings
     onMoveUp: handleMoveUp,
     onMoveDown: handleMoveDown,
     onMoveLeft: handleMoveLeft,
     onMoveRight: handleMoveRight,
-  }), [undo, redo, handleDeleteSelected, cancelDrag, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight]));
+  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
@@ -518,7 +608,7 @@ const HierarchicalDrawingApp = () => {
         onAddRectangle={handleAddRectangle}
         onExport={uiActions.openExportModal}
         onImport={handleImport}
-        selectedId={selectedId}
+        selectedId={ui.selectedIds && ui.selectedIds.length === 1 ? ui.selectedIds[0] : selectedId}
         lastSaved={autoSaveState.lastSaved}
         autoSaveEnabled={autoSaveState.enabled}
       />
