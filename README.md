@@ -5,7 +5,7 @@
   <p>
     <a href="https://thomasrohde.github.io/domain-designer/"><strong>🚀 Live Demo</strong></a>
     •
-    <a href="https://thomasrohde.github.io/domain-designer/viewer/https://thomasrohde.github.io/domain-designer/test-models/sample-diagram.json"><strong>🔗 Try URL Viewer</strong></a>
+    <a href="https://thomasrohde.github.io/domain-designer/viewer/https%3A//thomasrohde.github.io/domain-designer/test-models/sample-diagram.json"><strong>🔗 Try URL Viewer</strong></a>
     •
     <a href="#features"><strong>Features</strong></a>
     •
@@ -243,7 +243,7 @@ https://yourdomain.com/viewer/https://example.com/path/to/diagram.json
 
 **🎯 Try It Now:**
 <div align="center">
-  <a href="https://thomasrohde.github.io/domain-designer/viewer/https://thomasrohde.github.io/domain-designer/test-models/sample-diagram.json">
+  <a href="https://thomasrohde.github.io/domain-designer/viewer/https%3A//thomasrohde.github.io/domain-designer/test-models/sample-diagram.json">
     <img src="https://img.shields.io/badge/🔗%20View%20Sample%20Diagram-blue?style=for-the-badge" alt="View Sample Diagram">
   </a>
 </div>

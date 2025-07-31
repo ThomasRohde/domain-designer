@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Domain Designer</title>
+    <script type="text/javascript">
+      // GitHub Pages SPA redirect for Domain Designer
+      // This handles the case where GitHub Pages returns 404 for client-side routes
+      // and redirects to the main app with the path preserved
+      (function(l) {
+        // Get the current path
+        var path = l.pathname;
+        
+        // If we're in the domain-designer subdirectory, preserve the full path
+        if (path.startsWith('/domain-designer/')) {
+          // Replace the current URL in history with the index.html version
+          // This allows React Router to handle the routing client-side
+          window.history.replaceState(null, null, path + l.search + l.hash);
+          
+          // Redirect to index.html which will load the React app
+          window.location.replace('/domain-designer/');
+        } else {
+          // Fallback for root domain deployment
+          window.history.replaceState(null, null, path + l.search + l.hash);
+          window.location.replace('/');
+        }
+      }(window.location))
+    </script>
+  </head>
+  <body>
+    <div>Redirecting to Domain Designer...</div>
+  </body>
+</html>
