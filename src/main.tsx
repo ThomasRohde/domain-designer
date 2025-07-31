@@ -43,7 +43,19 @@ const updateSW = registerSW({
 // Get base path for GitHub Pages deployment
 const basename = import.meta.env.PROD && import.meta.env.BASE_URL === '/domain-designer/' ? '/domain-designer' : '/';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Create root instance only once
+interface ContainerWithRoot extends HTMLElement {
+  _reactRoot?: ReactDOM.Root;
+}
+
+const container = document.getElementById('root')! as ContainerWithRoot;
+let root = container._reactRoot;
+if (!root) {
+  root = ReactDOM.createRoot(container);
+  container._reactRoot = root;
+}
+
+root.render(
   <React.StrictMode>
     <BrowserRouter basename={basename}>
       <App />

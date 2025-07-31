@@ -161,7 +161,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           // First, check if we have a manual clear flag in saved data
           const data = await loadDataFromIndexedDB();
           if (data?.manualClearInProgress) {
-            console.log('🚫 Manual clear flag detected during initialization');
             // Ensure state reflects this immediately
             set(state => ({
               rectangles: [],
@@ -534,7 +533,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         // Check localStorage flag first (highest priority)
         const clearInProgress = localStorage.getItem('domain-designer-clear-in-progress');
         if (clearInProgress === 'true') {
-          console.log('🚫 Skipping auto-restore - clear in progress flag detected');
           // Remove the flag now that we've seen it
           localStorage.removeItem('domain-designer-clear-in-progress');
           // Ensure the state reflects this
@@ -544,75 +542,72 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
         
         // Prevent multiple auto-restores - but always check for manual clear flag first
         if (state.autoSave.hasAutoRestored && !state.autoSave.manualClearInProgress) {
-          console.log('🚫 Skipping auto-restore - already restored this session');
           return false;
         }
 
         // Skip auto-restore if a manual clear is in progress
         if (state.autoSave.manualClearInProgress) {
-          console.log('🚫 Skipping auto-restore - manual clear in progress');
           return false;
         }
 
         try {
           const data = await loadDataFromIndexedDB();
-          if (data) {
-            // Check if manual clear was in progress when data was saved
-            if (data.manualClearInProgress) {
-              console.log('🚫 Skipping auto-restore - saved data has manual clear flag');
-              // Update our state to reflect the saved flag AND ensure empty rectangles
-              set(state => ({
-                rectangles: [], // Ensure rectangles are empty
-                autoSave: {
-                  ...state.autoSave,
-                  manualClearInProgress: true,
-                  hasSavedData: true,
-                  lastSaved: data.timestamp
-                }
-              }));
-              return false;
-            }
+          if (!data) {
+            // No data found - this is expected for fresh browser sessions
+            return false;
+          }
+          
+          // Check if manual clear was in progress when data was saved
+          if (data.manualClearInProgress) {
+            // Update our state to reflect the saved flag AND ensure empty rectangles
+            set(state => ({
+              rectangles: [], // Ensure rectangles are empty
+              autoSave: {
+                ...state.autoSave,
+                manualClearInProgress: true,
+                hasSavedData: true,
+                lastSaved: data.timestamp
+              }
+            }));
+            return false;
+          }
+          
+          // Convert to SavedDiagram format for validation
+          const savedData: SavedDiagram = {
+            version: '2.0',
+            rectangles: data.rectangles,
+            globalSettings: data.appSettings,
+            layoutMetadata: {
+              algorithm: data.appSettings.layoutAlgorithm || 'grid',
+              isUserArranged: data.rectangles.some(r => r.isManualPositioningEnabled),
+              preservePositions: true,
+              boundingBox: { w: 0, h: 0 }
+            },
+            timestamp: data.timestamp
+          };
+          
+          // Validate the existing data
+          const validation = validateSavedDiagram(savedData);
+          if (validation.isValid) {
+            lastGoodDataRef = savedData;
             
-            // Convert to SavedDiagram format for validation
-            const savedData: SavedDiagram = {
-              version: '2.0',
-              rectangles: data.rectangles,
-              globalSettings: data.appSettings,
-              layoutMetadata: {
-                algorithm: data.appSettings.layoutAlgorithm || 'grid',
-                isUserArranged: data.rectangles.some(r => r.isManualPositioningEnabled),
-                preservePositions: true,
-                boundingBox: { w: 0, h: 0 }
-              },
-              timestamp: data.timestamp
-            };
+            // Auto-restore validated data (once per session)
+            set({
+              rectangles: savedData.rectangles,
+              settings: savedData.globalSettings,
+              selectedId: null,
+              autoSave: {
+                ...state.autoSave,
+                hasSavedData: true,
+                lastSaved: savedData.timestamp,
+                lastGoodSave: savedData.timestamp,
+                hasAutoRestored: true
+              }
+            });
             
-            // Validate the existing data
-            const validation = validateSavedDiagram(savedData);
-            if (validation.isValid) {
-              lastGoodDataRef = savedData;
-              
-              // Auto-restore validated data (once per session)
-              
-              set({
-                rectangles: savedData.rectangles,
-                settings: savedData.globalSettings,
-                selectedId: null,
-                autoSave: {
-                  ...state.autoSave,
-                  hasSavedData: true,
-                  lastSaved: savedData.timestamp,
-                  lastGoodSave: savedData.timestamp,
-                  hasAutoRestored: true
-                }
-              });
-              
-              return true;
-            } else {
-              console.error('❌ Corrupted auto-save data found. Please clear localStorage.');
-              return false;
-            }
+            return true;
           } else {
+            console.error('❌ Corrupted auto-save data found. Please clear localStorage.');
             return false;
           }
         } catch (error) {
