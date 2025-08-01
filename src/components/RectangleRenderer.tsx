@@ -104,6 +104,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             rectangle={rect}
             isSelected={selectedId === rect.id}
             isMultiSelected={isMultiSelected}
+            selectedCount={selectedIds.length}
             zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState, hierarchyDragState)}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}
@@ -111,7 +112,14 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             onUpdateLabel={updateRectangleLabel}
             // Drag/resize permissions based on hierarchy and manual positioning settings
             canDrag={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
-            canResize={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
+            canResize={(() => {
+              const hasChildren = getChildren(rect.id, rectangles).length > 0;
+              return (
+                !rect.parentId || // Root rectangles can always be resized
+                (!hasChildren && rect.parentId && Boolean(rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)) || // Leaf rectangles under unlocked parents
+                (hasChildren && Boolean(rect.isManualPositioningEnabled)) // Parent rectangles that are themselves unlocked
+              );
+            })()}
             childCount={getChildren(rect.id, rectangles).length}
             gridSize={gridSize}
             fontSize={calculateFontSize(rect.id)}

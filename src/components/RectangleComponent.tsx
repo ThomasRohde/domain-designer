@@ -10,6 +10,8 @@ interface RectangleComponentProps {
   isSelected: boolean;
   /** Whether this rectangle is part of a multi-selection */
   isMultiSelected: boolean;
+  /** Total number of selected rectangles (for determining if resize handle should show) */
+  selectedCount?: number;
   /** Z-index for proper layering (calculated based on hierarchy depth) */
   zIndex: number;
   /** Mouse interaction handler supporting drag, resize, and hierarchy-drag modes */
@@ -73,6 +75,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   rectangle,
   isSelected,
   isMultiSelected,
+  selectedCount = 1,
   zIndex,
   onMouseDown,
   onContextMenu,
@@ -247,8 +250,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     boxShadow,
     // Disable transitions during active interactions for immediate visual feedback
     transition: (isDragActive || isResizeActive || isBeingDragged) ? 'none' : 'all 0.2s ease-in-out',
-    // Clip child content during resize to prevent visual overflow issues
-    overflow: childCount > 0 ? 'hidden' : 'visible'
+    // Clip child content during resize to prevent visual overflow issues, but allow resize handle to be visible
+    overflow: childCount > 0 && !isSelected ? 'hidden' : 'visible'
   };
 
   /**
@@ -374,8 +377,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         </div>
       )}
 
-      {/* Interactive resize handle - only visible when selected and not in hierarchy drag mode or multi-selection */}
-      {canResize && isSelected && !isMultiSelected && !isHierarchyDragActive && (
+      {/* Interactive resize handle - only visible when exactly one rectangle is selected */}
+      {canResize && isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
           className="absolute bottom-0 right-0 w-6 h-6 sm:w-4 sm:h-4 bg-blue-500 cursor-se-resize rounded-tl-lg opacity-80 hover:opacity-100 transition-opacity touch-friendly"
           onMouseDown={(e) => onMouseDown(e, rectangle, 'resize')}

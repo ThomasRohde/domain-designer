@@ -53,6 +53,7 @@ const ViewerRectangleRenderer: React.FC<ViewerRectangleRendererProps> = ({
             rectangle={rect}
             isSelected={false}
             isMultiSelected={false}
+            selectedCount={0}
             zIndex={getZIndex(rect, rectangles, null, null, null, null)}
             onMouseDown={handleMouseDown}
             onContextMenu={handleContextMenu}
