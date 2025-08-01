@@ -1,6 +1,7 @@
-import React, { RefObject } from 'react';
+import React, { RefObject, useState, useEffect } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import SelectionBox from './SelectionBox';
+import Minimap from './Minimap';
 
 interface CanvasProps {
   /** Reference to the canvas container element for drag/pan operations */
@@ -12,18 +13,29 @@ interface CanvasProps {
 }
 
 /**
- * Main drawing canvas component that handles:
- * - Pan and zoom transformations with proper transform origins
- * - Dynamic grid background that scales and moves with transformations
- * - Hierarchy drag-and-drop target detection for root-level drops
- * - Performance optimized rendering with willChange hints during interactions
- * - Click-to-deselect and canvas mouse interaction handling
+ * Main drawing canvas component managing the infinite drawing surface.
+ * 
+ * Core Responsibilities:
+ * - Viewport management: Pan/zoom transformations with precision transform origins
+ * - Dynamic grid rendering: Background grid that scales and translates with viewport
+ * - Navigation minimap: Integrated spatial navigation with click-to-jump functionality
+ * - Hierarchy operations: Visual feedback for drag-and-drop reparenting to root level
+ * - Performance optimization: Strategic willChange hints during active interactions
+ * - Event coordination: Canvas-level mouse handling for deselection and pan initiation
+ * 
+ * Coordinate Systems:
+ * - Screen space: Browser viewport coordinates (mouse events, container bounds)
+ * - Canvas space: Transformed coordinates accounting for pan offset and zoom level
+ * - Grid space: Logical rectangle positions (rect.x, rect.y in grid units)
  */
 const Canvas: React.FC<CanvasProps> = ({
   containerRef,
   children,
   overlay,
 }) => {
+  // Dynamic container dimensions tracking for accurate minimap viewport calculation
+  const [containerDimensions, setContainerDimensions] = useState({ width: 800, height: 600 });
+
   // Canvas visual settings and interaction state
   const gridSize = useAppStore(state => state.settings.gridSize);
   const showGrid = useAppStore(state => state.settings.showGrid);
@@ -36,9 +48,36 @@ const Canvas: React.FC<CanvasProps> = ({
   // Multi-select and selection box state
   const selectionBoxState = useAppStore(state => state.ui.selectionBoxState);
   
+  // Minimap state and data
+  const minimapVisible = useAppStore(state => state.canvas.minimapVisible);
+  const rectangles = useAppStore(state => state.rectangles);
+  const selectedIds = useAppStore(state => state.ui.selectedIds);
+  
   // Canvas interaction handlers
   const handleCanvasMouseDown = useAppStore(state => state.canvasActions.handleCanvasMouseDown);
   const setSelectedId = useAppStore(state => state.rectangleActions.setSelectedId);
+  
+  // Minimap actions
+  const toggleMinimap = useAppStore(state => state.canvasActions.toggleMinimap);
+  const jumpToPosition = useAppStore(state => state.canvasActions.jumpToPosition);
+
+  // Track container dimensions for accurate minimap viewport representation
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerDimensions({ 
+          width: rect.width, 
+          height: rect.height 
+        });
+      }
+    };
+
+    // Initial measurement and responsive updates
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [containerRef]);
   
   // Drop target detection - canvas background can accept drops to create root rectangles
   const isCanvasDropTarget = hierarchyDragState && 
@@ -47,7 +86,7 @@ const Canvas: React.FC<CanvasProps> = ({
   return (
     <div className="flex-1 p-2 sm:p-4 overflow-hidden">
       <div className="bg-white rounded-lg shadow-lg overflow-hidden h-full w-full canvas-container relative">
-        {/* Main canvas container with dynamic cursor states and drop target styling */}
+        {/* Main canvas with dynamic styling for interactions and drag operations */}
         <div
           ref={containerRef}
           className={`relative w-full h-full transition-all duration-200 select-none ${
@@ -75,7 +114,7 @@ const Canvas: React.FC<CanvasProps> = ({
           onClick={() => setSelectedId(null)}
           onMouseDown={(e) => handleCanvasMouseDown(e, containerRef)}
         >
-          {/* Transformed content container - all rectangles and overlays scale/pan together */}
+          {/* Content layer with synchronized pan/zoom transformations */}
           <div
             className="w-full h-full relative"
             style={{
@@ -85,7 +124,7 @@ const Canvas: React.FC<CanvasProps> = ({
             }}
           >
             {children}
-            {/* Overlay content (like action buttons) positioned within the zoomed coordinate system */}
+            {/* Action buttons and overlays positioned in transformed coordinate space */}
             {overlay}
           </div>
           
@@ -115,6 +154,20 @@ const Canvas: React.FC<CanvasProps> = ({
             Zoom: {Math.round(zoomState.level * 100)}%
           </div>
         )}
+
+        {/* Navigation Minimap - provides spatial awareness and click-to-navigate functionality */}
+        <Minimap
+          rectangles={rectangles}
+          selectedIds={selectedIds}
+          panOffset={panOffset}
+          zoomState={zoomState}
+          gridSize={gridSize}
+          containerWidth={containerDimensions.width}
+          containerHeight={containerDimensions.height}
+          visible={minimapVisible}
+          onToggleVisibility={toggleMinimap}
+          onJumpToPosition={jumpToPosition}
+        />
       </div>
     </div>
   );

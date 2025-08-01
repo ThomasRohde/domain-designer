@@ -442,6 +442,10 @@ const HierarchicalDrawingApp = () => {
   const handleMouseUp = useAppStore(state => state.canvasActions.handleMouseUp);
   const handleWheel = useAppStore(state => state.canvasActions.handleWheel);
   const setIsSpacePressed = useAppStore(state => state.canvasActions.setIsSpacePressed);
+  
+  // Navigation minimap state and controls
+  const toggleMinimap = useAppStore(state => state.canvasActions.toggleMinimap);
+  const minimapVisible = useAppStore(state => state.canvas.minimapVisible);
 
   /**
    * Keyboard-driven rectangle movement with precise pixel control.
@@ -585,7 +589,8 @@ const HierarchicalDrawingApp = () => {
     onMoveDown: handleMoveDown,
     onMoveLeft: handleMoveLeft,
     onMoveRight: handleMoveRight,
-  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight]));
+    onToggleMinimap: toggleMinimap, // 'M' key toggles navigation minimap visibility
+  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight, toggleMinimap]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
@@ -597,6 +602,8 @@ const HierarchicalDrawingApp = () => {
         selectedId={ui.selectedIds && ui.selectedIds.length === 1 ? ui.selectedIds[0] : selectedId}
         lastSaved={autoSaveState.lastSaved}
         autoSaveEnabled={autoSaveState.enabled}
+        onToggleMinimap={toggleMinimap}
+        minimapVisible={minimapVisible}
       />
 
       <div className="flex-1 flex overflow-hidden relative">

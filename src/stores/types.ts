@@ -81,6 +81,8 @@ export interface CanvasState {
   // Multi-select specific state
   multiSelectDragInitialPositions: Record<string, { x: number; y: number }> | null;  // Initial positions for bulk drag
   multiSelectRelativePositions: Map<string, { x: number; y: number; relativeX: number; relativeY: number }> | null;  // Relative positions for bulk drag
+  // Navigation minimap state
+  minimapVisible: boolean;  // Controls visibility of spatial navigation overlay
 }
 
 /**
@@ -273,6 +275,10 @@ export interface CanvasActions {
   startMultiSelectDragWithDescendants: (initialPositions: Record<string, { x: number; y: number }>, allAffectedIds: string[]) => void;
   updateMultiSelectDrag: (deltaX: number, deltaY: number) => void;
   endMultiSelectDrag: (applyChanges?: boolean) => void;
+  
+  // Navigation minimap actions
+  toggleMinimap: () => void;  // Toggle spatial navigation overlay visibility
+  jumpToPosition: (x: number, y: number, containerWidth?: number, containerHeight?: number) => void;  // Center viewport on target position (called from minimap clicks)
 }
 
 /**

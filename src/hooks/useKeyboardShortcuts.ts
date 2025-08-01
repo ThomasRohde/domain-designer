@@ -18,6 +18,7 @@ interface KeyboardShortcuts {
   onMoveDown?: (deltaPixels: number) => void;
   onMoveLeft?: (deltaPixels: number) => void;
   onMoveRight?: (deltaPixels: number) => void;
+  onToggleMinimap?: () => void;  // 'M' key toggles navigation minimap visibility
 }
 
 /**
@@ -41,6 +42,10 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
         } else if (key === 'Escape' && shortcuts.onCancel) {
           event.preventDefault();
           shortcuts.onCancel();
+        } else if (key.toLowerCase() === 'm' && shortcuts.onToggleMinimap && !isTyping && !isInModal) {
+          // 'M' key toggles minimap visibility for spatial navigation
+          event.preventDefault();
+          shortcuts.onToggleMinimap();
         } else if (!isTyping && !isInModal) {
           // Arrow key movement with precision control via modifiers
           let deltaPixels = 1; // Precise movement by default

@@ -57,7 +57,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     needsLayoutUpdate: null,      // Layout update requirements
     keyboardTimeoutId: null,      // Debounce timer for keyboard feedback
     multiSelectDragInitialPositions: null,  // Initial positions for bulk drag operations
-    multiSelectRelativePositions: null      // Relative positions for bulk drag operations
+    multiSelectRelativePositions: null,     // Relative positions for bulk drag operations
+    minimapVisible: true          // Navigation minimap visibility (default: visible for spatial awareness)
   },
 
   // Canvas interaction actions
@@ -973,6 +974,63 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       });
       
       return targets;
+    },
+
+    /**
+     * Navigation minimap control actions.
+     * 
+     * The minimap provides spatial awareness for large diagrams and enables
+     * quick navigation to any part of the canvas. These actions manage:
+     * - Visibility toggling (M key or toolbar button)
+     * - Jump-to-position navigation from minimap clicks
+     */
+    toggleMinimap: () => {
+      set(state => ({
+        canvas: {
+          ...state.canvas,
+          minimapVisible: !state.canvas.minimapVisible
+        }
+      }));
+    },
+
+    /**
+     * Navigate to a specific position by centering it in the viewport.
+     * 
+     * @param x - Target X position in pixel coordinates (grid units * gridSize)
+     * @param y - Target Y position in pixel coordinates (grid units * gridSize)
+     * @param containerWidth - Optional actual container width (fallback to approximation)
+     * @param containerHeight - Optional actual container height (fallback to approximation)
+     * 
+     * This is called when users click on the minimap. The minimap converts
+     * click positions to grid coordinates, then to pixel coordinates before
+     * calling this function. The function calculates the pan offset needed
+     * to center the target position in the current viewport.
+     */
+    jumpToPosition: (x: number, y: number, containerWidth?: number, containerHeight?: number) => {
+      set(state => {
+        // Calculate viewport center position accounting for current zoom level
+        // Target position comes in as pixel coordinates from minimap click
+        
+        // Use actual container dimensions if provided, fallback to approximation
+        // This ensures accurate navigation across different screen sizes and layouts
+        const viewportWidth = containerWidth || window.innerWidth * 0.7;
+        const viewportHeight = containerHeight || window.innerHeight * 0.8;
+        
+        // Calculate pan offset to place target position at viewport center
+        // Formula: pan_offset = (viewport_center) - (target * zoom_level)
+        const newPanX = (viewportWidth / 2) - x * state.canvas.zoomState.level;
+        const newPanY = (viewportHeight / 2) - y * state.canvas.zoomState.level;
+        
+        return {
+          canvas: {
+            ...state.canvas,
+            panOffset: {
+              x: newPanX,
+              y: newPanY
+            }
+          }
+        };
+      });
     }
   }
 });
