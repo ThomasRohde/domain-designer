@@ -755,8 +755,15 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       finalDeltaY = Math.round(finalDeltaY);
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
+        // Create a set of all rectangles that need to be moved (selected + their descendants)
+        const rectanglesToMove = new Set(ids);
+        ids.forEach(id => {
+          const descendants = getAllDescendants(id, currentRectangles);
+          descendants.forEach(descendantId => rectanglesToMove.add(descendantId));
+        });
+        
         return currentRectangles.map(rect => 
-          ids.includes(rect.id) 
+          rectanglesToMove.has(rect.id) 
             ? { ...rect, x: rect.x + finalDeltaX, y: rect.y + finalDeltaY }
             : rect
         );
@@ -790,9 +797,58 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         const alignedMap = new Map(alignedRectangles.map(r => [r.id, r]));
-        let updated = currentRectangles.map(rect => 
-          alignedMap.get(rect.id) || rect
-        );
+        
+        // Calculate position deltas for aligned rectangles
+        const positionDeltas = new Map<string, { deltaX: number; deltaY: number }>();
+        alignedRectangles.forEach(alignedRect => {
+          const originalRect = currentRectangles.find(r => r.id === alignedRect.id);
+          if (originalRect) {
+            positionDeltas.set(alignedRect.id, {
+              deltaX: alignedRect.x - originalRect.x,
+              deltaY: alignedRect.y - originalRect.y
+            });
+          }
+        });
+        
+        // Create a set of all rectangles that need to be moved (selected + their descendants)
+        const rectanglesToMove = new Set(ids);
+        ids.forEach(id => {
+          const descendants = getAllDescendants(id, currentRectangles);
+          descendants.forEach(descendantId => rectanglesToMove.add(descendantId));
+        });
+        
+        let updated = currentRectangles.map(rect => {
+          if (alignedMap.has(rect.id)) {
+            // Apply alignment to selected rectangles
+            return alignedMap.get(rect.id)!;
+          } else if (rectanglesToMove.has(rect.id)) {
+            // Move children/descendants with their aligned parents
+            const parentId = rect.parentId;
+            if (parentId && positionDeltas.has(parentId)) {
+              const delta = positionDeltas.get(parentId)!;
+              return {
+                ...rect,
+                x: rect.x + delta.deltaX,
+                y: rect.y + delta.deltaY
+              };
+            }
+            // Check if any ancestor was moved
+            let currentParentId = parentId;
+            while (currentParentId) {
+              if (positionDeltas.has(currentParentId)) {
+                const delta = positionDeltas.get(currentParentId)!;
+                return {
+                  ...rect,
+                  x: rect.x + delta.deltaX,
+                  y: rect.y + delta.deltaY
+                };
+              }
+              const parentRect = currentRectangles.find(r => r.id === currentParentId);
+              currentParentId = parentRect?.parentId;
+            }
+          }
+          return rect;
+        });
         
         // Trigger layout recalculation if needed
         updated = triggerLayoutRecalculation(ids, updated, {
@@ -837,9 +893,58 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         const distributedMap = new Map(distributedRectangles.map(r => [r.id, r]));
-        let updated = currentRectangles.map(rect => 
-          distributedMap.get(rect.id) || rect
-        );
+        
+        // Calculate position deltas for distributed rectangles
+        const positionDeltas = new Map<string, { deltaX: number; deltaY: number }>();
+        distributedRectangles.forEach(distributedRect => {
+          const originalRect = currentRectangles.find(r => r.id === distributedRect.id);
+          if (originalRect) {
+            positionDeltas.set(distributedRect.id, {
+              deltaX: distributedRect.x - originalRect.x,
+              deltaY: distributedRect.y - originalRect.y
+            });
+          }
+        });
+        
+        // Create a set of all rectangles that need to be moved (selected + their descendants)
+        const rectanglesToMove = new Set(ids);
+        ids.forEach(id => {
+          const descendants = getAllDescendants(id, currentRectangles);
+          descendants.forEach(descendantId => rectanglesToMove.add(descendantId));
+        });
+        
+        let updated = currentRectangles.map(rect => {
+          if (distributedMap.has(rect.id)) {
+            // Apply distribution to selected rectangles
+            return distributedMap.get(rect.id)!;
+          } else if (rectanglesToMove.has(rect.id)) {
+            // Move children/descendants with their distributed parents
+            const parentId = rect.parentId;
+            if (parentId && positionDeltas.has(parentId)) {
+              const delta = positionDeltas.get(parentId)!;
+              return {
+                ...rect,
+                x: rect.x + delta.deltaX,
+                y: rect.y + delta.deltaY
+              };
+            }
+            // Check if any ancestor was moved
+            let currentParentId = parentId;
+            while (currentParentId) {
+              if (positionDeltas.has(currentParentId)) {
+                const delta = positionDeltas.get(currentParentId)!;
+                return {
+                  ...rect,
+                  x: rect.x + delta.deltaX,
+                  y: rect.y + delta.deltaY
+                };
+              }
+              const parentRect = currentRectangles.find(r => r.id === currentParentId);
+              currentParentId = parentRect?.parentId;
+            }
+          }
+          return rect;
+        });
         
         // Trigger layout recalculation if needed
         updated = triggerLayoutRecalculation(ids, updated, {
