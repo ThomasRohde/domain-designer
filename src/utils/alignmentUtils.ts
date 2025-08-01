@@ -4,9 +4,9 @@ import { AlignmentType } from '../stores/types';
 /**
  * Professional alignment utilities for multi-select operations
  * 
- * Implements alignment algorithms matching PowerPoint and design tool behavior:
- * - Edge alignments use the extremes of the selection bounding box
- * - Center alignments use the mathematical center of the selection bounding box
+ * Implements alignment algorithms matching modern design tool behavior:
+ * - First selected rectangle acts as the anchor and remains fixed
+ * - All other rectangles align to the anchor rectangle's edges/center
  * - All final positions snap to the application's grid system
  * - Operations respect hierarchical constraints and manual positioning settings
  */
@@ -48,93 +48,87 @@ function snapToGrid(value: number, gridSize: number): number {
 }
 
 /**
- * Aligns all rectangles to the leftmost edge of the selection bounds.
+ * Aligns all rectangles to the left edge of the first (anchor) rectangle.
  */
 export function alignLeft(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
-  const bounds = calculateSelectionBounds(rectangles);
-  const targetX = snapToGrid(bounds.left, settings.gridSize);
+  const anchor = rectangles[0];
+  const targetX = anchor.x; // Use anchor's exact position, no grid snapping
   
-  return rectangles.map(rect => ({
-    ...rect,
-    x: targetX
-  }));
+  return rectangles.map((rect, index) => 
+    index === 0 ? rect : { ...rect, x: targetX }
+  );
 }
 
 /**
- * Aligns all rectangles to the horizontal center of the selection bounds.
+ * Aligns all rectangles to the horizontal center of the first (anchor) rectangle.
  */
 export function alignCenter(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
-  const bounds = calculateSelectionBounds(rectangles);
-  const targetCenterX = snapToGrid(bounds.centerX, settings.gridSize);
+  const anchor = rectangles[0];
+  const anchorCenterX = anchor.x + anchor.w / 2; // Use anchor's exact center
   
-  return rectangles.map(rect => ({
-    ...rect,
-    x: targetCenterX - rect.w / 2
-  }));
+  return rectangles.map((rect, index) => 
+    index === 0 ? rect : { ...rect, x: anchorCenterX - rect.w / 2 }
+  );
 }
 
 /**
- * Aligns all rectangles to the rightmost edge of the selection bounds.
+ * Aligns all rectangles to the right edge of the first (anchor) rectangle.
  */
 export function alignRight(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
-  const bounds = calculateSelectionBounds(rectangles);
-  const targetRight = snapToGrid(bounds.right, settings.gridSize);
+  const anchor = rectangles[0];
+  const anchorRight = anchor.x + anchor.w; // Use anchor's exact right edge
   
-  return rectangles.map(rect => ({
-    ...rect,
-    x: targetRight - rect.w
-  }));
+  return rectangles.map((rect, index) => 
+    index === 0 ? rect : { ...rect, x: anchorRight - rect.w }
+  );
 }
 
 /**
- * Aligns all rectangles to the topmost edge of the selection bounds.
+ * Aligns all rectangles to the top edge of the first (anchor) rectangle.
  */
 export function alignTop(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
-  const bounds = calculateSelectionBounds(rectangles);
-  const targetY = snapToGrid(bounds.top, settings.gridSize);
+  const anchor = rectangles[0];
+  const targetY = anchor.y; // Use anchor's exact position, no grid snapping
   
-  return rectangles.map(rect => ({
-    ...rect,
-    y: targetY
-  }));
+  return rectangles.map((rect, index) => 
+    index === 0 ? rect : { ...rect, y: targetY }
+  );
 }
 
 /**
- * Aligns all rectangles to the vertical center of the selection bounds.
+ * Aligns all rectangles to the vertical center of the first (anchor) rectangle.
  */
 export function alignMiddle(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
-  const bounds = calculateSelectionBounds(rectangles);
-  const targetCenterY = snapToGrid(bounds.centerY, settings.gridSize);
+  const anchor = rectangles[0];
+  const anchorCenterY = anchor.y + anchor.h / 2; // Use anchor's exact center
   
-  return rectangles.map(rect => ({
-    ...rect,
-    y: targetCenterY - rect.h / 2
-  }));
+  return rectangles.map((rect, index) => 
+    index === 0 ? rect : { ...rect, y: anchorCenterY - rect.h / 2 }
+  );
 }
 
 /**
- * Aligns all rectangles to the bottommost edge of the selection bounds.
+ * Aligns all rectangles to the bottom edge of the first (anchor) rectangle.
  */
 export function alignBottom(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
-  const bounds = calculateSelectionBounds(rectangles);
-  const targetBottom = snapToGrid(bounds.bottom, settings.gridSize);
+  const anchor = rectangles[0];
+  const anchorBottom = anchor.y + anchor.h; // Use anchor's exact bottom edge
   
-  return rectangles.map(rect => ({
-    ...rect,
-    y: targetBottom - rect.h
-  }));
+  return rectangles.map((rect, index) => 
+    index === 0 ? rect : { ...rect, y: anchorBottom - rect.h }
+  );
 }
 
 /**

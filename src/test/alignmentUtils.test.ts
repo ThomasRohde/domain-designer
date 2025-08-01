@@ -52,19 +52,20 @@ const createTestRectangle = (
 
 describe('Alignment Utils', () => {
   describe('alignLeft', () => {
-    test('should align multiple rectangles to leftmost edge', () => {
+    test('should align rectangles to left edge of first (anchor) rectangle', () => {
       const rectangles = [
-        createTestRectangle('1', 50, 10, 100, 50),
-        createTestRectangle('2', 20, 30, 80, 40),   // Leftmost
+        createTestRectangle('1', 50, 10, 100, 50),  // Anchor rectangle
+        createTestRectangle('2', 20, 30, 80, 40),   
         createTestRectangle('3', 80, 50, 60, 30)
       ];
 
       const result = alignLeft(rectangles, mockSettings);
 
-      // All rectangles should have x = 20 (leftmost position, snapped to grid)
-      expect(result[0].x).toBe(20);
-      expect(result[1].x).toBe(20);
-      expect(result[2].x).toBe(20);
+      // First rectangle should remain unchanged (anchor)
+      expect(result[0].x).toBe(50);
+      // Other rectangles should align to first rectangle's left edge (50)
+      expect(result[1].x).toBe(50);
+      expect(result[2].x).toBe(50);
 
       // Y positions and dimensions should remain unchanged
       expect(result[0].y).toBe(10);
@@ -75,17 +76,17 @@ describe('Alignment Utils', () => {
       expect(result[2].w).toBe(60);
     });
 
-    test('should snap to grid when aligning left', () => {
+    test('should align to exact anchor position (no grid snapping)', () => {
       const rectangles = [
-        createTestRectangle('1', 23, 10, 100, 50),  // x=23, should snap to 20
-        createTestRectangle('2', 47, 30, 80, 40)    // x=47, should snap to 50, but 23 is leftmost
+        createTestRectangle('1', 23, 10, 100, 50),  // Anchor: x=23
+        createTestRectangle('2', 47, 30, 80, 40)    // Should align to exact anchor position
       ];
 
       const result = alignLeft(rectangles, mockSettings);
 
-      // Should align to snapped version of leftmost (23 -> 20)
-      expect(result[0].x).toBe(20);
-      expect(result[1].x).toBe(20);
+      // Should align to exact anchor position (no grid snapping)
+      expect(result[0].x).toBe(23); // Anchor stays at original position
+      expect(result[1].x).toBe(23); // Aligns to exact anchor position
     });
 
     test('should handle single rectangle by returning unchanged', () => {
@@ -102,20 +103,20 @@ describe('Alignment Utils', () => {
   });
 
   describe('alignCenter', () => {
-    test('should align rectangles to horizontal center of selection', () => {
+    test('should align rectangles to horizontal center of first (anchor) rectangle', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50
-        createTestRectangle('2', 100, 30, 80, 40),   // Center: 140
-        createTestRectangle('3', 200, 50, 60, 30)    // Center: 230
+        createTestRectangle('1', 0, 10, 100, 50),    // Anchor: Center at 50
+        createTestRectangle('2', 100, 30, 80, 40),   // Should align to anchor center
+        createTestRectangle('3', 200, 50, 60, 30)    // Should align to anchor center
       ];
-      // Selection bounds: left=0, right=260, centerX=130
 
       const result = alignCenter(rectangles, mockSettings);
 
-      // All rectangles should be centered at x=130
-      expect(result[0].x).toBe(130 - 50);  // 80
-      expect(result[1].x).toBe(130 - 40);  // 90
-      expect(result[2].x).toBe(130 - 30);  // 100
+      // First rectangle should remain unchanged (anchor)
+      expect(result[0].x).toBe(0);
+      // Other rectangles should center on anchor's center (50)
+      expect(result[1].x).toBe(50 - 40);  // 10 (center at 50)
+      expect(result[2].x).toBe(50 - 30);  // 20 (center at 50)
 
       // Y positions should remain unchanged
       expect(result[0].y).toBe(10);
@@ -123,35 +124,36 @@ describe('Alignment Utils', () => {
       expect(result[2].y).toBe(50);
     });
 
-    test('should snap center position to grid', () => {
+    test('should align to exact anchor center position', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50
-        createTestRectangle('2', 107, 30, 80, 40)    // Center: 147
+        createTestRectangle('1', 7, 10, 100, 50),     // Anchor: Center at 57
+        createTestRectangle('2', 107, 30, 80, 40)     // Should align to exact anchor center
       ];
-      // Selection bounds: left=0, right=187, centerX=93.5 -> should snap to 90
 
       const result = alignCenter(rectangles, mockSettings);
 
-      // Rectangles should be centered at snapped position (90)
-      expect(result[0].x).toBe(90 - 50);  // 40
-      expect(result[1].x).toBe(90 - 40);  // 50
+      // First rectangle should remain unchanged (anchor)
+      expect(result[0].x).toBe(7);
+      // Second rectangle should center on exact anchor center (57)
+      expect(result[1].x).toBe(57 - 40);  // 17 (center at 57)
     });
   });
 
   describe('alignRight', () => {
-    test('should align rectangles to rightmost edge of selection', () => {
+    test('should align rectangles to right edge of first (anchor) rectangle', () => {
       const rectangles = [
-        createTestRectangle('1', 50, 10, 100, 50),   // Right edge: 150
-        createTestRectangle('2', 20, 30, 80, 40),    // Right edge: 100
-        createTestRectangle('3', 80, 50, 120, 30)    // Right edge: 200 (rightmost)
+        createTestRectangle('1', 50, 10, 100, 50),   // Anchor: Right edge at 150
+        createTestRectangle('2', 20, 30, 80, 40),    // Should align to anchor right
+        createTestRectangle('3', 80, 50, 120, 30)    // Should align to anchor right
       ];
 
       const result = alignRight(rectangles, mockSettings);
 
-      // All rectangles should have their right edge at 200
-      expect(result[0].x).toBe(200 - 100);  // 100
-      expect(result[1].x).toBe(200 - 80);   // 120
-      expect(result[2].x).toBe(200 - 120);  // 80
+      // First rectangle should remain unchanged (anchor)
+      expect(result[0].x).toBe(50);
+      // Other rectangles should align their right edge to anchor's right edge (150)
+      expect(result[1].x).toBe(150 - 80);   // 70
+      expect(result[2].x).toBe(150 - 120);  // 30
 
       // Y positions should remain unchanged
       expect(result[0].y).toBe(10);
@@ -161,19 +163,20 @@ describe('Alignment Utils', () => {
   });
 
   describe('alignTop', () => {
-    test('should align rectangles to topmost edge of selection', () => {
+    test('should align rectangles to top edge of first (anchor) rectangle', () => {
       const rectangles = [
-        createTestRectangle('1', 50, 30, 100, 50),
-        createTestRectangle('2', 20, 10, 80, 40),    // Topmost
+        createTestRectangle('1', 50, 30, 100, 50),  // Anchor
+        createTestRectangle('2', 20, 10, 80, 40),   
         createTestRectangle('3', 80, 50, 60, 30)
       ];
 
       const result = alignTop(rectangles, mockSettings);
 
-      // All rectangles should have y = 10 (topmost position)
-      expect(result[0].y).toBe(10);
-      expect(result[1].y).toBe(10);
-      expect(result[2].y).toBe(10);
+      // First rectangle should remain unchanged (anchor)
+      expect(result[0].y).toBe(30);
+      // Other rectangles should align to anchor's top edge (30)
+      expect(result[1].y).toBe(30);
+      expect(result[2].y).toBe(30);
 
       // X positions and dimensions should remain unchanged
       expect(result[0].x).toBe(50);
@@ -183,20 +186,20 @@ describe('Alignment Utils', () => {
   });
 
   describe('alignMiddle', () => {
-    test('should align rectangles to vertical center of selection', () => {
+    test('should align rectangles to vertical center of first (anchor) rectangle', () => {
       const rectangles = [
-        createTestRectangle('1', 50, 0, 100, 100),   // Center: 50
-        createTestRectangle('2', 20, 100, 80, 80),   // Center: 140
-        createTestRectangle('3', 80, 200, 60, 60)    // Center: 230
+        createTestRectangle('1', 50, 0, 100, 100),   // Anchor: Center at 50
+        createTestRectangle('2', 20, 100, 80, 80),   // Should align to anchor center
+        createTestRectangle('3', 80, 200, 60, 60)    // Should align to anchor center
       ];
-      // Selection bounds: top=0, bottom=260, centerY=130
 
       const result = alignMiddle(rectangles, mockSettings);
 
-      // All rectangles should be centered at y=130
-      expect(result[0].y).toBe(130 - 50);  // 80
-      expect(result[1].y).toBe(130 - 40);  // 90
-      expect(result[2].y).toBe(130 - 30);  // 100
+      // First rectangle should remain unchanged (anchor)
+      expect(result[0].y).toBe(0);
+      // Other rectangles should center on anchor's center (50)
+      expect(result[1].y).toBe(50 - 40);  // 10 (center at 50)
+      expect(result[2].y).toBe(50 - 30);  // 20 (center at 50)
 
       // X positions should remain unchanged
       expect(result[0].x).toBe(50);
@@ -206,19 +209,20 @@ describe('Alignment Utils', () => {
   });
 
   describe('alignBottom', () => {
-    test('should align rectangles to bottommost edge of selection', () => {
+    test('should align rectangles to bottom edge of first (anchor) rectangle', () => {
       const rectangles = [
-        createTestRectangle('1', 50, 10, 100, 50),   // Bottom edge: 60
-        createTestRectangle('2', 20, 30, 80, 40),    // Bottom edge: 70
-        createTestRectangle('3', 80, 40, 60, 80)     // Bottom edge: 120 (bottommost)
+        createTestRectangle('1', 50, 10, 100, 50),   // Anchor: Bottom edge at 60
+        createTestRectangle('2', 20, 30, 80, 40),    // Should align to anchor bottom
+        createTestRectangle('3', 80, 40, 60, 80)     // Should align to anchor bottom
       ];
 
       const result = alignBottom(rectangles, mockSettings);
 
-      // All rectangles should have their bottom edge at 120
-      expect(result[0].y).toBe(120 - 50);  // 70
-      expect(result[1].y).toBe(120 - 40);  // 80
-      expect(result[2].y).toBe(120 - 80);  // 40
+      // First rectangle should remain unchanged (anchor)
+      expect(result[0].y).toBe(10);
+      // Other rectangles should align their bottom edge to anchor's bottom (60)
+      expect(result[1].y).toBe(60 - 40);  // 20
+      expect(result[2].y).toBe(60 - 80);  // -20
 
       // X positions should remain unchanged
       expect(result[0].x).toBe(50);
@@ -235,16 +239,20 @@ describe('Alignment Utils', () => {
 
     test('should dispatch to correct alignment function', () => {
       const leftResult = alignRectangles(testRectangles, 'left', mockSettings);
-      expect(leftResult[0].x).toBe(20); // Should align left
+      expect(leftResult[0].x).toBe(50); // Anchor should remain unchanged
+      expect(leftResult[1].x).toBe(50); // Should align to anchor left
 
       const rightResult = alignRectangles(testRectangles, 'right', mockSettings);
-      expect(rightResult[0].x).toBe(50); // 100-50, should align right
+      expect(rightResult[0].x).toBe(50); // Anchor should remain unchanged
+      expect(rightResult[1].x).toBe(150 - 80); // Should align to anchor right (150-80=70)
 
       const topResult = alignRectangles(testRectangles, 'top', mockSettings);
-      expect(topResult[0].y).toBe(10); // Should align top
+      expect(topResult[0].y).toBe(10); // Anchor should remain unchanged
+      expect(topResult[1].y).toBe(10); // Should align to anchor top
 
       const bottomResult = alignRectangles(testRectangles, 'bottom', mockSettings);
-      expect(bottomResult[0].y).toBe(20); // 70-50, should align bottom
+      expect(bottomResult[0].y).toBe(10); // Anchor should remain unchanged
+      expect(bottomResult[1].y).toBe(60 - 40); // Should align to anchor bottom (60-40=20)
     });
 
     test('should handle invalid alignment type', () => {
@@ -290,36 +298,35 @@ describe('Alignment Utils', () => {
   });
 
   describe('Grid Snapping Integration', () => {
-    test('should snap all alignment operations to grid', () => {
+    test('should align to exact anchor position (no grid snapping)', () => {
       const rectangles = [
-        createTestRectangle('1', 23, 17, 100, 50),   // Off-grid positions
-        createTestRectangle('2', 47, 83, 80, 40)
+        createTestRectangle('1', 23, 17, 100, 50),   // Anchor (off-grid position)
+        createTestRectangle('2', 47, 83, 80, 40)     // Aligns to exact anchor position
       ];
 
-      // Test left alignment with grid snapping
+      // Test left alignment - should align to exact anchor position
       const leftResult = alignLeft(rectangles, mockSettings);
-      expect(leftResult[0].x % mockSettings.gridSize).toBe(0);
-      expect(leftResult[1].x % mockSettings.gridSize).toBe(0);
+      expect(leftResult[0].x).toBe(23); // Anchor stays unchanged
+      expect(leftResult[1].x).toBe(23); // Aligns to exact anchor position
 
-      // Test top alignment with grid snapping
+      // Test top alignment - should align to exact anchor position
       const topResult = alignTop(rectangles, mockSettings);
-      expect(topResult[0].y % mockSettings.gridSize).toBe(0);
-      expect(topResult[1].y % mockSettings.gridSize).toBe(0);
+      expect(topResult[0].y).toBe(17); // Anchor stays unchanged
+      expect(topResult[1].y).toBe(17); // Aligns to exact anchor position
     });
 
-    test('should work with different grid sizes', () => {
+    test('should align to exact anchor position regardless of grid size', () => {
       const customSettings = { ...mockSettings, gridSize: 25 };
       const rectangles = [
-        createTestRectangle('1', 30, 20, 100, 50),   // Should snap to 25, 25
-        createTestRectangle('2', 80, 70, 80, 40)     // Should snap to 75, 75
+        createTestRectangle('1', 30, 20, 100, 50),   // Anchor (stays at 30)
+        createTestRectangle('2', 80, 70, 80, 40)     // Aligns to exact anchor
       ];
 
       const result = alignLeft(rectangles, customSettings);
       
-      // Should align to snapped version of leftmost (30 -> 25)
-      expect(result[0].x).toBe(25);
-      expect(result[1].x).toBe(25);
-      expect(result[0].x % customSettings.gridSize).toBe(0);
+      // Both rectangles should be at exact anchor position
+      expect(result[0].x).toBe(30); // Anchor unchanged
+      expect(result[1].x).toBe(30); // Aligned to exact anchor position
     });
   });
 
@@ -337,13 +344,13 @@ describe('Alignment Utils', () => {
 
     test('should handle negative coordinates', () => {
       const rectangles = [
-        createTestRectangle('1', -50, -10, 100, 50),
-        createTestRectangle('2', -100, -20, 80, 40)
+        createTestRectangle('1', -50, -10, 100, 50),  // Anchor
+        createTestRectangle('2', -100, -20, 80, 40)   // Should align to anchor
       ];
 
       const result = alignLeft(rectangles, mockSettings);
-      expect(result[0].x).toBe(-100); // Should align to leftmost
-      expect(result[1].x).toBe(-100);
+      expect(result[0].x).toBe(-50); // Anchor should remain unchanged
+      expect(result[1].x).toBe(-50); // Should align to anchor
     });
 
     test('should handle very large coordinates', () => {
@@ -380,22 +387,18 @@ describe('Alignment Utils', () => {
       ];
 
       const result = alignLeft(rectangles, mockSettings);
-      const alignedRect = result[0];
+      const alignedRect = result[1]; // Test the second rectangle (aligns to first)
 
-      // Position should change
-      expect(alignedRect.x).toBe(20);
-      expect(alignedRect.y).toBe(10); // Y unchanged for left align
+      // Position should change (second rectangle aligns to first)
+      expect(alignedRect.x).toBe(50); // Should align to anchor position
+      expect(alignedRect.y).toBe(30); // Y unchanged for left align
 
       // All other properties should be preserved
-      expect(alignedRect.w).toBe(100);
-      expect(alignedRect.h).toBe(50);
-      expect(alignedRect.label).toBe('Test Rectangle');
-      expect(alignedRect.color).toBe('#FF0000');
-      expect(alignedRect.type).toBe('parent');
-      expect(alignedRect.parentId).toBe('parent1');
-      expect(alignedRect.isEditing).toBe(true);
-      expect(alignedRect.description).toBe('Test description');
-      expect(alignedRect.metadata).toEqual({ tags: ['test'] });
+      expect(alignedRect.w).toBe(80);
+      expect(alignedRect.h).toBe(40);
+      expect(alignedRect.label).toBe('Rectangle 2');
+      expect(alignedRect.color).toBe('#3B82F6');
+      expect(alignedRect.type).toBe('leaf');
     });
   });
 });
