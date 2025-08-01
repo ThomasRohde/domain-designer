@@ -15,6 +15,9 @@ interface ContextMenuProps {
   onAlign?: (type: AlignmentType) => void;
   onDistribute?: (direction: DistributionDirection) => void;
   onBulkDelete?: () => void;
+  // Operation availability flags
+  canPerformAlignmentOperations?: boolean;
+  canPerformDistributionOperations?: boolean;
 }
 
 /**
@@ -33,7 +36,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onClose,
   onAlign,
   onDistribute,
-  onBulkDelete
+  onBulkDelete,
+  canPerformAlignmentOperations = true,
+  canPerformDistributionOperations = true
 }) => {
   const isMultiSelect = selectedIds && selectedIds.length > 1;
   const selectionCount = selectedIds?.length || 1;
@@ -56,14 +61,14 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
 
   // Multi-select handlers
   const handleAlign = (type: AlignmentType) => {
-    if (onAlign) {
+    if (onAlign && canPerformAlignmentOperations) {
       onAlign(type);
       onClose();
     }
   };
 
   const handleDistribute = (direction: DistributionDirection) => {
-    if (onDistribute) {
+    if (onDistribute && canPerformDistributionOperations) {
       onDistribute(direction);
       onClose();
     }
@@ -94,52 +99,87 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
         <>
           {/* Alignment options */}
           <div className="py-1">
-            <div className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">Align</div>
+            <div className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Align
+              {!canPerformAlignmentOperations && (
+                <span className="ml-2 text-xs text-red-500">(Parent locked)</span>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-1 px-2 py-1">
               <button
                 onClick={() => handleAlign('left')}
-                className="p-2 text-xs hover:bg-gray-50 flex flex-col items-center space-y-1 rounded"
-                title="Align Left"
+                disabled={!canPerformAlignmentOperations}
+                className={`p-2 text-xs flex flex-col items-center space-y-1 rounded ${
+                  canPerformAlignmentOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformAlignmentOperations ? "Align Left" : "Cannot align: parent has automatic layout"}
               >
                 <AlignLeft size={14} />
                 <span>Left</span>
               </button>
               <button
                 onClick={() => handleAlign('center')}
-                className="p-2 text-xs hover:bg-gray-50 flex flex-col items-center space-y-1 rounded"
-                title="Align Center"
+                disabled={!canPerformAlignmentOperations}
+                className={`p-2 text-xs flex flex-col items-center space-y-1 rounded ${
+                  canPerformAlignmentOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformAlignmentOperations ? "Align Center" : "Cannot align: parent has automatic layout"}
               >
                 <AlignCenter size={14} />
                 <span>Center</span>
               </button>
               <button
                 onClick={() => handleAlign('right')}
-                className="p-2 text-xs hover:bg-gray-50 flex flex-col items-center space-y-1 rounded"
-                title="Align Right"
+                disabled={!canPerformAlignmentOperations}
+                className={`p-2 text-xs flex flex-col items-center space-y-1 rounded ${
+                  canPerformAlignmentOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformAlignmentOperations ? "Align Right" : "Cannot align: parent has automatic layout"}
               >
                 <AlignRight size={14} />
                 <span>Right</span>
               </button>
               <button
                 onClick={() => handleAlign('top')}
-                className="p-2 text-xs hover:bg-gray-50 flex flex-col items-center space-y-1 rounded"
-                title="Align Top"
+                disabled={!canPerformAlignmentOperations}
+                className={`p-2 text-xs flex flex-col items-center space-y-1 rounded ${
+                  canPerformAlignmentOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformAlignmentOperations ? "Align Top" : "Cannot align: parent has automatic layout"}
               >
                 <AlignVerticalJustifyStart size={14} />
                 <span>Top</span>
               </button>
               <button
                 onClick={() => handleAlign('middle')}
-                className="p-2 text-xs hover:bg-gray-50 flex flex-col items-center space-y-1 rounded"
-                title="Align Middle"
+                disabled={!canPerformAlignmentOperations}
+                className={`p-2 text-xs flex flex-col items-center space-y-1 rounded ${
+                  canPerformAlignmentOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformAlignmentOperations ? "Align Middle" : "Cannot align: parent has automatic layout"}
               >
                 <AlignVerticalJustifyCenter size={14} />
                 <span>Middle</span>
               </button>
               <button
                 onClick={() => handleAlign('bottom')}
-                className="p-2 text-xs hover:bg-gray-50 flex flex-col items-center space-y-1 rounded"
-                title="Align Bottom"
+                disabled={!canPerformAlignmentOperations}
+                className={`p-2 text-xs flex flex-col items-center space-y-1 rounded ${
+                  canPerformAlignmentOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformAlignmentOperations ? "Align Bottom" : "Cannot align: parent has automatic layout"}
               >
                 <AlignVerticalJustifyEnd size={14} />
                 <span>Bottom</span>
@@ -150,17 +190,34 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
           {/* Distribution options - only show if 3+ rectangles */}
           {selectionCount >= 3 && (
             <div className="border-t border-gray-100 py-1">
-              <div className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">Distribute</div>
+              <div className="px-3 py-1 text-xs font-medium text-gray-500 uppercase tracking-wide">
+                Distribute
+                {!canPerformDistributionOperations && (
+                  <span className="ml-2 text-xs text-red-500">(Parent locked)</span>
+                )}
+              </div>
               <button
                 onClick={() => handleDistribute('horizontal')}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+                disabled={!canPerformDistributionOperations}
+                className={`w-full px-3 py-2 text-left text-sm flex items-center space-x-2 ${
+                  canPerformDistributionOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformDistributionOperations ? "Distribute Horizontally" : "Cannot distribute: parent has automatic layout"}
               >
                 <MoveHorizontal size={14} />
                 <span>Distribute Horizontally</span>
               </button>
               <button
                 onClick={() => handleDistribute('vertical')}
-                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+                disabled={!canPerformDistributionOperations}
+                className={`w-full px-3 py-2 text-left text-sm flex items-center space-x-2 ${
+                  canPerformDistributionOperations 
+                    ? 'hover:bg-gray-50 cursor-pointer' 
+                    : 'opacity-50 cursor-not-allowed text-gray-400'
+                }`}
+                title={canPerformDistributionOperations ? "Distribute Vertically" : "Cannot distribute: parent has automatic layout"}
               >
                 <MoveVertical size={14} />
                 <span>Distribute Vertically</span>

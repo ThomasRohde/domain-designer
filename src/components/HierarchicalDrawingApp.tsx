@@ -6,6 +6,7 @@ import { useAppStore } from '../stores/useAppStore';
 import { importDiagramFromJSON, processImportedDiagram, ImportedDiagramData } from '../utils/exportUtils';
 import { initializeAutoSaveSubscription } from '../stores/useAppStore';
 import { setGlobalUpdateNotificationHandler } from '../main';
+import { canBulkMove } from '../utils/selectionUtils';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -624,21 +625,30 @@ const HierarchicalDrawingApp = () => {
         </Sidebar>
       </div>
 
-      {ui.contextMenu && (
-        <ContextMenu
-          x={ui.contextMenu.x}
-          y={ui.contextMenu.y}
-          rectangleId={ui.contextMenu.rectangleId}
-          selectedIds={ui.contextMenu.selectedIds}
-          onAddChild={addRectangle}
-          onRemove={removeRectangle}
-          onEditDescription={handleEditDescription}
-          onClose={uiActions.hideContextMenu}
-          onAlign={handleAlign}
-          onDistribute={handleDistribute}
-          onBulkDelete={handleBulkDelete}
-        />
-      )}
+      {ui.contextMenu && (() => {
+        // Calculate if bulk operations are allowed for multi-select context menu
+        const selectedIds = ui.contextMenu.selectedIds || [];
+        const isMultiSelect = selectedIds.length > 1;
+        const canPerformBulkOperations = isMultiSelect ? canBulkMove(selectedIds, rectangles) : true;
+        
+        return (
+          <ContextMenu
+            x={ui.contextMenu.x}
+            y={ui.contextMenu.y}
+            rectangleId={ui.contextMenu.rectangleId}
+            selectedIds={ui.contextMenu.selectedIds}
+            onAddChild={addRectangle}
+            onRemove={removeRectangle}
+            onEditDescription={handleEditDescription}
+            onClose={uiActions.hideContextMenu}
+            onAlign={handleAlign}
+            onDistribute={handleDistribute}
+            onBulkDelete={handleBulkDelete}
+            canPerformAlignmentOperations={canPerformBulkOperations}
+            canPerformDistributionOperations={canPerformBulkOperations}
+          />
+        );
+      })()}
 
       <ExportModal
         isOpen={ui.exportModalOpen}

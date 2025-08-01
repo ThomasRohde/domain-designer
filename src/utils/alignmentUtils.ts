@@ -23,50 +23,6 @@ import { AlignmentType } from '../stores/types';
  * - Constraint validation: Only same-parent siblings can be aligned together
  */
 
-interface SelectionBounds {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-  centerX: number;
-  centerY: number;
-}
-
-/**
- * Calculates the overall bounding box of a rectangle selection.
- * 
- * NOTE: This function is currently unused due to anchor-based alignment approach.
- * Kept for potential future features like "distribute to bounds" or group operations.
- * 
- * In anchor-based alignment, we align to the first rectangle rather than selection bounds,
- * providing more predictable and user-controlled results.
- */
-function calculateSelectionBounds(rectangles: Rectangle[]): SelectionBounds {
-  if (rectangles.length === 0) {
-    return { left: 0, right: 0, top: 0, bottom: 0, centerX: 0, centerY: 0 };
-  }
-
-  const left = Math.min(...rectangles.map(r => r.x));
-  const right = Math.max(...rectangles.map(r => r.x + r.w));
-  const top = Math.min(...rectangles.map(r => r.y));
-  const bottom = Math.max(...rectangles.map(r => r.y + r.h));
-  
-  const centerX = left + (right - left) / 2;
-  const centerY = top + (bottom - top) / 2;
-
-  return { left, right, top, bottom, centerX, centerY };
-}
-
-/**
- * Snaps coordinate values to the grid system for consistent positioning.
- * 
- * NOTE: Grid snapping currently disabled in alignment operations to preserve
- * anchor rectangle's exact position. Future enhancement could add optional
- * grid snapping for non-anchor rectangles while keeping anchor fixed.
- */
-function snapToGrid(value: number, gridSize: number): number {
-  return Math.round(value / gridSize) * gridSize;
-}
 
 /**
  * Aligns all rectangles to the left edge of the anchor rectangle.
@@ -79,7 +35,7 @@ function snapToGrid(value: number, gridSize: number): number {
  * 
  * Example: Anchor at x=100, targets move so their x coordinates become 100
  */
-export function alignLeft(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
+export function alignLeft(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
   const anchor = rectangles[0];
@@ -101,7 +57,7 @@ export function alignLeft(rectangles: Rectangle[], settings: GlobalSettings): Re
  * 
  * Example: Anchor center at x=150 (x=100, w=100), target with w=50 moves to x=125
  */
-export function alignCenter(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
+export function alignCenter(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
   const anchor = rectangles[0];
@@ -123,7 +79,7 @@ export function alignCenter(rectangles: Rectangle[], settings: GlobalSettings): 
  * 
  * Example: Anchor right edge at x=200 (x=100, w=100), target with w=50 moves to x=150
  */
-export function alignRight(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
+export function alignRight(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
   const anchor = rectangles[0];
@@ -145,7 +101,7 @@ export function alignRight(rectangles: Rectangle[], settings: GlobalSettings): R
  * 
  * Example: Anchor at y=50, targets move so their y coordinates become 50
  */
-export function alignTop(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
+export function alignTop(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
   const anchor = rectangles[0];
@@ -167,7 +123,7 @@ export function alignTop(rectangles: Rectangle[], settings: GlobalSettings): Rec
  * 
  * Example: Anchor center at y=100 (y=50, h=100), target with h=30 moves to y=85
  */
-export function alignMiddle(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
+export function alignMiddle(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
   const anchor = rectangles[0];
@@ -189,7 +145,7 @@ export function alignMiddle(rectangles: Rectangle[], settings: GlobalSettings): 
  * 
  * Example: Anchor bottom edge at y=150 (y=50, h=100), target with h=30 moves to y=120
  */
-export function alignBottom(rectangles: Rectangle[], settings: GlobalSettings): Rectangle[] {
+export function alignBottom(rectangles: Rectangle[], _settings: GlobalSettings): Rectangle[] {
   if (rectangles.length <= 1) return rectangles;
   
   const anchor = rectangles[0];
