@@ -115,6 +115,8 @@ export interface DragState {
   initialY: number;
   /** Whether this is a hierarchy rearrangement drag */
   isHierarchyDrag?: boolean;
+  /** Whether this is a multi-select bulk drag operation */
+  isMultiSelectDrag?: boolean;
 }
 
 /**

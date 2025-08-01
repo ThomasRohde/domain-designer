@@ -270,6 +270,7 @@ export interface CanvasActions {
   
   // Multi-select drag operations
   startMultiSelectDrag: (initialPositions: Record<string, { x: number; y: number }>) => void;
+  startMultiSelectDragWithDescendants: (initialPositions: Record<string, { x: number; y: number }>, allAffectedIds: string[]) => void;
   updateMultiSelectDrag: (deltaX: number, deltaY: number) => void;
   endMultiSelectDrag: (applyChanges?: boolean) => void;
 }

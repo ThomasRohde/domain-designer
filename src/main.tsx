@@ -1,10 +1,14 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import { enableMapSet } from 'immer'
 import App from './App.tsx'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import './utils/pwaTestUtils' // Initialize PWA test utilities in development
+
+// Enable Immer MapSet plugin for Set and Map support in state updates
+enableMapSet()
 
 /**
  * Global PWA update notification handler state.

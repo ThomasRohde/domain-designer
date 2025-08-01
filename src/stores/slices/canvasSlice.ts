@@ -379,37 +379,91 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       const { x: startX, y: startY } = getMousePosition(e, containerRect);
 
       if (action === 'drag') {
-        // Validate drag permissions based on hierarchy and manual positioning
-        if (rect.parentId) {
-          const parent = state.rectangles.find(r => r.id === rect.parentId);
-          if (!parent?.isManualPositioningEnabled) {
-            return; // Cannot drag children of auto-layout parents
+        // Check if this rectangle is part of a multi-selection
+        const selectedIds = state.ui.selectedIds;
+        const isMultiSelectDrag = selectedIds.length > 1 && selectedIds.includes(rect.id);
+        
+        if (isMultiSelectDrag) {
+          // Multi-select bulk drag: validate all selected rectangles can be moved
+          const canBulkMove = selectedIds.every(id => {
+            const rectangle = state.rectangles.find(r => r.id === id);
+            if (!rectangle) return false;
+            
+            if (rectangle.parentId) {
+              const parent = state.rectangles.find(r => r.id === rectangle.parentId);
+              return parent?.isManualPositioningEnabled || false;
+            }
+            return true; // Root rectangles can always be moved
+          });
+          
+          if (!canBulkMove) {
+            return; // Cannot perform bulk drag if any rectangle is in auto-layout parent
           }
+          
+          // Cache initial positions for all selected rectangles and their descendants
+          const positions: Record<string, { x: number; y: number }> = {};
+          const allAffectedIds = new Set<string>();
+          
+          // Collect all rectangles that will be moved (selected + their descendants)
+          selectedIds.forEach(id => {
+            allAffectedIds.add(id);
+            const descendantIds = getAllDescendants(id, state.rectangles);
+            descendantIds.forEach(descendantId => allAffectedIds.add(descendantId));
+          });
+          
+          // Store initial positions for all affected rectangles
+          state.rectangles.forEach(r => {
+            if (allAffectedIds.has(r.id)) {
+              positions[r.id] = { x: r.x, y: r.y };
+            }
+          });
+          
+          // Start multi-select drag operation with all affected IDs (including descendants)
+          const allAffectedIdsArray = Array.from(allAffectedIds);
+          get().canvasActions.startMultiSelectDragWithDescendants(positions, allAffectedIdsArray);
+          
+          // Also set up regular drag state for mouse tracking
+          get().canvasActions.startDrag({
+            id: rect.id,
+            startX,
+            startY,
+            initialX: rect.x,
+            initialY: rect.y,
+            isMultiSelectDrag: true // Flag to indicate this is a multi-select drag
+          });
+        } else {
+          // Single rectangle drag: validate drag permissions based on hierarchy and manual positioning
+          if (rect.parentId) {
+            const parent = state.rectangles.find(r => r.id === rect.parentId);
+            if (!parent?.isManualPositioningEnabled) {
+              return; // Cannot drag children of auto-layout parents
+            }
+          }
+          
+          // Cache initial positions for the entire subtree (for group movement)
+          const descendantIds = new Set(getAllDescendants(rect.id, state.rectangles));
+          const positions: Record<string, { x: number; y: number }> = {};
+          
+          // Store position of the primary dragged rectangle
+          positions[rect.id] = { x: rect.x, y: rect.y };
+          
+          // Store positions of all descendants for consistent group movement
+          state.rectangles.forEach(r => {
+            if (descendantIds.has(r.id)) {
+              positions[r.id] = { x: r.x, y: r.y };
+            }
+          });
+          
+          get().canvasActions.setInitialPositions(positions);
+          
+          get().canvasActions.startDrag({
+            id: rect.id,
+            startX,
+            startY,
+            initialX: rect.x, // Grid coordinates for precise positioning
+            initialY: rect.y  // Grid coordinates for precise positioning
+          });
         }
-        
-        // Cache initial positions for the entire subtree (for group movement)
-        const descendantIds = new Set(getAllDescendants(rect.id, state.rectangles));
-        const positions: Record<string, { x: number; y: number }> = {};
-        
-        // Store position of the primary dragged rectangle
-        positions[rect.id] = { x: rect.x, y: rect.y };
-        
-        // Store positions of all descendants for consistent group movement
-        state.rectangles.forEach(r => {
-          if (descendantIds.has(r.id)) {
-            positions[r.id] = { x: r.x, y: r.y };
-          }
-        });
-        
-        get().canvasActions.setInitialPositions(positions);
-        
-        get().canvasActions.startDrag({
-          id: rect.id,
-          startX,
-          startY,
-          initialX: rect.x, // Grid coordinates for precise positioning
-          initialY: rect.y  // Grid coordinates for precise positioning
-        });
       } else if (action === 'hierarchy-drag') {
         // Hierarchy drag - allow for any rectangle
         const descendantIds = new Set(getAllDescendants(rect.id, state.rectangles));
@@ -530,28 +584,38 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           }));
         }
         
-        // Move the rectangle (and descendants) using efficient temporary update
-        get().rectangleActions.updateRectanglesDuringDrag(rectangles => {
-          const draggedRect = rectangles.find(r => r.id === state.canvas.dragState!.id);
-          if (!draggedRect) return rectangles;
+        // Check if this is a multi-select drag operation
+        if (state.canvas.dragState.isMultiSelectDrag && state.canvas.multiSelectDragInitialPositions) {
+          // Multi-select bulk drag: calculate deltas and apply to all selected rectangles
+          const actualDeltaX = newX - state.canvas.dragState.initialX;
+          const actualDeltaY = newY - state.canvas.dragState.initialY;
           
-          const actualDeltaX = newX - draggedRect.x;
-          const actualDeltaY = newY - draggedRect.y;
-          
-          // Move entire subtree together
-          const descendantIds = new Set(getAllDescendants(state.canvas.dragState!.id, rectangles));
-          
-          return rectangles.map(rect => {
-            if (rect.id === state.canvas.dragState!.id || descendantIds.has(rect.id)) {
-              return {
-                ...rect,
-                x: rect.x + actualDeltaX,
-                y: rect.y + actualDeltaY
-              };
-            }
-            return rect;
+          // Use the multi-select drag system to move all selected rectangles
+          get().canvasActions.updateMultiSelectDrag(actualDeltaX, actualDeltaY);
+        } else {
+          // Single rectangle drag: move the rectangle (and descendants) using efficient temporary update
+          get().rectangleActions.updateRectanglesDuringDrag(rectangles => {
+            const draggedRect = rectangles.find(r => r.id === state.canvas.dragState!.id);
+            if (!draggedRect) return rectangles;
+            
+            const actualDeltaX = newX - draggedRect.x;
+            const actualDeltaY = newY - draggedRect.y;
+            
+            // Move entire subtree together
+            const descendantIds = new Set(getAllDescendants(state.canvas.dragState!.id, rectangles));
+            
+            return rectangles.map(rect => {
+              if (rect.id === state.canvas.dragState!.id || descendantIds.has(rect.id)) {
+                return {
+                  ...rect,
+                  x: rect.x + actualDeltaX,
+                  y: rect.y + actualDeltaY
+                };
+              }
+              return rect;
+            });
           });
-        });
+        }
       }
       
       // Handle resize movement
@@ -608,6 +672,12 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
               }
             }
           }
+        }
+        
+        // Handle multi-select drag completion before saving to history
+        if (state.canvas.dragState?.isMultiSelectDrag && state.canvas.multiSelectDragInitialPositions) {
+          // End multi-select drag and apply final positions
+          get().canvasActions.endMultiSelectDrag(true);
         }
         
         // Save final state to history after drag/resize operation
@@ -726,6 +796,21 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       }));
     },
 
+    startMultiSelectDragWithDescendants: (initialPositions: Record<string, { x: number; y: number }>, allAffectedIds: string[]) => {
+      const state = get();
+      
+      // Capture relative positions for all affected rectangles (including descendants)
+      const relativePositions = captureRelativePositions(allAffectedIds, state.rectangles);
+      
+      set(state => ({
+        canvas: {
+          ...state.canvas,
+          multiSelectDragInitialPositions: initialPositions,
+          multiSelectRelativePositions: relativePositions
+        }
+      }));
+    },
+
     updateMultiSelectDrag: (deltaX: number, deltaY: number) => {
       const state = get();
       const { multiSelectDragInitialPositions, multiSelectRelativePositions } = state.canvas;
@@ -741,20 +826,21 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       const finalDeltaX = constrainedMovement.deltaX;
       const finalDeltaY = constrainedMovement.deltaY;
 
-      // Calculate new reference position (top-left of selection bounds)
-      const selectedRects = state.rectangles.filter(r => selectedIds.includes(r.id));
-      if (selectedRects.length === 0) return;
+      // Calculate new reference position from initial positions (not current positions to avoid drift)
+      const initialPositions = Object.values(multiSelectDragInitialPositions);
+      if (initialPositions.length === 0) return;
       
-      const minX = Math.min(...selectedRects.map(r => r.x));
-      const minY = Math.min(...selectedRects.map(r => r.y));
+      const initialMinX = Math.min(...initialPositions.map(pos => pos.x));
+      const initialMinY = Math.min(...initialPositions.map(pos => pos.y));
       
-      const newReferenceX = minX + finalDeltaX;
-      const newReferenceY = minY + finalDeltaY;
+      const newReferenceX = initialMinX + finalDeltaX;
+      const newReferenceY = initialMinY + finalDeltaY;
 
-      // Apply relative positioning to maintain spacing
+      // Apply relative positioning to maintain spacing for all affected rectangles (including descendants)
+      const allAffectedIds = Array.from(multiSelectRelativePositions.keys());
       get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
         return applyRelativePositioning(
-          selectedIds,
+          allAffectedIds,
           newReferenceX,
           newReferenceY,
           multiSelectRelativePositions,
@@ -766,15 +852,15 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     endMultiSelectDrag: (applyChanges: boolean = true) => {
       const state = get();
       const { multiSelectDragInitialPositions } = state.canvas;
-      const { selectedIds } = state.ui;
       
-      if (applyChanges && multiSelectDragInitialPositions && selectedIds.length > 0) {
-        // Apply final positions with history
+      if (applyChanges && multiSelectDragInitialPositions) {
+        // Apply final positions with history for all affected rectangles (including descendants)
+        const allAffectedIds = Object.keys(multiSelectDragInitialPositions);
         const finalPositions = new Map<string, { x: number; y: number }>();
         
-        // Calculate final positions
+        // Calculate final positions for all affected rectangles
         state.rectangles.forEach(rect => {
-          if (selectedIds.includes(rect.id)) {
+          if (allAffectedIds.includes(rect.id)) {
             finalPositions.set(rect.id, { x: rect.x, y: rect.y });
           }
         });
