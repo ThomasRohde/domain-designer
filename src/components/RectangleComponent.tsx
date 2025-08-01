@@ -8,9 +8,9 @@ interface RectangleComponentProps {
   rectangle: Rectangle;
   /** Whether this rectangle is currently selected */
   isSelected: boolean;
-  /** Whether this rectangle is part of a multi-selection */
+  /** Whether this rectangle is part of a multi-selection (affects styling and interaction) */
   isMultiSelected: boolean;
-  /** Total number of selected rectangles (for determining if resize handle should show) */
+  /** Total count of selected rectangles (controls resize handle visibility: only shown for single selection) */
   selectedCount?: number;
   /** Z-index for proper layering (calculated based on hierarchy depth) */
   zIndex: number;
@@ -63,13 +63,25 @@ interface RectangleComponentProps {
 }
 
 /**
- * Individual rectangle component with comprehensive interaction support:
- * - In-place label editing with keyboard shortcuts (Enter/Escape)
- * - Multiple drag modes: regular drag, resize, and hierarchy rearrangement
- * - Complex visual state system with priority-based styling for different states
- * - Adaptive text label rendering with contrast-based color calculation
- * - Drop target visual feedback with validation
- * - Performance optimized with conditional transitions and overflow handling
+ * Advanced rectangle component with full multi-select and interaction support.
+ * 
+ * Core Interaction Systems:
+ * - Multi-Select Integration: Supports both single and multi-selection with visual differentiation
+ * - Ctrl+Click Handling: Toggle selection state for building multi-selections
+ * - In-Place Editing: Double-click label editing with keyboard shortcuts (Enter/Escape)
+ * - Multiple Drag Modes: Position drag, resize, and hierarchy rearrangement
+ * - Visual State Management: Priority-based styling system for different interaction states
+ * 
+ * Multi-Select Features:
+ * - Selection Count Badges: Visual indicators for multi-selection state
+ * - Unified Styling: Same visual treatment for single and multi-selection
+ * - Handle Visibility Logic: Resize handle only shown for single selection (selectedCount === 1)
+ * - Event Propagation: Proper handling of Ctrl+Click for selection toggle
+ * 
+ * Performance Optimizations:
+ * - Conditional Transitions: Disabled during active interactions for immediate feedback
+ * - Smart Overflow Handling: Clips child content during resize, allows handles to show
+ * - Memoized Component: React.memo wrapper prevents unnecessary re-renders
  */
 const RectangleComponent: React.FC<RectangleComponentProps> = ({
   rectangle,
@@ -136,8 +148,13 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   };
 
   /**
-   * Calculate optimal text color based on background brightness for accessibility.
-   * Uses relative luminance formula to determine if white or black text provides better contrast.
+   * Calculates optimal text color using relative luminance for accessibility compliance.
+   * 
+   * Algorithm: ITU-R BT.709 relative luminance formula
+   * - Converts hex color to RGB values
+   * - Applies luminance weights: R(299) + G(587) + B(114) / 1000
+   * - Returns white text for dark backgrounds, black text for light backgrounds
+   * - Ensures WCAG contrast compliance for text readability
    */
   const getTextColor = (backgroundColor: string) => {
     const hex = backgroundColor.replace('#', '');
@@ -159,11 +176,20 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   const textLabelAlignment = isTextLabel ? (rectangle.textAlign || 'center') : 'center';
   
   /**
-   * Complex state-based styling system with priority hierarchy:
-   * 1. Active interactions (resize, drag) - highest priority
-   * 2. Drop target states - validation-based colors
-   * 3. Selection state - when not in drag mode
-   * 4. Default appearance
+   * Advanced visual state system with multi-select integration and priority-based styling.
+   * 
+   * State Priority Hierarchy (highest to lowest):
+   * 1. Active Interactions: Resize/drag operations with enhanced visual feedback
+   * 2. Drop Target States: Hierarchy drag with validation-based color coding
+   * 3. Selection States: Both single (isSelected) and multi-selection (isMultiSelected) styling
+   * 4. Constraint Warnings: Visual feedback for size/positioning limitations
+   * 5. Default Appearance: Base styling when no special states active
+   * 
+   * Multi-Select Visual Integration:
+   * - Unified selection styling: Same visual treatment for single and multi-selection
+   * - Blue border and shadow: #3b82f6 color scheme for selection indication
+   * - Hierarchy drag compatibility: Selection styling disabled during hierarchy operations
+   * - Text label transparency: Special handling for text-only rectangles
    */
   let finalBorderColor = borderColor;
   let borderStyle = 'solid';
@@ -195,7 +221,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     opacity = 0.8;
     boxShadow = '0 20px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(99, 102, 241, 0.1)';
   } else if ((isSelected || isMultiSelected) && !isHierarchyDragActive) {
-    // Standard selection highlight - same styling for both single and multi-select
+    // Unified selection styling: identical visual treatment for single and multi-selection
+    // Blue theme (#3b82f6) provides clear selection indication without overwhelming the interface
     finalBorderColor = '#3b82f6';
     finalBorderWidth = `${borderWidth + 1}px`;
     boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.4), 0 10px 10px -5px rgba(59, 130, 246, 0.1)';
@@ -255,9 +282,17 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   };
 
   /**
-   * Enhanced mouse interaction handler supporting multiple drag modes:
-   * - Ctrl/Cmd + drag: Hierarchy rearrangement (moves rectangles between parents)
-   * - Regular drag: Position adjustment within current parent
+   * Multi-modal mouse interaction system with keyboard modifier support.
+   * 
+   * Interaction Modes:
+   * - Ctrl/Cmd + Click: Hierarchy rearrangement mode (purple drag handle visual)
+   * - Regular Click: Standard position drag within current parent container
+   * - Double Click: Enters in-place label editing mode
+   * 
+   * Multi-Select Integration:
+   * - Preserves existing drag behavior for both single and multi-selection
+   * - Keyboard modifiers work consistently across selection types
+   * - Proper event propagation ensures parent components handle selection logic
    */
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -277,12 +312,14 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       onClick={(e) => {
         e.stopPropagation();
         
-        // Handle Ctrl+Click for multi-select toggle
+        // Multi-select toggle: Ctrl/Cmd+Click for building selections
         if (e.ctrlKey || e.metaKey) {
-          // For multi-select, we need to toggle selection instead of direct select
-          // This will be handled by the parent component through onSelect
+          // Toggle mode: Add/remove rectangle from current selection
+          // Special '|toggle' suffix signals parent component to toggle selection state
+          // This enables building multi-selections via Ctrl+Click interactions
           onSelect(rectangle.id + '|toggle');
         } else {
+          // Standard selection: Replace current selection with this rectangle
           onSelect(rectangle.id);
         }
       }}
@@ -377,7 +414,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         </div>
       )}
 
-      {/* Interactive resize handle - only visible when exactly one rectangle is selected */}
+      {/* Resize handle: Only shown for single selection to avoid confusion with multi-select operations */}
       {canResize && isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
           className="absolute bottom-0 right-0 w-6 h-6 sm:w-4 sm:h-4 bg-blue-500 cursor-se-resize rounded-tl-lg opacity-80 hover:opacity-100 transition-opacity touch-friendly"
@@ -386,7 +423,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         />
       )}
       
-      {/* Hierarchy rearrangement drag handle with directional arrow icon */}
+      {/* Hierarchy drag handle: Purple circle with four-way arrow, single selection only */}
       {isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
           className="absolute top-1 left-1 w-4 h-4 bg-purple-500 rounded-full opacity-70 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"

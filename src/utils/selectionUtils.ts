@@ -79,10 +79,10 @@ export const getSelectionParent = (
 ): string | null | undefined => {
   if (selectedIds.length === 0) return undefined;
 
-  // Validate selection first
+  // Prerequisite: selection must pass all multi-select constraints
   if (!validateSelection(selectedIds, rectangles)) return undefined;
 
-  // Get the first rectangle's parent ID
+  // Parent extraction: all rectangles share this parent due to validation
   const firstRect = rectangles.find(r => r.id === selectedIds[0]);
   return firstRect ? firstRect.parentId ?? null : undefined;
 };
@@ -180,10 +180,10 @@ export const filterValidSelection = (
 export const canBulkMove = (selectedIds: string[], rectangles: Rectangle[]): boolean => {
   if (selectedIds.length === 0) return false;
 
-  // Validate selection first
+  // Prerequisite: selection must meet all multi-select constraints
   if (!validateSelection(selectedIds, rectangles)) return false;
 
-  // Get the common parent
+  // Parent lookup: determine container that controls positioning permissions
   const parentId = getSelectionParent(selectedIds, rectangles);
   
   // If parentId is null, these are root rectangles - they can always be moved
@@ -235,7 +235,7 @@ export const validateBulkOperation = (
   selectedIds: string[],
   rectangles: Rectangle[]
 ): { isValid: boolean; errorMessage?: string } => {
-  // Check minimum selection size
+  // Size validation: ensure sufficient rectangles for operation type
   const minSize = getMinimumSelectionSize(operation);
   if (selectedIds.length < minSize) {
     return {
@@ -244,7 +244,7 @@ export const validateBulkOperation = (
     };
   }
 
-  // Validate basic selection constraints
+  // Multi-select constraint validation: same-parent and text-label rules
   if (!validateSelection(selectedIds, rectangles)) {
     return {
       isValid: false,
@@ -252,7 +252,7 @@ export const validateBulkOperation = (
     };
   }
 
-  // Additional validation for movement operations
+  // Movement-specific validation: check parent positioning permissions
   if (operation === 'bulkMove' && !canBulkMove(selectedIds, rectangles)) {
     return {
       isValid: false,

@@ -3,12 +3,33 @@ import { updateChildrenLayout } from './layoutUtils';
 import { validateSelection, canBulkMove } from './selectionUtils';
 
 /**
- * Utility functions for validating and executing bulk operations
- * with proper layout constraint enforcement and recalculation.
+ * Comprehensive bulk operation validation and layout integration utilities
+ * 
+ * This module provides the critical bridge between multi-select operations and the
+ * application's constraint-based layout system. It ensures that bulk operations
+ * respect hierarchical relationships, layout algorithm requirements, and user expectations.
+ * 
+ * Key Responsibilities:
+ * - Pre-operation validation with detailed error reporting
+ * - Layout constraint enforcement and conflict detection
+ * - Automatic layout recalculation after bulk modifications
+ * - Cascading operation analysis (e.g., delete with children)
+ * - User-friendly operation summaries for confirmation dialogs
+ * 
+ * Integration Points:
+ * - Layout System: Triggers updateChildrenLayout() when needed
+ * - Selection System: Validates against selectionUtils constraints
+ * - UI System: Provides user-friendly error messages and warnings
  */
 
 /**
- * Result of bulk operation validation
+ * Comprehensive validation result for bulk operations with detailed feedback.
+ * 
+ * Designed to provide both programmatic validation and rich user feedback:
+ * - isValid: Boolean gate for operation execution
+ * - errorMessage: User-facing explanation for validation failures
+ * - warnings: Non-blocking alerts about operation side effects
+ * - affectedRectangles: Complete list of rectangles impacted by operation
  */
 export interface BulkOperationValidationResult {
   isValid: boolean;
@@ -18,12 +39,25 @@ export interface BulkOperationValidationResult {
 }
 
 /**
- * Validates bulk operations against layout constraints
- * @param operation - The operation to validate
- * @param selectedIds - IDs of selected rectangles
- * @param rectangles - All rectangles in the diagram
- * @param settings - Global settings for margins and grid
- * @returns Validation result with detailed feedback
+ * Comprehensive bulk operation validation with layout system integration.
+ * 
+ * Multi-Layer Validation Process:
+ * 1. Selection Constraints: Validates same-parent and text-label rules
+ * 2. Operation-Specific Rules: Custom validation per operation type
+ * 3. Layout System Integration: Checks for automatic layout conflicts
+ * 4. Cascading Effect Analysis: Identifies indirect operation impacts
+ * 
+ * Operation-Specific Validation:
+ * - move: Requires parent manual positioning permission
+ * - delete: Analyzes cascading deletions of child rectangles
+ * - align/distribute: Warns about potential layout recalculation
+ * - color: Generally safe, minimal constraints
+ * 
+ * @param operation - Type of bulk operation to validate
+ * @param selectedIds - Rectangle IDs in the current selection
+ * @param rectangles - Complete rectangle dataset for relationship analysis
+ * @param _settings - Global layout settings (reserved for future constraint checks)
+ * @returns Detailed validation result with errors, warnings, and affected rectangle lists
  */
 export const validateBulkOperationConstraints = (
   operation: 'move' | 'delete' | 'align' | 'distribute' | 'color',
@@ -37,7 +71,7 @@ export const validateBulkOperationConstraints = (
     affectedRectangles: []
   };
 
-  // Basic selection validation
+  // Foundation validation: ensure selection meets multi-select constraints
   if (!validateSelection(selectedIds, rectangles)) {
     return {
       isValid: false,
@@ -45,7 +79,7 @@ export const validateBulkOperationConstraints = (
     };
   }
 
-  // Operation-specific validation
+  // Specialized validation rules based on operation type
   switch (operation) {
     case 'move': {
       if (!canBulkMove(selectedIds, rectangles)) {
@@ -58,7 +92,7 @@ export const validateBulkOperationConstraints = (
     }
 
     case 'delete': {
-      // Check for cascading deletions
+      // Cascading effect analysis: identify child rectangles that will be deleted
       const cascadedIds = new Set(selectedIds);
       for (const id of selectedIds) {
         const descendants = getAllDescendants(id, rectangles);
@@ -84,7 +118,7 @@ export const validateBulkOperationConstraints = (
         };
       }
 
-      // Check if alignment/distribution would cause layout recalculation
+      // Layout impact analysis: detect automatic layout conflicts
       const selectedRects = rectangles.filter(r => selectedIds.includes(r.id));
       const parentIds = [...new Set(selectedRects.map(r => r.parentId).filter(Boolean))];
       
@@ -100,7 +134,7 @@ export const validateBulkOperationConstraints = (
     }
 
     case 'color': {
-      // Color changes are generally safe, no specific constraints
+      // Color operations: minimal constraints, generally safe to execute
       break;
     }
   }
@@ -109,11 +143,28 @@ export const validateBulkOperationConstraints = (
 };
 
 /**
- * Triggers layout recalculation after bulk operations
- * @param affectedRectangleIds - IDs of rectangles modified by the operation
- * @param rectangles - Current rectangle state
- * @param settings - Global settings for layout calculation
- * @returns Updated rectangles with recalculated layouts
+ * Intelligent layout recalculation system for post-operation updates.
+ * 
+ * Smart Recalculation Logic:
+ * 1. Parent Impact Analysis: Determine which containers are affected
+ * 2. Layout Mode Detection: Check if parents have automatic layout enabled
+ * 3. Conditional Recalculation: Only recalculate when necessary
+ * 4. Recursive Layout Update: Use existing updateChildrenLayout() system
+ * 
+ * Performance Optimization:
+ * - Avoids unnecessary recalculations for manual positioning containers
+ * - Respects isLockedAsIs flag to prevent unwanted layout changes
+ * - Batches multiple rectangle changes into single layout pass
+ * 
+ * Layout System Integration:
+ * - Maintains consistency with Grid, Flow, and Mixed Flow algorithms
+ * - Preserves fixed dimension settings for leaf rectangles
+ * - Respects margin and spacing configurations
+ * 
+ * @param affectedRectangleIds - Rectangle IDs modified by the bulk operation
+ * @param rectangles - Current rectangle state before layout recalculation
+ * @param settings - Layout calculation parameters and constraints
+ * @returns Updated rectangle array with recalculated positions and sizes
  */
 export const triggerLayoutRecalculation = (
   affectedRectangleIds: string[],
@@ -124,7 +175,7 @@ export const triggerLayoutRecalculation = (
     return rectangles;
   }
 
-  // Find all parent containers that might be affected
+  // Parent impact analysis: identify containers that need layout updates
   const affectedParents = new Set<string>();
   
   for (const id of affectedRectangleIds) {
@@ -134,7 +185,7 @@ export const triggerLayoutRecalculation = (
     }
   }
 
-  // Check if any affected parents have automatic layout enabled
+  // Layout mode detection: determine if recalculation is necessary
   const needsRecalculation = Array.from(affectedParents).some(parentId => {
     const parent = rectangles.find(r => r.id === parentId);
     return parent && !parent.isManualPositioningEnabled && !parent.isLockedAsIs;
@@ -160,15 +211,23 @@ export const triggerLayoutRecalculation = (
 };
 
 /**
- * Helper function to get all descendants of a rectangle
- * @param rectangleId - ID of the parent rectangle
- * @param rectangles - All rectangles in the diagram
- * @returns Array of descendant rectangle IDs
+ * Recursive descendant finder for cascading operation analysis.
+ * 
+ * Traverses the rectangle hierarchy tree to find all descendants of a given rectangle.
+ * Essential for:
+ * - Delete operations: Calculate total impact of removing a parent
+ * - Move operations: Understand which rectangles move together
+ * - Layout operations: Identify all rectangles affected by parent changes
+ * 
+ * Algorithm: Depth-first search through parent-child relationships
+ * Performance: O(n) where n is total rectangle count (efficient for typical diagrams)
  */
 function getAllDescendants(rectangleId: string, rectangles: Rectangle[]): string[] {
   const descendants: string[] = [];
+  // Find immediate children of the given rectangle
   const children = rectangles.filter(r => r.parentId === rectangleId);
   
+  // Recursively collect all descendants through depth-first traversal
   for (const child of children) {
     descendants.push(child.id);
     descendants.push(...getAllDescendants(child.id, rectangles));
@@ -178,11 +237,23 @@ function getAllDescendants(rectangleId: string, rectangles: Rectangle[]): string
 }
 
 /**
- * Creates a summary of bulk operation effects for user confirmation
- * @param operation - The operation being performed
- * @param selectedIds - IDs of selected rectangles
- * @param validationResult - Result from validateBulkOperationConstraints
- * @returns Array of summary strings for user display
+ * Generates user-friendly operation summaries for confirmation dialogs.
+ * 
+ * Summary Generation Strategy:
+ * 1. Primary Impact: Count of directly selected rectangles
+ * 2. Secondary Impact: Additional rectangles affected by cascading effects
+ * 3. Warning Integration: Include validation warnings in summary
+ * 4. User-Friendly Language: Clear, non-technical descriptions
+ * 
+ * Used By:
+ * - Confirmation dialogs: "Are you sure you want to..."
+ * - Progress indicators: "Processing X rectangles..."
+ * - Undo descriptions: "Bulk delete of X rectangles"
+ * 
+ * @param _operation - Operation type (reserved for operation-specific messages)
+ * @param selectedIds - Directly selected rectangle IDs
+ * @param validationResult - Validation output with warnings and affected rectangles
+ * @returns Array of summary strings ready for user display
  */
 export const createBulkOperationSummary = (
   _operation: 'move' | 'delete' | 'align' | 'distribute' | 'color',

@@ -296,15 +296,18 @@ export const applyRelativePositioning = (
   rectangles: Rectangle[]
 ): Rectangle[] => {
   return rectangles.map(rect => {
+    // Skip non-selected rectangles (no position changes)
     if (!selectedIds.includes(rect.id)) {
       return rect;
     }
 
+    // Handle missing relative position data gracefully
     const relativePos = relativePositions.get(rect.id);
     if (!relativePos) {
       return rect;
     }
 
+    // Spatial relationship restoration: apply relative offset to new reference position
     return {
       ...rect,
       x: newReferenceX + relativePos.relativeX,
