@@ -591,6 +591,25 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       
       // Handle drag/resize mouse up if there's an active operation
       if (state.canvas.dragState || state.canvas.resizeState) {
+        // Handle hierarchy drag completion BEFORE saving to history
+        if (state.canvas.hierarchyDragState && state.canvas.dragState?.isHierarchyDrag) {
+          const { draggedRectangleId, currentDropTarget } = state.canvas.hierarchyDragState;
+          
+          if (currentDropTarget && currentDropTarget.isValid) {
+            // Check if dropping on the original parent (no-op operation)
+            const draggedRect = state.rectangles.find(r => r.id === draggedRectangleId);
+            const originalParentId = draggedRect?.parentId || null;
+            
+            if (currentDropTarget.targetId !== originalParentId) {
+              // Perform the reparenting operation
+              const success = get().rectangleActions.reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
+              if (success) {
+                console.log(`✅ Reparented ${draggedRectangleId} to ${currentDropTarget.targetId || 'root'}`);
+              }
+            }
+          }
+        }
+        
         // Save final state to history after drag/resize operation
         get().historyActions.saveToHistory();
         

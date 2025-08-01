@@ -56,7 +56,6 @@ const HierarchicalDrawingApp = () => {
     // Multi-select operations
     alignRectangles,
     distributeRectangles,
-    bulkUpdateColor,
     bulkDelete
   } = useAppStore(state => state.rectangleActions);
   const { findRectangle /* , canReparent */ } = useAppStore(state => state.getters); // MIGRATION: canReparent not used directly anymore
@@ -299,20 +298,6 @@ const HierarchicalDrawingApp = () => {
     }
   }, [ui.selectedIds, distributeRectangles, clearSelection]);
 
-  const handleBulkUpdateColor = useCallback(() => {
-    // For now, just use the first predefined color as an example
-    // In a real implementation, this would open a color picker
-    if (ui.selectedIds && ui.selectedIds.length > 1) {
-      try {
-        const color = settings.predefinedColors[0] || '#3B82F6';
-        bulkUpdateColor(ui.selectedIds, color);
-      } catch (error) {
-        console.error('Error updating bulk color:', error);
-        // Graceful degradation: clear invalid selection
-        clearSelection();
-      }
-    }
-  }, [ui.selectedIds, bulkUpdateColor, settings.predefinedColors, clearSelection]);
 
   const handleBulkDelete = useCallback(() => {
     if (ui.selectedIds && ui.selectedIds.length > 1) {
@@ -651,7 +636,6 @@ const HierarchicalDrawingApp = () => {
           onClose={uiActions.hideContextMenu}
           onAlign={handleAlign}
           onDistribute={handleDistribute}
-          onBulkUpdateColor={handleBulkUpdateColor}
           onBulkDelete={handleBulkDelete}
         />
       )}

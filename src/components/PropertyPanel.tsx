@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { LayoutPreferences, Rectangle } from '../types';
 import { useAppStore } from '../stores/useAppStore';
 import ColorPalette from './ColorPalette';
 import GlobalSettings from './GlobalSettings';
-import { BulkOperationConfirmDialog } from './BulkOperationConfirmDialog';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface PropertyPanelProps {
@@ -30,8 +29,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   
   // Rectangle manipulation actions
   const updateRectangleColor = useAppStore(state => state.rectangleActions.updateRectangleColor);
-  const updateRectangleLabel = useAppStore(state => state.rectangleActions.updateRectangleLabel);
-  const updateRectangleDescription = useAppStore(state => state.rectangleActions.updateRectangleDescription);
   const bulkUpdateColor = useAppStore(state => state.rectangleActions.bulkUpdateColor);
   const updateRectangleLayoutPreferences = useAppStore(state => state.rectangleActions.updateRectangleLayoutPreferences);
   const toggleTextLabel = useAppStore(state => state.rectangleActions.toggleTextLabel);
@@ -64,15 +61,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   } = settings;
 
 
-  // State for bulk operation confirmations
-  const [bulkConfirmDialog, setBulkConfirmDialog] = useState<{
-    isOpen: boolean;
-    operation: 'color' | 'label' | 'description';
-    pendingColor?: string;
-    pendingLabel?: string;
-    pendingDescription?: string;
-    updateMode?: 'replace' | 'append';
-  }>({ isOpen: false, operation: 'color' });
 
   // Helper function to get mixed value indicator
   const getMixedValueIndicator = (values: (string | number | boolean | undefined)[]): string | undefined => {
@@ -83,19 +71,13 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   // Multi-select rendering
   if (isMultiSelect) {
     const colors = selectedRectangles.map(r => r.color);
-    const labels = selectedRectangles.map(r => r.label);
-    const descriptions = selectedRectangles.map(r => r.description || '');
     const positions = selectedRectangles.map(r => `(${r.x}, ${r.y})`);
     const sizes = selectedRectangles.map(r => `${r.w} × ${r.h}`);
     const types = selectedRectangles.map(r => r.parentId ? 'Child' : 'Root');
     
     // Check if all selected rectangles have same values
     const allSameColor = colors.every(color => color === colors[0]);
-    const allSameLabel = labels.every(label => label === labels[0]);
-    const allSameDescription = descriptions.every(desc => desc === descriptions[0]);
     const commonColor = allSameColor ? colors[0] : undefined;
-    const commonLabel = allSameLabel ? labels[0] : undefined;
-    const commonDescription = allSameDescription ? descriptions[0] : undefined;
 
     return (
       <>
@@ -123,11 +105,8 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
                 return;
               }
               
-              setBulkConfirmDialog({
-                isOpen: true,
-                operation: 'color',
-                pendingColor: color
-              });
+              // Apply color immediately without confirmation
+              bulkUpdateColor(selectedIds, color);
             }}
             predefinedColors={predefinedColors}
             onUpdateColorSquare={updateColorSquare}
@@ -139,89 +118,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           )}
         </div>
 
-        {/* Bulk label editor */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h3 className="font-semibold mb-2 text-sm lg:text-base">Bulk Label Update</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
-                New Label
-              </label>
-              <input
-                type="text"
-                className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
-                placeholder={commonLabel || 'Enter new label for all selected rectangles'}
-                onChange={(e) => {
-                  if (e.target.value.trim()) {
-                    setBulkConfirmDialog({
-                      isOpen: true,
-                      operation: 'label',
-                      pendingLabel: e.target.value,
-                      updateMode: 'replace'
-                    });
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    setBulkConfirmDialog({
-                      isOpen: true,
-                      operation: 'label',
-                      pendingLabel: e.currentTarget.value,
-                      updateMode: 'replace'
-                    });
-                  }
-                }}
-              />
-              {!allSameLabel && (
-                <p className="text-xs text-gray-500 mt-1">
-                  ⚠️ Selected rectangles have different labels: {getMixedValueIndicator(labels)}
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Bulk description editor */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <h3 className="font-semibold mb-2 text-sm lg:text-base">Bulk Description Update</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
-                Update Mode
-              </label>
-              <select className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm mb-2">
-                <option value="replace">Replace all descriptions</option>
-                <option value="append">Append to existing descriptions</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs lg:text-sm font-medium text-gray-700 mb-1">
-                Description Text
-              </label>
-              <textarea
-                className="w-full px-2 py-1 border border-gray-300 rounded text-xs lg:text-sm"
-                rows={3}
-                placeholder={commonDescription || 'Enter description for all selected rectangles'}
-                onChange={(e) => {
-                  if (e.target.value.trim()) {
-                    const mode = (e.target.closest('.bg-white')?.querySelector('select') as HTMLSelectElement)?.value as 'replace' | 'append' || 'replace';
-                    setBulkConfirmDialog({
-                      isOpen: true,
-                      operation: 'description',
-                      pendingDescription: e.target.value,
-                      updateMode: mode
-                    });
-                  }
-                }}
-              />
-              {!allSameDescription && (
-                <p className="text-xs text-gray-500 mt-1">
-                  ⚠️ Selected rectangles have different descriptions
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Bulk operation shortcuts */}
         <div className="bg-white rounded-lg shadow p-4">
@@ -238,44 +134,6 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           </div>
         </div>
 
-        {/* Bulk operation confirmation dialog */}
-        <BulkOperationConfirmDialog
-          isOpen={bulkConfirmDialog.isOpen}
-          operation={bulkConfirmDialog.operation}
-          selectedCount={selectedIds.length}
-          onConfirm={() => {
-            if (bulkConfirmDialog.operation === 'color' && bulkConfirmDialog.pendingColor) {
-              bulkUpdateColor(selectedIds, bulkConfirmDialog.pendingColor);
-            } else if (bulkConfirmDialog.operation === 'label' && bulkConfirmDialog.pendingLabel) {
-              selectedIds.forEach(id => updateRectangleLabel(id, bulkConfirmDialog.pendingLabel!));
-            } else if (bulkConfirmDialog.operation === 'description' && bulkConfirmDialog.pendingDescription) {
-              selectedIds.forEach(id => {
-                if (bulkConfirmDialog.updateMode === 'append') {
-                  const currentRect = rectangles.find(r => r.id === id);
-                  const currentDesc = currentRect?.description || '';
-                  const newDesc = currentDesc ? `${currentDesc}\n${bulkConfirmDialog.pendingDescription}` : bulkConfirmDialog.pendingDescription!;
-                  updateRectangleDescription(id, newDesc);
-                } else {
-                  updateRectangleDescription(id, bulkConfirmDialog.pendingDescription!);
-                }
-              });
-            }
-            setBulkConfirmDialog({ isOpen: false, operation: 'color' });
-          }}
-          onCancel={() => setBulkConfirmDialog({ isOpen: false, operation: 'color' })}
-          details={
-            bulkConfirmDialog.operation === 'color' ? [
-              `Current colors: ${allSameColor ? colors[0] : 'Mixed values'}`,
-              `New color will be applied to all ${selectedIds.length} rectangles`
-            ] : bulkConfirmDialog.operation === 'label' ? [
-              `Current labels: ${allSameLabel ? labels[0] : 'Mixed values'}`,
-              `New label "${bulkConfirmDialog.pendingLabel}" will be applied to all ${selectedIds.length} rectangles`
-            ] : bulkConfirmDialog.operation === 'description' ? [
-              `Update mode: ${bulkConfirmDialog.updateMode === 'append' ? 'Append to existing descriptions' : 'Replace all descriptions'}`,
-              `${bulkConfirmDialog.updateMode === 'append' ? 'Text will be added to existing descriptions' : 'All descriptions will be replaced'}`
-            ] : []
-          }
-        />
       </>
     );
   }

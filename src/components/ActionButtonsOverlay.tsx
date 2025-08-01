@@ -9,9 +9,11 @@ interface ActionButtonsOverlayProps {}
 /**
  * Floating action buttons overlay for selected rectangles.
  * Provides quick access to common operations: add child, remove, fit to children, and manual positioning toggle.
+ * Hidden during multi-select operations since these actions don't apply to multiple rectangles.
  */
 const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const selectedId = useAppStore(state => state.selectedId);
+  const selectedIds = useAppStore(state => state.ui.selectedIds);
   const rectangles = useAppStore(state => state.rectangles);
   const gridSize = useAppStore(state => state.settings.gridSize);
   const isDragging = useAppStore(state => state.canvasActions.isDragging());
@@ -29,9 +31,10 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   
   const selectedRectangle = selectedId ? rectangles.find(r => r.id === selectedId) : null;
   const childCount = selectedId ? getChildren(selectedId).length : 0;
+  const isMultiSelectActive = selectedIds.length > 1;
   
-  // Hide overlay during interactive operations to prevent interference
-  if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging || isKeyboardMoving) {
+  // Hide overlay during interactive operations or when multi-select is active
+  if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging || isKeyboardMoving || isMultiSelectActive) {
     return null;
   }
 

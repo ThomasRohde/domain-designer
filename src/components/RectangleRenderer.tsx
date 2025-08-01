@@ -97,7 +97,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
         
         // Multi-select state calculation (optimized with Set for O(1) lookup)
         const isMultiSelected = selectedIdsSet.has(rect.id);
-        const selectionCount = selectedIds.length;
         
         return (
           <RectangleComponent
@@ -105,7 +104,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             rectangle={rect}
             isSelected={selectedId === rect.id}
             isMultiSelected={isMultiSelected}
-            selectionCount={selectionCount}
             zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState, hierarchyDragState)}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}

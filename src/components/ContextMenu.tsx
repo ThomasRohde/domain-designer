@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Palette } from 'lucide-react';
+import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical } from 'lucide-react';
 import type { AlignmentType, DistributionDirection } from '../stores/types';
 
 interface ContextMenuProps {
@@ -14,7 +14,6 @@ interface ContextMenuProps {
   // Multi-select operations
   onAlign?: (type: AlignmentType) => void;
   onDistribute?: (direction: DistributionDirection) => void;
-  onBulkUpdateColor?: () => void;
   onBulkDelete?: () => void;
 }
 
@@ -34,7 +33,6 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onClose,
   onAlign,
   onDistribute,
-  onBulkUpdateColor,
   onBulkDelete
 }) => {
   const isMultiSelect = selectedIds && selectedIds.length > 1;
@@ -71,12 +69,6 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
     }
   };
 
-  const handleBulkUpdateColor = () => {
-    if (onBulkUpdateColor) {
-      onBulkUpdateColor();
-      onClose();
-    }
-  };
 
   const handleBulkDelete = () => {
     if (onBulkDelete) {
@@ -176,16 +168,6 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             </div>
           )}
 
-          {/* Bulk operations */}
-          <div className="border-t border-gray-100 py-1">
-            <button
-              onClick={handleBulkUpdateColor}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
-            >
-              <Palette size={14} />
-              <span>Change Color</span>
-            </button>
-          </div>
 
           {/* Destructive actions */}
           <div className="border-t border-gray-100 py-1">
