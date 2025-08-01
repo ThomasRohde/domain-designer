@@ -387,7 +387,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       )}
       
       {/* Hierarchy rearrangement drag handle with directional arrow icon */}
-      {isSelected && !isMultiSelected && !isHierarchyDragActive && (
+      {isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
           className="absolute top-1 left-1 w-4 h-4 bg-purple-500 rounded-full opacity-70 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
           title="Drag to rearrange hierarchy"
