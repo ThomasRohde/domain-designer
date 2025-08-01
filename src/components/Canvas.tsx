@@ -80,7 +80,7 @@ const Canvas: React.FC<CanvasProps> = ({
             className="w-full h-full relative"
             style={{
               transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomState.level})`,
-              transformOrigin: `${zoomState.centerX}px ${zoomState.centerY}px`,
+              transformOrigin: '0 0',
               transition: 'transform 0.1s ease-out'
             }}
           >

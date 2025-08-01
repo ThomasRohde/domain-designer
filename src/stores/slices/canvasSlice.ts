@@ -228,31 +228,47 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
 
     /**
      * Mouse-wheel zoom with center-point preservation.
-     * Updates zoom level based on mouse position to provide intuitive
-     * zoom-to-cursor behavior. Includes bounds checking and no-op optimization.
+     * Updates zoom level and pan offset to provide intuitive zoom-to-cursor behavior.
+     * Calculates the correct pan offset adjustment to keep the cursor position fixed.
      */
     updateZoom: (delta: number, mouseX: number, mouseY: number) => {
       set(state => {
+        const currentLevel = state.canvas.zoomState.level;
         const newLevel = Math.max(
           state.canvas.zoomState.minLevel, 
-          Math.min(state.canvas.zoomState.maxLevel, state.canvas.zoomState.level + delta)
+          Math.min(state.canvas.zoomState.maxLevel, currentLevel + delta)
         );
         
         // Skip update if zoom level unchanged (performance optimization)
-        if (newLevel === state.canvas.zoomState.level) return state;
+        if (newLevel === currentLevel) return state;
         
-        const newZoomState = {
-          ...state.canvas.zoomState,
-          level: newLevel,
-          centerX: mouseX,
-          centerY: mouseY
-        };
+        // Calculate the content space coordinates at the mouse position
+        // Transform screen coordinates to content coordinates before zoom
+        const contentX = (mouseX - state.canvas.panOffset.x) / currentLevel;
+        const contentY = (mouseY - state.canvas.panOffset.y) / currentLevel;
+        
+        // Calculate where this content point should be after zoom to keep it under the cursor
+        const newContentX = contentX * newLevel;
+        const newContentY = contentY * newLevel;
+        
+        // Adjust pan offset to keep the cursor position fixed
+        const newPanOffsetX = mouseX - newContentX;
+        const newPanOffsetY = mouseY - newContentY;
 
         return {
           canvas: {
             ...state.canvas,
-            zoomState: newZoomState,
-            zoomLevel: newLevel
+            zoomState: {
+              ...state.canvas.zoomState,
+              level: newLevel,
+              centerX: mouseX,
+              centerY: mouseY
+            },
+            zoomLevel: newLevel,
+            panOffset: {
+              x: newPanOffsetX,
+              y: newPanOffsetY
+            }
           }
         };
       });
