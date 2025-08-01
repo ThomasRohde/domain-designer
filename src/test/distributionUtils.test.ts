@@ -50,34 +50,33 @@ const createTestRectangle = (
 
 describe('Distribution Utils', () => {
   describe('distributeHorizontally', () => {
-    test('should restore consistent grid spacing after disruption', () => {
+    test('should distribute equal gaps between rectangles', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50 (originally at 0 grid spacing)
-        createTestRectangle('2', 47, 20, 80, 40),    // Center: 87 (moved from ideal 60, should be 1 grid spacing = 10)
-        createTestRectangle('3', 200, 30, 60, 30)    // Center: 230 (originally at 2 grid spacing = 20)
+        createTestRectangle('1', 0, 10, 100, 50),    // Right edge: 100
+        createTestRectangle('2', 120, 20, 80, 40),   // Needs to be repositioned
+        createTestRectangle('3', 200, 30, 60, 30)    // Left edge: 200 (boundary)
       ];
-      // Grid size is 10, so ideal spacing should be 10 units (1 grid unit)
-      // Original intent: centers at 50, 60, 70 (10 unit spacing)
-      // Current disrupted: 50, 87, 230
-      // Should restore to: consistent 10-unit grid spacing
+      // Boundary rectangles: first (0-100) and last (200-260)
+      // Available space between boundaries: 200 - 100 = 100
+      // Middle rectangle width: 80
+      // Total white space: 100 - 80 = 20
+      // Equal gaps: 20 / 2 = 10 per gap
+      // Middle rectangle should be at: 100 + 10 = 110
 
       const result = distributeHorizontally(rectangles, mockSettings);
 
-      // Check that spacing is consistent grid-based
-      const center1 = result[0].x + result[0].w / 2;
-      const center2 = result[1].x + result[1].w / 2;
-      const center3 = result[2].x + result[2].w / 2;
-
-      // Verify consistent grid spacing
-      const spacing1 = center2 - center1;
-      const spacing2 = center3 - center2;
+      // First and last rectangles should remain unchanged (boundary preservation)
+      expect(result[0].x).toBe(0);
+      expect(result[2].x).toBe(200);
       
-      // Both spacings should be multiples of grid size
-      expect(spacing1 % mockSettings.gridSize).toBe(0);
-      expect(spacing2 % mockSettings.gridSize).toBe(0);
+      // Middle rectangle should be repositioned for equal gaps
+      expect(result[1].x).toBe(110); // 100 + 10 gap
       
-      // And they should be equal
-      expect(spacing1).toBe(spacing2);
+      // Check equal gap spacing
+      const gap1 = result[1].x - (result[0].x + result[0].w); // 110 - 100 = 10
+      const gap2 = result[2].x - (result[1].x + result[1].w); // 200 - 190 = 10
+      expect(gap1).toBe(gap2);
+      expect(gap1).toBe(10);
 
       // Y positions should remain unchanged
       expect(result[0].y).toBe(10);
@@ -85,29 +84,33 @@ describe('Distribution Utils', () => {
       expect(result[2].y).toBe(30);
     });
 
-    test('should maintain exactly 1 grid unit spacing when possible', () => {
+    test('should create equal gaps with multiple intermediate rectangles', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50
-        createTestRectangle('2', 53, 20, 80, 40),    // Center: 93 (disrupted from 60)
-        createTestRectangle('3', 67, 30, 60, 30)     // Center: 97 (disrupted from 70)
+        createTestRectangle('1', 0, 10, 100, 50),    // Boundary: 0-100
+        createTestRectangle('2', 120, 20, 60, 40),   // Should be repositioned
+        createTestRectangle('3', 200, 30, 80, 30)    // Boundary: 200-280
       ];
-      // Original intention: 1 grid unit spacing (10 units)
-      // Centers should be at: 50, 60, 70
+      // Boundary rectangles: first (0-100) and last (200-280)
+      // Available space: 200 - 100 = 100
+      // Middle rectangle width: 60
+      // White space: 100 - 60 = 40
+      // Equal gaps: 40 / 2 = 20 per gap
+      // Middle rectangle position: 100 + 20 = 120
       
       const result = distributeHorizontally(rectangles, mockSettings);
 
-      const center1 = result[0].x + result[0].w / 2;
-      const center2 = result[1].x + result[1].w / 2;
-      const center3 = result[2].x + result[2].w / 2;
-
-      // Should restore to exactly 1 grid unit (10) spacing
-      expect(center2 - center1).toBe(10); // 1 grid unit
-      expect(center3 - center2).toBe(10); // 1 grid unit
+      // Boundary rectangles unchanged
+      expect(result[0].x).toBe(0);
+      expect(result[2].x).toBe(200);
       
-      // Positions should be grid-aligned
-      expect(center1 % mockSettings.gridSize).toBe(0);
-      expect(center2 % mockSettings.gridSize).toBe(0);
-      expect(center3 % mockSettings.gridSize).toBe(0);
+      // Middle rectangle positioned for equal gaps
+      expect(result[1].x).toBe(120);
+      
+      // Verify equal gaps
+      const gap1 = result[1].x - (result[0].x + result[0].w); // 120 - 100 = 20
+      const gap2 = result[2].x - (result[1].x + result[1].w); // 200 - 180 = 20
+      expect(gap1).toBe(gap2);
+      expect(gap1).toBe(20);
     });
 
     test.skip('should maintain original array order during distribution', () => {
@@ -304,16 +307,16 @@ describe('Distribution Utils', () => {
 
     test('should dispatch to correct distribution function', () => {
       const horizontalResult = distributeRectangles(testRectangles, 'horizontal', mockSettings);
-      // Check if horizontal distribution was applied
-      const spacing1 = (horizontalResult[1].x + horizontalResult[1].w / 2) - (horizontalResult[0].x + horizontalResult[0].w / 2);
-      const spacing2 = (horizontalResult[2].x + horizontalResult[2].w / 2) - (horizontalResult[1].x + horizontalResult[1].w / 2);
-      expect(Math.abs(spacing1 - spacing2)).toBeLessThan(1); // Should be equal spacing
+      // Check if horizontal distribution was applied by verifying equal gaps
+      const gap1 = horizontalResult[1].x - (horizontalResult[0].x + horizontalResult[0].w);
+      const gap2 = horizontalResult[2].x - (horizontalResult[1].x + horizontalResult[1].w);
+      expect(Math.abs(gap1 - gap2)).toBeLessThan(1); // Should have equal gaps
 
       const verticalResult = distributeRectangles(testRectangles, 'vertical', mockSettings);
-      // Check if vertical distribution was applied
-      const vSpacing1 = (verticalResult[1].y + verticalResult[1].h / 2) - (verticalResult[0].y + verticalResult[0].h / 2);
-      const vSpacing2 = (verticalResult[2].y + verticalResult[2].h / 2) - (verticalResult[1].y + verticalResult[1].h / 2);
-      expect(Math.abs(vSpacing1 - vSpacing2)).toBeLessThan(1); // Should be equal spacing
+      // Check if vertical distribution was applied by verifying equal gaps
+      const vGap1 = verticalResult[1].y - (verticalResult[0].y + verticalResult[0].h);
+      const vGap2 = verticalResult[2].y - (verticalResult[1].y + verticalResult[1].h);
+      expect(Math.abs(vGap1 - vGap2)).toBeLessThan(1); // Should have equal gaps
     });
 
     test('should handle invalid distribution direction', () => {
@@ -359,30 +362,30 @@ describe('Distribution Utils', () => {
   describe('calculateCurrentSpacing', () => {
     test('should calculate horizontal spacing correctly', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50
-        createTestRectangle('2', 150, 20, 80, 40),   // Center: 190
-        createTestRectangle('3', 270, 30, 60, 30)    // Center: 300
+        createTestRectangle('1', 0, 10, 100, 50),    // Right edge: 100
+        createTestRectangle('2', 150, 20, 80, 40),   // Left edge: 150, Right edge: 230
+        createTestRectangle('3', 270, 30, 60, 30)    // Left edge: 270
       ];
 
       const spacings = calculateCurrentSpacing(rectangles, 'horizontal');
       
       expect(spacings).toHaveLength(2);
-      expect(spacings[0]).toBe(140); // 190 - 50
-      expect(spacings[1]).toBe(110); // 300 - 190
+      expect(spacings[0]).toBe(50); // 150 - 100 (gap between rect1 and rect2)
+      expect(spacings[1]).toBe(40); // 270 - 230 (gap between rect2 and rect3)
     });
 
     test('should calculate vertical spacing correctly', () => {
       const rectangles = [
-        createTestRectangle('1', 10, 0, 100, 100),   // Center: 50
-        createTestRectangle('2', 20, 150, 80, 80),   // Center: 190
-        createTestRectangle('3', 30, 270, 60, 60)    // Center: 300
+        createTestRectangle('1', 10, 0, 100, 100),   // Bottom edge: 100
+        createTestRectangle('2', 20, 150, 80, 80),   // Top edge: 150, Bottom edge: 230
+        createTestRectangle('3', 30, 270, 60, 60)    // Top edge: 270
       ];
 
       const spacings = calculateCurrentSpacing(rectangles, 'vertical');
       
       expect(spacings).toHaveLength(2);
-      expect(spacings[0]).toBe(140); // 190 - 50
-      expect(spacings[1]).toBe(110); // 300 - 190
+      expect(spacings[0]).toBe(50); // 150 - 100 (gap between rect1 and rect2)
+      expect(spacings[1]).toBe(40); // 270 - 230 (gap between rect2 and rect3)
     });
 
     test('should return empty array for less than 2 rectangles', () => {
@@ -392,49 +395,49 @@ describe('Distribution Utils', () => {
 
     test('should sort rectangles by appropriate axis before calculating', () => {
       const rectangles = [
-        createTestRectangle('middle', 150, 20, 80, 40),   // Center: 190
-        createTestRectangle('left', 0, 10, 100, 50),      // Center: 50
-        createTestRectangle('right', 270, 30, 60, 30)     // Center: 300
+        createTestRectangle('middle', 150, 20, 80, 40),   // Left: 150, Right: 230
+        createTestRectangle('left', 0, 10, 100, 50),      // Left: 0, Right: 100
+        createTestRectangle('right', 270, 30, 60, 30)     // Left: 270, Right: 330
       ];
 
       const spacings = calculateCurrentSpacing(rectangles, 'horizontal');
       
-      // Should calculate based on sorted order (50, 190, 300)
-      expect(spacings[0]).toBe(140); // 190 - 50
-      expect(spacings[1]).toBe(110); // 300 - 190
+      // Should calculate based on sorted order (left, middle, right)
+      expect(spacings[0]).toBe(50); // 150 - 100 (gap between left and middle)
+      expect(spacings[1]).toBe(40); // 270 - 230 (gap between middle and right)
     });
   });
 
   describe('areEvenlyDistributed', () => {
     test('should return true for evenly distributed rectangles', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50
-        createTestRectangle('2', 90, 20, 80, 40),    // Center: 130
-        createTestRectangle('3', 180, 30, 60, 30)    // Center: 210
+        createTestRectangle('1', 0, 10, 100, 50),    // Right edge: 100
+        createTestRectangle('2', 120, 20, 80, 40),   // Left: 120, Right: 200
+        createTestRectangle('3', 220, 30, 60, 30)    // Left: 220
       ];
-      // Spacings: 80, 80 - evenly distributed
+      // Gaps: 20 (120-100), 20 (220-200) - evenly distributed
 
       expect(areEvenlyDistributed(rectangles, 'horizontal')).toBe(true);
     });
 
     test('should return false for unevenly distributed rectangles', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50
-        createTestRectangle('2', 150, 20, 80, 40),   // Center: 190
-        createTestRectangle('3', 270, 30, 60, 30)    // Center: 300
+        createTestRectangle('1', 0, 10, 100, 50),    // Right edge: 100
+        createTestRectangle('2', 150, 20, 80, 40),   // Left: 150, Right: 230
+        createTestRectangle('3', 270, 30, 60, 30)    // Left: 270
       ];
-      // Spacings: 140, 110 - not evenly distributed
+      // Gaps: 50 (150-100), 40 (270-230) - not evenly distributed
 
       expect(areEvenlyDistributed(rectangles, 'horizontal')).toBe(false);
     });
 
     test('should use tolerance for near-even distribution', () => {
       const rectangles = [
-        createTestRectangle('1', 0, 10, 100, 50),    // Center: 50
-        createTestRectangle('2', 89, 20, 80, 40),    // Center: 129
-        createTestRectangle('3', 180, 30, 60, 30)    // Center: 210
+        createTestRectangle('1', 0, 10, 100, 50),    // Right edge: 100
+        createTestRectangle('2', 119, 20, 80, 40),   // Left: 119, Right: 199
+        createTestRectangle('3', 220, 30, 60, 30)    // Left: 220
       ];
-      // Spacings: 79, 81 - within tolerance of 2
+      // Gaps: 19 (119-100), 21 (220-199) - within tolerance of 2
 
       expect(areEvenlyDistributed(rectangles, 'horizontal', 2)).toBe(true);
       expect(areEvenlyDistributed(rectangles, 'horizontal', 1)).toBe(false);
