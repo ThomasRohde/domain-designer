@@ -181,15 +181,24 @@ npm run dev
 | **Precise Movement** | Arrow keys | 1px precision movement |
 | **Fast Movement** | Shift + Arrow keys | 10px quick movement |
 
-### 🔐 Manual Positioning Mode
+### 🔐 Manual Positioning & Lock Controls
 
 For advanced positioning control:
 
 1. **🔓 Unlock**: Select a parent rectangle and click the unlock icon
 2. **🎯 Move Children**: Use arrow keys to position child rectangles manually
-3. **🔒 Lock**: Click the lock icon to return to automatic layout
+3. **🔒 Lock as-is**: Click the lock icon to preserve exact dimensions and positions
 
-> **💡 Pro Tip**: Manual positioning is perfect for fine-tuning specific layouts while keeping the overall structure intact.
+#### 🏗️ Hierarchical Lock Protection
+
+When you lock a rectangle "as-is":
+- **🔒 Parent Protection**: The selected rectangle maintains its exact dimensions
+- **🛡️ Cascade Protection**: ALL descendants (children, grandchildren, etc.) are automatically locked
+- **🚫 Dimension Immunity**: Protected rectangles ignore global fixed width/height setting changes
+- **✅ Position Updates**: Layout positioning still works, but dimensions remain fixed
+- **🔓 Unlock Cascade**: Unlocking a parent automatically unlocks all its descendants
+
+> **💡 Pro Tip**: Use "Lock as-is" to preserve imported diagram layouts or freeze sections while adjusting others. The hierarchical protection ensures entire subtrees maintain their exact appearance.
 
 ### 🎯 Multi-Select Operations
 

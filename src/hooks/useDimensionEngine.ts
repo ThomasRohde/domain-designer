@@ -50,7 +50,7 @@ export const useDimensionEngine = ({
     const fixedDims = getFixedDimensions();
     
     return rectangles.map(rect => {
-      if (rect.type === 'leaf') {
+      if (rect.type === 'leaf' && !rect.isLockedAsIs) {
         const updatedRect = { ...rect };
         
         if (fixedDims.leafFixedWidth) {

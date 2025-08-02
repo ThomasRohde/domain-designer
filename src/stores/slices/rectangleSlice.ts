@@ -162,12 +162,14 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
                 newChildLayout.forEach(layoutChild => {
                   const childIndex = updated.findIndex(r => r.id === layoutChild.id);
                   if (childIndex !== -1) {
+                    const existingChild = updated[childIndex];
                     updated[childIndex] = {
-                      ...updated[childIndex],
+                      ...existingChild,
                       x: layoutChild.x,
                       y: layoutChild.y,
-                      w: layoutChild.w,
-                      h: layoutChild.h
+                      // Only update dimensions if not locked as-is
+                      w: existingChild.isLockedAsIs ? existingChild.w : layoutChild.w,
+                      h: existingChild.isLockedAsIs ? existingChild.h : layoutChild.h
                     };
                   }
                 });
@@ -333,13 +335,26 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       });
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
-        const updated = currentRectangles.map(rect => 
-          rect.id === id ? { 
-            ...rect, 
-            isManualPositioningEnabled: !rect.isManualPositioningEnabled,
-            isLockedAsIs: false
-          } : rect
-        );
+        // Get all descendants before making changes
+        const allDescendants = getAllDescendants(id, currentRectangles);
+        
+        const updated = currentRectangles.map(rect => {
+          if (rect.id === id) {
+            // Toggle the target rectangle
+            return { 
+              ...rect, 
+              isManualPositioningEnabled: !rect.isManualPositioningEnabled,
+              isLockedAsIs: false
+            };
+          } else if (allDescendants.includes(rect.id)) {
+            // Unlock all descendants when unlocking parent
+            return {
+              ...rect,
+              isLockedAsIs: false
+            };
+          }
+          return rect;
+        });
         
         const parent = updated.find(rect => rect.id === id);
         return (parent && !parent.isManualPositioningEnabled) 
@@ -349,9 +364,21 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     },
 
     lockAsIs: (id: string) => {
-      get().rectangleActions.updateRectangle(id, { 
+      const state = get();
+      
+      // Lock the target rectangle
+      state.rectangleActions.updateRectangle(id, { 
         isLockedAsIs: true,
         isManualPositioningEnabled: false 
+      });
+      
+      // Lock all descendants recursively
+      const allDescendants = getAllDescendants(id, state.rectangles);
+      allDescendants.forEach(descendantId => {
+        state.rectangleActions.updateRectangle(descendantId, { 
+          isLockedAsIs: true,
+          isManualPositioningEnabled: false 
+        });
       });
     },
 

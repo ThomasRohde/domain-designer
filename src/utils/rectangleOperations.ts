@@ -153,7 +153,7 @@ export const applyFixedDimensions = (
   rect: Rectangle,
   fixedDimensions: FixedDimensions
 ): Rectangle => {
-  if (rect.type !== 'leaf') {
+  if (rect.type !== 'leaf' || rect.isLockedAsIs) {
     return rect;
   }
   

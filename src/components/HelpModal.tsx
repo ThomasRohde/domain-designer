@@ -93,7 +93,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
           </div>
           
           <div>
-            <h4 className="font-semibold text-gray-800 mb-2">Manual Positioning</h4>
+            <h4 className="font-semibold text-gray-800 mb-2">Manual Positioning & Lock Controls</h4>
             <p className="text-sm text-gray-600 mb-2">
               To enable arrow key movement for child rectangles:
             </p>
@@ -101,14 +101,34 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <li>Select a parent rectangle</li>
               <li>Click the unlock icon (padlock) to enable manual positioning</li>
               <li>Child rectangles can now be moved with arrow keys</li>
-              <li>Click the lock icon to return to automatic layout</li>
+              <li>Click the lock icon to preserve exact dimensions and positions</li>
             </ol>
           </div>
           
           <div>
-            <h4 className="font-semibold text-gray-800 mb-2">Context Menu</h4>
-            <p className="text-sm text-gray-600">
+            <h4 className="font-semibold text-gray-800 mb-2">Hierarchical Lock Protection 🛡️</h4>
+            <p className="text-sm text-gray-600 mb-2">
+              When you lock a rectangle "as-is", powerful cascade protection is applied:
+            </p>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Parent Protection</strong> - Selected rectangle maintains exact dimensions</li>
+              <li>• <strong>Cascade Protection</strong> - ALL descendants (children, grandchildren, etc.) are automatically locked</li>
+              <li>• <strong>Dimension Immunity</strong> - Protected rectangles ignore global fixed width/height changes</li>
+              <li>• <strong>Position Updates</strong> - Layout positioning still works, but dimensions remain fixed</li>
+              <li>• <strong>Unlock Cascade</strong> - Unlocking a parent automatically unlocks all descendants</li>
+            </ul>
+            <p className="text-sm text-gray-600 mt-2">
+              <strong>💡 Pro Tip:</strong> Use "Lock as-is" to preserve imported layouts or freeze sections while adjusting others.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Action Buttons & Context Menu</h4>
+            <p className="text-sm text-gray-600 mb-2">
               Right-click any rectangle to access quick actions like adding children, editing descriptions, or removing rectangles.
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Smart UI:</strong> The "Fit to Children" button is automatically hidden for locked rectangles since dimension changes would have no effect.
             </p>
           </div>
         </div>

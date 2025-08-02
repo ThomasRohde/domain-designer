@@ -219,7 +219,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (enabled) {
           // Apply fixed width constraint to all existing leaf rectangles
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' ? { ...rect, w: state.settings.leafWidth } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, w: state.settings.leafWidth } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));
@@ -255,7 +255,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (enabled) {
           // Apply fixed height to all existing leaf nodes
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' ? { ...rect, h: state.settings.leafHeight } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, h: state.settings.leafHeight } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));
@@ -291,7 +291,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (state.settings.leafFixedWidth) {
           // Apply new width to all existing leaf nodes
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' ? { ...rect, w: width } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, w: width } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));
@@ -327,7 +327,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (state.settings.leafFixedHeight) {
           // Apply new height to all existing leaf nodes
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' ? { ...rect, h: height } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, h: height } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));

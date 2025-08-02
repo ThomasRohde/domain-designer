@@ -109,12 +109,14 @@ export const updateChildrenLayout = (
                 newLayout.forEach(layoutRect => {
                   const index = updated.findIndex(r => r.id === layoutRect.id);
                   if (index !== -1) {
+                    const existingRect = updated[index];
                     updated[index] = { 
-                      ...updated[index], 
+                      ...existingRect, 
                       x: layoutRect.x, 
                       y: layoutRect.y, 
-                      w: layoutRect.w, 
-                      h: layoutRect.h 
+                      // Only update dimensions if not locked as-is
+                      w: existingRect.isLockedAsIs ? existingRect.w : layoutRect.w, 
+                      h: existingRect.isLockedAsIs ? existingRect.h : layoutRect.h 
                     };
                     processedIds.add(layoutRect.id);
                     processedAny = true;
