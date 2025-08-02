@@ -93,7 +93,12 @@ export class LayoutManager {
       depth
     };
 
-    const result = this.currentAlgorithm.calculateLayout(input);
+    // Check if this parent has layout preferences that should override global algorithm
+    const algorithmToUse = parentRect.layoutPreferences?.fillStrategy 
+      ? layoutAlgorithmFactory.createAlgorithm('grid')
+      : this.currentAlgorithm;
+
+    const result = algorithmToUse.calculateLayout(input);
     return result.rectangles;
   }
 
@@ -144,7 +149,12 @@ export class LayoutManager {
       depth
     };
 
-    const result = this.currentAlgorithm.calculateMinimumParentSize(input);
+    // Check if this parent has layout preferences that should override global algorithm
+    const algorithmToUse = parent.layoutPreferences?.fillStrategy 
+      ? layoutAlgorithmFactory.createAlgorithm('grid')
+      : this.currentAlgorithm;
+
+    const result = algorithmToUse.calculateMinimumParentSize(input);
     return result;
   }
 
@@ -159,7 +169,12 @@ export class LayoutManager {
     childrenCount: number,
     layoutPreferences?: LayoutPreferences
   ): { cols: number; rows: number } {
-    return this.currentAlgorithm.calculateGridDimensions(childrenCount, layoutPreferences);
+    // If layout preferences are provided, use Grid algorithm for calculation
+    const algorithmToUse = layoutPreferences?.fillStrategy 
+      ? layoutAlgorithmFactory.createAlgorithm('grid')
+      : this.currentAlgorithm;
+    
+    return algorithmToUse.calculateGridDimensions(childrenCount, layoutPreferences);
   }
 
   /**
