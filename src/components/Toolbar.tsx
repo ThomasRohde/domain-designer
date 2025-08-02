@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Menu, Download, Upload, Settings } from 'lucide-react';
+import { Plus, Menu, Download, Upload, Settings, Map } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import OfflineIndicator from './OfflineIndicator';
 
@@ -16,6 +16,10 @@ interface ToolbarProps {
   lastSaved?: number | null;
   /** Whether auto-save is currently enabled */
   autoSaveEnabled?: boolean;
+  /** Navigation minimap toggle functionality */
+  onToggleMinimap?: () => void;
+  /** Current minimap visibility state for button styling */
+  minimapVisible?: boolean;
 }
 
 /**
@@ -29,7 +33,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onImport,
   selectedId,
   lastSaved,
-  autoSaveEnabled
+  autoSaveEnabled,
+  onToggleMinimap,
+  minimapVisible
 }) => {
   const sidebarOpen = useAppStore(state => state.ui.sidebarOpen);
   const leftMenuOpen = useAppStore(state => state.ui.leftMenuOpen);
@@ -101,6 +107,21 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <Download size={16} />
               <span>Export</span>
             </button>
+            {/* Navigation minimap toggle with active state styling */}
+            {onToggleMinimap && (
+              <button
+                onClick={onToggleMinimap}
+                className={`px-3 py-2 text-sm font-medium rounded-md border flex items-center space-x-1 ${
+                  minimapVisible 
+                    ? 'text-blue-700 bg-blue-50 border-blue-300 hover:bg-blue-100' 
+                    : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+                }`}
+                title={`${minimapVisible ? 'Hide' : 'Show'} navigation map (M)`}
+              >
+                <Map size={16} />
+                <span>Map</span>
+              </button>
+            )}
           </div>
 
           {/* Settings panel toggle - always available for accessing properties */}
