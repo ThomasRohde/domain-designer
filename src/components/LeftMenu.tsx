@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, FileText, Trash2, HelpCircle, Eye } from 'lucide-react';
+import { Info, FileText, Trash2, HelpCircle, Eye, FolderTree } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../stores/useAppStore';
 import MobileOverlay from './MobileOverlay';
@@ -22,6 +22,12 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
   const isOpen = useAppStore(state => state.ui.leftMenuOpen);
   const onClose = useAppStore(state => state.uiActions.closeLeftMenu);
   const onHelpClick = useAppStore(state => state.uiActions.openHelpModal);
+  const toggleHierarchyOutline = useAppStore(state => state.uiActions.toggleHierarchyOutline);
+  
+  const handleHierarchyOutlineClick = () => {
+    toggleHierarchyOutline();
+    onClose(); // Close the left menu when opening hierarchy outline
+  };
   return (
     <>
       {/* Left-side navigation menu with slide-in animation */}
@@ -54,6 +60,14 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
           >
             <FileText size={16} />
             <span>Templates</span>
+          </button>
+          
+          <button
+            onClick={handleHierarchyOutlineClick}
+            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <FolderTree size={16} />
+            <span>Hierarchy Outline</span>
           </button>
           
           {/* Router Link for viewer mode with automatic menu close */}

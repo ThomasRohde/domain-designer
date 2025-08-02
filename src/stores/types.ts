@@ -46,6 +46,7 @@ export interface SelectionBoxState {
 export interface UIState {
   sidebarOpen: boolean;
   leftMenuOpen: boolean;
+  hierarchyOutlineOpen: boolean;
   contextMenu: ContextMenuState | null;
   exportModalOpen: boolean;
   lockConfirmationModal: LockConfirmationModalState | null;
@@ -157,6 +158,9 @@ export interface UIActions {
   toggleLeftMenu: () => void;
   openLeftMenu: () => void;
   closeLeftMenu: () => void;
+  toggleHierarchyOutline: () => void;
+  openHierarchyOutline: () => void;
+  closeHierarchyOutline: () => void;
   showContextMenu: (x: number, y: number, rectangleId: string) => void;
   showMultiSelectContextMenu: (x: number, y: number, selectedIds: string[]) => void;
   hideContextMenu: () => void;

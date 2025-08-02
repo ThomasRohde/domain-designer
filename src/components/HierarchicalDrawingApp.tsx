@@ -16,6 +16,7 @@ import Canvas from './Canvas';
 import Sidebar from './Sidebar';
 import PropertyPanel from './PropertyPanel';
 import LeftMenu from './LeftMenu';
+import HierarchyOutlinePanel from './HierarchyOutlinePanel';
 import AboutModal from './AboutModal';
 import HelpModal from './HelpModal';
 import LockConfirmationModal from './LockConfirmationModal';
@@ -612,6 +613,8 @@ const HierarchicalDrawingApp = () => {
           onTemplatesClick={handleTemplatesClick}
           onClearSavedData={handleClearSavedData}
         />
+        
+        <HierarchyOutlinePanel />
         
         <div className="flex-1 flex flex-col overflow-hidden">
           <Canvas
