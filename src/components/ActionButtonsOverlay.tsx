@@ -1,6 +1,5 @@
 import React from 'react';
 import { Plus, Trash2, Minimize2, Lock, Unlock } from 'lucide-react';
-import { LABEL_MARGIN } from '../utils/constants';
 import { useAppStore } from '../stores/useAppStore';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -42,26 +41,30 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const hasChildren = childCount > 0;
   const isManualPositioningEnabled = rect.isManualPositioningEnabled ?? false;
 
-  // Position buttons at top-right of rectangle, accounting for label space
+  // Position floating toolbar above rectangle center
   const rectX = rect.x * gridSize;
   const rectY = rect.y * gridSize;
   const rectWidth = rect.w * gridSize;
 
   const buttonStyle: React.CSSProperties = {
     position: 'absolute',
-    left: rectX + rectWidth - 8,
-    top: hasChildren ? rectY + (LABEL_MARGIN * 2) : rectY + 4,
+    left: rectX + (rectWidth / 2),
+    top: rectY - 50, // Float above rectangle
     zIndex: 100000, // Above all other elements
     pointerEvents: 'auto',
     display: 'flex',
-    gap: '4px',
-    transform: 'translateX(-100%)' // Right-align buttons
+    gap: '2px',
+    padding: '4px',
+    background: 'white',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    transform: 'translateX(-50%)' // Center-align above rectangle
   };
 
   return (
     <div style={buttonStyle}>
       <button
-        className="p-1 hover:bg-white hover:bg-opacity-70 rounded transition-colors bg-white bg-opacity-80 shadow-sm"
+        className="p-2 hover:bg-gray-100 rounded-md transition-colors text-green-600"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -74,13 +77,13 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
         }}
         title="Add Child"
       >
-        <Plus size={hasChildren ? 12 : 10} />
+        <Plus size={14} />
       </button>
       
       {hasChildren && (
         <button
-          className={`p-1 hover:bg-opacity-70 rounded transition-colors bg-white bg-opacity-80 shadow-sm ${
-            isManualPositioningEnabled ? 'text-green-600 hover:bg-green-100' : 'text-gray-600 hover:bg-gray-100'
+          className={`p-2 hover:bg-gray-100 rounded-md transition-colors ${
+            isManualPositioningEnabled ? 'text-green-600' : 'text-orange-600'
           }`}
           onClick={(e) => {
             e.preventDefault();
@@ -101,13 +104,13 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
           }}
           title={isManualPositioningEnabled ? "Lock automatic layout" : "Unlock for manual positioning"}
         >
-          {isManualPositioningEnabled ? <Unlock size={12} /> : <Lock size={12} />}
+          {isManualPositioningEnabled ? <Unlock size={14} /> : <Lock size={14} />}
         </button>
       )}
       
       {hasChildren && !isManualPositioningEnabled && (
         <button
-          className="p-1 hover:bg-blue-100 rounded text-blue-600 transition-colors bg-white bg-opacity-80 shadow-sm"
+          className="p-2 hover:bg-gray-100 rounded-md text-blue-600 transition-colors"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -120,12 +123,12 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
           }}
           title="Fit to Children"
         >
-          <Minimize2 size={12} />
+          <Minimize2 size={14} />
         </button>
       )}
       
       <button
-        className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors bg-white bg-opacity-80 shadow-sm"
+        className="p-2 hover:bg-gray-100 rounded-md text-red-600 transition-colors"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -138,7 +141,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
         }}
         title="Remove"
       >
-        <Trash2 size={hasChildren ? 12 : 10} />
+        <Trash2 size={14} />
       </button>
     </div>
   );

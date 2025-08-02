@@ -417,27 +417,22 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       {/* Resize handle: Only shown for single selection to avoid confusion with multi-select operations */}
       {canResize && isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
-          className="absolute bottom-0 right-0 w-6 h-6 sm:w-4 sm:h-4 bg-blue-500 cursor-se-resize rounded-tl-lg opacity-80 hover:opacity-100 transition-opacity touch-friendly"
+          className="absolute bottom-0 right-0 w-4 h-4 bg-orange-500 cursor-se-resize rounded-tl-md opacity-90 hover:opacity-100 transition-all hover:scale-110 border-2 border-white shadow-sm"
           onMouseDown={(e) => onMouseDown(e, rectangle, 'resize')}
           title="Resize"
         />
       )}
       
-      {/* Hierarchy drag handle: Purple circle with four-way arrow, single selection only */}
+      {/* Hierarchy drag handle: Orange circle matching resize handle, single selection only */}
       {isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
-          className="absolute top-1 left-1 w-4 h-4 bg-purple-500 rounded-full opacity-70 hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+          className="absolute top-1 left-1 w-4 h-4 bg-orange-500 rounded-full opacity-90 hover:opacity-100 transition-all hover:scale-110 cursor-pointer border-2 border-white shadow-sm"
           title="Drag to rearrange hierarchy"
           onMouseDown={(e) => {
             e.stopPropagation();
             onMouseDown(e, rectangle, 'hierarchy-drag');
           }}
-        >
-          {/* Four-way arrow icon indicating multi-directional drag capability */}
-          <svg width="8" height="8" viewBox="0 0 16 16" fill="white">
-            <path d="M8 2L10 6H6L8 2Z M8 14L6 10H10L8 14Z M2 8L6 6V10L2 8Z M14 8L10 10V6L14 8Z" />
-          </svg>
-        </div>
+        />
       )}
       
       {/* Active drop zone overlay with clear call-to-action text */}
