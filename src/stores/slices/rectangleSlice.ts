@@ -21,6 +21,7 @@ import {
   validateBulkOperationConstraints,
   triggerLayoutRecalculation
 } from '../../utils/bulkOperationUtils';
+import { getExpandedSelectionIds } from '../../utils/boundingBoxUtils';
 import type { SliceCreator, RectangleActions } from '../types';
 
 /**
@@ -35,6 +36,17 @@ export interface RectangleSlice {
   // Actions
   rectangleActions: RectangleActions;
 }
+
+/**
+ * Helper function to expand selection to include all rectangles within bounding box
+ */
+const expandSelectionToBoundingBox = (selectedIds: string[], rectangles: Rectangle[]): string[] => {
+  if (selectedIds.length <= 1) {
+    return selectedIds; // No expansion needed for single or no selection
+  }
+
+  return getExpandedSelectionIds(selectedIds, rectangles);
+};
 
 /**
  * Helper function to update rectangles and save to history
@@ -596,10 +608,15 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     },
 
     setSelectedIds: (ids: string[]) => {
+      const state = get();
+      
+      // Automatically expand selection to include all rectangles within bounding box
+      const expandedSelection = expandSelectionToBoundingBox(ids, state.rectangles);
+      
       set(state => ({
-        ui: { ...state.ui, selectedIds: ids },
+        ui: { ...state.ui, selectedIds: expandedSelection },
         // For backward compatibility, set selectedId to first item or null
-        selectedId: ids.length > 0 ? ids[0] : null
+        selectedId: expandedSelection.length > 0 ? expandedSelection[0] : null
       }));
     },
 
@@ -637,8 +654,13 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       // Add to selection if not already selected
       if (!currentSelection.includes(id)) {
+        const newSelection = [...currentSelection, id];
+        
+        // Automatically expand selection to include all rectangles within bounding box
+        const expandedSelection = expandSelectionToBoundingBox(newSelection, rectangles);
+        
         set(state => ({
-          ui: { ...state.ui, selectedIds: [...currentSelection, id] }
+          ui: { ...state.ui, selectedIds: expandedSelection }
         }));
       }
       return true;
