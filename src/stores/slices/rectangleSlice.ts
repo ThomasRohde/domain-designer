@@ -184,12 +184,45 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     },
 
     removeRectangle: (id: string) => {
+      const state = get();
+      const { settings } = state;
+      
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         // Get all descendants to remove
         const descendantIds = getAllDescendants(id, currentRectangles);
         const toRemove = [id, ...descendantIds];
         
-        return currentRectangles.filter(rect => !toRemove.includes(rect.id));
+        let updated = currentRectangles.filter(rect => !toRemove.includes(rect.id));
+        
+        // Update rectangle types after removal and apply fixed dimensions to new leaves
+        updated = updated.map(rect => {
+          const hasChildren = updated.some(r => r.parentId === rect.id);
+          const hasParent = rect.parentId !== undefined;
+          
+          let newType: 'root' | 'parent' | 'leaf';
+          if (!hasParent) {
+            newType = 'root';
+          } else if (hasChildren) {
+            newType = 'parent';
+          } else {
+            newType = 'leaf';
+          }
+          
+          // If rectangle is becoming a leaf, apply fixed dimensions
+          if (newType === 'leaf' && rect.type !== 'leaf') {
+            const fixedDims = {
+              leafFixedWidth: settings.leafFixedWidth,
+              leafFixedHeight: settings.leafFixedHeight,
+              leafWidth: settings.leafWidth,
+              leafHeight: settings.leafHeight
+            };
+            return applyFixedDimensions({ ...rect, type: newType }, fixedDims);
+          }
+          
+          return { ...rect, type: newType };
+        });
+        
+        return updated;
       }, null);
     },
 

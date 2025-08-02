@@ -71,10 +71,10 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
         const textWidth = Math.max(MIN_WIDTH, (child.textFontSize || 14) * (child.label?.length || 5) * 0.6);
         const textHeight = Math.max(MIN_HEIGHT, (child.textFontSize || 14) * 1.5);
         return { width: textWidth, height: textHeight };
-      } else if (child.type === 'leaf' && fixedDimensions) {
-        // For leaf nodes, use fixed dimensions if specified
-        let childWidth = fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w;
-        let childHeight = fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h;
+      } else if (child.type === 'leaf') {
+        // For leaf nodes, always respect fixed dimensions if they are enabled
+        let childWidth = (fixedDimensions?.leafFixedWidth) ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w;
+        let childHeight = (fixedDimensions?.leafFixedHeight) ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h;
         return { width: childWidth, height: childHeight };
       } else if (child.type === 'parent') {
         // For parent rectangles, calculate their minimum required size including margins
@@ -173,10 +173,11 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     // Calculate theoretical optimal child dimensions to avoid resize traps
     // Use default sizes rather than current expanded dimensions
     const actualChildDimensions = children.map(child => {
-      if (child.type === 'leaf' && fixedDimensions) {
+      if (child.type === 'leaf') {
+        // For leaf rectangles, always respect fixed dimensions if they are enabled
         return {
-          width: fixedDimensions.leafFixedWidth ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w,
-          height: fixedDimensions.leafFixedHeight ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h
+          width: (fixedDimensions?.leafFixedWidth) ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w,
+          height: (fixedDimensions?.leafFixedHeight) ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h
         };
       }
       // For parent rectangles, calculate their minimum size recursively
@@ -191,7 +192,7 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
         });
         return { width: childMinSize.w, height: childMinSize.h };
       }
-      // For leaf rectangles without fixed dimensions, use default leaf size
+      // For other rectangle types, use default leaf size as fallback
       return { 
         width: DEFAULT_RECTANGLE_SIZE.leaf.w, 
         height: DEFAULT_RECTANGLE_SIZE.leaf.h 
