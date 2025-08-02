@@ -370,6 +370,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const children = getChildren(id, rectangles);
       if (children.length === 0) return;
       
+      const rectangle = rectangles.find(r => r.id === id);
+      if (rectangle?.isLockedAsIs) return;
+      
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         const optimalSize = layoutManager.calculateMinimumParentSize(id, currentRectangles, getFixedDimensions(), getMargins());
         const updated = currentRectangles.map(rect => 

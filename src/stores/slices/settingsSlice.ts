@@ -230,6 +230,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
             const parentsToUpdate = updatedRectangles.filter(rect => 
               (rect.type === 'parent' || rect.type === 'root') && 
               !rect.isManualPositioningEnabled &&
+              !rect.isLockedAsIs &&
               getChildren(rect.id, updatedRectangles).length > 0
             );
             
@@ -265,6 +266,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
             const parentsToUpdate = updatedRectangles.filter(rect => 
               (rect.type === 'parent' || rect.type === 'root') && 
               !rect.isManualPositioningEnabled &&
+              !rect.isLockedAsIs &&
               getChildren(rect.id, updatedRectangles).length > 0
             );
             
@@ -300,6 +302,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
             const parentsToUpdate = updatedRectangles.filter(rect => 
               (rect.type === 'parent' || rect.type === 'root') && 
               !rect.isManualPositioningEnabled &&
+              !rect.isLockedAsIs &&
               getChildren(rect.id, updatedRectangles).length > 0
             );
             
@@ -335,6 +338,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
             const parentsToUpdate = updatedRectangles.filter(rect => 
               (rect.type === 'parent' || rect.type === 'root') && 
               !rect.isManualPositioningEnabled &&
+              !rect.isLockedAsIs &&
               getChildren(rect.id, updatedRectangles).length > 0
             );
             
@@ -416,6 +420,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
           const parentsToUpdate = state.rectangles.filter(rect => 
             (rect.type === 'parent' || rect.type === 'root') && 
             !rect.isManualPositioningEnabled &&
+            !rect.isLockedAsIs &&
             getChildren(rect.id, state.rectangles).length > 0
           );
           
@@ -442,6 +447,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
           const parentsToUpdate = state.rectangles.filter(rect => 
             (rect.type === 'parent' || rect.type === 'root') && 
             !rect.isManualPositioningEnabled &&
+            !rect.isLockedAsIs &&
             getChildren(rect.id, state.rectangles).length > 0
           );
           
@@ -471,6 +477,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
           const parentsToUpdate = state.rectangles.filter(rect => 
             (rect.type === 'parent' || rect.type === 'root') && 
             !rect.isManualPositioningEnabled &&
+            !rect.isLockedAsIs &&
             getChildren(rect.id, state.rectangles).length > 0
           );
           
