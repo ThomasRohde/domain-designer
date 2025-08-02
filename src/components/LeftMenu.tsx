@@ -1,6 +1,6 @@
 import React from 'react';
 import { Info, FileText, Trash2, HelpCircle, Eye, FolderTree } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/useAppStore';
 import MobileOverlay from './MobileOverlay';
 
@@ -19,6 +19,7 @@ interface LeftMenuProps {
  * Features include templates, viewer mode, help system, and data management.
  */
 const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onClearSavedData }) => {
+  const navigate = useNavigate();
   const isOpen = useAppStore(state => state.ui.leftMenuOpen);
   const onClose = useAppStore(state => state.uiActions.closeLeftMenu);
   const onHelpClick = useAppStore(state => state.uiActions.openHelpModal);
@@ -27,6 +28,11 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
   const handleHierarchyOutlineClick = () => {
     toggleHierarchyOutline();
     onClose(); // Close the left menu when opening hierarchy outline
+  };
+
+  const handleViewerModeClick = () => {
+    navigate('/viewer');
+    onClose(); // Close the left menu when navigating to viewer
   };
   return (
     <>
@@ -70,15 +76,13 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
             <span>Hierarchy Outline</span>
           </button>
           
-          {/* Router Link for viewer mode with automatic menu close */}
-          <Link
-            to="/viewer"
-            onClick={onClose}
+          <button
+            onClick={handleViewerModeClick}
             className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
           >
             <Eye size={16} />
             <span>Viewer Mode</span>
-          </Link>
+          </button>
           
           <button
             onClick={onHelpClick}
