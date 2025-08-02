@@ -22,7 +22,7 @@ import {
   triggerLayoutRecalculation
 } from '../../utils/bulkOperationUtils';
 import { getExpandedSelectionIds } from '../../utils/boundingBoxUtils';
-import type { SliceCreator, RectangleActions } from '../types';
+import type { SliceCreator, RectangleActions, AppStore } from '../types';
 
 /**
  * Rectangle state slice interface
@@ -52,10 +52,8 @@ const expandSelectionToBoundingBox = (selectedIds: string[], rectangles: Rectang
  * Helper function to update rectangles and save to history
  */
 const updateRectanglesWithHistory = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  set: (partial: object | ((state: any) => object)) => void, 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get: () => any, 
+  set: (partial: object | ((state: AppStore) => object)) => void, 
+  get: () => AppStore, 
   updater: (current: Rectangle[]) => Rectangle[], 
   selectedId?: string | null
 ) => {
