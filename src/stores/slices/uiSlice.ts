@@ -23,12 +23,13 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
     // Auto-close overlays on mobile to prevent UI blocking
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
       const currentState = get();
-      if (currentState.ui.sidebarOpen || currentState.ui.leftMenuOpen) {
+      if (currentState.ui.sidebarOpen || currentState.ui.leftMenuOpen || currentState.ui.hierarchyOutlineOpen) {
         set(state => ({
           ui: {
             ...state.ui,
             sidebarOpen: false,
-            leftMenuOpen: false
+            leftMenuOpen: false,
+            hierarchyOutlineOpen: false
           }
         }));
       }
@@ -85,6 +86,7 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
     ui: {
       sidebarOpen: false,
       leftMenuOpen: false,
+      hierarchyOutlineOpen: false,
       contextMenu: null,
       exportModalOpen: false,
       lockConfirmationModal: null,
@@ -155,6 +157,34 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
         ui: {
           ...state.ui,
           leftMenuOpen: false
+        }
+      }));
+    },
+
+    // Hierarchy outline actions
+    toggleHierarchyOutline: () => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          hierarchyOutlineOpen: !state.ui.hierarchyOutlineOpen
+        }
+      }));
+    },
+
+    openHierarchyOutline: () => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          hierarchyOutlineOpen: true
+        }
+      }));
+    },
+
+    closeHierarchyOutline: () => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          hierarchyOutlineOpen: false
         }
       }));
     },
