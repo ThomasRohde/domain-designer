@@ -71,7 +71,7 @@ const URLViewerPage: React.FC = () => {
   
   
   // Store actions for importing data to editor
-  const { rectangleActions, settingsActions } = useAppStore();
+  const { rectangleActions, settingsActions, autoSaveActions } = useAppStore();
 
   // Initialize viewer interactions (pan and zoom only)
   const {
@@ -199,6 +199,12 @@ const URLViewerPage: React.FC = () => {
           // Continue without settings import - rectangles are more important
         }
       }
+      
+      // Trigger auto-save to persist the imported data to IndexedDB
+      autoSaveActions.saveData();
+      
+      // Wait for the debounced save to complete (auto-save has 1000ms delay)
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
       // Navigate to editor
       const getNavigationPath = () => {
