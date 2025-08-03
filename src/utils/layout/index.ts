@@ -6,7 +6,6 @@
  * - Concrete algorithm implementations (Grid, Flow, Mixed Flow)
  * - Factory pattern for algorithm creation and management
  * - High-level layout manager for simplified usage
- * - Backward compatibility wrappers for legacy code
  */
 
 // Core type definitions and abstractions

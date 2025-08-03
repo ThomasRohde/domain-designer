@@ -49,7 +49,7 @@ describe('Zustand Store Tests', () => {
     // Reset to initial state
     store.rectangleActions.setRectangles([]);
     store.historyActions.clearHistory();
-    store.rectangleActions.setSelectedId(null);
+    store.rectangleActions.setSelectedIds([]);
     store.rectangleActions.updateNextId(1);
   });
 
@@ -219,14 +219,14 @@ describe('Zustand Store Tests', () => {
       expect(id2).toMatch(/^rect-\d+$/);
     });
 
-    it('should set selected rectangle ID', () => {
+    it('should set selected rectangle IDs', () => {
       store.rectangleActions.addRectangle();
       const rectId = useAppStore.getState().rectangles[0].id;
       
-      store.rectangleActions.setSelectedId(rectId);
+      store.rectangleActions.setSelectedIds([rectId]);
       
       const newStore = useAppStore.getState();
-      expect(newStore.selectedId).toBe(rectId);
+      expect(newStore.ui.selectedIds).toEqual([rectId]);
     });
   });
 
@@ -267,7 +267,7 @@ describe('Zustand Store Tests', () => {
           
           const newStore = useAppStore.getState();
           expect(newStore.rectangles).toHaveLength(0);
-          expect(newStore.selectedId).toBeNull();
+          expect(newStore.ui.selectedIds).toEqual([]);
           resolve();
         }, 10);
       });
