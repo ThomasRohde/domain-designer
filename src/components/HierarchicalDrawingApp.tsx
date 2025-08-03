@@ -65,6 +65,10 @@ const HierarchicalDrawingApp = () => {
   const autoSaveState = useAppStore(state => state.autoSave);
   const autoSaveActions = useAppStore(state => state.autoSaveActions);
   
+  // Clipboard operations for copy/paste functionality
+  const clipboardActions = useAppStore(state => state.clipboardActions);
+  const canPaste = useAppStore(state => state.clipboardActions.canPaste());
+  
   // Application settings and configuration
   const settings = useAppStore(state => state.settings);
   const settingsActions = useAppStore(state => state.settingsActions);
@@ -313,6 +317,27 @@ const HierarchicalDrawingApp = () => {
       }
     }
   }, [ui.selectedIds, bulkDelete, clearSelection]);
+
+  const handleCopy = useCallback(() => {
+    const idsToCopy = ui.selectedIds.length > 0 ? ui.selectedIds : selectedId ? [selectedId] : [];
+    if (idsToCopy.length > 0) {
+      try {
+        clipboardActions.copyRectangles(idsToCopy);
+      } catch (error) {
+        console.error('Error during copy operation:', error);
+      }
+    }
+  }, [ui.selectedIds, selectedId, clipboardActions]);
+
+  const handlePaste = useCallback(() => {
+    try {
+      // Get target parent ID - if a parent rectangle is selected, paste as children
+      const targetParentId = selectedId && findRectangle(selectedId)?.type === 'parent' ? selectedId : undefined;
+      clipboardActions.pasteRectangles(targetParentId);
+    } catch (error) {
+      console.error('Error during paste operation:', error);
+    }
+  }, [selectedId, findRectangle, clipboardActions]);
 
   const handleSaveDescription = useCallback((description: string) => {
     if (ui.descriptionEditModal) {
@@ -631,12 +656,14 @@ const HierarchicalDrawingApp = () => {
     onDelete: handleDeleteSelected,
     onCancel: handleClearSelection, // Escape now clears selection
     onSelectAll: handleSelectAllSiblings, // Ctrl+A selects all siblings
+    onCopy: handleCopy, // Ctrl+C copies selected rectangles
+    onPaste: handlePaste, // Ctrl+V pastes rectangles from clipboard
     onMoveUp: handleMoveUp,
     onMoveDown: handleMoveDown,
     onMoveLeft: handleMoveLeft,
     onMoveRight: handleMoveRight,
     onToggleMinimap: toggleMinimap, // 'M' key toggles navigation minimap visibility
-  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight, toggleMinimap]));
+  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleCopy, handlePaste, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight, toggleMinimap]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
@@ -699,6 +726,9 @@ const HierarchicalDrawingApp = () => {
             onAlign={handleAlign}
             onDistribute={handleDistribute}
             onBulkDelete={handleBulkDelete}
+            onCopy={handleCopy}
+            onPaste={handlePaste}
+            canPaste={canPaste}
             canPerformAlignmentOperations={canPerformBulkOperations}
             canPerformDistributionOperations={canPerformBulkOperations}
           />

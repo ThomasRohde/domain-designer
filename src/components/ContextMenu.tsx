@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical } from 'lucide-react';
+import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard } from 'lucide-react';
 import type { AlignmentType, DistributionDirection } from '../stores/types';
 
 interface ContextMenuProps {
@@ -15,6 +15,10 @@ interface ContextMenuProps {
   onAlign?: (type: AlignmentType) => void;
   onDistribute?: (direction: DistributionDirection) => void;
   onBulkDelete?: () => void;
+  // Clipboard operations
+  onCopy?: () => void;
+  onPaste?: () => void;
+  canPaste?: boolean;
   // Operation availability flags
   canPerformAlignmentOperations?: boolean;
   canPerformDistributionOperations?: boolean;
@@ -37,6 +41,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onAlign,
   onDistribute,
   onBulkDelete,
+  onCopy,
+  onPaste,
+  canPaste = false,
   canPerformAlignmentOperations = true,
   canPerformDistributionOperations = true
 }) => {
@@ -78,6 +85,21 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   const handleBulkDelete = () => {
     if (onBulkDelete) {
       onBulkDelete();
+      onClose();
+    }
+  };
+
+  // Clipboard handlers
+  const handleCopy = () => {
+    if (onCopy) {
+      onCopy();
+      onClose();
+    }
+  };
+
+  const handlePaste = () => {
+    if (onPaste) {
+      onPaste();
       onClose();
     }
   };
@@ -225,6 +247,25 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             </div>
           )}
 
+          {/* Clipboard operations */}
+          <div className="border-t border-gray-100 py-1">
+            <button
+              onClick={handleCopy}
+              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+            >
+              <Copy size={14} />
+              <span>Copy Selected</span>
+            </button>
+            {canPaste && (
+              <button
+                onClick={handlePaste}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+              >
+                <Clipboard size={14} />
+                <span>Paste</span>
+              </button>
+            )}
+          </div>
 
           {/* Destructive actions */}
           <div className="border-t border-gray-100 py-1">
@@ -256,6 +297,26 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
               <Edit3 size={14} />
               <span>Edit Description</span>
             </button>
+          </div>
+
+          {/* Clipboard operations */}
+          <div className="border-t border-gray-100 py-1">
+            <button
+              onClick={handleCopy}
+              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+            >
+              <Copy size={14} />
+              <span>Copy</span>
+            </button>
+            {canPaste && (
+              <button
+                onClick={handlePaste}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+              >
+                <Clipboard size={14} />
+                <span>Paste</span>
+              </button>
+            )}
           </div>
           
           {/* Destructive action separated and styled with warning colors */}

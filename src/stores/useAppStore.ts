@@ -12,6 +12,7 @@ import { createSettingsSlice } from './slices/settingsSlice';
 import { createCanvasSlice } from './slices/canvasSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createAutoSaveSlice } from './slices/autoSaveSlice';
+import { createClipboardSlice } from './slices/clipboardSlice';
 
 /**
  * Creates the unified application store by composing domain-specific slices.
@@ -28,6 +29,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
   const canvasSlice = createCanvasSlice(set, get, api);
   const historySlice = createHistorySlice(set, get, api);
   const autoSaveSlice = createAutoSaveSlice(set, get, api);
+  const clipboardSlice = createClipboardSlice(set, get, api);
 
   return {
     // Core application state composed from individual slices
@@ -38,6 +40,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
     canvas: canvasSlice.canvas,
     history: historySlice.history,
     autoSave: autoSaveSlice.autoSave,
+    clipboard: clipboardSlice.clipboard,
 
     // Action collections organized by domain responsibility
     rectangleActions: rectangleSlice.rectangleActions,
@@ -46,6 +49,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
     canvasActions: canvasSlice.canvasActions,
     historyActions: historySlice.historyActions,
     autoSaveActions: autoSaveSlice.autoSaveActions,
+    clipboardActions: clipboardSlice.clipboardActions,
 
     /**
      * Computed getters providing derived state and cross-slice calculations.

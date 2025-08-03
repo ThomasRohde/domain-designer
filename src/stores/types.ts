@@ -40,6 +40,30 @@ export interface SelectionBoxState {
 }
 
 /**
+ * Clipboard data structure for copy/paste operations
+ * Maintains hierarchy relationships and positioning metadata
+ */
+export interface ClipboardData {
+  rectangles: Rectangle[];
+  timestamp: number;
+  sourceParentId?: string;
+  relativeBounds: {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+  };
+}
+
+/**
+ * Clipboard state slice - manages copy/paste functionality
+ * Stores copied rectangles with hierarchy preservation
+ */
+export interface ClipboardState {
+  clipboardData: ClipboardData | null;
+}
+
+/**
  * User interface state slice - manages modal visibility and navigation
  * Centralizes UI state to prevent prop drilling and improve performance
  */
@@ -320,6 +344,17 @@ export interface AutoSaveActions {
 }
 
 /**
+ * Clipboard operations slice - handles copy/paste functionality
+ * Manages hierarchy preservation and intelligent positioning
+ */
+export interface ClipboardActions {
+  copyRectangles: (ids: string[]) => void;
+  pasteRectangles: (targetParentId?: string) => void;
+  canPaste: () => boolean;
+  clearClipboard: () => void;
+}
+
+/**
  * Computed selectors slice - derived state calculations with memoization
  * Provides consistent business logic queries across components
  */
@@ -347,6 +382,7 @@ export interface AppStore {
   canvas: CanvasState;
   history: HistoryState;
   autoSave: AutoSaveState;
+  clipboard: ClipboardState;
 
   // Action slices
   rectangleActions: RectangleActions;
@@ -355,6 +391,7 @@ export interface AppStore {
   canvasActions: CanvasActions;
   historyActions: HistoryActions;
   autoSaveActions: AutoSaveActions;
+  clipboardActions: ClipboardActions;
 
   // Computed getters
   getters: StoreGetters;
