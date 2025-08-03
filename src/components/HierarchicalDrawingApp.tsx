@@ -332,8 +332,9 @@ const HierarchicalDrawingApp = () => {
 
   const handlePaste = useCallback(() => {
     try {
-      // Get target parent ID - if a parent rectangle is selected, paste as children
-      const targetParentId = selectedId && findRectangle(selectedId)?.type === 'parent' ? selectedId : undefined;
+      // Get target parent ID - if a rectangle is selected and it's not a text label, paste as children
+      const selectedRect = selectedId ? findRectangle(selectedId) : null;
+      const targetParentId = selectedRect && !selectedRect.isTextLabel && selectedRect.type !== 'textLabel' && selectedId ? selectedId : undefined;
       clipboardActions.pasteRectangles(targetParentId);
     } catch (error) {
       console.error('Error during paste operation:', error);
@@ -347,7 +348,8 @@ const HierarchicalDrawingApp = () => {
         // Copy selection to clipboard
         clipboardActions.copyRectangles(idsToDuplicate);
         // Immediately paste with smart positioning to avoid overlap
-        const targetParentId = selectedId && findRectangle(selectedId)?.type === 'parent' ? selectedId : undefined;
+        const selectedRect = selectedId ? findRectangle(selectedId) : null;
+        const targetParentId = selectedRect && !selectedRect.isTextLabel && selectedRect.type !== 'textLabel' && selectedId ? selectedId : undefined;
         clipboardActions.pasteRectangles(targetParentId);
       } catch (error) {
         console.error('Error during duplicate operation:', error);

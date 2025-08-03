@@ -114,7 +114,10 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
       // Create new rectangles with updated IDs and positions
       const newRectangles = clipboardRectangles.map(rect => {
         const newId = idMapping.get(rect.id)!;
-        const newParentId = rect.parentId ? idMapping.get(rect.parentId) : targetParentId;
+        // If the rectangle had a parent and that parent was also copied, use the mapped parent ID
+        // Otherwise, use the target parent ID (the rectangle we're pasting into)
+        const mappedParentId = rect.parentId ? idMapping.get(rect.parentId) : undefined;
+        const newParentId = mappedParentId !== undefined ? mappedParentId : targetParentId;
         
         // Calculate new position
         const offsetX = rect.x - relativeBounds.minX + pastePosition.x;
@@ -145,6 +148,13 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
         .map(rect => rect.id);
       
       rectangleActions.setSelectedIds(topLevelPastedIds);
+      
+      // If pasted into a parent, automatically resize parent to fit new children
+      if (targetParentId) {
+        setTimeout(() => {
+          rectangleActions.fitToChildren(targetParentId);
+        }, 50); // Small delay to ensure DOM updates are complete
+      }
     },
 
     /**
