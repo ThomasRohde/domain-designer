@@ -4,22 +4,41 @@ import { BaseLayoutAlgorithm } from './BaseLayoutAlgorithm';
 import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT, DEFAULT_RECTANGLE_SIZE } from '../constants';
 
 /**
- * Grid-based layout algorithm that arranges children in a grid pattern
- * This is the current layout algorithm extracted from layoutUtils.ts
+ * Uniform grid layout algorithm with adaptive cell sizing and content-aware positioning.
+ * 
+ * This algorithm provides structured rectangular arrangements where all children are
+ * positioned within a uniform grid of cells. Each cell is sized to accommodate the
+ * largest child dimension, ensuring consistent visual rhythm while allowing individual
+ * children to be centered within their allocated grid cells.
+ * 
+ * Key Features:
+ * - Configurable fill strategies (row-first vs column-first)
+ * - Automatic grid dimension calculation based on content
+ * - Margin-aware spacing with separate label margins
+ * - Content-centered positioning within grid cells
+ * - Type-aware dimension calculation (leaf, parent, text label handling)
  */
 export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
   readonly name = 'grid';
   readonly description = 'Arranges children in a grid pattern with configurable fill strategy';
 
   /**
-   * Calculate grid dimensions based on layout preferences
+   * Grid dimension optimization with constraint-based calculation.
+   * 
+   * Algorithm Strategy:
+   * 1. Default behavior creates square-ish grid using square root approximation
+   * 2. Fill-rows-first respects column limits, filling horizontally before wrapping
+   * 3. Fill-columns-first respects row limits, filling vertically before wrapping
+   * 
+   * Constraint handling ensures the grid accommodates all children while respecting
+   * user-defined maximum row/column limits for custom layout control.
    */
   calculateGridDimensions(
     childrenCount: number,
     layoutPreferences?: LayoutPreferences
   ): { cols: number; rows: number } {
     if (!layoutPreferences) {
-      // Default behavior - square grid
+      // Default: near-square grid minimizing aspect ratio distortion
       const cols = Math.ceil(Math.sqrt(childrenCount));
       const rows = Math.ceil(childrenCount / cols);
       return { cols, rows };
@@ -28,12 +47,12 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     const { fillStrategy, maxColumns, maxRows } = layoutPreferences;
 
     if (fillStrategy === 'fill-rows-first') {
-      // Fill rows first, limited by maxColumns
+      // Horizontal expansion with column constraints
       const cols = maxColumns ? Math.min(maxColumns, childrenCount) : Math.ceil(Math.sqrt(childrenCount));
       const rows = Math.ceil(childrenCount / cols);
       return { cols, rows };
     } else {
-      // Fill columns first, limited by maxRows
+      // Vertical expansion with row constraints
       const rows = maxRows ? Math.min(maxRows, childrenCount) : Math.ceil(Math.sqrt(childrenCount));
       const cols = Math.ceil(childrenCount / rows);
       return { cols, rows };
@@ -41,7 +60,16 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Calculate auto-sized dimensions and positions for child rectangles
+   * Main layout computation with multi-phase positioning algorithm.
+   * 
+   * Algorithm Phases:
+   * 1. Grid dimension calculation based on preferences and child count
+   * 2. Individual child dimension calculation based on type (leaf/parent/text)
+   * 3. Uniform cell sizing using maximum child dimensions
+   * 4. Grid positioning with consistent spacing and centering
+   * 5. Individual child centering within assigned grid cells
+   * 
+   * This approach ensures visual consistency while accommodating varying content sizes.
    */
   protected doCalculateLayout(input: LayoutInput): LayoutResult {
     const { parentRect, children, fixedDimensions, margins, allRectangles } = input;
@@ -50,7 +78,7 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
       return { rectangles: [] };
     }
 
-    // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
+    // Asymmetric margin system: extra top space for labels, uniform side spacing
     const topMargin = margins?.labelMargin ?? LABEL_MARGIN;
     const sideMargin = margins?.margin ?? MARGIN;
     
@@ -63,21 +91,20 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     // Use consistent spacing between children (same as margin)
     const childSpacing = margins?.margin ?? MARGIN;
     
-    // Calculate dimensions for all children, considering their actual requirements
+    // Type-aware dimension calculation for heterogeneous content
     const childDimensions = children.map(child => {
       if (child.isTextLabel || child.type === 'textLabel') {
-        // For text labels, use fixed dimensions based on text content
-        // TODO: Calculate actual text dimensions based on font size and content
+        // Text dimensions approximated from font metrics
         const textWidth = Math.max(MIN_WIDTH, (child.textFontSize || 14) * (child.label?.length || 5) * 0.6);
         const textHeight = Math.max(MIN_HEIGHT, (child.textFontSize || 14) * 1.5);
         return { width: textWidth, height: textHeight };
       } else if (child.type === 'leaf') {
-        // For leaf nodes, always respect fixed dimensions if they are enabled
+        // Leaf dimensions from global fixed settings or defaults
         let childWidth = (fixedDimensions?.leafFixedWidth) ? fixedDimensions.leafWidth : DEFAULT_RECTANGLE_SIZE.leaf.w;
         let childHeight = (fixedDimensions?.leafFixedHeight) ? fixedDimensions.leafHeight : DEFAULT_RECTANGLE_SIZE.leaf.h;
         return { width: childWidth, height: childHeight };
       } else if (child.type === 'parent') {
-        // For parent rectangles, calculate their minimum required size including margins
+        // Recursive minimum size calculation for nested hierarchies
         const rectanglesToUse = allRectangles || children;
         const childMinSize = this.calculateMinimumParentSize({
           parentRect: child,
@@ -88,7 +115,7 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
         });
         return { width: childMinSize.w, height: childMinSize.h };
       } else {
-        // For other cases (root becoming child, etc.), use available space calculation
+        // Fallback: space-filling calculation for edge cases
         let childWidth = Math.max(MIN_WIDTH, Math.floor((availableWidth - (cols - 1) * childSpacing) / cols));
         let childHeight = Math.max(MIN_HEIGHT, Math.floor((availableHeight - (rows - 1) * childSpacing) / rows));
         return { width: childWidth, height: childHeight };
@@ -105,11 +132,11 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     const totalChildrenWidth = cols * maxChildWidth + totalSpacingWidth;
     const totalChildrenHeight = rows * maxChildHeight + totalSpacingHeight;
 
-    // Calculate remaining space for centering, but ensure we don't exceed available space
+    // Centering calculation with overflow protection
     const extraHorizontalSpace = Math.max(0, availableWidth - totalChildrenWidth);
     const extraVerticalSpace = Math.max(0, availableHeight - totalChildrenHeight);
 
-    // Center the children grid within the available space
+    // Center grid within parent bounds for balanced visual composition
     const horizontalOffset = extraHorizontalSpace / 2;
     const verticalOffset = extraVerticalSpace / 2;
 

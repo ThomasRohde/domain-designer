@@ -24,18 +24,18 @@ const MultiSelectBoundingBox: React.FC<MultiSelectBoundingBoxProps> = ({
   onMouseDown,
   onContextMenu
 }) => {
-  // Only show bounding box when multiple rectangles are selected
+  // Multi-select requirement: only render for group selections
   if (selectedRectangles.length <= 1) {
     return null;
   }
 
-  // Calculate the bounding rectangle that encompasses all selected rectangles
+  // Calculate minimal enclosing rectangle for visual feedback
   const bounds = calculateBoundingBox(selectedRectangles);
   if (!bounds) {
     return null;
   }
 
-  // Convert grid coordinates to pixel coordinates
+  // Grid-to-pixel coordinate transformation for rendering
   const pixelBounds = {
     x: bounds.x * gridSize,
     y: bounds.y * gridSize,
@@ -43,8 +43,14 @@ const MultiSelectBoundingBox: React.FC<MultiSelectBoundingBoxProps> = ({
     height: bounds.height * gridSize
   };
 
-  // Use same coordinate system as rectangles: grid coordinates converted to pixels
-  // No zoom/pan transforms needed - the canvas container handles those transforms
+  /**
+   * Coordinate system alignment with rectangle rendering.
+   * 
+   * The bounding box uses the same grid-based coordinate system as individual rectangles,
+   * with pixel conversion handled here rather than relying on CSS transforms. This approach
+   * ensures pixel-perfect alignment and eliminates coordinate system conflicts between
+   * the canvas transform matrix and bounding box positioning.
+   */
   const boundingBoxStyle: React.CSSProperties = {
     position: 'absolute',
     left: pixelBounds.x,
@@ -54,10 +60,10 @@ const MultiSelectBoundingBox: React.FC<MultiSelectBoundingBoxProps> = ({
     border: '3px dashed #2563eb',
     backgroundColor: 'rgba(37, 99, 235, 0.08)',
     borderRadius: '8px',
-    pointerEvents: 'auto', // Enable mouse interactions
-    cursor: 'move', // Indicate the bounding box is draggable
-    zIndex: 999, // Below selection box but above rectangles
-    transition: 'none', // Disable transitions for smooth feedback
+    pointerEvents: 'auto', // Enable mouse interactions for group operations
+    cursor: 'move', // Visual cue for drag capability
+    zIndex: 999, // Layer between individual rectangles and selection overlay
+    transition: 'none', // Prevent animation artifacts during rapid updates
     boxShadow: '0 0 0 1px rgba(37, 99, 235, 0.2), 0 4px 12px rgba(37, 99, 235, 0.15)',
     outline: '1px solid rgba(37, 99, 235, 0.3)',
     outlineOffset: '2px'
@@ -100,8 +106,19 @@ const MultiSelectBoundingBox: React.FC<MultiSelectBoundingBoxProps> = ({
 };
 
 
+/**
+ * Performance-optimized memo with deep rectangle comparison.
+ * 
+ * Custom equality check prevents unnecessary re-renders by comparing:
+ * 1. Grid size changes (affects pixel coordinate calculations)
+ * 2. Event handler reference stability (prevents callback churn)
+ * 3. Rectangle count changes (affects bounding box visibility)
+ * 4. Individual rectangle position/dimension changes (affects bounding box geometry)
+ * 
+ * This optimization is critical for smooth drag operations and prevents
+ * expensive bounding box recalculations during unrelated state updates.
+ */
 export default React.memo(MultiSelectBoundingBox, (prevProps, nextProps) => {
-  // Custom comparison to ensure re-render when selection, grid size, or handlers change
   return (
     prevProps.gridSize === nextProps.gridSize &&
     prevProps.onMouseDown === nextProps.onMouseDown &&

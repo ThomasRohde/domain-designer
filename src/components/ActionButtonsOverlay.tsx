@@ -32,7 +32,15 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const childCount = selectedId ? getChildren(selectedId).length : 0;
   const isMultiSelectActive = selectedIds.length > 1;
   
-  // Hide overlay during interactive operations or when multi-select is active
+  /**
+   * Visibility state machine for overlay behavior.
+   * 
+   * The overlay is hidden during:
+   * - Interactive operations (drag, resize, hierarchy drag) to prevent interference
+   * - Keyboard movement operations to avoid visual clutter during rapid position changes
+   * - Multi-select modes where group operations take precedence over single-rectangle actions
+   * - No selection state where context-specific actions are not applicable
+   */
   if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging || isKeyboardMoving || isMultiSelectActive) {
     return null;
   }
@@ -41,24 +49,35 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const hasChildren = childCount > 0;
   const isManualPositioningEnabled = rect.isManualPositioningEnabled ?? false;
 
-  // Position floating toolbar above rectangle center
+  /**
+   * Dynamic positioning algorithm for context-sensitive toolbar placement.
+   * 
+   * Positioning Strategy:
+   * 1. Convert grid coordinates to pixel coordinates for accurate placement
+   * 2. Calculate rectangle center point as the toolbar anchor
+   * 3. Position toolbar 50px above rectangle top edge to avoid overlap
+   * 4. Apply CSS transform to center-align toolbar horizontally over rectangle
+   * 
+   * The fixed 50px offset ensures consistent spacing while the transform-based
+   * centering provides pixel-perfect alignment regardless of rectangle width.
+   */
   const rectX = rect.x * gridSize;
   const rectY = rect.y * gridSize;
   const rectWidth = rect.w * gridSize;
 
   const buttonStyle: React.CSSProperties = {
     position: 'absolute',
-    left: rectX + (rectWidth / 2),
-    top: rectY - 50, // Float above rectangle
-    zIndex: 100000, // Above all other elements
-    pointerEvents: 'auto',
+    left: rectX + (rectWidth / 2), // Horizontal center anchor point
+    top: rectY - 50, // Fixed offset above rectangle
+    zIndex: 100000, // Ensure overlay appears above all canvas elements
+    pointerEvents: 'auto', // Enable mouse interactions despite canvas transforms
     display: 'flex',
     gap: '2px',
     padding: '4px',
     background: 'white',
     borderRadius: '8px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    transform: 'translateX(-50%)' // Center-align above rectangle
+    transform: 'translateX(-50%)' // Center toolbar horizontally on anchor point
   };
 
   return (
@@ -91,10 +110,10 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
             console.log('Overlay Toggle Manual Positioning button clicked for:', rect.id);
             
             if (isManualPositioningEnabled) {
-              // Show confirmation modal when locking (going from unlocked to locked)
+              // Lock operation requires confirmation due to cascade effects
               showLockConfirmationModal(rect.id, rect.label);
             } else {
-              // Allow unlocking without confirmation
+              // Unlock operations are immediately applied
               toggleManualPositioning(rect.id);
             }
           }}

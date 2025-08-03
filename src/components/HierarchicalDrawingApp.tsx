@@ -26,17 +26,21 @@ import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
 
 /**
- * Global flag to prevent legacy auto-save system conflicts during migration.
- * Set immediately before React hooks initialization to avoid race conditions
- * between old localStorage-based and new Zustand-based auto-save systems.
+ * Auto-save system migration flag prevents data corruption during startup.
+ * This global flag must be set before React hook initialization to ensure
+ * the new Zustand-based persistence system takes precedence over any legacy
+ * localStorage-based auto-save mechanisms that might still be present.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).__ZUSTAND_AUTO_SAVE_ENABLED__ = true;
+interface WindowWithZustandFlag extends Window {
+  __ZUSTAND_AUTO_SAVE_ENABLED__: boolean;
+}
+
+((window as unknown) as WindowWithZustandFlag).__ZUSTAND_AUTO_SAVE_ENABLED__ = true;
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Core rectangle state and operations from centralized Zustand store
+  // Rectangle state and operations
   const rectangles = useAppStore(state => state.rectangles);
   const selectedId = useAppStore(state => state.selectedId);
   const { 
@@ -51,7 +55,6 @@ const HierarchicalDrawingApp = () => {
     fitToChildren,
     toggleManualPositioning,
     lockAsIs,
-    // reparentRectangle, // MIGRATION: Not used directly anymore
     setRectangles,
     setRectanglesWithHistory,
     updateNextId,
@@ -60,7 +63,7 @@ const HierarchicalDrawingApp = () => {
     distributeRectangles,
     bulkDelete
   } = useAppStore(state => state.rectangleActions);
-  const { findRectangle /* , canReparent */ } = useAppStore(state => state.getters); // MIGRATION: canReparent not used directly anymore
+  const { findRectangle } = useAppStore(state => state.getters);
   const { undo, redo, initializeHistory } = useAppStore(state => state.historyActions);
 
   // UI state management for modals, menus, and responsive behavior
@@ -69,15 +72,15 @@ const HierarchicalDrawingApp = () => {
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [clearDataModalOpen, setClearDataModalOpen] = useState(false);
   
-  // IndexedDB-based auto-save system for data persistence across sessions
+  // Auto-save system for data persistence
   const autoSaveState = useAppStore(state => state.autoSave);
   const autoSaveActions = useAppStore(state => state.autoSaveActions);
   
-  // Global application settings including layout, fonts, and visual styling
+  // Application settings and configuration
   const settings = useAppStore(state => state.settings);
   const settingsActions = useAppStore(state => state.settingsActions);
 
-  // Rectangle ID counter for generating unique identifiers during import
+  // ID generation counter
   const nextId = useAppStore(state => state.nextId);
 
   /**
@@ -94,7 +97,6 @@ const HierarchicalDrawingApp = () => {
     }
   }, [setRectanglesWithHistory]);
 
-  // Event handlers for user interactions
   const handleContextMenu = useCallback((e: React.MouseEvent, rectangleId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -176,9 +178,19 @@ const HierarchicalDrawingApp = () => {
   }, [clearSelection]);
 
   /**
-   * Handles JSON file import with comprehensive validation and error recovery.
-   * Process: file selection → validation → data processing → store update → auto-save.
-   * Includes safeguards against corrupted data and maintains system consistency.
+   * Orchestrates complex JSON import process with atomic state transitions.
+   * 
+   * Import Pipeline:
+   * 1. File validation and JSON parsing with schema compatibility checking
+   * 2. Data normalization and ID conflict resolution (generates new unique IDs)
+   * 3. Global settings import and application to existing rectangles
+   * 4. Atomic state updates with auto-save coordination to prevent partial state corruption
+   * 5. History system initialization to enable undo/redo for imported content
+   * 
+   * Critical safeguards:
+   * - Auto-save disabled during import to prevent intermediate state persistence
+   * - Error recovery maintains original state if import fails at any stage
+   * - Comprehensive validation prevents invalid data from corrupting the store
    */
   const handleImport = useCallback(() => {
     const input = document.createElement('input');
@@ -201,7 +213,7 @@ const HierarchicalDrawingApp = () => {
           nextId
         );
         
-        // Apply global leaf dimension settings to imported rectangles if configured
+        // Apply imported dimension settings to leaf rectangles
         let finalRectangles = processedRectangles;
         if (importedData.globalSettings?.leafFixedWidth || importedData.globalSettings?.leafFixedHeight) {
           finalRectangles = processedRectangles.map(rect => {
@@ -219,18 +231,18 @@ const HierarchicalDrawingApp = () => {
           });
         }
         
-        // Atomically update all store state with validated imported data
+        // Atomic state update with validated data
         setRectangles(finalRectangles);
         initializeHistory(finalRectangles);
         updateNextId(newNextId);
         setSelectedId(null);
         
-        // Import and apply global settings if present in the imported data
+        // Apply imported global settings
         if (importedData.globalSettings) {
           settingsActions.updateSettings(importedData.globalSettings);
         }
         
-        // Re-enable auto-save and persist the successfully imported state
+        // Re-enable auto-save and persist imported state
         autoSaveActions.setEnabled(true);
         autoSaveActions.resetAutoRestoreFlag();
         autoSaveActions.saveData();
@@ -275,7 +287,6 @@ const HierarchicalDrawingApp = () => {
     }
   }, [findRectangle, uiActions]);
 
-  // Multi-select context menu handlers
   const handleAlign = useCallback((type: import('../stores/types').AlignmentType) => {
     if (ui.selectedIds && ui.selectedIds.length > 1) {
       try {
@@ -320,31 +331,19 @@ const HierarchicalDrawingApp = () => {
     }
   }, [updateRectangleDescription, ui.descriptionEditModal]);
 
-
   /**
-   * ZUSTAND MIGRATION: Legacy memoized calculations removed.
-   * Components now access store state directly for better performance
-   * and to eliminate prop drilling patterns.
-   */
-  // const selectedRectangle = useMemo(() => 
-  //   selectedId ? findRectangle(selectedId) || null : null,
-  //   [selectedId, findRectangle]
-  // );
-
-  // const selectedChildCount = useMemo(() =>
-  //   selectedId ? getChildren(selectedId, rectangles).length : 0,
-  //   [selectedId, rectangles]
-  // );
-
-
-  /**
-   * Initialize IndexedDB-based auto-save system on app startup.
-   * Sets up persistent storage, data validation, and automatic state subscriptions
-   * to save rectangle and settings changes across browser sessions.
+   * Bootstraps the IndexedDB persistence layer with sophisticated state synchronization.
+   * 
+   * Auto-save Architecture:
+   * - Creates IndexedDB schema with versioning support for future migrations
+   * - Establishes reactive subscriptions to Zustand store changes (rectangles, settings)
+   * - Implements debounced writes to prevent excessive disk I/O during rapid editing
+   * - Validates data integrity before persistence to prevent corruption
+   * - Handles browser storage quota exceeded scenarios gracefully
+   * - Provides automatic state restoration on app reload with conflict resolution
    */
   useEffect(() => {
     autoSaveActions.initialize();
-    // Initialize auto-save subscriptions to track state changes
     const cleanup = initializeAutoSaveSubscription();
     return cleanup;
   }, [autoSaveActions]);
@@ -360,7 +359,7 @@ const HierarchicalDrawingApp = () => {
   }, [autoSaveActions]);
 
   const handleConfirmClearModel = useCallback(async () => {
-    // Use the Zustand clearModel function which handles all the flags and persistence
+    // Clear model data while preserving settings
     await autoSaveActions.clearModel();
     
     // Reload immediately - the clearModel function sets the localStorage flag to prevent auto-restore
@@ -368,9 +367,16 @@ const HierarchicalDrawingApp = () => {
   }, [autoSaveActions]);
 
   /**
-   * Development utility for direct IndexedDB testing and debugging.
-   * Creates test database operations to verify IndexedDB availability
-   * and basic read/write functionality independent of the auto-save system.
+   * Development diagnostics for IndexedDB connectivity and schema validation.
+   * 
+   * Creates isolated test operations to verify:
+   * - IndexedDB API availability in current browser environment
+   * - Database creation and object store management
+   * - Basic CRUD operations with transaction handling
+   * - Error scenarios and recovery mechanisms
+   * 
+   * This utility operates independently of the main auto-save system to avoid
+   * interference during debugging sessions.
    */
   const testIndexedDB = useCallback(async () => {
     try {
@@ -414,44 +420,70 @@ const HierarchicalDrawingApp = () => {
   }, []);
 
   /**
-   * Expose debugging utilities to global window object in development.
-   * Allows direct console access to IndexedDB testing and auto-save actions
-   * for troubleshooting data persistence issues.
+   * Development debugging interface for production troubleshooting.
+   * 
+   * Exposes critical debugging utilities to the global window object,
+   * enabling support teams to diagnose persistence issues in production:
+   * - Direct IndexedDB connectivity testing
+   * - Auto-save system inspection and manual triggering
+   * - State dump and validation utilities
+   * 
+   * Only available in development builds to prevent security exposure.
    */
   React.useEffect(() => {
-    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveActions?: typeof autoSaveActions }).testIndexedDB = testIndexedDB;
-    (window as Window & typeof globalThis & { testIndexedDB?: typeof testIndexedDB; autoSaveActions?: typeof autoSaveActions }).autoSaveActions = autoSaveActions;
+    interface WindowWithDebugUtils extends Window {
+      testIndexedDB?: typeof testIndexedDB;
+      autoSaveActions?: typeof autoSaveActions;
+    }
+    
+    const windowWithDebug = window as WindowWithDebugUtils;
+    windowWithDebug.testIndexedDB = testIndexedDB;
+    windowWithDebug.autoSaveActions = autoSaveActions;
   }, [testIndexedDB, autoSaveActions]);
 
   /**
-   * Configure Progressive Web App (PWA) update notification system.
-   * Connects service worker update events to the UI notification system,
-   * allowing users to be prompted when new app versions are available.
+   * Service worker integration for seamless PWA update management.
+   * 
+   * Establishes communication bridge between service worker update detection
+   * and the application's notification system. When a new app version is
+   * available, users receive an in-app notification with options to:
+   * - Continue working with the current version
+   * - Immediately update to the new version with automatic reload
+   * 
+   * Prevents update interruptions during active editing sessions.
    */
   useEffect(() => {
     setGlobalUpdateNotificationHandler(uiActions.showUpdateNotification);
-    
-    // Cleanup on unmount to prevent memory leaks
     return () => {
       setGlobalUpdateNotificationHandler(() => {});
     };
   }, [uiActions.showUpdateNotification]);
 
-  // Canvas interaction handlers for keyboard shortcuts and global mouse events
+  // Canvas interaction state and handlers
   const startKeyboardMovement = useAppStore(state => state.canvasActions.startKeyboardMovement);
   const handleMouseMove = useAppStore(state => state.canvasActions.handleMouseMove);
   const handleMouseUp = useAppStore(state => state.canvasActions.handleMouseUp);
   const handleWheel = useAppStore(state => state.canvasActions.handleWheel);
   const setIsSpacePressed = useAppStore(state => state.canvasActions.setIsSpacePressed);
   
-  // Navigation minimap state and controls
+  // Minimap controls
   const toggleMinimap = useAppStore(state => state.canvasActions.toggleMinimap);
   const minimapVisible = useAppStore(state => state.canvas.minimapVisible);
 
   /**
-   * Keyboard-driven rectangle movement with precise pixel control.
-   * Handles both single rectangle and multi-select bulk movement.
-   * Movement respects parent boundaries and manual positioning settings.
+   * High-precision keyboard movement system with collision detection.
+   * 
+   * Movement Algorithm:
+   * - Converts pixel deltas to grid coordinates for consistent positioning
+   * - Enforces parent boundary constraints with margin calculations
+   * - Cascades movement to all child rectangles when parent moves
+   * - Respects manual positioning locks and hierarchy permissions
+   * - Applies movement to entire multi-selection while maintaining relative positions
+   * 
+   * Performance optimizations:
+   * - Batches position updates to prevent flickering
+   * - Uses constraint satisfaction to avoid invalid positions
+   * - Triggers single history entry for bulk operations
    */
   const handleMoveUp = useCallback((deltaPixels: number) => {
     const selectedIds = ui.selectedIds;
@@ -506,9 +538,15 @@ const HierarchicalDrawingApp = () => {
   }, [selectedId, ui.selectedIds, moveRectangle, bulkMove, startKeyboardMovement]);
 
   /**
-   * Global mouse event handlers for canvas interactions.
-   * Manages drag, resize, pan, and zoom operations across the entire document.
-   * Uses passive:false for wheel events to enable custom zoom behavior.
+   * Document-level event coordination for canvas interaction systems.
+   * 
+   * Event Management Architecture:
+   * - Mouse move events enable real-time drag feedback and cursor updates
+   * - Mouse up events ensure interaction state is properly cleaned up even if cursor leaves canvas
+   * - Wheel events with passive:false override browser zoom to implement custom pan/zoom behavior
+   * - Container-aware coordinate transformations handle viewport scaling and positioning
+   * 
+   * Critical for maintaining interaction state consistency across browser window boundaries.
    */
   useEffect(() => {
     const mouseMove = (e: MouseEvent) => handleMouseMove(e, containerRef);
@@ -533,9 +571,15 @@ const HierarchicalDrawingApp = () => {
   }, [handleMouseMove, handleMouseUp, handleWheel]);
 
   /**
-   * Global keyboard handlers for space-bar canvas panning.
-   * Enables space+drag panning behavior while respecting editable elements.
-   * Prevents space key interference with input fields and text areas.
+   * Context-aware space bar handling for canvas panning without editor interference.
+   * 
+   * Smart Event Filtering:
+   * - Detects when focus is in editable elements (inputs, textareas, contentEditable)
+   * - Allows normal space bar behavior in text editing contexts
+   * - Activates canvas panning mode only when focus is on non-editable elements
+   * - Prevents event bubbling conflicts between different interaction modes
+   * 
+   * Essential for seamless user experience when switching between text editing and canvas navigation.
    */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -579,7 +623,19 @@ const HierarchicalDrawingApp = () => {
     };
   }, [setIsSpacePressed]);
 
-  // Unified keyboard shortcut system with customizable key bindings
+  /**
+   * Centralized keyboard shortcut orchestration with conflict resolution.
+   * 
+   * Integrates all application keyboard shortcuts through a single handler system:
+   * - File operations (save, open, undo, redo)
+   * - Selection management (select all siblings, clear selection, delete)
+   * - Movement controls (arrow keys with precision and fast modes)
+   * - View controls (minimap toggle, escape behaviors)
+   * 
+   * Uses memoization to prevent handler recreation and ensure consistent behavior
+   * across component re-renders. Handlers respect current application state and
+   * multi-select context.
+   */
   useKeyboardShortcuts(useMemo(() => ({
     onUndo: undo,
     onRedo: redo,

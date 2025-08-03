@@ -38,7 +38,13 @@ export interface RectangleSlice {
 }
 
 /**
- * Helper function to expand selection to include all rectangles within bounding box
+ * Automatic selection expansion algorithm for bounding box containment.
+ * 
+ * When multiple rectangles are selected, this function identifies all rectangles
+ * that are completely contained within the bounding box of the current selection
+ * and automatically includes them. This provides intuitive behavior for drag
+ * selection and bulk operations where users expect spatial containment to determine
+ * which elements are affected.
  */
 const expandSelectionToBoundingBox = (selectedIds: string[], rectangles: Rectangle[]): string[] => {
   if (selectedIds.length <= 1) {
@@ -49,7 +55,15 @@ const expandSelectionToBoundingBox = (selectedIds: string[], rectangles: Rectang
 };
 
 /**
- * Helper function to update rectangles and save to history
+ * Atomic rectangle update with integrated history management.
+ * 
+ * This function ensures that all rectangle modifications follow a consistent pattern:
+ * 1. Apply the update function to the current rectangle state
+ * 2. Update the store state atomically
+ * 3. Automatically save the change to the undo/redo history
+ * 
+ * The setTimeout with 0 delay ensures history saving occurs after the state update
+ * is fully committed, preventing race conditions and ensuring consistent history entries.
  */
 const updateRectanglesWithHistory = (
   set: (partial: object | ((state: AppStore) => object)) => void, 
@@ -75,7 +89,15 @@ const updateRectanglesWithHistory = (
 };
 
 /**
- * Creates the rectangle slice for the store
+ * Rectangle slice factory with comprehensive CRUD operations and advanced multi-select features.
+ * 
+ * This slice manages the complete rectangle lifecycle including:
+ * - Hierarchical creation with automatic parent-child relationships
+ * - Smart removal with cascade deletion of descendants
+ * - Layout-aware positioning and constraint enforcement
+ * - Multi-select operations with validation and bulk processing
+ * - Advanced positioning controls with manual override capabilities
+ * - Integration with layout algorithms and dimension management
  */
 export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => ({
   // Initial state
@@ -89,7 +111,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const state = get();
       const { rectangles, nextId, settings, canvas } = state;
       
-      // Prevent adding children to text labels
+      // Business rule: Text labels cannot have children
       if (parentId) {
         const parentRect = rectangles.find(rect => rect.id === parentId);
         if (parentRect?.isTextLabel) {
@@ -98,7 +120,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         }
       }
       
-      // Generate unique ID
+      // Generate collision-free unique identifier
       let candidateId: string;
       let candidate = nextId;
       
@@ -119,11 +141,11 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       let { x, y, w, h } = layoutManager.calculateNewRectangleLayout(parentId || null, rectangles, DEFAULT_RECTANGLE_SIZE, getMargins());
       
-      // Position root rectangles in visible area
+      // Viewport-aware positioning for root rectangles
       if (!parentId) {
         const rootRects = rectangles.filter(rect => !rect.parentId);
         if (rootRects.length === 0) {
-          // For the first rectangle, position it considering current pan
+          // Position first rectangle within current viewport bounds
           const viewportX = Math.round(-canvas.panOffset.x / settings.gridSize);
           const viewportY = Math.round(-canvas.panOffset.y / settings.gridSize);
           x = viewportX + 10;
@@ -134,7 +156,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       // Create rectangle
       let newRect = createRectangle(id, x, y, w, h, parentId || undefined);
       
-      // Apply fixed dimensions if this is a leaf rectangle
+      // Apply global fixed dimensions to child rectangles
       if (parentId) {
         newRect = applyFixedDimensions(newRect, getFixedDimensions());
       }
@@ -142,7 +164,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         let updated = [...currentRectangles, newRect];
         
-        // Update parent type and layout
+        // Parent relationship management and layout recalculation
         if (parentId) {
           updated = updateRectangleType(updated, parentId);
           const parentIndex = updated.findIndex(r => r.id === parentId);
@@ -150,7 +172,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
             const parent = updated[parentIndex];
             const allChildren = updated.filter(r => r.parentId === parentId);
             
-            // Resize parent if needed
+            // Dynamic parent resizing to accommodate children
             if (allChildren.length > 0) {
               const minParentSize = layoutManager.calculateMinimumParentSize(parentId, updated, getFixedDimensions(), getMargins());
               
@@ -163,7 +185,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
               }
             }
             
-            // Recalculate layout for all children
+            // Layout algorithm application with lock respect
             if (allChildren.length > 0) {
               const updatedParent = updated.find(r => r.id === parentId);
               if (updatedParent) {
@@ -177,7 +199,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
                       ...existingChild,
                       x: layoutChild.x,
                       y: layoutChild.y,
-                      // Only update dimensions if not locked as-is
+                      // Respect lock-as-is constraints for dimensions
                       w: existingChild.isLockedAsIs ? existingChild.w : layoutChild.w,
                       h: existingChild.isLockedAsIs ? existingChild.h : layoutChild.h
                     };
@@ -191,7 +213,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         return updated;
       }, id);
       
-      // Update nextId separately
+      // Increment ID counter for future rectangle creation
       set(() => ({ nextId: candidate }));
     },
 
@@ -200,13 +222,13 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const { settings } = state;
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
-        // Get all descendants to remove
+        // Cascade deletion: remove target and all descendants
         const descendantIds = getAllDescendants(id, currentRectangles);
         const toRemove = [id, ...descendantIds];
         
         let updated = currentRectangles.filter(rect => !toRemove.includes(rect.id));
         
-        // Update rectangle types after removal and apply fixed dimensions to new leaves
+        // Hierarchy type recalculation after removal
         updated = updated.map(rect => {
           const hasChildren = updated.some(r => r.parentId === rect.id);
           const hasParent = rect.parentId !== undefined;
@@ -220,7 +242,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
             newType = 'leaf';
           }
           
-          // If rectangle is becoming a leaf, apply fixed dimensions
+          // Automatic fixed dimension application for new leaf nodes
           if (newType === 'leaf' && rect.type !== 'leaf') {
             const fixedDims = {
               leafFixedWidth: settings.leafFixedWidth,
@@ -264,7 +286,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const rect = rectangles.find(r => r.id === id);
       if (!rect) return;
       
-      // Can't convert parent rectangles to text labels
+      // Business rule: Parent rectangles cannot become text labels
       const hasChildren = getChildren(id, rectangles).length > 0;
       if (hasChildren && !rect.isTextLabel) {
         console.warn('Cannot convert parent rectangles to text labels');
@@ -311,7 +333,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           } : rect
         );
         
-        // Resize parent to optimal size when layout preferences change (unless locked as-is)
+        // Automatic parent resizing when layout preferences change
         const parent = updated.find(rect => rect.id === id);
         if (parent && !parent.isLockedAsIs) {
           const children = getChildren(id, updated);
@@ -345,19 +367,19 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       });
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
-        // Get all descendants before making changes
+        // Hierarchical unlock cascade: collect all descendants before state changes
         const allDescendants = getAllDescendants(id, currentRectangles);
         
         const updated = currentRectangles.map(rect => {
           if (rect.id === id) {
-            // Toggle the target rectangle
+            // Toggle manual positioning for target rectangle
             return { 
               ...rect, 
               isManualPositioningEnabled: !rect.isManualPositioningEnabled,
               isLockedAsIs: false
             };
           } else if (allDescendants.includes(rect.id)) {
-            // Unlock all descendants when unlocking parent
+            // Cascade unlock to all descendants for consistency
             return {
               ...rect,
               isLockedAsIs: false
@@ -366,6 +388,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           return rect;
         });
         
+        // Apply layout algorithm when returning to automatic positioning
         const parent = updated.find(rect => rect.id === id);
         return (parent && !parent.isManualPositioningEnabled) 
           ? updateChildrenLayout(updated, getFixedDimensions(), getMargins())
@@ -376,13 +399,13 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     lockAsIs: (id: string) => {
       const state = get();
       
-      // Lock the target rectangle
+      // Hierarchical lock-as-is: preserve exact dimensions throughout subtree
       state.rectangleActions.updateRectangle(id, { 
         isLockedAsIs: true,
         isManualPositioningEnabled: false 
       });
       
-      // Lock all descendants recursively
+      // Cascade lock to all descendants to prevent dimension drift
       const allDescendants = getAllDescendants(id, state.rectangles);
       allDescendants.forEach(descendantId => {
         state.rectangleActions.updateRectangle(descendantId, { 
@@ -432,23 +455,22 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const rect = rectangles.find(r => r.id === id);
       if (!rect) return;
 
-      // Check movement constraints
+      // Movement permission validation
       if (rect.parentId) {
         const parent = rectangles.find(r => r.id === rect.parentId);
         if (!parent || !parent.isManualPositioningEnabled) {
-          // Cannot move children of locked parents
-          return;
+          return; // Parent must allow manual positioning
         }
       }
 
-      // Get all descendants of the rectangle being moved
+      // Cascade movement: include all descendants in movement operation
       const descendants = getAllDescendants(id, rectangles);
       const idsToMove = new Set([id, ...descendants]);
 
       let actualDeltaXPixels = deltaXPixels;
       let actualDeltaYPixels = deltaYPixels;
 
-      // Check constraints for the main rectangle if it has a parent
+      // Parent boundary constraint enforcement
       if (rect.parentId) {
         const parent = rectangles.find(p => p.id === rect.parentId);
         if (parent) {
@@ -466,30 +488,30 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           let newXPixels = currentXPixels + deltaXPixels;
           let newYPixels = currentYPixels + deltaYPixels;
           
-          // Ensure rectangle stays within parent bounds with margins
+          // Clip movement to keep rectangle within parent boundaries
           newXPixels = Math.max(parentXPixels + margin, newXPixels);
           newYPixels = Math.max(parentYPixels + labelMargin, newYPixels);
           newXPixels = Math.min(parentXPixels + parentWPixels - rectWPixels - margin, newXPixels);
           newYPixels = Math.min(parentYPixels + parentHPixels - rectHPixels - margin, newYPixels);
           
-          // Calculate the actual constrained movement
+          // Calculate constrained movement delta
           actualDeltaXPixels = newXPixels - currentXPixels;
           actualDeltaYPixels = newYPixels - currentYPixels;
         }
       }
 
-      // Apply the same delta to all rectangles (main + descendants)
+      // Coordinated movement: apply same delta to target and all descendants
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         return currentRectangles.map(r => {
           if (idsToMove.has(r.id)) {
-            // Convert current grid coordinates to pixels, apply actual delta, then back to grid units
+            // Pixel-precise coordinate transformation
             const currentXPixels = r.x * settings.gridSize;
             const currentYPixels = r.y * settings.gridSize;
             
             const newXPixels = currentXPixels + actualDeltaXPixels;
             const newYPixels = currentYPixels + actualDeltaYPixels;
 
-            // Convert back to grid units
+            // Convert back to grid coordinate system
             const newX = newXPixels / settings.gridSize;
             const newY = newYPixels / settings.gridSize;
 
@@ -501,16 +523,25 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     },
 
     /**
-     * Reparent a rectangle to a new parent with comprehensive validation.
-     * Handles hierarchy changes, type updates, layout recalculation, and
-     * constraint enforcement. Prevents circular dependencies and maintains
-     * data integrity throughout the reparenting operation.
+     * Complex hierarchy reparenting with circular dependency prevention.
+     * 
+     * Reparenting Algorithm:
+     * 1. Validates move prevents circular dependencies (child cannot become ancestor of itself)
+     * 2. Updates parentId relationship and recalculates hierarchy types
+     * 3. Applies fixed dimensions to rectangles that become leaves
+     * 4. Resizes target parent to accommodate new child if necessary
+     * 5. Triggers layout recalculation for both source and destination hierarchies
+     * 
+     * Critical safeguards:
+     * - Prevents infinite loops through ancestor chain validation
+     * - Maintains referential integrity throughout the operation
+     * - Preserves locked rectangle constraints during hierarchy changes
      */
     reparentRectangle: (childId: string, newParentId: string | null): boolean => {
       const state = get();
       const { rectangles, settings } = state;
       
-      // Validate reparenting operation using business rules
+      // Comprehensive validation including circular dependency checks
       if (!get().getters.canReparent(childId, newParentId)) {
         return false;
       }
@@ -518,7 +549,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const childRect = rectangles.find(r => r.id === childId);
       if (!childRect) return false;
       
-      // Skip no-op reparenting operations
+      // Early exit for no-op reparenting operations
       const currentParentId = childRect.parentId || null;
       if (currentParentId === newParentId) {
         return true; // No change needed
@@ -533,12 +564,12 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       });
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
-        // Update the child's parentId
+        // Atomic hierarchy relationship update
         let updated = currentRectangles.map(rect => 
           rect.id === childId ? { ...rect, parentId: newParentId || undefined } : rect
         );
         
-        // Update rectangle types based on new hierarchy
+        // Recalculate all rectangle types after hierarchy change
         updated = updated.map(rect => {
           const hasChildren = updated.some(r => r.parentId === rect.id);
           const hasParent = rect.parentId !== undefined;
@@ -566,7 +597,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           );
         }
         
-        // Check if new parent needs to be resized to accommodate all children
+        // Adaptive parent resizing for new child accommodation
         if (newParentId) {
           const newParent = updated.find(r => r.id === newParentId);
           const newParentChildren = updated.filter(r => r.parentId === newParentId);
@@ -593,7 +624,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
 
     setSelectedId: (id: string | null) => {
       set({ selectedId: id });
-      // Also update UI selectedIds for consistency
+      // Synchronize multi-select state with single selection
       if (id) {
         set(state => ({
           ui: { ...state.ui, selectedIds: [id] }
@@ -608,12 +639,12 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     setSelectedIds: (ids: string[]) => {
       const state = get();
       
-      // Automatically expand selection to include all rectangles within bounding box
+      // Spatial selection expansion for intuitive multi-select behavior
       const expandedSelection = expandSelectionToBoundingBox(ids, state.rectangles);
       
       set(state => ({
         ui: { ...state.ui, selectedIds: expandedSelection },
-        // For backward compatibility, set selectedId to first item or null
+        // Maintain backward compatibility with single selection state
         selectedId: expandedSelection.length > 0 ? expandedSelection[0] : null
       }));
     },
@@ -1083,7 +1114,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       // This might be handled by the rendering layer
     },
 
-    // Temporary updates for drag operations (no history saving)
+    // Real-time updates during drag operations (bypasses history for performance)
     updateRectanglesDuringDrag: (updateFn: (rectangles: Rectangle[]) => Rectangle[]) => {
       const state = get();
       const updatedRectangles = updateFn(state.rectangles);

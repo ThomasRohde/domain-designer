@@ -1,11 +1,23 @@
 import { Rectangle } from '../types';
 
 /**
- * Utility functions for bounding box operations and rectangle containment
+ * Geometric algorithms for bounding box calculations and spatial containment analysis.
+ * 
+ * These functions implement axis-aligned bounding box (AABB) operations essential for:
+ * - Multi-select drag box calculations
+ * - Spatial query optimization for large rectangle collections
+ * - Collision detection and containment validation
+ * - Selection expansion based on spatial proximity
  */
 
 /**
- * Checks if a rectangle is completely contained within a bounding box
+ * AABB containment test using complete geometric inclusion.
+ * 
+ * Algorithm: Tests that all four corners of the rectangle are within the bounding box.
+ * Uses strict inequality to ensure the rectangle is completely inside, not touching edges.
+ * Essential for multi-select operations where partial overlap should not trigger inclusion.
+ * 
+ * Time complexity: O(1) - constant time geometric comparison
  */
 export function isRectangleContainedInBounds(
   rectangle: Rectangle,
@@ -30,7 +42,20 @@ export function isRectangleContainedInBounds(
 }
 
 /**
- * Calculates the bounding box that encompasses the given rectangles
+ * Minimum bounding rectangle calculation using coordinate extrema algorithm.
+ * 
+ * Algorithm:
+ * 1. Initialize bounds with first rectangle's coordinates
+ * 2. Iterate through remaining rectangles, expanding bounds to include each
+ * 3. Track min/max X and Y coordinates across all rectangles
+ * 4. Return enclosing rectangle with computed width and height
+ * 
+ * Handles edge cases:
+ * - Empty input returns null (no bounding box possible)
+ * - Single rectangle returns tight bounds around that rectangle
+ * - Multiple rectangles return minimal enclosing rectangle
+ * 
+ * Time complexity: O(n) where n is the number of rectangles
  */
 export function calculateBoundingBox(rectangles: Rectangle[]): {
   x: number;
@@ -42,14 +67,14 @@ export function calculateBoundingBox(rectangles: Rectangle[]): {
     return null;
   }
 
-  // Initialize with first rectangle's bounds
+  // Seed bounds with first rectangle's extrema
   const first = rectangles[0];
   let minX = first.x;
   let minY = first.y;
   let maxX = first.x + first.w;
   let maxY = first.y + first.h;
 
-  // Expand bounds to include all rectangles
+  // Iteratively expand bounds to encompass all rectangles
   for (let i = 1; i < rectangles.length; i++) {
     const rect = rectangles[i];
     minX = Math.min(minX, rect.x);
@@ -67,7 +92,19 @@ export function calculateBoundingBox(rectangles: Rectangle[]): {
 }
 
 /**
- * Finds all rectangles that are contained within the bounding box of the selected rectangles
+ * Spatial query for rectangle containment within dynamic bounding box.
+ * 
+ * Two-phase algorithm:
+ * 1. Calculate minimal bounding box of the currently selected rectangles
+ * 2. Filter all rectangles to find those completely contained within this bounding box
+ * 
+ * Use cases:
+ * - Automatic selection expansion during drag operations
+ * - Finding rectangles within a user-defined selection area
+ * - Spatial clustering and grouping operations
+ * 
+ * Performance: O(n) for bounding box calculation + O(m) for containment testing
+ * where n = selected rectangles, m = total rectangles
  */
 export function findRectanglesInBoundingBox(
   selectedRectangles: Rectangle[],
@@ -77,13 +114,13 @@ export function findRectanglesInBoundingBox(
     return [];
   }
 
-  // Calculate the bounding box of the currently selected rectangles
+  // Compute enclosing bounds for spatial query
   const bounds = calculateBoundingBox(selectedRectangles);
   if (!bounds) {
     return selectedRectangles;
   }
 
-  // Find all rectangles that are completely contained within this bounding box
+  // Apply containment filter to find all enclosed rectangles
   const containedRectangles = allRectangles.filter(rect => 
     isRectangleContainedInBounds(rect, bounds)
   );
@@ -92,24 +129,34 @@ export function findRectanglesInBoundingBox(
 }
 
 /**
- * Gets all rectangle IDs that should be selected based on bounding box containment
+ * Selection expansion orchestrator for intuitive multi-select behavior.
+ * 
+ * Implements PowerPoint-style selection expansion where selecting multiple rectangles
+ * automatically includes any rectangles that fall completely within the selection's
+ * bounding box. This provides intuitive behavior for users who expect spatial
+ * containment to determine which elements are affected by operations.
+ * 
+ * Algorithm:
+ * 1. Skip expansion for single selections (no bounding box needed)
+ * 2. Find all rectangles within the bounding box of current selection
+ * 3. Return IDs of all contained rectangles for uniform selection state
  */
 export function getExpandedSelectionIds(
   currentSelectedIds: string[],
   allRectangles: Rectangle[]
 ): string[] {
   if (currentSelectedIds.length <= 1) {
-    return currentSelectedIds; // No expansion needed for single or no selection
+    return currentSelectedIds; // Single selections don't need spatial expansion
   }
 
-  // Get the currently selected rectangles
+  // Extract rectangle objects for bounding box calculation
   const selectedRectangles = allRectangles.filter(rect => 
     currentSelectedIds.includes(rect.id)
   );
 
-  // Find all rectangles within the bounding box
+  // Execute spatial containment query
   const containedRectangles = findRectanglesInBoundingBox(selectedRectangles, allRectangles);
 
-  // Return the IDs of all contained rectangles
+  // Return expanded selection as ID array for state consistency
   return containedRectangles.map(rect => rect.id);
 }
