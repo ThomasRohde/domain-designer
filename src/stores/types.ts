@@ -168,6 +168,12 @@ export interface RectangleActions {
   updateNextId: (newNextId: number) => void;
   recalculateZOrder: () => void;
   updateRectanglesDuringDrag: (updateFn: (rectangles: Rectangle[]) => Rectangle[]) => void;
+  calculateMinimumParentSizeInternal: (
+    id: string, 
+    rectangles: Rectangle[], 
+    getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number }, 
+    getMargins: () => { margin: number; labelMargin: number }
+  ) => { width: number; height: number };
 }
 
 /**
@@ -351,6 +357,7 @@ export interface AutoSaveActions {
  * Manages hierarchy preservation and intelligent positioning
  */
 export interface ClipboardActions {
+  duplicateRectangles: (ids: string[]) => void;
   copyRectangles: (ids: string[]) => void;
   pasteRectangles: (targetParentId?: string) => void;
   canPaste: () => boolean;

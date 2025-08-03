@@ -1,5 +1,7 @@
 import { Rectangle } from '../../types';
 import type { SliceCreator, ClipboardState, ClipboardActions, ClipboardData } from '../types';
+import { getChildren, updateChildrenLayout } from '../../utils/layoutUtils';
+import { layoutManager } from '../../utils/layout';
 
 /**
  * Default positioning offset when pasting rectangles to avoid overlaps
@@ -24,6 +26,157 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
   },
 
   clipboardActions: {
+    /**
+     * Duplicate rectangles in-place by copying and pasting as siblings
+     * This creates a single history entry instead of separate copy/paste entries
+     */
+    duplicateRectangles: (ids: string[]) => {
+      const { rectangles, rectangleActions, historyActions } = get();
+      
+      if (ids.length === 0) {
+        return;
+      }
+
+      // Determine target parent ID (where to paste as siblings)
+      let targetParentId: string | undefined;
+      
+      if (ids.length > 1) {
+        // Multi-select: use common parent of selected rectangles
+        const firstRect = rectangles.find(r => r.id === ids[0]);
+        targetParentId = firstRect?.parentId;
+      } else {
+        // Single-select: use parent of selected rectangle
+        const selectedRect = rectangles.find(r => r.id === ids[0]);
+        targetParentId = selectedRect?.parentId;
+      }
+
+      // Get all rectangles to copy (including descendants)
+      const rectanglesToCopy = new Set<string>(ids);
+      
+      // Add all descendants of selected rectangles
+      const addDescendants = (parentId: string) => {
+        const children = rectangles.filter(r => r.parentId === parentId);
+        children.forEach(child => {
+          rectanglesToCopy.add(child.id);
+          addDescendants(child.id);
+        });
+      };
+      
+      ids.forEach(addDescendants);
+      
+      // Extract the rectangle data
+      const rectangleData = Array.from(rectanglesToCopy)
+        .map(id => rectangles.find(r => r.id === id))
+        .filter((r): r is Rectangle => r !== undefined);
+
+      if (rectangleData.length === 0) {
+        return;
+      }
+
+      // Calculate relative bounds for positioning
+      const bounds = calculateBounds(rectangleData);
+      
+      // Generate new IDs for all rectangles
+      const idMapping = new Map<string, string>();
+      rectangleData.forEach(rect => {
+        idMapping.set(rect.id, rectangleActions.generateId());
+      });
+      
+      // Calculate paste position
+      const pastePosition = calculatePastePosition(
+        bounds,
+        targetParentId,
+        rectangles
+      );
+      
+      // Create new rectangles with updated IDs and positions
+      const newRectangles = rectangleData.map(rect => {
+        const newId = idMapping.get(rect.id)!;
+        // If the rectangle had a parent and that parent was also copied, use the mapped parent ID
+        // Otherwise, use the target parent ID (the rectangle we're pasting into)
+        const mappedParentId = rect.parentId ? idMapping.get(rect.parentId) : undefined;
+        const newParentId = mappedParentId !== undefined ? mappedParentId : targetParentId;
+        
+        // Calculate new position
+        const offsetX = rect.x - bounds.minX + pastePosition.x;
+        const offsetY = rect.y - bounds.minY + pastePosition.y;
+        
+        return {
+          ...rect,
+          id: newId,
+          parentId: newParentId,
+          x: offsetX,
+          y: offsetY,
+        };
+      });
+      
+      // Get parent rectangle for potential auto-resize
+      const targetParent = targetParentId ? rectangles.find(r => r.id === targetParentId) : null;
+      
+      // Update rectangles, optionally fit parent, then save single history entry
+      set(state => ({
+        rectangles: [...state.rectangles, ...newRectangles],
+      }));
+      
+      // Select the newly duplicated rectangles
+      const topLevelDuplicatedIds = newRectangles
+        .filter(rect => rect.parentId === targetParentId)
+        .map(rect => rect.id);
+      
+      rectangleActions.setSelectedIds(topLevelDuplicatedIds);
+      
+      // If duplicated into a parent, fit to children AND save to history as a single operation
+      if (targetParentId && targetParent && !targetParent.isLockedAsIs) {
+        setTimeout(() => {
+          // Manually trigger fitToChildren logic without its own history save
+          const { rectangles: currentRectangles, settings } = get();
+          const getMargins = () => ({ margin: settings.margin, labelMargin: settings.labelMargin });
+          const getFixedDimensions = () => ({
+            leafFixedWidth: settings.leafFixedWidth,
+            leafFixedHeight: settings.leafFixedHeight,
+            leafWidth: settings.leafWidth,
+            leafHeight: settings.leafHeight
+          });
+          
+          // Use the imported utility functions
+          const children = getChildren(targetParentId, currentRectangles);
+          
+          if (children.length > 0) {
+            
+            // Calculate optimal size exactly like fitToChildren does
+            const optimalSize = layoutManager.calculateMinimumParentSize(targetParentId, currentRectangles, getFixedDimensions(), getMargins());
+            
+            // Update parent and recalculate children layout
+            const updatedRectangles = currentRectangles.map(rect => 
+              rect.id === targetParentId ? { 
+                ...rect, 
+                w: optimalSize.w, 
+                h: optimalSize.h,
+                isLockedAsIs: false,
+                isManualPositioningEnabled: false
+              } : rect
+            );
+            
+            // Apply children layout updates exactly like fitToChildren does
+            const finalRectangles = updateChildrenLayout(updatedRectangles, getFixedDimensions(), getMargins());
+            
+            // Update state without triggering another history save
+            set(() => ({
+              rectangles: finalRectangles,
+            }));
+          }
+          
+          // Save single history entry for the entire duplication + fit operation
+          historyActions.saveToHistory();
+        }, 50);
+      } else {
+        // Save single history entry for just the duplication
+        setTimeout(() => {
+          historyActions.saveToHistory();
+        }, 0);
+      }
+    },
+
     /**
      * Copy selected rectangles to clipboard with full hierarchy preservation
      */

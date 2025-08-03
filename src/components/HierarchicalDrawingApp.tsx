@@ -345,31 +345,13 @@ const HierarchicalDrawingApp = () => {
     const idsToDuplicate = ui.selectedIds.length > 0 ? ui.selectedIds : selectedId ? [selectedId] : [];
     if (idsToDuplicate.length > 0) {
       try {
-        // Simple CTRL-D implementation: Copy → Select Parent → Paste
-        
-        // 1. Copy current selection to clipboard
-        clipboardActions.copyRectangles(idsToDuplicate);
-        
-        // 2. Determine parent ID (where to paste as siblings)
-        let targetParentId: string | undefined;
-        
-        if (idsToDuplicate.length > 1) {
-          // Multi-select: use common parent of selected rectangles
-          const firstRect = rectangles.find(r => r.id === idsToDuplicate[0]);
-          targetParentId = firstRect?.parentId;
-        } else {
-          // Single-select: use parent of selected rectangle
-          const selectedRect = selectedId ? findRectangle(selectedId) : null;
-          targetParentId = selectedRect?.parentId;
-        }
-        
-        // 3. Paste at parent level (creates siblings)
-        clipboardActions.pasteRectangles(targetParentId);
+        // Use new dedicated duplicate method that creates single history entry
+        clipboardActions.duplicateRectangles(idsToDuplicate);
       } catch (error) {
         console.error('Error during duplicate operation:', error);
       }
     }
-  }, [ui.selectedIds, selectedId, clipboardActions, findRectangle, rectangles]);
+  }, [ui.selectedIds, selectedId, clipboardActions]);
 
   const handleSaveDescription = useCallback((description: string) => {
     if (ui.descriptionEditModal) {

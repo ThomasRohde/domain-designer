@@ -1110,6 +1110,17 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const state = get();
       const updatedRectangles = updateFn(state.rectangles);
       set({ rectangles: updatedRectangles });
+    },
+
+    // Internal method for calculating minimum parent size without history
+    calculateMinimumParentSizeInternal: (
+      id: string, 
+      rectangles: Rectangle[], 
+      getFixedDimensions: () => { leafFixedWidth: boolean; leafFixedHeight: boolean; leafWidth: number; leafHeight: number }, 
+      getMargins: () => { margin: number; labelMargin: number }
+    ) => {
+      const optimalSize = layoutManager.calculateMinimumParentSize(id, rectangles, getFixedDimensions(), getMargins());
+      return { width: optimalSize.w, height: optimalSize.h };
     }
   }
 });
