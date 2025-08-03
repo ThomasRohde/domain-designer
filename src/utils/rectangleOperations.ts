@@ -1,6 +1,7 @@
 import { Rectangle, RectangleType } from '../types';
 import { DEFAULT_COLORS, DEFAULT_RECTANGLE_SIZE, MIN_WIDTH, MIN_HEIGHT } from './constants';
-import { getChildren } from './layoutUtils';
+import { getChildren, updateChildrenLayout } from './layoutUtils';
+import { layoutManager } from './layout';
 
 /**
  * Configuration for leaf rectangle dimension constraints
@@ -320,4 +321,102 @@ export const getRectangleBounds = (
     w: maxX - minX,
     h: maxY - minY
   };
+};
+
+/**
+ * Margin configuration for layout calculations
+ */
+export interface MarginSettings {
+  margin: number;
+  labelMargin: number;
+}
+
+/**
+ * Fit parent rectangle to children without adding to history
+ * 
+ * This is a shared utility function that performs the core fit-to-children
+ * operation without triggering history saves. It's designed to be used in
+ * atomic operations like duplicate and add child where history should be
+ * saved as a single entry for the complete operation.
+ * 
+ * @param parentId - ID of the parent rectangle to fit
+ * @param rectangles - Current rectangle array
+ * @param fixedDimensions - Fixed dimension configuration
+ * @param margins - Margin configuration
+ * @returns Updated rectangle array with fitted parent and repositioned children
+ */
+export const fitParentToChildren = (
+  parentId: string,
+  rectangles: Rectangle[],
+  fixedDimensions: FixedDimensions,
+  margins: MarginSettings
+): Rectangle[] => {
+  const children = getChildren(parentId, rectangles);
+  if (children.length === 0) {
+    return rectangles;
+  }
+  
+  const parentRect = rectangles.find(r => r.id === parentId);
+  if (!parentRect || parentRect.isLockedAsIs) {
+    return rectangles;
+  }
+  
+  // Calculate optimal size for the parent
+  const optimalSize = layoutManager.calculateMinimumParentSize(
+    parentId, 
+    rectangles, 
+    fixedDimensions, 
+    margins
+  );
+  
+  // Update parent rectangle with optimal size and unlock settings
+  const updatedRectangles = rectangles.map(rect => 
+    rect.id === parentId ? { 
+      ...rect, 
+      w: optimalSize.w, 
+      h: optimalSize.h,
+      isLockedAsIs: false,
+      isManualPositioningEnabled: false
+    } : rect
+  );
+  
+  // Apply children layout updates
+  return updateChildrenLayout(updatedRectangles, fixedDimensions, margins);
+};
+
+/**
+ * Fit parent and all ancestors to children (bubbles up hierarchy)
+ * 
+ * This function recursively fits parent rectangles starting from the specified
+ * parent and bubbling up the hierarchy. This ensures that when children are
+ * added or modified, all ancestors resize appropriately to accommodate the changes.
+ * 
+ * @param parentId - ID of the starting parent rectangle to fit
+ * @param rectangles - Current rectangle array
+ * @param fixedDimensions - Fixed dimension configuration
+ * @param margins - Margin configuration
+ * @returns Updated rectangle array with all ancestors fitted
+ */
+export const fitParentToChildrenRecursive = (
+  parentId: string,
+  rectangles: Rectangle[],
+  fixedDimensions: FixedDimensions,
+  margins: MarginSettings
+): Rectangle[] => {
+  let currentRectangles = rectangles;
+  let currentParentId: string | undefined = parentId;
+  
+  // Fit parents up the hierarchy chain
+  while (currentParentId) {
+    const parent = currentRectangles.find(r => r.id === currentParentId);
+    if (!parent) break;
+    
+    // Fit the current parent to its children
+    currentRectangles = fitParentToChildren(currentParentId, currentRectangles, fixedDimensions, margins);
+    
+    // Move up to the next parent in the hierarchy
+    currentParentId = parent.parentId;
+  }
+  
+  return currentRectangles;
 };

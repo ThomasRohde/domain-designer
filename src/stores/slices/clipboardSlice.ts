@@ -1,7 +1,6 @@
 import { Rectangle } from '../../types';
 import type { SliceCreator, ClipboardState, ClipboardActions, ClipboardData } from '../types';
-import { getChildren, updateChildrenLayout } from '../../utils/layoutUtils';
-import { layoutManager } from '../../utils/layout';
+import { fitParentToChildren, type FixedDimensions, type MarginSettings } from '../../utils/rectangleOperations';
 
 /**
  * Default positioning offset when pasting rectangles to avoid overlaps
@@ -128,43 +127,23 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
       // If duplicated into a parent, fit to children AND save to history as a single operation
       if (targetParentId && targetParent && !targetParent.isLockedAsIs) {
         setTimeout(() => {
-          // Manually trigger fitToChildren logic without its own history save
+          // Use shared fitParentToChildren function without its own history save
           const { rectangles: currentRectangles, settings } = get();
-          const getMargins = () => ({ margin: settings.margin, labelMargin: settings.labelMargin });
-          const getFixedDimensions = () => ({
+          const margins: MarginSettings = { margin: settings.margin, labelMargin: settings.labelMargin };
+          const fixedDimensions: FixedDimensions = {
             leafFixedWidth: settings.leafFixedWidth,
             leafFixedHeight: settings.leafFixedHeight,
             leafWidth: settings.leafWidth,
             leafHeight: settings.leafHeight
-          });
+          };
           
-          // Use the imported utility functions
-          const children = getChildren(targetParentId, currentRectangles);
+          // Use the shared utility function to fit parent to children
+          const finalRectangles = fitParentToChildren(targetParentId, currentRectangles, fixedDimensions, margins);
           
-          if (children.length > 0) {
-            
-            // Calculate optimal size exactly like fitToChildren does
-            const optimalSize = layoutManager.calculateMinimumParentSize(targetParentId, currentRectangles, getFixedDimensions(), getMargins());
-            
-            // Update parent and recalculate children layout
-            const updatedRectangles = currentRectangles.map(rect => 
-              rect.id === targetParentId ? { 
-                ...rect, 
-                w: optimalSize.w, 
-                h: optimalSize.h,
-                isLockedAsIs: false,
-                isManualPositioningEnabled: false
-              } : rect
-            );
-            
-            // Apply children layout updates exactly like fitToChildren does
-            const finalRectangles = updateChildrenLayout(updatedRectangles, getFixedDimensions(), getMargins());
-            
-            // Update state without triggering another history save
-            set(() => ({
-              rectangles: finalRectangles,
-            }));
-          }
+          // Update state without triggering another history save
+          set(() => ({
+            rectangles: finalRectangles,
+          }));
           
           // Save single history entry for the entire duplication + fit operation
           historyActions.saveToHistory();

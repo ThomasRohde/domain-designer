@@ -9,7 +9,11 @@ import { layoutManager } from '../../utils/layout';
 import { 
   createRectangle,
   updateRectangleType,
-  applyFixedDimensions
+  applyFixedDimensions,
+  fitParentToChildren,
+  fitParentToChildrenRecursive,
+  type FixedDimensions,
+  type MarginSettings
 } from '../../utils/rectangleOperations';
 import { alignRectangles } from '../../utils/alignmentUtils';
 import { distributeRectangles } from '../../utils/distributionUtils';
@@ -176,47 +180,11 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         // Parent relationship management and layout recalculation
         if (parentId) {
           updated = updateRectangleType(updated, parentId);
-          const parentIndex = updated.findIndex(r => r.id === parentId);
-          if (parentIndex !== -1) {
-            const parent = updated[parentIndex];
-            const allChildren = updated.filter(r => r.parentId === parentId);
-            
-            // Dynamic parent resizing to accommodate children
-            if (allChildren.length > 0) {
-              const minParentSize = layoutManager.calculateMinimumParentSize(parentId, updated, getFixedDimensions(), getMargins());
-              
-              if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
-                updated = updated.map(rect => 
-                  rect.id === parentId 
-                    ? { ...rect, w: Math.max(rect.w, minParentSize.w), h: Math.max(rect.h, minParentSize.h) }
-                    : rect
-                );
-              }
-            }
-            
-            // Layout algorithm application with lock respect
-            if (allChildren.length > 0) {
-              const updatedParent = updated.find(r => r.id === parentId);
-              if (updatedParent) {
-                const newChildLayout = layoutManager.calculateChildLayout(updatedParent, allChildren, getFixedDimensions(), getMargins(), updated);
-                
-                newChildLayout.forEach(layoutChild => {
-                  const childIndex = updated.findIndex(r => r.id === layoutChild.id);
-                  if (childIndex !== -1) {
-                    const existingChild = updated[childIndex];
-                    updated[childIndex] = {
-                      ...existingChild,
-                      x: layoutChild.x,
-                      y: layoutChild.y,
-                      // Respect lock-as-is constraints for dimensions
-                      w: existingChild.isLockedAsIs ? existingChild.w : layoutChild.w,
-                      h: existingChild.isLockedAsIs ? existingChild.h : layoutChild.h
-                    };
-                  }
-                });
-              }
-            }
-          }
+          
+          // Use shared function to fit parent and all ancestors to children
+          const margins: MarginSettings = getMargins();
+          const fixedDimensions: FixedDimensions = getFixedDimensions();
+          updated = fitParentToChildrenRecursive(parentId, updated, fixedDimensions, margins);
         }
         
         return updated;
@@ -428,14 +396,6 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const state = get();
       const { rectangles, settings } = state;
       
-      const getMargins = () => ({ margin: settings.margin, labelMargin: settings.labelMargin });
-      const getFixedDimensions = () => ({
-        leafFixedWidth: settings.leafFixedWidth,
-        leafFixedHeight: settings.leafFixedHeight,
-        leafWidth: settings.leafWidth,
-        leafHeight: settings.leafHeight
-      });
-      
       const children = getChildren(id, rectangles);
       if (children.length === 0) return;
       
@@ -443,18 +403,16 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       if (rectangle?.isLockedAsIs) return;
       
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
-        const optimalSize = layoutManager.calculateMinimumParentSize(id, currentRectangles, getFixedDimensions(), getMargins());
-        const updated = currentRectangles.map(rect => 
-          rect.id === id ? { 
-            ...rect, 
-            w: optimalSize.w, 
-            h: optimalSize.h,
-            isLockedAsIs: false,
-            isManualPositioningEnabled: false
-          } : rect
-        );
+        const margins: MarginSettings = { margin: settings.margin, labelMargin: settings.labelMargin };
+        const fixedDimensions: FixedDimensions = {
+          leafFixedWidth: settings.leafFixedWidth,
+          leafFixedHeight: settings.leafFixedHeight,
+          leafWidth: settings.leafWidth,
+          leafHeight: settings.leafHeight
+        };
         
-        return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
+        // Use shared function to fit parent to children
+        return fitParentToChildren(id, currentRectangles, fixedDimensions, margins);
       });
     },
 
