@@ -4,19 +4,7 @@ Based on comprehensive user testing feedback from browser agent testing. This li
 
 ## High Priority - Critical UX Issues
 
-### 1. Missing Copy/Paste Functionality
-**Status:** Not Implemented
-**Issue:** Single-selection context menu lacks copy/paste options
-**Impact:** Basic expected functionality missing
-**Tasks:**
-- [ ] Add copy/paste operations to `rectangleSlice.ts`
-- [ ] Implement clipboard state management
-- [ ] Add Copy/Paste menu items to `ContextMenu.tsx`
-- [ ] Add keyboard shortcuts (Ctrl+C, Ctrl+V) to `useKeyboardShortcuts.ts`
-- [ ] Handle hierarchy preservation when pasting
-- [ ] Add visual feedback for copy/paste operations
-
-### 2. Ambiguous UI Icons and Controls
+### 1. Ambiguous UI Icons and Controls
 **Status:** Partially Implemented
 **Issue:** Manual positioning and layout controls lack clear labeling
 **Impact:** Users cannot understand what controls do
@@ -49,8 +37,8 @@ Based on comprehensive user testing feedback from browser agent testing. This li
 - [ ] Implement Ctrl+A (select all same-level) in `useKeyboardShortcuts.ts`
 - [ ] Add Escape key to clear selection
 - [ ] Add arrow key navigation between rectangles
-- [ ] Implement Ctrl+D for duplicate
-- [ ] Add keyboard shortcut help overlay
+- [x] ~~Implement Ctrl+D for duplicate~~ ✅ **COMPLETED** - Implemented with single history entry
+- [x] ~~Add keyboard shortcut help overlay~~ ✅ **COMPLETED** - Help modal implemented
 - [ ] Test shortcuts across different browsers
 
 ## Medium Priority - Data and Performance
