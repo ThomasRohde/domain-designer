@@ -66,7 +66,6 @@ export interface UIState {
  */
 export interface CanvasState {
   panOffset: PanOffset;
-  zoomLevel: number;
   zoomState: ZoomState;
   panState: PanState | null;
   dragState: DragState | null;
@@ -128,7 +127,6 @@ export interface RectangleActions {
   fitToChildren: (id: string) => void;
   moveRectangle: (id: string, deltaX: number, deltaY: number) => void;
   reparentRectangle: (childId: string, newParentId: string | null) => boolean;
-  setSelectedId: (id: string | null) => void;
   setSelectedIds: (ids: string[]) => void;
   addToSelection: (id: string) => boolean;
   removeFromSelection: (id: string) => void;
@@ -343,7 +341,6 @@ export interface StoreGetters {
 export interface AppStore {
   // State
   rectangles: Rectangle[];
-  selectedId: string | null; // Legacy - kept for backward compatibility during transition
   nextId: number;
   ui: UIState;
   settings: GlobalSettings;

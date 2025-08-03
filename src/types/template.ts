@@ -47,10 +47,6 @@ export interface TemplateLoadingState {
   error: string | null;
   /** Loaded template data */
   templateData: TemplateNode[] | null;
-  /** Tree data for react-complex-tree */
-  treeData: TreeData | null;
-  /** Root item IDs for the trees */
-  rootItems: string[];
 }
 
 /**

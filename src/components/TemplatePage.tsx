@@ -64,9 +64,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
   const [loadingState, setLoadingState] = useState<TemplateLoadingState>({
     isLoading: false,
     error: null,
-    templateData: null,
-    treeData: null,
-    rootItems: []
+    templateData: null
   });
   
   // User interaction state for template selection and insertion
@@ -104,9 +102,7 @@ const TemplatePage: React.FC<TemplatePageProps> = ({
       setLoadingState({
         isLoading: false,
         error: null,
-        templateData,
-        treeData: null, // Legacy field - no longer used
-        rootItems: [] // Legacy field - no longer used
+        templateData
       });
     } catch (error) {
       setLoadingState(prev => ({

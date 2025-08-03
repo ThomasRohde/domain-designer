@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Rectangle, DragState, ResizeState, HierarchyDragState, DropTarget, ResizeConstraintState } from '../types';
 import { MIN_WIDTH, MIN_HEIGHT } from '../utils/constants';
-import { updateChildrenLayout, getAllDescendants, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
+import { updateChildrenLayout, getAllDescendants, getChildren } from '../utils/layoutUtils';
+import { layoutManager } from '../utils/layout';
 import { getMousePosition, preventEventDefault } from '../utils/eventUtils';
 
 /**
@@ -400,7 +401,7 @@ export const useDragAndResize = ({
     let minRequiredH = MIN_HEIGHT;
     
     if (children.length > 0 && !rect.isManualPositioningEnabled && !rect.isLockedAsIs) {
-      const minSize = calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions(), getMargins());
+      const minSize = layoutManager.calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions(), getMargins());
       minRequiredW = minSize.w;
       minRequiredH = minSize.h;
       // Only enforce minimum if the new size would be too small
@@ -523,7 +524,7 @@ export const useDragAndResize = ({
             const parent = rectangles.find(r => r.id === rect.parentId);
             if (parent && !parent.isManualPositioningEnabled && !parent.isLockedAsIs) {
               // Only auto-resize parent if manual positioning is not enabled and parent is not locked as-is
-              const minParentSize = calculateMinimumParentSize(rect.parentId, rectangles, getFixedDimensions(), getMargins());
+              const minParentSize = layoutManager.calculateMinimumParentSize(rect.parentId, rectangles, getFixedDimensions(), getMargins());
               if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
                 // Parent needs to be resized too, trigger a broader layout update
                 setNeedsLayoutUpdate({ type: 'resize', rectangleId: rect.parentId });

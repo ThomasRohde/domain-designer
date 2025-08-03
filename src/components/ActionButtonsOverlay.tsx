@@ -11,8 +11,8 @@ interface ActionButtonsOverlayProps {}
  * Hidden during multi-select operations since these actions don't apply to multiple rectangles.
  */
 const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
-  const selectedId = useAppStore(state => state.selectedId);
   const selectedIds = useAppStore(state => state.ui.selectedIds);
+  const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   const rectangles = useAppStore(state => state.rectangles);
   const gridSize = useAppStore(state => state.settings.gridSize);
   const isDragging = useAppStore(state => state.canvasActions.isDragging());

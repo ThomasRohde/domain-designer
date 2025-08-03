@@ -30,7 +30,6 @@ import type { SliceCreator, RectangleActions, AppStore } from '../types';
 export interface RectangleSlice {
   // State
   rectangles: Rectangle[];
-  selectedId: string | null;
   nextId: number;
   
   // Actions
@@ -68,9 +67,7 @@ const expandSelectionToBoundingBox = (selectedIds: string[], rectangles: Rectang
 const updateRectanglesWithHistory = (
   set: (partial: object | ((state: AppStore) => object)) => void, 
   get: () => AppStore, 
-  updater: (current: Rectangle[]) => Rectangle[], 
-  selectedId?: string | null
-) => {
+  updater: (current: Rectangle[]) => Rectangle[]) => {
   const state = get();
   const currentRectangles = state.rectangles;
   const updated = updater(currentRectangles);
@@ -78,7 +75,6 @@ const updateRectanglesWithHistory = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   set((state: any) => ({
     rectangles: updated,
-    ...(selectedId !== undefined && { selectedId }),
     nextId: state.nextId
   }));
   
@@ -102,7 +98,6 @@ const updateRectanglesWithHistory = (
 export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => ({
   // Initial state
   rectangles: [],
-  selectedId: null,
   nextId: 1,
 
   // Actions
@@ -211,7 +206,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         }
         
         return updated;
-      }, id);
+      });
       
       // Increment ID counter for future rectangle creation
       set(() => ({ nextId: candidate }));
@@ -257,7 +252,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         });
         
         return updated;
-      }, null);
+      });
     },
 
     updateRectangle: (id: string, updates: Partial<Rectangle>) => {
@@ -622,19 +617,6 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       return true;
     },
 
-    setSelectedId: (id: string | null) => {
-      set({ selectedId: id });
-      // Synchronize multi-select state with single selection
-      if (id) {
-        set(state => ({
-          ui: { ...state.ui, selectedIds: [id] }
-        }));
-      } else {
-        set(state => ({
-          ui: { ...state.ui, selectedIds: [] }
-        }));
-      }
-    },
 
     setSelectedIds: (ids: string[]) => {
       const state = get();
@@ -644,8 +626,6 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       set(state => ({
         ui: { ...state.ui, selectedIds: expandedSelection },
-        // Maintain backward compatibility with single selection state
-        selectedId: expandedSelection.length > 0 ? expandedSelection[0] : null
       }));
     },
 
@@ -659,7 +639,6 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         // First selection, just add it
         set(state => ({
           ui: { ...state.ui, selectedIds: [id] },
-          selectedId: id
         }));
         return true;
       }
@@ -702,14 +681,12 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       set(state => ({
         ui: { ...state.ui, selectedIds: newSelection },
-        selectedId: newSelection.length > 0 ? newSelection[0] : null
       }));
     },
 
     clearSelection: () => {
       set(state => ({
         ui: { ...state.ui, selectedIds: [] },
-        selectedId: null
       }));
     },
 

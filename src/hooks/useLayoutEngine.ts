@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { Rectangle, FixedDimensions } from '../types';
 import { LayoutMetadata, shouldPreserveExactLayout } from '../types/layoutSnapshot';
-import { updateChildrenLayout, calculateMinimumParentSize, getChildren } from '../utils/layoutUtils';
+import { updateChildrenLayout, getChildren } from '../utils/layoutUtils';
 import { layoutManager, LayoutAlgorithmType } from '../utils/layout';
 
 /**
@@ -85,7 +85,7 @@ export const useLayoutEngine = ({
     const children = getChildren(parentId, rectangles);
     if (children.length === 0) return rectangles;
 
-    const newSize = calculateMinimumParentSize(parentId, rectangles, getFixedDimensions(), getMargins());
+    const newSize = layoutManager.calculateMinimumParentSize(parentId, rectangles, getFixedDimensions(), getMargins());
 
     // Apply calculated minimum dimensions to parent
     const updated = rectangles.map(rect => 

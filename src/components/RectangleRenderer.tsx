@@ -20,8 +20,8 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
 }) => {
   // Core data from centralized store
   const rectangles = useAppStore(state => state.rectangles);
-  const selectedId = useAppStore(state => state.selectedId);
   const selectedIds = useAppStore(state => state.ui.selectedIds);
+  const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   // Performance optimization: Convert selectedIds to Set for O(1) lookup
   const selectedIdsSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
   const gridSize = useAppStore(state => state.settings.gridSize);
@@ -54,7 +54,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const resizeConstraintState = useAppStore(state => state.canvas.resizeConstraintState);
   
   // Rectangle manipulation actions from store
-  const { setSelectedId, updateRectangleLabel, toggleSelection } = useAppStore(state => state.rectangleActions);
+  const { setSelectedIds, updateRectangleLabel, toggleSelection } = useAppStore(state => state.rectangleActions);
   const handleRectangleMouseDown = useAppStore(state => state.canvasActions.handleRectangleMouseDown);
   
   // Calculate selected rectangles for multi-select bounding box
@@ -80,7 +80,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
       const id = idOrToggle.replace('|toggle', '');
       toggleSelection(id);
     } else {
-      setSelectedId(idOrToggle);
+      setSelectedIds([idOrToggle]);
     }
   };
 

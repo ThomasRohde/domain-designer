@@ -24,14 +24,12 @@ function RootHandler() {
  * Provides routes:
  * - "/" - Handles both main editor AND URL-based viewer (via URL param detection)
  * - "/viewer" - Read-only viewer that handles both local storage and URL-based diagrams
- * - "/viewer/*" - Legacy path-based URL viewer (kept for backward compatibility)
  */
 function App() {
   return (
     <Routes>
       <Route path="/" element={<RootHandler />} />
       <Route path="/viewer" element={<ViewerPage />} />
-      <Route path="/viewer/*" element={<URLViewerPage />} />
     </Routes>
   );
 }

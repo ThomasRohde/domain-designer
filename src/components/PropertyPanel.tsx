@@ -22,8 +22,8 @@ export interface PropertyPanelProps {
  */
 const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   // Core application state for selected rectangle and settings
-  const selectedId = useAppStore(state => state.selectedId);
   const selectedIds = useAppStore(state => state.ui.selectedIds);
+  const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   const rectangles = useAppStore(state => state.rectangles);
   const settings = useAppStore(state => state.settings);
   

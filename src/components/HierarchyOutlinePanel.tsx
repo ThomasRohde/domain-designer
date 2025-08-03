@@ -22,15 +22,16 @@ const HierarchyOutlinePanel: React.FC = () => {
   // Store state and actions
   const isOpen = useAppStore(state => state.ui.hierarchyOutlineOpen);
   const rectangles = useAppStore(state => state.rectangles);
-  const selectedId = useAppStore(state => state.selectedId);
+  const selectedIds = useAppStore(state => state.ui.selectedIds);
+  const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   const gridSize = useAppStore(state => state.settings.gridSize);
   const closePanel = useAppStore(state => state.uiActions.closeHierarchyOutline);
-  const setSelectedId = useAppStore(state => state.rectangleActions.setSelectedId);
+  const setSelectedIds = useAppStore(state => state.rectangleActions.setSelectedIds);
   const jumpToPosition = useAppStore(state => state.canvasActions.jumpToPosition);
 
   // Handle rectangle selection from tree
   const handleRectangleSelect = useCallback((rectangleId: string) => {
-    setSelectedId(rectangleId);
+    setSelectedIds([rectangleId]);
     
     // Find the selected rectangle and pan to center it in view
     const rectangle = rectangles.find(rect => rect.id === rectangleId);
@@ -46,7 +47,7 @@ const HierarchyOutlinePanel: React.FC = () => {
     
     // Close hierarchy outline after selection for clean view
     closePanel();
-  }, [setSelectedId, rectangles, gridSize, jumpToPosition, closePanel]);
+  }, [setSelectedIds, rectangles, gridSize, jumpToPosition, closePanel]);
 
   // Handle search input with debouncing
   const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {

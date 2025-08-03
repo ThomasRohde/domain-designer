@@ -464,7 +464,6 @@ export interface DescriptionEditModalState {
   currentDescription: string;
 }
 
-// MIGRATION NOTE: UIStateHook removed in favor of Zustand store for better performance
 
 /**
  * Canvas interaction state and event handling

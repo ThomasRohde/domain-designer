@@ -1,36 +1,7 @@
-import { Rectangle, DragState, ResizeState, HierarchyDragState, LayoutPreferences } from '../types';
+import { Rectangle, DragState, ResizeState, HierarchyDragState } from '../types';
 import { layoutManager } from './layout';
 
-/**
- * @deprecated Use layoutManager.calculateGridDimensions instead
- */
-export const calculateGridDimensions = (
-  childrenCount: number,
-  layoutPreferences?: LayoutPreferences
-): { cols: number; rows: number } => {
-  return layoutManager.calculateGridDimensions(childrenCount, layoutPreferences);
-};
 
-/**
- * @deprecated Use layoutManager.calculateChildLayout instead
- */
-export const calculateChildLayout = (
-  parentRect: Rectangle, 
-  children: Rectangle[], 
-  fixedDimensions?: {
-    leafFixedWidth: boolean;
-    leafFixedHeight: boolean;
-    leafWidth: number;
-    leafHeight: number;
-  },
-  margins?: {
-    margin: number;
-    labelMargin: number;
-  },
-  allRectangles?: Rectangle[]
-): Rectangle[] => {
-  return layoutManager.calculateChildLayout(parentRect, children, fixedDimensions, margins, allRectangles);
-};
 
 /**
  * Recursively update child layouts throughout the hierarchy
@@ -86,7 +57,7 @@ export const updateChildrenLayout = (
               processedAny = true;
             } else {
               // Check if parent needs to be resized to fit children properly
-              const minParentSize = calculateMinimumParentSize(rect.parentId, updated, fixedDimensions, margins);
+              const minParentSize = layoutManager.calculateMinimumParentSize(rect.parentId, updated, fixedDimensions, margins);
               
               // Find parent index to update if needed
               const parentIndex = updated.findIndex(r => r.id === rect.parentId);
@@ -104,7 +75,7 @@ export const updateChildrenLayout = (
               // Get the updated parent after potential resize
               const updatedParent = updated.find(p => p.id === rect.parentId);
               if (updatedParent) {
-                const newLayout = calculateChildLayout(updatedParent, siblings, fixedDimensions, margins, updated);
+                const newLayout = layoutManager.calculateChildLayout(updatedParent, siblings, fixedDimensions, margins, updated);
                 
                 newLayout.forEach(layoutRect => {
                   const index = updated.findIndex(r => r.id === layoutRect.id);
@@ -141,20 +112,6 @@ export const updateChildrenLayout = (
   return updated;
 };
 
-/**
- * @deprecated Use layoutManager.calculateNewRectangleLayout instead
- */
-export const calculateNewRectangleLayout = (
-  parentId: string | null,
-  rectangles: Rectangle[],
-  defaultSizes: { root: { w: number; h: number }, leaf: { w: number; h: number } },
-  margins?: {
-    margin: number;
-    labelMargin: number;
-  }
-): { x: number; y: number; w: number; h: number } => {
-  return layoutManager.calculateNewRectangleLayout(parentId, rectangles, defaultSizes, margins);
-};
 
 /**
  * Recursively collect all descendant rectangle IDs
@@ -294,25 +251,6 @@ export const getZIndex = (
   return baseZ + selectedBoost;
 };
 
-/**
- * @deprecated Use layoutManager.calculateMinimumParentSize instead
- */
-export const calculateMinimumParentSize = (
-  parentId: string,
-  rectangles: Rectangle[],
-  fixedDimensions?: {
-    leafFixedWidth: boolean;
-    leafFixedHeight: boolean;
-    leafWidth: number;
-    leafHeight: number;
-  },
-  margins?: {
-    margin: number;
-    labelMargin: number;
-  }
-): { w: number; h: number } => {
-  return layoutManager.calculateMinimumParentSize(parentId, rectangles, fixedDimensions, margins);
-};
 
 /**
  * Sort rectangles for optimal rendering order (deepest first)

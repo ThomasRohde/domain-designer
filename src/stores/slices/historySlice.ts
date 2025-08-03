@@ -142,8 +142,7 @@ export const createHistorySlice: SliceCreator<HistorySlice> = (set, get) => ({
     },
 
     pushState: (rectangles: Rectangle[]) => {
-      // This method provides compatibility with the old useHistory interface
-      // It's essentially the same as saveToHistory but takes rectangles as parameter
+      // Save the provided rectangles state to history
       const state = get();
       const { history } = state;
       

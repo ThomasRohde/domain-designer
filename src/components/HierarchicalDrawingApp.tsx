@@ -25,29 +25,18 @@ import ClearDataConfirmationModal from './ClearDataConfirmationModal';
 import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
 
-/**
- * Auto-save system migration flag prevents data corruption during startup.
- * This global flag must be set before React hook initialization to ensure
- * the new Zustand-based persistence system takes precedence over any legacy
- * localStorage-based auto-save mechanisms that might still be present.
- */
-interface WindowWithZustandFlag extends Window {
-  __ZUSTAND_AUTO_SAVE_ENABLED__: boolean;
-}
-
-((window as unknown) as WindowWithZustandFlag).__ZUSTAND_AUTO_SAVE_ENABLED__ = true;
 
 const HierarchicalDrawingApp = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Rectangle state and operations
   const rectangles = useAppStore(state => state.rectangles);
-  const selectedId = useAppStore(state => state.selectedId);
+  const selectedIds = useAppStore(state => state.ui.selectedIds);
+  const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   const { 
     addRectangle, 
     removeRectangle, 
     updateRectangleDescription,
-    setSelectedId,
     setSelectedIds,
     clearSelection,
     moveRectangle,
@@ -235,7 +224,7 @@ const HierarchicalDrawingApp = () => {
         setRectangles(finalRectangles);
         initializeHistory(finalRectangles);
         updateNextId(newNextId);
-        setSelectedId(null);
+        clearSelection();
         
         // Apply imported global settings
         if (importedData.globalSettings) {
@@ -256,7 +245,7 @@ const HierarchicalDrawingApp = () => {
       }
     };
     input.click();
-  }, [nextId, setRectangles, initializeHistory, updateNextId, setSelectedId, settingsActions, autoSaveActions]);
+  }, [nextId, setRectangles, initializeHistory, updateNextId, clearSelection, settingsActions, autoSaveActions]);
 
   const handleAboutClick = () => {
     setAboutModalOpen(true);

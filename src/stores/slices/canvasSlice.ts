@@ -38,7 +38,6 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
   // Initial canvas state with default viewport and interaction settings
   canvas: {
     panOffset: { x: 0, y: 0 },     // Current viewport pan offset
-    zoomLevel: 1.0,               // Legacy zoom level (maintained for compatibility)
     zoomState: {                  // Enhanced zoom state with constraints
       level: 1.0,
       centerX: 0,
@@ -208,7 +207,6 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       set(state => ({
         canvas: {
           ...state.canvas,
-          zoomLevel: Math.max(0.1, Math.min(3.0, level)),
           zoomState: {
             ...state.canvas.zoomState,
             level: Math.max(0.1, Math.min(3.0, level))
@@ -222,7 +220,6 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         canvas: {
           ...state.canvas,
           zoomState,
-          zoomLevel: zoomState.level
         }
       }));
     },
@@ -265,7 +262,6 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
               centerX: mouseX,
               centerY: mouseY
             },
-            zoomLevel: newLevel,
             panOffset: {
               x: newPanOffsetX,
               y: newPanOffsetY
@@ -373,7 +369,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       
       // Clear selection when clicking empty canvas area
       if (e.button === 0 && !state.canvas.isSpacePressed) {
-        get().rectangleActions.setSelectedId(null);
+        get().rectangleActions.clearSelection();
       }
     },
 
@@ -920,8 +916,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       });
       
       // Transform screen coordinates to canvas space (accounting for pan and zoom)
-      const canvasMouseX = (mouseX - state.canvas.panOffset.x) / state.canvas.zoomLevel;
-      const canvasMouseY = (mouseY - state.canvas.panOffset.y) / state.canvas.zoomLevel;
+      const canvasMouseX = (mouseX - state.canvas.panOffset.x) / state.canvas.zoomState.level;
+      const canvasMouseY = (mouseY - state.canvas.panOffset.y) / state.canvas.zoomState.level;
       
       // Find all rectangles that the mouse is over, sorted by z-index (deepest first)
       const mouseOverRects: Array<{ rect: Rectangle; bounds: { x: number; y: number; width: number; height: number }; zIndex: number }> = [];

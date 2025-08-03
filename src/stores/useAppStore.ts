@@ -32,7 +32,6 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
   return {
     // Core application state composed from individual slices
     rectangles: rectangleSlice.rectangles,
-    selectedId: rectangleSlice.selectedId,
     nextId: rectangleSlice.nextId,
     ui: uiSlice.ui,
     settings: settingsSlice.settings,

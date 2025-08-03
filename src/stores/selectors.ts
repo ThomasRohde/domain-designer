@@ -14,11 +14,13 @@ import type { AppStore } from './types';
 
 // Rectangle state selectors - core diagram data
 export const selectRectangles = (state: AppStore) => state.rectangles;
-export const selectSelectedId = (state: AppStore) => state.selectedId;
+export const selectSelectedId = (state: AppStore) => state.ui.selectedIds.length > 0 ? state.ui.selectedIds[0] : null;
 export const selectNextId = (state: AppStore) => state.nextId;
 
-export const selectSelectedRectangle = (state: AppStore) => 
-  state.rectangles.find(r => r.id === state.selectedId);
+export const selectSelectedRectangle = (state: AppStore) => {
+  const selectedId = state.ui.selectedIds.length > 0 ? state.ui.selectedIds[0] : null;
+  return selectedId ? state.rectangles.find(r => r.id === selectedId) : undefined;
+};
 
 export const selectRootRectangles = (state: AppStore) =>
   state.rectangles.filter(r => !r.parentId);
@@ -62,7 +64,7 @@ export const selectLayoutAlgorithm = (state: AppStore) => state.settings.layoutA
 // Canvas interaction selectors - drag, resize, pan, and zoom state
 export const selectCanvas = (state: AppStore) => state.canvas;
 export const selectPanOffset = (state: AppStore) => state.canvas.panOffset;
-export const selectZoomLevel = (state: AppStore) => state.canvas.zoomLevel;
+export const selectZoomLevel = (state: AppStore) => state.canvas.zoomState.level;
 export const selectDragState = (state: AppStore) => state.canvas.dragState;
 export const selectResizeState = (state: AppStore) => state.canvas.resizeState;
 export const selectHierarchyDragState = (state: AppStore) => state.canvas.hierarchyDragState;

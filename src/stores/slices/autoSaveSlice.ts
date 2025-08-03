@@ -456,7 +456,6 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           set({
             rectangles: data.rectangles,
             settings: data.appSettings,
-            selectedId: null,
             autoSave: {
               ...state.autoSave,
               hasSavedData: true,
@@ -503,8 +502,7 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             set({
               rectangles: goodData.rectangles,
               settings: goodData.globalSettings,
-              selectedId: null,
-              autoSave: {
+                autoSave: {
                 ...get().autoSave,
                 lastSaved: goodData.timestamp,
                 lastGoodSave: goodData.timestamp,
@@ -544,8 +542,7 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
       clearModel: async () => {
         const timestamp = Date.now();
         
-        // Prevent auto-restore on page refresh during clear operation
-        localStorage.setItem('domain-designer-clear-in-progress', 'true');
+        // Set clear in progress flag to prevent auto-restore
         
         // Update state to reflect intentional clearing
         set(prevState => ({
@@ -584,11 +581,8 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
       checkAndAutoRestore: async (): Promise<boolean> => {
         const state = get();
         
-        // Check localStorage flag first (highest priority)
-        const clearInProgress = localStorage.getItem('domain-designer-clear-in-progress');
-        if (clearInProgress === 'true') {
-          // Remove the flag now that we've seen it
-          localStorage.removeItem('domain-designer-clear-in-progress');
+        // Check clear in progress flag first (highest priority)
+        if (state.autoSave.manualClearInProgress) {
           // Ensure the state reflects this
           get().autoSaveActions.setManualClearInProgress(true);
           return false;
@@ -649,8 +643,7 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             set({
               rectangles: savedData.rectangles,
               settings: savedData.globalSettings,
-              selectedId: null,
-              autoSave: {
+                autoSave: {
                 ...state.autoSave,
                 hasSavedData: true,
                 lastSaved: savedData.timestamp,
@@ -661,7 +654,7 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
             
             return true;
           } else {
-            console.error('❌ Corrupted auto-save data found. Please clear localStorage.');
+            console.error('❌ Corrupted auto-save data found. Please clear data manually.');
             return false;
           }
         } catch (error) {

@@ -50,8 +50,6 @@ export const FALLBACK_FONT_OPTIONS: FontOption[] = [
   { value: 'system-ui', label: 'System UI', category: 'system' }
 ];
 
-// Legacy alias maintained for backwards compatibility
-export const FONT_OPTIONS = FALLBACK_FONT_OPTIONS;
 
 // Visual styling defaults for rectangle borders
 export const DEFAULT_BORDER_SETTINGS = {

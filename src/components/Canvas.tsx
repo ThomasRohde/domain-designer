@@ -55,7 +55,7 @@ const Canvas: React.FC<CanvasProps> = ({
   
   // Canvas interaction handlers
   const handleCanvasMouseDown = useAppStore(state => state.canvasActions.handleCanvasMouseDown);
-  const setSelectedId = useAppStore(state => state.rectangleActions.setSelectedId);
+  const clearSelection = useAppStore(state => state.rectangleActions.clearSelection);
   
   // Minimap actions
   const toggleMinimap = useAppStore(state => state.canvasActions.toggleMinimap);
@@ -111,7 +111,7 @@ const Canvas: React.FC<CanvasProps> = ({
             willChange: panState ? 'background-position' : 'auto',
             overflow: 'hidden'
           }}
-          onClick={() => setSelectedId(null)}
+          onClick={() => clearSelection()}
           onMouseDown={(e) => handleCanvasMouseDown(e, containerRef)}
         >
           {/* Content layer with synchronized pan/zoom transformations */}
