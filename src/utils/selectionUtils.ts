@@ -223,6 +223,38 @@ export const getMinimumSelectionSize = (operation: 'align' | 'distribute' | 'bul
 };
 
 /**
+ * Checks if alignment operations are allowed for the given selection.
+ * Alignment operations can be performed on any valid multi-selection of same-level siblings,
+ * regardless of parent's manual positioning setting.
+ * 
+ * @param selectedIds - Array of selected rectangle IDs
+ * @param rectangles - Complete array of all rectangles in the diagram
+ * @returns true if alignment operations are allowed, false otherwise
+ */
+export const canPerformAlignment = (selectedIds: string[], rectangles: Rectangle[]): boolean => {
+  if (selectedIds.length < 2) return false;
+
+  // Prerequisite: selection must meet all multi-select constraints
+  return validateSelection(selectedIds, rectangles);
+};
+
+/**
+ * Checks if distribution operations are allowed for the given selection.
+ * Distribution operations can be performed on any valid multi-selection of same-level siblings,
+ * regardless of parent's manual positioning setting.
+ * 
+ * @param selectedIds - Array of selected rectangle IDs
+ * @param rectangles - Complete array of all rectangles in the diagram
+ * @returns true if distribution operations are allowed, false otherwise
+ */
+export const canPerformDistribution = (selectedIds: string[], rectangles: Rectangle[]): boolean => {
+  if (selectedIds.length < 3) return false;
+
+  // Prerequisite: selection must meet all multi-select constraints
+  return validateSelection(selectedIds, rectangles);
+};
+
+/**
  * Validates if a specific bulk operation can be performed on the current selection.
  * 
  * @param operation - The bulk operation to validate

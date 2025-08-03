@@ -6,7 +6,7 @@ import { useAppStore } from '../stores/useAppStore';
 import { importDiagramFromJSON, processImportedDiagram, ImportedDiagramData } from '../utils/exportUtils';
 import { initializeAutoSaveSubscription } from '../stores/useAppStore';
 import { setGlobalUpdateNotificationHandler } from '../main';
-import { canBulkMove } from '../utils/selectionUtils';
+import { canPerformAlignment, canPerformDistribution } from '../utils/selectionUtils';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -732,10 +732,11 @@ const HierarchicalDrawingApp = () => {
       </div>
 
       {ui.contextMenu && (() => {
-        // Calculate if bulk operations are allowed for multi-select context menu
+        // Calculate operation permissions for context menu state management
         const selectedIds = ui.contextMenu.selectedIds || [];
         const isMultiSelect = selectedIds.length > 1;
-        const canPerformBulkOperations = isMultiSelect ? canBulkMove(selectedIds, rectangles) : true;
+        const canAlign = isMultiSelect ? canPerformAlignment(selectedIds, rectangles) : true;
+        const canDistribute = isMultiSelect ? canPerformDistribution(selectedIds, rectangles) : true;
         
         return (
           <ContextMenu
@@ -754,8 +755,8 @@ const HierarchicalDrawingApp = () => {
             onPaste={handlePaste}
             onDuplicate={handleDuplicate}
             canPaste={canPaste}
-            canPerformAlignmentOperations={canPerformBulkOperations}
-            canPerformDistributionOperations={canPerformBulkOperations}
+            canPerformAlignmentOperations={canAlign}
+            canPerformDistributionOperations={canDistribute}
           />
         );
       })()}

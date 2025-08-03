@@ -22,6 +22,7 @@ import {
   triggerLayoutRecalculation
 } from '../../utils/bulkOperationUtils';
 import { getExpandedSelectionIds } from '../../utils/boundingBoxUtils';
+import { validateSelection } from '../../utils/selectionUtils';
 import type { SliceCreator, RectangleActions, AppStore } from '../types';
 
 /**
@@ -37,20 +38,33 @@ export interface RectangleSlice {
 }
 
 /**
- * Automatic selection expansion algorithm for bounding box containment.
+ * Multi-select spatial expansion system with bounding box analysis and constraint validation.
  * 
- * When multiple rectangles are selected, this function identifies all rectangles
+ * This system implements PowerPoint-style spatial selection where rectangles
  * that are completely contained within the bounding box of the current selection
- * and automatically includes them. This provides intuitive behavior for drag
- * selection and bulk operations where users expect spatial containment to determine
- * which elements are affected.
+ * are automatically included, but only if they respect multi-select constraints.
+ * 
+ * Constraint Integration:
+ * - Only includes rectangles that can be validly selected together (same parent)
+ * - Prevents automatic inclusion of child/grandchild rectangles that break hierarchy rules
+ * - Maintains the original selection if expansion would violate constraints
  */
 const expandSelectionToBoundingBox = (selectedIds: string[], rectangles: Rectangle[]): string[] => {
   if (selectedIds.length <= 1) {
     return selectedIds; // No expansion needed for single or no selection
   }
 
-  return getExpandedSelectionIds(selectedIds, rectangles);
+  // Get the potentially expanded selection
+  const expandedIds = getExpandedSelectionIds(selectedIds, rectangles);
+  
+  // Check if the expanded selection is valid according to multi-select constraints
+  if (validateSelection(expandedIds, rectangles)) {
+    return expandedIds; // Safe to use expanded selection
+  } else {
+    // Fall back to original selection if expansion breaks constraints
+    console.log('Selection expansion blocked due to multi-select constraints');
+    return selectedIds;
+  }
 };
 
 /**
