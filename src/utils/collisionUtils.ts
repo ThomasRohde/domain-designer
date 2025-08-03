@@ -60,12 +60,49 @@ export const isWithinParentBounds = (
   const maxX = parent.x + parent.w - child.w - margin;
   const maxY = parent.y + parent.h - child.h - margin;
 
-  return (
+  const result = (
     child.x >= minX &&
     child.x <= maxX &&
     child.y >= minY &&
     child.y <= maxY
   );
+
+  return result;
+};
+
+/**
+ * Checks if a selection's bounding box is within the bounds of its parent
+ * Calculates collective boundaries for multi-select operations
+ * @param selection - Array of selected rectangle bounds
+ * @param parent - Parent rectangle bounds
+ * @param margin - Margin to maintain within parent (default: 1 grid unit)
+ * @param labelMargin - Top margin for labels (default: 2 grid units)
+ * @returns true if entire selection would fit within parent bounds, false otherwise
+ */
+export const isSelectionWithinParentBounds = (
+  selection: RectangleBounds[],
+  parent: RectangleBounds,
+  margin: number = 1,
+  labelMargin: number = 2
+): boolean => {
+  if (selection.length === 0) return true;
+
+  // Calculate the bounding box of the entire selection
+  const selectionMinX = Math.min(...selection.map(r => r.x));
+  const selectionMinY = Math.min(...selection.map(r => r.y));
+  const selectionMaxX = Math.max(...selection.map(r => r.x + r.w));
+  const selectionMaxY = Math.max(...selection.map(r => r.y + r.h));
+  
+  const selectionBounds = {
+    id: 'selection',
+    x: selectionMinX,
+    y: selectionMinY,
+    w: selectionMaxX - selectionMinX,
+    h: selectionMaxY - selectionMinY
+  };
+
+  // Check if the collective selection bounding box fits within parent
+  return isWithinParentBounds(selectionBounds, parent, margin, labelMargin);
 };
 
 /**
@@ -132,27 +169,44 @@ export const detectBulkMovementCollisions = (
         }
       }
     }
+  }
 
-    // Check parent boundary constraints
-    if (movedRect.parentId) {
-      const parent = rectangles.find(r => r.id === movedRect.parentId);
-      if (parent) {
-        const parentBounds = {
-          id: parent.id,
-          x: parent.x,
-          y: parent.y,
-          w: parent.w,
-          h: parent.h,
-          parentId: parent.parentId
-        };
+  // Check parent boundary constraints for multi-select operations
+  // Group selected rectangles by parent to check collective bounds
+  const rectsByParent = new Map<string | undefined, RectangleBounds[]>();
+  
+  for (const movedRect of movedRectangles) {
+    if (!selectedSet.has(movedRect.id)) continue;
+    
+    const parentKey = movedRect.parentId || 'root';
+    if (!rectsByParent.has(parentKey)) {
+      rectsByParent.set(parentKey, []);
+    }
+    rectsByParent.get(parentKey)!.push(movedRect);
+  }
 
-        if (!isWithinParentBounds(movedRect, parentBounds, settings.margin, settings.labelMargin)) {
-          result.hasCollision = true;
-          result.constraintViolations.push(
-            `Rectangle ${movedRect.id} would move outside parent bounds`
-          );
-        }
-      }
+  // Check bounds for each parent group using collective selection bounds
+  for (const [parentKey, groupRects] of rectsByParent.entries()) {
+    if (parentKey === 'root') continue; // Root rectangles have no parent bounds
+    
+    const parent = rectangles.find(r => r.id === parentKey);
+    if (!parent) continue;
+
+    const parentBounds = {
+      id: parent.id,
+      x: parent.x,
+      y: parent.y,
+      w: parent.w,
+      h: parent.h,
+      parentId: parent.parentId
+    };
+
+    // For multi-select, check if the collective selection would fit within parent bounds
+    if (!isSelectionWithinParentBounds(groupRects, parentBounds, settings.margin, settings.labelMargin)) {
+      result.hasCollision = true;
+      result.constraintViolations.push(
+        `Selection would move outside parent bounds`
+      );
     }
   }
 
@@ -160,7 +214,7 @@ export const detectBulkMovementCollisions = (
 };
 
 /**
- * Finds the maximum safe movement distance in a given direction
+ * Finds the maximum safe movement distance in a given direction using direct calculation
  * @param selectedIds - IDs of rectangles being moved
  * @param direction - Movement direction ('x' or 'y')
  * @param delta - Desired movement amount (positive or negative)
@@ -177,26 +231,80 @@ export const findMaxSafeMovement = (
 ): number => {
   if (delta === 0) return 0;
 
-  const increment = delta > 0 ? 1 : -1;
-  let testDelta = 0;
-  let maxSafeDelta = 0;
+  const selectedSet = new Set(selectedIds);
+  let maxMovement = delta; // Start with desired movement
 
-  // Test movement in increments until collision is detected
-  while (Math.abs(testDelta) <= Math.abs(delta)) {
-    const deltaX = direction === 'x' ? testDelta : 0;
-    const deltaY = direction === 'y' ? testDelta : 0;
+  // Group selected rectangles by parent to calculate collective constraints
+  const rectsByParent = new Map<string | undefined, Rectangle[]>();
+  
+  for (const rect of rectangles) {
+    if (!selectedSet.has(rect.id)) continue;
     
-    const collision = detectBulkMovementCollisions(selectedIds, deltaX, deltaY, rectangles, settings);
-    
-    if (collision.hasCollision) {
-      break;
+    const parentKey = rect.parentId || 'root';
+    if (!rectsByParent.has(parentKey)) {
+      rectsByParent.set(parentKey, []);
     }
-    
-    maxSafeDelta = testDelta;
-    testDelta += increment;
+    rectsByParent.get(parentKey)!.push(rect);
   }
 
-  return maxSafeDelta;
+  // Calculate maximum movement for each parent group
+  for (const [parentKey, groupRects] of rectsByParent.entries()) {
+    if (parentKey === 'root') continue; // Root rectangles have no parent bounds
+    
+    const parent = rectangles.find(r => r.id === parentKey);
+    if (!parent) continue;
+
+    // Calculate selection bounds for this group
+    const selectionMinX = Math.min(...groupRects.map(r => r.x));
+    const selectionMinY = Math.min(...groupRects.map(r => r.y));
+    const selectionMaxX = Math.max(...groupRects.map(r => r.x + r.w));
+    const selectionMaxY = Math.max(...groupRects.map(r => r.y + r.h));
+    
+    const selectionBounds = {
+      x: selectionMinX,
+      y: selectionMinY,
+      w: selectionMaxX - selectionMinX,
+      h: selectionMaxY - selectionMinY
+    };
+
+    // Calculate parent available area
+    const parentMinX = parent.x + settings.margin;
+    const parentMinY = parent.y + settings.labelMargin;
+    const parentMaxX = parent.x + parent.w - settings.margin;
+    const parentMaxY = parent.y + parent.h - settings.margin;
+
+    let groupMaxMovement: number;
+
+    if (direction === 'x') {
+      if (delta > 0) {
+        // Moving right: constrain by right edge
+        const maxX = parentMaxX - selectionBounds.w;
+        groupMaxMovement = maxX - selectionBounds.x;
+      } else {
+        // Moving left: constrain by left edge
+        groupMaxMovement = parentMinX - selectionBounds.x;
+      }
+    } else { // direction === 'y'
+      if (delta > 0) {
+        // Moving down: constrain by bottom edge
+        const maxY = parentMaxY - selectionBounds.h;
+        groupMaxMovement = maxY - selectionBounds.y;
+      } else {
+        // Moving up: constrain by top edge
+        groupMaxMovement = parentMinY - selectionBounds.y;
+      }
+    }
+
+
+    // Use the most restrictive constraint
+    if (delta > 0) {
+      maxMovement = Math.min(maxMovement, Math.min(delta, groupMaxMovement));
+    } else {
+      maxMovement = Math.max(maxMovement, Math.max(delta, groupMaxMovement));
+    }
+  }
+
+  return maxMovement;
 };
 
 /**
@@ -235,14 +343,18 @@ export const constrainBulkMovement = (
   rectangles: Rectangle[],
   settings: { margin: number; labelMargin: number }
 ): { deltaX: number; deltaY: number } => {
+
   // Find maximum safe movement in each direction
   const maxSafeDeltaX = findMaxSafeMovement(selectedIds, 'x', deltaX, rectangles, settings);
   const maxSafeDeltaY = findMaxSafeMovement(selectedIds, 'y', deltaY, rectangles, settings);
 
-  return {
+  const result = {
     deltaX: maxSafeDeltaX,
     deltaY: maxSafeDeltaY
   };
+
+
+  return result;
 };
 
 /**

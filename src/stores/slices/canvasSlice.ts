@@ -832,9 +832,19 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       
       if (!multiSelectDragInitialPositions || !multiSelectRelativePositions || selectedIds.length === 0) return;
 
-      // Apply collision detection and constraint the movement
+      // Apply collision detection and constraint the movement using initial positions
       const marginSettings = { margin: settings.margin, labelMargin: settings.labelMargin };
-      const constrainedMovement = constrainBulkMovement(selectedIds, deltaX, deltaY, state.rectangles, marginSettings);
+      
+      // Create rectangles array with initial positions for boundary calculation
+      const rectanglesWithInitialPositions = state.rectangles.map(rect => {
+        const initialPos = multiSelectDragInitialPositions[rect.id];
+        if (initialPos) {
+          return { ...rect, x: initialPos.x, y: initialPos.y };
+        }
+        return rect;
+      });
+      
+      const constrainedMovement = constrainBulkMovement(selectedIds, deltaX, deltaY, rectanglesWithInitialPositions, marginSettings);
       
       const finalDeltaX = constrainedMovement.deltaX;
       const finalDeltaY = constrainedMovement.deltaY;
