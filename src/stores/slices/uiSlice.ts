@@ -93,6 +93,7 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
       descriptionEditModal: null,
       templatePageOpen: false,
       helpModalOpen: false,
+      keyboardShortcutHelpOpen: false,
       updateNotification: {
         isUpdateAvailable: false,
         isUpdating: false,
@@ -314,6 +315,24 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
         ui: {
           ...state.ui,
           helpModalOpen: false
+        }
+      }));
+    },
+
+    openKeyboardShortcutHelp: () => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          keyboardShortcutHelpOpen: true
+        }
+      }));
+    },
+
+    closeKeyboardShortcutHelp: () => {
+      set(state => ({
+        ui: {
+          ...state.ui,
+          keyboardShortcutHelpOpen: false
         }
       }));
     },

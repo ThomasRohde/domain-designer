@@ -24,6 +24,7 @@ import DescriptionEditModal from './DescriptionEditModal';
 import ClearDataConfirmationModal from './ClearDataConfirmationModal';
 import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
+import KeyboardShortcutHelpModal from './KeyboardShortcutHelpModal';
 
 
 const HierarchicalDrawingApp = () => {
@@ -339,11 +340,30 @@ const HierarchicalDrawingApp = () => {
     }
   }, [selectedId, findRectangle, clipboardActions]);
 
+  const handleDuplicate = useCallback(() => {
+    const idsToDuplicate = ui.selectedIds.length > 0 ? ui.selectedIds : selectedId ? [selectedId] : [];
+    if (idsToDuplicate.length > 0) {
+      try {
+        // Copy selection to clipboard
+        clipboardActions.copyRectangles(idsToDuplicate);
+        // Immediately paste with smart positioning to avoid overlap
+        const targetParentId = selectedId && findRectangle(selectedId)?.type === 'parent' ? selectedId : undefined;
+        clipboardActions.pasteRectangles(targetParentId);
+      } catch (error) {
+        console.error('Error during duplicate operation:', error);
+      }
+    }
+  }, [ui.selectedIds, selectedId, clipboardActions, findRectangle]);
+
   const handleSaveDescription = useCallback((description: string) => {
     if (ui.descriptionEditModal) {
       updateRectangleDescription(ui.descriptionEditModal.rectangleId, description);
     }
   }, [updateRectangleDescription, ui.descriptionEditModal]);
+
+  const handleShowKeyboardHelp = useCallback(() => {
+    uiActions.openKeyboardShortcutHelp();
+  }, [uiActions]);
 
   /**
    * Bootstraps the IndexedDB persistence layer with sophisticated state synchronization.
@@ -658,12 +678,14 @@ const HierarchicalDrawingApp = () => {
     onSelectAll: handleSelectAllSiblings, // Ctrl+A selects all siblings
     onCopy: handleCopy, // Ctrl+C copies selected rectangles
     onPaste: handlePaste, // Ctrl+V pastes rectangles from clipboard
+    onDuplicate: handleDuplicate, // Ctrl+D duplicates selected rectangles
     onMoveUp: handleMoveUp,
     onMoveDown: handleMoveDown,
     onMoveLeft: handleMoveLeft,
     onMoveRight: handleMoveRight,
     onToggleMinimap: toggleMinimap, // 'M' key toggles navigation minimap visibility
-  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleCopy, handlePaste, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight, toggleMinimap]));
+    onShowHelp: handleShowKeyboardHelp, // '?' or F1 key shows keyboard shortcuts help
+  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleCopy, handlePaste, handleDuplicate, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight, toggleMinimap, handleShowKeyboardHelp]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
@@ -728,6 +750,7 @@ const HierarchicalDrawingApp = () => {
             onBulkDelete={handleBulkDelete}
             onCopy={handleCopy}
             onPaste={handlePaste}
+            onDuplicate={handleDuplicate}
             canPaste={canPaste}
             canPerformAlignmentOperations={canPerformBulkOperations}
             canPerformDistributionOperations={canPerformBulkOperations}
@@ -756,6 +779,11 @@ const HierarchicalDrawingApp = () => {
       <HelpModal
         isOpen={ui.helpModalOpen}
         onClose={uiActions.closeHelpModal}
+      />
+
+      <KeyboardShortcutHelpModal
+        isOpen={ui.keyboardShortcutHelpOpen}
+        onClose={uiActions.closeKeyboardShortcutHelp}
       />
 
       <LockConfirmationModal

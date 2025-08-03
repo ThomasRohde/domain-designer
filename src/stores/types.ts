@@ -77,6 +77,7 @@ export interface UIState {
   descriptionEditModal: DescriptionEditModalState | null;
   templatePageOpen: boolean;
   helpModalOpen: boolean;
+  keyboardShortcutHelpOpen: boolean;
   updateNotification: UpdateNotificationState;
   // Multi-select state
   selectedIds: string[];
@@ -196,6 +197,8 @@ export interface UIActions {
   closeTemplatePage: () => void;
   openHelpModal: () => void;
   closeHelpModal: () => void;
+  openKeyboardShortcutHelp: () => void;
+  closeKeyboardShortcutHelp: () => void;
   showUpdateNotification: (updateServiceWorker: () => void) => void;
   hideUpdateNotification: () => void;
   // Selection box actions

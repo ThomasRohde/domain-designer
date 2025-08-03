@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard } from 'lucide-react';
+import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard, CopyPlus } from 'lucide-react';
 import type { AlignmentType, DistributionDirection } from '../stores/types';
 
 interface ContextMenuProps {
@@ -18,6 +18,7 @@ interface ContextMenuProps {
   // Clipboard operations
   onCopy?: () => void;
   onPaste?: () => void;
+  onDuplicate?: () => void;
   canPaste?: boolean;
   // Operation availability flags
   canPerformAlignmentOperations?: boolean;
@@ -43,6 +44,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onBulkDelete,
   onCopy,
   onPaste,
+  onDuplicate,
   canPaste = false,
   canPerformAlignmentOperations = true,
   canPerformDistributionOperations = true
@@ -100,6 +102,13 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   const handlePaste = () => {
     if (onPaste) {
       onPaste();
+      onClose();
+    }
+  };
+
+  const handleDuplicate = () => {
+    if (onDuplicate) {
+      onDuplicate();
       onClose();
     }
   };
@@ -256,6 +265,13 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
               <Copy size={14} />
               <span>Copy Selected</span>
             </button>
+            <button
+              onClick={handleDuplicate}
+              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+            >
+              <CopyPlus size={14} />
+              <span>Duplicate Selected</span>
+            </button>
             {canPaste && (
               <button
                 onClick={handlePaste}
@@ -307,6 +323,13 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <Copy size={14} />
               <span>Copy</span>
+            </button>
+            <button
+              onClick={handleDuplicate}
+              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+            >
+              <CopyPlus size={14} />
+              <span>Duplicate</span>
             </button>
             {canPaste && (
               <button

@@ -58,8 +58,10 @@
 - **Drag & Drop**: Intuitive rectangle positioning
 - **Resize Handles**: Visual feedback for parent rectangles
 - **Double-click Editing**: Quick label modifications
-- **Context Menus**: Right-click for advanced options
+- **Context Menus**: Right-click for advanced options including copy/paste/duplicate
+- **Clipboard Operations**: Copy/paste/duplicate with smart collision avoidance
 - **Keyboard Navigation**: Arrow keys for precise positioning (1px/10px)
+- **Help System**: Comprehensive keyboard shortcuts overlay (`?` or `F1`)
 
 ### ✨ Multi-Select Operations
 - **PowerPoint-Style Selection**: Ctrl+Click and drag selection box
@@ -293,7 +295,10 @@ Right-click on any selected rectangle to access the multi-select context menu:
 - `Ctrl+S` - Save diagram
 - `Ctrl+O` - Load diagram
 
-**Editing**
+**Editing** ✨
+- `Ctrl+C` - Copy selected rectangles
+- `Ctrl+V` - Paste rectangles from clipboard
+- `Ctrl+D` - Duplicate selected rectangles
 - `Ctrl+Z` - Undo
 - `Ctrl+Y` / `Ctrl+Shift+Z` - Redo
 - `Delete` - Remove selected rectangle(s)
@@ -311,11 +316,16 @@ Right-click on any selected rectangle to access the multi-select context menu:
 **Navigation**
 - `Arrow Keys` - Move 1px (precision)
 - `Shift+Arrow Keys` - Move 10px (fast)
+- `M` - Toggle navigation minimap
 
-**Special**
-- Works for root rectangles always
-- Works for children when parent is unlocked
-- Moving parent moves all children together
+**Help & Discovery**
+- `?` or `F1` - Show keyboard shortcuts help overlay
+
+**Clipboard Features** ✨
+- **Smart Positioning** - Automatic collision-avoiding placement
+- **Hierarchy Preservation** - Maintains parent-child relationships
+- **Multi-Paste Support** - Creates diagonal cascade on repeated paste
+- **Context-Aware Paste** - Pastes as children when parent selected
 
 **Multi-Select Movement** ✨
 - `Arrow Keys` - Move entire selection together

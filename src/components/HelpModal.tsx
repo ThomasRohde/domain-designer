@@ -125,9 +125,15 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
           <div>
             <h4 className="font-semibold text-gray-800 mb-2">Action Buttons & Context Menu</h4>
             <p className="text-sm text-gray-600 mb-2">
-              Right-click any rectangle to access quick actions like adding children, editing descriptions, or removing rectangles.
+              Right-click any rectangle to access quick actions including:
             </p>
-            <p className="text-sm text-gray-600">
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Add Child</strong> - Create nested rectangles</li>
+              <li>• <strong>Edit Description</strong> - Add detailed descriptions</li>
+              <li>• <strong>Copy/Paste/Duplicate</strong> - Clipboard operations with smart positioning</li>
+              <li>• <strong>Remove</strong> - Delete rectangle and all children</li>
+            </ul>
+            <p className="text-sm text-gray-600 mt-2">
               <strong>Smart UI:</strong> The "Fit to Children" button is automatically hidden for locked rectangles since dimension changes would have no effect.
             </p>
           </div>
@@ -156,6 +162,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <ul className="text-sm space-y-1">
               <li>• <strong>Alignment</strong> - Left, Center, Right, Top, Middle, Bottom (3×2 grid layout)</li>
               <li>• <strong>Distribution</strong> - Horizontal/Vertical equal spacing (minimum 3 rectangles)</li>
+              <li>• <strong>Clipboard Operations</strong> - Copy, paste, and duplicate selected rectangles</li>
               <li>• <strong>Bulk Operations</strong> - Change color, delete selected with confirmation</li>
             </ul>
           </div>
@@ -223,6 +230,9 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
           <div>
             <h4 className="font-semibold text-gray-800 mb-2">Edit Operations</h4>
             <ul className="text-sm space-y-1 font-mono">
+              <li>• <strong>Ctrl+C</strong> - Copy selected rectangles</li>
+              <li>• <strong>Ctrl+V</strong> - Paste rectangles from clipboard</li>
+              <li>• <strong>Ctrl+D</strong> - Duplicate selected rectangles</li>
               <li>• <strong>Ctrl+Z</strong> - Undo</li>
               <li>• <strong>Ctrl+Y</strong> or <strong>Ctrl+Shift+Z</strong> - Redo</li>
               <li>• <strong>Delete</strong> - Remove selected rectangle(s)</li>
@@ -245,14 +255,36 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
           </div>
           
           <div>
-            <h4 className="font-semibold text-gray-800 mb-2">Movement</h4>
+            <h4 className="font-semibold text-gray-800 mb-2">Movement & Navigation</h4>
             <ul className="text-sm space-y-1 font-mono">
               <li>• <strong>Arrow Keys</strong> - Move selected rectangle by 1 pixel</li>
               <li>• <strong>Shift+Arrow Keys</strong> - Move selected rectangle by 10 pixels</li>
+              <li>• <strong>M</strong> - Toggle navigation minimap</li>
             </ul>
             <p className="text-sm text-gray-600 mt-2">
               <strong>Note:</strong> Arrow key movement only works for root rectangles or children of unlocked parents.
             </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Help & Discovery</h4>
+            <ul className="text-sm space-y-1 font-mono">
+              <li>• <strong>?</strong> or <strong>F1</strong> - Show keyboard shortcuts help overlay</li>
+            </ul>
+            <p className="text-sm text-gray-600 mt-2">
+              <strong>Tip:</strong> The help overlay shows all available shortcuts organized by category with context-sensitive information.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Clipboard Features ✨</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Smart Positioning</strong> - Automatic collision-avoiding placement</li>
+              <li>• <strong>Hierarchy Preservation</strong> - Maintains parent-child relationships</li>
+              <li>• <strong>Multi-Paste Support</strong> - Creates diagonal cascade on repeated paste</li>
+              <li>• <strong>Context-Aware Paste</strong> - Pastes as children when parent selected</li>
+              <li>• <strong>Undo Integration</strong> - Each operation creates separate history entry</li>
+            </ul>
           </div>
         </div>
       )

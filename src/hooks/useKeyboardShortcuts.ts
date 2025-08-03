@@ -10,6 +10,7 @@ interface KeyboardShortcuts {
   onDelete?: () => void;
   onCopy?: () => void;
   onPaste?: () => void;
+  onDuplicate?: () => void;
   onSelectAll?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
@@ -19,6 +20,7 @@ interface KeyboardShortcuts {
   onMoveLeft?: (deltaPixels: number) => void;
   onMoveRight?: (deltaPixels: number) => void;
   onToggleMinimap?: () => void;  // 'M' key toggles navigation minimap visibility
+  onShowHelp?: () => void;  // Show keyboard shortcut help overlay
 }
 
 /**
@@ -46,6 +48,10 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           // 'M' key toggles minimap visibility for spatial navigation
           event.preventDefault();
           shortcuts.onToggleMinimap();
+        } else if ((key === '?' || key === 'F1') && shortcuts.onShowHelp && !isTyping && !isInModal) {
+          // '?' or F1 key shows keyboard shortcut help
+          event.preventDefault();
+          shortcuts.onShowHelp();
         } else if (!isTyping && !isInModal) {
           // Arrow key movement with precision control via modifiers
           let deltaPixels = 1; // Precise movement by default
@@ -109,6 +115,12 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           if (shortcuts.onPaste) {
             event.preventDefault();
             shortcuts.onPaste();
+          }
+          break;
+        case 'd':
+          if (shortcuts.onDuplicate) {
+            event.preventDefault();
+            shortcuts.onDuplicate();
           }
           break;
         case 'a':
