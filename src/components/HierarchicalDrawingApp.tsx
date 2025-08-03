@@ -345,17 +345,31 @@ const HierarchicalDrawingApp = () => {
     const idsToDuplicate = ui.selectedIds.length > 0 ? ui.selectedIds : selectedId ? [selectedId] : [];
     if (idsToDuplicate.length > 0) {
       try {
-        // Copy selection to clipboard
+        // Simple CTRL-D implementation: Copy → Select Parent → Paste
+        
+        // 1. Copy current selection to clipboard
         clipboardActions.copyRectangles(idsToDuplicate);
-        // Immediately paste with smart positioning to avoid overlap
-        const selectedRect = selectedId ? findRectangle(selectedId) : null;
-        const targetParentId = selectedRect && !selectedRect.isTextLabel && selectedRect.type !== 'textLabel' && selectedId ? selectedId : undefined;
+        
+        // 2. Determine parent ID (where to paste as siblings)
+        let targetParentId: string | undefined;
+        
+        if (idsToDuplicate.length > 1) {
+          // Multi-select: use common parent of selected rectangles
+          const firstRect = rectangles.find(r => r.id === idsToDuplicate[0]);
+          targetParentId = firstRect?.parentId;
+        } else {
+          // Single-select: use parent of selected rectangle
+          const selectedRect = selectedId ? findRectangle(selectedId) : null;
+          targetParentId = selectedRect?.parentId;
+        }
+        
+        // 3. Paste at parent level (creates siblings)
         clipboardActions.pasteRectangles(targetParentId);
       } catch (error) {
         console.error('Error during duplicate operation:', error);
       }
     }
-  }, [ui.selectedIds, selectedId, clipboardActions, findRectangle]);
+  }, [ui.selectedIds, selectedId, clipboardActions, findRectangle, rectangles]);
 
   const handleSaveDescription = useCallback((description: string) => {
     if (ui.descriptionEditModal) {
