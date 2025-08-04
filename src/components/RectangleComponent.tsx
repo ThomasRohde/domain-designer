@@ -474,6 +474,7 @@ export default React.memo(RectangleComponent, (prevProps, nextProps) => {
   // Critical state changes that must trigger re-render
   if (prevProps.isSelected !== nextProps.isSelected ||
       prevProps.isMultiSelected !== nextProps.isMultiSelected ||
+      prevProps.selectedCount !== nextProps.selectedCount ||
       prevProps.virtualPosition !== nextProps.virtualPosition ||
       prevProps.isCurrentDropTarget !== nextProps.isCurrentDropTarget ||
       prevProps.rectangle !== nextProps.rectangle) { // Reference equality check for rectangle object
