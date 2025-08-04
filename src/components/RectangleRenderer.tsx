@@ -7,7 +7,6 @@ import {
 } from '../utils/layoutUtils';
 import { useAppStore } from '../stores/useAppStore';
 import RectangleComponent from './RectangleComponent';
-import MultiSelectBoundingBox from './MultiSelectBoundingBox';
 
 interface RectangleRendererProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -57,10 +56,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const { setSelectedIds, updateRectangleLabel, toggleSelection } = useAppStore(state => state.rectangleActions);
   const handleRectangleMouseDown = useAppStore(state => state.canvasActions.handleRectangleMouseDown);
   
-  // Calculate selected rectangles for multi-select bounding box
-  const selectedRectangles = React.useMemo(() => {
-    return rectangles.filter(rect => selectedIdsSet.has(rect.id));
-  }, [rectangles, selectedIdsSet]);
 
   /**
    * Mouse event handler factory that injects containerRef for coordinate calculations.
@@ -84,28 +79,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
     }
   };
 
-  /**
-   * Bounding box mouse down handler for multi-select group interactions.
-   * Enables dragging the entire selection group by clicking on the bounding box.
-   */
-  const handleBoundingBoxMouseDown = (e: React.MouseEvent) => {
-    if (selectedRectangles.length === 0) return;
-    
-    // Use the first selected rectangle as the drag anchor
-    const anchorRect = selectedRectangles[0];
-    handleRectangleMouseDown(e, anchorRect, 'drag', containerRef);
-  };
-
-  /**
-   * Bounding box context menu handler for multi-select operations.
-   * Shows the multi-select context menu for group operations.
-   */
-  const handleBoundingBoxContextMenu = (e: React.MouseEvent) => {
-    if (selectedRectangles.length === 0) return;
-    
-    // Show multi-select context menu at the click position
-    onContextMenu(e, selectedRectangles[0].id);
-  };
   return (
     <>
       {/* Render all rectangles */}
@@ -170,14 +143,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
           />
         );
       })}
-      
-      {/* Multi-select bounding box for enhanced visual feedback */}
-      <MultiSelectBoundingBox
-        selectedRectangles={selectedRectangles}
-        gridSize={gridSize}
-        onMouseDown={handleBoundingBoxMouseDown}
-        onContextMenu={handleBoundingBoxContextMenu}
-      />
     </>
   );
 };

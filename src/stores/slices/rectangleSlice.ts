@@ -636,11 +636,10 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       if (!currentSelection.includes(id)) {
         const newSelection = [...currentSelection, id];
         
-        // Automatically expand selection to include all rectangles within bounding box
-        const expandedSelection = expandSelectionToBoundingBox(newSelection, rectangles);
-        
+        // For individual Ctrl+click selections, don't expand to bounding box
+        // Only add the specifically clicked rectangle
         set(state => ({
-          ui: { ...state.ui, selectedIds: expandedSelection }
+          ui: { ...state.ui, selectedIds: newSelection }
         }));
       }
       return true;

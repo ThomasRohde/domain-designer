@@ -221,11 +221,11 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     opacity = 0.8;
     boxShadow = '0 20px 25px -5px rgba(99, 102, 241, 0.4), 0 10px 10px -5px rgba(99, 102, 241, 0.1)';
   } else if ((isSelected || isMultiSelected) && !isHierarchyDragActive) {
-    // Unified selection styling: identical visual treatment for single and multi-selection
-    // Blue theme (#3b82f6) provides clear selection indication without overwhelming the interface
-    finalBorderColor = '#3b82f6';
-    finalBorderWidth = `${borderWidth + 1}px`;
-    boxShadow = '0 10px 25px -5px rgba(59, 130, 246, 0.4), 0 10px 10px -5px rgba(59, 130, 246, 0.1)';
+    // Enhanced selection styling: stronger visual feedback for multi-select clarity
+    // Brighter blue with thicker border and stronger glow for clear selection indication
+    finalBorderColor = '#2563eb'; // Brighter blue
+    finalBorderWidth = `${borderWidth + 2}px`; // Thicker border
+    boxShadow = '0 0 0 2px rgba(37, 99, 235, 0.3), 0 10px 25px -5px rgba(37, 99, 235, 0.5), 0 10px 10px -5px rgba(37, 99, 235, 0.2)'; // Glow + shadow
   } else if (isCurrentDropTarget) {
     // Active drop target - solid border with enhanced shadow
     if (isValidDropTarget) {
@@ -423,6 +423,21 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         />
       )}
       
+      {/* Multi-selection count badge: Shows selection position in group */}
+      {isSelected && selectedCount > 1 && !isHierarchyDragActive && (
+        <div
+          className="absolute px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded-full border-2 border-white shadow-xl"
+          style={{ 
+            top: '-8px', // Position outside the rectangle's border
+            right: '-8px', // Position outside the rectangle's border
+            zIndex: 100001 // Higher than ActionButtonsOverlay (100000)
+          }}
+          title={`${selectedCount} rectangles selected`}
+        >
+          {selectedCount}
+        </div>
+      )}
+
       {/* Hierarchy drag handle: Orange circle matching resize handle, single selection only */}
       {isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
