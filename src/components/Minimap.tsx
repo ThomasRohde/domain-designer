@@ -117,27 +117,47 @@ const Minimap: React.FC<MinimapProps> = ({
 
   /**
    * Convert grid coordinates to minimap pixel coordinates
+   * Uses uniform scaling to maintain aspect ratio and prevent distortion
    */
   const gridToMinimap = useCallback((gridX: number, gridY: number) => {
-    const scaleX = (MINIMAP_WIDTH - 2 * MINIMAP_PADDING) / minimapBounds.width;
-    const scaleY = (MINIMAP_HEIGHT - 2 * MINIMAP_PADDING) / minimapBounds.height;
+    // Use uniform scaling to maintain proportions - take the smaller scale factor
+    const scale = Math.min(
+      (MINIMAP_WIDTH - 2 * MINIMAP_PADDING) / minimapBounds.width,
+      (MINIMAP_HEIGHT - 2 * MINIMAP_PADDING) / minimapBounds.height
+    );
+    
+    // Calculate centered positioning with uniform scale
+    const scaledWidth = minimapBounds.width * scale;
+    const scaledHeight = minimapBounds.height * scale;
+    const offsetX = (MINIMAP_WIDTH - scaledWidth) / 2;
+    const offsetY = (MINIMAP_HEIGHT - scaledHeight) / 2;
     
     return {
-      x: (gridX - minimapBounds.minX) * scaleX + MINIMAP_PADDING,
-      y: (gridY - minimapBounds.minY) * scaleY + MINIMAP_PADDING
+      x: (gridX - minimapBounds.minX) * scale + offsetX,
+      y: (gridY - minimapBounds.minY) * scale + offsetY
     };
   }, [minimapBounds]);
 
   /**
    * Convert minimap pixel coordinates to grid coordinates
+   * Uses uniform scaling to maintain aspect ratio consistency
    */
   const minimapToGrid = useCallback((minimapX: number, minimapY: number) => {
-    const scaleX = minimapBounds.width / (MINIMAP_WIDTH - 2 * MINIMAP_PADDING);
-    const scaleY = minimapBounds.height / (MINIMAP_HEIGHT - 2 * MINIMAP_PADDING);
+    // Use same uniform scaling as gridToMinimap
+    const scale = Math.min(
+      (MINIMAP_WIDTH - 2 * MINIMAP_PADDING) / minimapBounds.width,
+      (MINIMAP_HEIGHT - 2 * MINIMAP_PADDING) / minimapBounds.height
+    );
+    
+    // Calculate centered positioning offsets
+    const scaledWidth = minimapBounds.width * scale;
+    const scaledHeight = minimapBounds.height * scale;
+    const offsetX = (MINIMAP_WIDTH - scaledWidth) / 2;
+    const offsetY = (MINIMAP_HEIGHT - scaledHeight) / 2;
     
     return {
-      x: (minimapX - MINIMAP_PADDING) * scaleX + minimapBounds.minX,
-      y: (minimapY - MINIMAP_PADDING) * scaleY + minimapBounds.minY
+      x: (minimapX - offsetX) / scale + minimapBounds.minX,
+      y: (minimapY - offsetY) / scale + minimapBounds.minY
     };
   }, [minimapBounds]);
 
@@ -260,9 +280,14 @@ const Minimap: React.FC<MinimapProps> = ({
             {/* Rectangles */}
             {rectangles.map(rect => {
               const pos = gridToMinimap(rect.x, rect.y);
+              // Use uniform scaling for rectangle dimensions to maintain proportions
+              const scale = Math.min(
+                (MINIMAP_WIDTH - 2 * MINIMAP_PADDING) / minimapBounds.width,
+                (MINIMAP_HEIGHT - 2 * MINIMAP_PADDING) / minimapBounds.height
+              );
               const size = {
-                width: Math.max(2, (rect.w / minimapBounds.width) * (MINIMAP_WIDTH - 2 * MINIMAP_PADDING)),
-                height: Math.max(2, (rect.h / minimapBounds.height) * (MINIMAP_HEIGHT - 2 * MINIMAP_PADDING))
+                width: Math.max(2, rect.w * scale),
+                height: Math.max(2, rect.h * scale)
               };
 
               const isSelected = selectedIds.includes(rect.id);
