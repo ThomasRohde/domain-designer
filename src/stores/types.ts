@@ -14,7 +14,8 @@ import type {
   LockConfirmationModalState,
   DescriptionEditModalState,
   GlobalSettings,
-  FixedDimensions
+  FixedDimensions,
+  VirtualDragState
 } from '../types';
 import type { LayoutAlgorithmType } from '../utils/layout/interfaces';
 
@@ -108,6 +109,8 @@ export interface CanvasState {
   multiSelectRelativePositions: Map<string, { x: number; y: number; relativeX: number; relativeY: number }> | null;  // Relative positions for bulk drag
   // Navigation minimap state
   minimapVisible: boolean;  // Controls visibility of spatial navigation overlay
+  // Virtual drag layer for performance optimization
+  virtualDragState: VirtualDragState;  // Manages real-time visual feedback without state updates
 }
 
 /**
@@ -308,6 +311,13 @@ export interface CanvasActions {
   // Navigation minimap actions
   toggleMinimap: () => void;  // Toggle spatial navigation overlay visibility
   jumpToPosition: (x: number, y: number, containerWidth?: number, containerHeight?: number) => void;  // Center viewport on target position (called from minimap clicks)
+  
+  // Virtual drag layer actions for performance optimization
+  startVirtualDrag: (primaryId: string, affectedIds: string[], initialPositions: Record<string, { x: number; y: number }>) => void;  // Initialize virtual drag layer
+  updateVirtualDragPositions: (deltaX: number, deltaY: number) => void;  // Update virtual positions in real-time
+  commitVirtualDrag: () => void;  // Apply virtual positions to actual state
+  cancelVirtualDrag: () => void;  // Clear virtual layer without applying changes
+  getVirtualPosition: (rectangleId: string) => import('../types').VirtualDragPosition | null;  // Get current virtual position for a rectangle
 }
 
 /**

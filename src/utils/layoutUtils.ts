@@ -113,18 +113,46 @@ export const updateChildrenLayout = (
 };
 
 
+// Cache for descendant calculations to prevent expensive O(n²) traversals
+const descendantCache = new Map<string, { 
+  descendants: string[], 
+  lastUpdated: number, 
+  rectangleCount: number 
+}>();
+
+const CACHE_TTL = 100; // 100ms cache TTL to balance performance and accuracy
+
 /**
- * Recursively collect all descendant rectangle IDs
+ * Clear descendant cache when rectangles change significantly
+ */
+export const clearDescendantCache = () => {
+  descendantCache.clear();
+};
+
+/**
+ * Recursively collect all descendant rectangle IDs with performance caching
  * 
  * Traverses the hierarchy tree depth-first to gather all children,
  * grandchildren, etc. Implements cycle detection to prevent infinite
- * loops in malformed hierarchies.
+ * loops in malformed hierarchies. Uses intelligent caching to prevent
+ * expensive recalculation during drag operations.
  * 
  * @param parentId - Root rectangle ID to start traversal
  * @param rectangles - Complete rectangle set for relationship lookup
  * @returns Array of descendant rectangle IDs
  */
 export const getAllDescendants = (parentId: string, rectangles: Rectangle[]): string[] => {
+  const now = Date.now();
+  const cacheKey = parentId;
+  
+  // Check cache first for performance optimization
+  const cached = descendantCache.get(cacheKey);
+  if (cached && 
+      now - cached.lastUpdated < CACHE_TTL && 
+      cached.rectangleCount === rectangles.length) {
+    return cached.descendants;
+  }
+  
   const descendants: string[] = [];
   const visited = new Set<string>();
   
@@ -146,6 +174,14 @@ export const getAllDescendants = (parentId: string, rectangles: Rectangle[]): st
   };
   
   getDescendantsRecursive(parentId);
+  
+  // Cache the result for future use
+  descendantCache.set(cacheKey, {
+    descendants: [...descendants], // Create copy to prevent mutation
+    lastUpdated: now,
+    rectangleCount: rectangles.length
+  });
+  
   return descendants;
 };
 

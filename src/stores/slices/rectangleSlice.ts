@@ -3,7 +3,8 @@ import { DEFAULT_RECTANGLE_SIZE } from '../../utils/constants';
 import { 
   updateChildrenLayout,
   getAllDescendants,
-  getChildren
+  getChildren,
+  clearDescendantCache
 } from '../../utils/layoutUtils';
 import { layoutManager } from '../../utils/layout';
 import { 
@@ -25,8 +26,6 @@ import {
   validateBulkOperationConstraints,
   triggerLayoutRecalculation
 } from '../../utils/bulkOperationUtils';
-import { getExpandedSelectionIds } from '../../utils/boundingBoxUtils';
-import { validateSelection } from '../../utils/selectionUtils';
 import type { SliceCreator, RectangleActions, AppStore } from '../types';
 
 /**
@@ -41,35 +40,6 @@ export interface RectangleSlice {
   rectangleActions: RectangleActions;
 }
 
-/**
- * Multi-select spatial expansion system with bounding box analysis and constraint validation.
- * 
- * This system implements PowerPoint-style spatial selection where rectangles
- * that are completely contained within the bounding box of the current selection
- * are automatically included, but only if they respect multi-select constraints.
- * 
- * Constraint Integration:
- * - Only includes rectangles that can be validly selected together (same parent)
- * - Prevents automatic inclusion of child/grandchild rectangles that break hierarchy rules
- * - Maintains the original selection if expansion would violate constraints
- */
-const expandSelectionToBoundingBox = (selectedIds: string[], rectangles: Rectangle[]): string[] => {
-  if (selectedIds.length <= 1) {
-    return selectedIds; // No expansion needed for single or no selection
-  }
-
-  // Get the potentially expanded selection
-  const expandedIds = getExpandedSelectionIds(selectedIds, rectangles);
-  
-  // Check if the expanded selection is valid according to multi-select constraints
-  if (validateSelection(expandedIds, rectangles)) {
-    return expandedIds; // Safe to use expanded selection
-  } else {
-    // Fall back to original selection if expansion breaks constraints
-    console.log('Selection expansion blocked due to multi-select constraints');
-    return selectedIds;
-  }
-};
 
 /**
  * Atomic rectangle update with integrated history management.
@@ -591,13 +561,8 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
 
 
     setSelectedIds: (ids: string[]) => {
-      const state = get();
-      
-      // Spatial selection expansion for intuitive multi-select behavior
-      const expandedSelection = expandSelectionToBoundingBox(ids, state.rectangles);
-      
       set(state => ({
-        ui: { ...state.ui, selectedIds: expandedSelection },
+        ui: { ...state.ui, selectedIds: ids },
       }));
     },
 
@@ -1025,10 +990,14 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
     },
 
     setRectangles: (rectangles: Rectangle[]) => {
+      // Clear descendant cache when rectangles change for optimal performance
+      clearDescendantCache();
       set({ rectangles });
     },
 
     setRectanglesWithHistory: (rectangles: Rectangle[]) => {
+      // Clear descendant cache when rectangles change for optimal performance
+      clearDescendantCache();
       set({ rectangles });
       // Save to history after the state update
       setTimeout(() => {

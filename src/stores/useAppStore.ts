@@ -203,8 +203,13 @@ export const initializeAutoSaveSubscription = () => {
   
   // Subscribe to state changes that require persistence
   autoSaveUnsubscribe = useAppStore.subscribe(
-    (state) => ({ rectangles: state.rectangles, settings: state.settings }),
+    (state) => ({ rectangles: state.rectangles, settings: state.settings, virtualDragActive: state.canvas.virtualDragState.isActive }),
     (current, previous) => {
+      // Skip expensive operations during virtual drag for optimal performance
+      if (current.virtualDragActive) {
+        return;
+      }
+      
       // Deep equality check to avoid saves on reference changes without content changes
       const rectanglesChanged = JSON.stringify(current.rectangles) !== JSON.stringify(previous.rectangles);
       const settingsChanged = JSON.stringify(current.settings) !== JSON.stringify(previous.settings);
@@ -216,7 +221,13 @@ export const initializeAutoSaveSubscription = () => {
       }
     },
     {
-      equalityFn: (a, b) => JSON.stringify(a) === JSON.stringify(b)
+      equalityFn: (a, b) => {
+        // Skip expensive JSON comparison during virtual drag operations
+        if (a.virtualDragActive || b.virtualDragActive) {
+          return true; // Prevent triggering during virtual drag
+        }
+        return JSON.stringify(a) === JSON.stringify(b);
+      }
     }
   );
   

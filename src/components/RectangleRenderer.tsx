@@ -1,4 +1,5 @@
 import React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Rectangle } from '../types';
 import { 
   getChildren,
@@ -17,18 +18,25 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   containerRef,
   onContextMenu,
 }) => {
-  // Core data from centralized store
-  const rectangles = useAppStore(state => state.rectangles);
-  const selectedIds = useAppStore(state => state.ui.selectedIds);
+  // Optimized subscriptions using shallow comparison to prevent unnecessary re-renders
+  const { rectangles, selectedIds, gridSize } = useAppStore(useShallow(state => ({
+    rectangles: state.rectangles,
+    selectedIds: state.ui.selectedIds,
+    gridSize: state.settings.gridSize
+  })));
+  
   const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   // Performance optimization: Convert selectedIds to Set for O(1) lookup
   const selectedIdsSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
-  const gridSize = useAppStore(state => state.settings.gridSize);
   
-  const fontFamily = useAppStore(state => state.settings.fontFamily);
-  const borderRadius = useAppStore(state => state.settings.borderRadius);
-  const borderColor = useAppStore(state => state.settings.borderColor);
-  const borderWidth = useAppStore(state => state.settings.borderWidth);
+  // Separate subscriptions for styling to prevent re-renders when only rectangles change
+  const { fontFamily, borderRadius, borderColor, borderWidth } = useAppStore(useShallow(state => ({
+    fontFamily: state.settings.fontFamily,
+    borderRadius: state.settings.borderRadius,
+    borderColor: state.settings.borderColor,
+    borderWidth: state.settings.borderWidth
+  })));
+  
   const calculateFontSize = useAppStore(state => state.getters.calculateFontSize);
   
   /**
@@ -44,13 +52,17 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   
   /**
    * Canvas interaction states for visual feedback during operations.
-   * These states control visual indicators like drag highlights, resize handles,
-   * and hierarchy drag drop targets for enhanced user experience.
+   * Optimized with shallow comparison to prevent unnecessary re-renders.
    */
-  const dragState = useAppStore(state => state.canvas.dragState);
-  const resizeState = useAppStore(state => state.canvas.resizeState);
-  const hierarchyDragState = useAppStore(state => state.canvas.hierarchyDragState);
-  const resizeConstraintState = useAppStore(state => state.canvas.resizeConstraintState);
+  const canvasState = useAppStore(useShallow(state => ({
+    dragState: state.canvas.dragState,
+    resizeState: state.canvas.resizeState,
+    hierarchyDragState: state.canvas.hierarchyDragState,
+    resizeConstraintState: state.canvas.resizeConstraintState,
+    virtualDragState: state.canvas.virtualDragState
+  })));
+  
+  const getVirtualPosition = useAppStore(state => state.canvasActions.getVirtualPosition);
   
   // Rectangle manipulation actions from store
   const { setSelectedIds, updateRectangleLabel, toggleSelection } = useAppStore(state => state.rectangleActions);
@@ -88,28 +100,32 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
          * These states determine visual appearance during drag operations,
          * hierarchy reparenting, and resize constraints.
          */
-        const dropTarget = hierarchyDragState?.potentialTargets.find(target => target.targetId === rect.id);
+        const dropTarget = canvasState.hierarchyDragState?.potentialTargets.find(target => target.targetId === rect.id);
         const isDropTarget = dropTarget !== undefined;
         const isValidDropTarget = dropTarget?.isValid || false;
-        const isCurrentDropTarget = hierarchyDragState?.currentDropTarget?.targetId === rect.id || false;
-        const isBeingDragged = hierarchyDragState?.draggedRectangleId === rect.id || false;
-        const isDragActive = dragState !== null || hierarchyDragState !== null;
-        const isResizeActive = resizeState !== null;
-        const isBeingResized = resizeState?.id === rect.id;
-        const isAtMinSize = resizeConstraintState?.rectangleId === rect.id && 
-                           (resizeConstraintState?.isAtMinWidth || resizeConstraintState?.isAtMinHeight);
+        const isCurrentDropTarget = canvasState.hierarchyDragState?.currentDropTarget?.targetId === rect.id || false;
+        const isBeingDragged = canvasState.hierarchyDragState?.draggedRectangleId === rect.id || false;
+        const isDragActive = canvasState.dragState !== null || canvasState.hierarchyDragState !== null;
+        const isResizeActive = canvasState.resizeState !== null;
+        const isBeingResized = canvasState.resizeState?.id === rect.id;
+        const isAtMinSize = canvasState.resizeConstraintState?.rectangleId === rect.id && 
+                           (canvasState.resizeConstraintState?.isAtMinWidth || canvasState.resizeConstraintState?.isAtMinHeight);
         
-        // Multi-select state calculation (optimized with Set for O(1) lookup)
-        const isMultiSelected = selectedIdsSet.has(rect.id);
+        // Selection state calculation (optimized with Set for O(1) lookup)
+        const isInSelection = selectedIdsSet.has(rect.id);
+        const isMultiSelected = isInSelection && selectedIds.length > 1;
+        
+        // Get virtual position for performance optimization during drag operations
+        const virtualPosition = canvasState.virtualDragState?.isActive ? getVirtualPosition(rect.id) : null;
         
         return (
           <RectangleComponent
             key={rect.id}
             rectangle={rect}
-            isSelected={selectedId === rect.id}
+            isSelected={isInSelection && selectedIds.length === 1}
             isMultiSelected={isMultiSelected}
             selectedCount={selectedIds.length}
-            zIndex={getZIndex(rect, rectangles, selectedId, dragState, resizeState, hierarchyDragState)}
+            zIndex={getZIndex(rect, rectangles, selectedId, canvasState.dragState, canvasState.resizeState, canvasState.hierarchyDragState)}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}
             onSelect={handleRectangleSelect}
@@ -132,7 +148,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             isValidDropTarget={isValidDropTarget}
             isCurrentDropTarget={isCurrentDropTarget}
             isBeingDragged={isBeingDragged}
-            isHierarchyDragActive={hierarchyDragState !== null}
+            isHierarchyDragActive={canvasState.hierarchyDragState !== null}
             isDragActive={isDragActive}
             isResizeActive={isResizeActive}
             isBeingResized={isBeingResized}
@@ -140,6 +156,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             borderRadius={borderRadius}
             borderColor={borderColor}
             borderWidth={borderWidth}
+            virtualPosition={virtualPosition}
           />
         );
       })}

@@ -104,6 +104,7 @@ export const createHistorySlice: SliceCreator<HistorySlice> = (set, get) => ({
      * Save current rectangle state to history with duplicate detection.
      * Manages history stack size, removes future states when branching,
      * and prevents duplicate entries to optimize memory usage.
+     * Uses asynchronous deep copy to prevent UI thread blocking.
      */
     saveToHistory: () => {
       const state = get();
@@ -122,23 +123,42 @@ export const createHistorySlice: SliceCreator<HistorySlice> = (set, get) => ({
         return; // No meaningful changes to save
       }
       
-      // Add new state with deep copy to prevent mutation issues
-      newStack.push(JSON.parse(JSON.stringify(rectangles)));
-      
-      let newIndex = newStack.length - 1;
-      
-      // Maintain bounded history size for memory management
-      if (newStack.length > MAX_HISTORY_SIZE) {
-        newStack.shift();
-        newIndex = newStack.length - 1;
-      }
-      
-      set(() => ({
-        history: {
-          stack: newStack,
-          index: newIndex
+      // Use asynchronous deep copy to prevent blocking UI thread
+      // Defer the expensive JSON operation to the next tick
+      Promise.resolve().then(() => {
+        try {
+          const deepCopy = JSON.parse(JSON.stringify(rectangles));
+          
+          // Re-get state in case it changed during async operation
+          const currentState = get();
+          let updatedStack = [...currentState.history.stack];
+          
+          // Remove future states again in case user did more actions
+          if (currentState.history.index < updatedStack.length - 1) {
+            updatedStack = updatedStack.slice(0, currentState.history.index + 1);
+          }
+          
+          // Add new state with the deep copy
+          updatedStack.push(deepCopy);
+          
+          let newIndex = updatedStack.length - 1;
+          
+          // Maintain bounded history size for memory management
+          if (updatedStack.length > MAX_HISTORY_SIZE) {
+            updatedStack.shift();
+            newIndex = updatedStack.length - 1;
+          }
+          
+          set(() => ({
+            history: {
+              stack: updatedStack,
+              index: newIndex
+            }
+          }));
+        } catch (error) {
+          console.warn('Failed to save state to history:', error);
         }
-      }));
+      });
     },
 
     pushState: (rectangles: Rectangle[]) => {

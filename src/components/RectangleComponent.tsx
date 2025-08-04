@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Rectangle } from '../types';
+import { Rectangle, VirtualDragPosition } from '../types';
 import { GRID_SIZE, LABEL_MARGIN } from '../utils/constants';
 import CustomTooltip from './CustomTooltip';
 
@@ -60,6 +60,8 @@ interface RectangleComponentProps {
   borderWidth?: number;
   /** Whether to disable in-place label editing (used in viewer mode) */
   disableEditing?: boolean;
+  /** Virtual drag position for performance optimization during drag operations */
+  virtualPosition?: VirtualDragPosition | null;
 }
 
 /**
@@ -111,7 +113,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   borderRadius = 8,
   borderColor = '#374151',
   borderWidth = 2,
-  disableEditing = false
+  disableEditing = false,
+  virtualPosition = null
 }) => {
   // In-place editing state management
   const [isEditing, setIsEditing] = useState(false);
@@ -261,11 +264,15 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     boxShadow = '0 10px 25px -5px rgba(245, 158, 11, 0.4), 0 10px 10px -5px rgba(245, 158, 11, 0.1)';
   }
   
+  // Calculate actual position for rendering (virtual position takes precedence for performance)
+  const actualX = virtualPosition ? virtualPosition.x : rectangle.x;
+  const actualY = virtualPosition ? virtualPosition.y : rectangle.y;
+  
   // Computed style object with grid-based positioning and state-driven appearance
   const style: React.CSSProperties = {
     position: 'absolute',
-    left: rectangle.x * gridSize,
-    top: rectangle.y * gridSize,
+    left: actualX * gridSize,
+    top: actualY * gridSize,
     width: rectangle.w * gridSize,
     height: rectangle.h * gridSize,
     backgroundColor: backgroundColor,
@@ -275,8 +282,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     zIndex: zIndex,
     opacity,
     boxShadow,
-    // Disable transitions during active interactions for immediate visual feedback
-    transition: (isDragActive || isResizeActive || isBeingDragged) ? 'none' : 'all 0.2s ease-in-out',
+    // Disable transitions during virtual drag for immediate visual feedback
+    transition: (isDragActive || isResizeActive || isBeingDragged || virtualPosition) ? 'none' : 'all 0.2s ease-in-out',
     // Clip child content during resize to prevent visual overflow issues, but allow resize handle to be visible
     overflow: childCount > 0 && !isSelected ? 'hidden' : 'visible'
   };
@@ -462,4 +469,38 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   );
 };
 
-export default React.memo(RectangleComponent);
+// Optimized React.memo with smart comparison to prevent unnecessary re-renders
+export default React.memo(RectangleComponent, (prevProps, nextProps) => {
+  // Always check selection state changes first - critical for proper UI updates
+  if (prevProps.isSelected !== nextProps.isSelected ||
+      prevProps.isMultiSelected !== nextProps.isMultiSelected ||
+      prevProps.selectedCount !== nextProps.selectedCount) {
+    return false; // Force re-render when selection state changes
+  }
+  
+  // Check for interaction state changes that require visual updates
+  if (prevProps.isBeingDragged !== nextProps.isBeingDragged ||
+      prevProps.isBeingResized !== nextProps.isBeingResized ||
+      prevProps.isDropTarget !== nextProps.isDropTarget ||
+      prevProps.isCurrentDropTarget !== nextProps.isCurrentDropTarget ||
+      prevProps.isDragActive !== nextProps.isDragActive ||
+      prevProps.isResizeActive !== nextProps.isResizeActive ||
+      prevProps.virtualPosition !== nextProps.virtualPosition) {
+    return false; // Force re-render for interaction state changes
+  }
+  
+  // Check core rectangle properties
+  if (prevProps.rectangle.id !== nextProps.rectangle.id ||
+      prevProps.rectangle.x !== nextProps.rectangle.x ||
+      prevProps.rectangle.y !== nextProps.rectangle.y ||
+      prevProps.rectangle.w !== nextProps.rectangle.w ||
+      prevProps.rectangle.h !== nextProps.rectangle.h ||
+      prevProps.rectangle.label !== nextProps.rectangle.label ||
+      prevProps.rectangle.color !== nextProps.rectangle.color ||
+      prevProps.gridSize !== nextProps.gridSize) {
+    return false; // Force re-render for property changes
+  }
+  
+  // Skip re-render if nothing important changed
+  return true;
+});

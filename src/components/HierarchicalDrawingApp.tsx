@@ -1,4 +1,27 @@
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
+
+/**
+ * Throttle utility for mouse events to prevent excessive operations
+ */
+function throttleMouseEvent(func: (e: MouseEvent) => void, delay: number) {
+  let timeoutId: number | undefined;
+  let lastExecTime = 0;
+
+  return function (e: MouseEvent) {
+    const currentTime = Date.now();
+
+    if (currentTime - lastExecTime > delay) {
+      func(e);
+      lastExecTime = currentTime;
+    } else {
+      clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        func(e);
+        lastExecTime = Date.now();
+      }, delay - (currentTime - lastExecTime));
+    }
+  };
+}
 import { ExportOptions, Rectangle } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -580,12 +603,17 @@ const HierarchicalDrawingApp = () => {
    * 
    * Critical for maintaining interaction state consistency across browser window boundaries.
    */
+  // Create throttled mouse move handler for optimal performance
+  const throttledMouseMove = useMemo(() => 
+    throttleMouseEvent((e: MouseEvent) => handleMouseMove(e, containerRef), 8), // 120fps throttling
+    [handleMouseMove, containerRef]
+  );
+
   useEffect(() => {
-    const mouseMove = (e: MouseEvent) => handleMouseMove(e, containerRef);
     const mouseUp = () => handleMouseUp();
     const wheel = (e: WheelEvent) => handleWheel(e, containerRef);
     
-    document.addEventListener('mousemove', mouseMove);
+    document.addEventListener('mousemove', throttledMouseMove);
     document.addEventListener('mouseup', mouseUp);
     
     const container = containerRef.current;
@@ -594,13 +622,13 @@ const HierarchicalDrawingApp = () => {
     }
     
     return () => {
-      document.removeEventListener('mousemove', mouseMove);
+      document.removeEventListener('mousemove', throttledMouseMove);
       document.removeEventListener('mouseup', mouseUp);
       if (container) {
         container.removeEventListener('wheel', wheel);
       }
     };
-  }, [handleMouseMove, handleMouseUp, handleWheel]);
+  }, [throttledMouseMove, handleMouseUp, handleWheel]);
 
   /**
    * Context-aware space bar handling for canvas panning without editor interference.

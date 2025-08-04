@@ -8,7 +8,8 @@ import type {
   ZoomState,
   Rectangle,
   DropTarget,
-  ResizeConstraintState
+  ResizeConstraintState,
+  VirtualDragPosition
 } from '../../types';
 import type { SliceCreator, CanvasState, CanvasActions } from '../types';
 import { getAllDescendants } from '../../utils/layoutUtils';
@@ -18,6 +19,33 @@ import {
   captureRelativePositions,
   applyRelativePositioning 
 } from '../../utils/collisionUtils';
+
+/**
+ * Throttle utility for limiting function call frequency
+ * Optimizes performance by preventing excessive virtual drag updates
+ */
+function throttle(
+  func: (deltaX: number, deltaY: number) => void,
+  delay: number
+): (deltaX: number, deltaY: number) => void {
+  let timeoutId: number | undefined;
+  let lastExecTime = 0;
+
+  return function (deltaX: number, deltaY: number) {
+    const currentTime = Date.now();
+
+    if (currentTime - lastExecTime > delay) {
+      func(deltaX, deltaY);
+      lastExecTime = currentTime;
+    } else {
+      clearTimeout(timeoutId);
+      timeoutId = window.setTimeout(() => {
+        func(deltaX, deltaY);
+        lastExecTime = Date.now();
+      }, delay - (currentTime - lastExecTime));
+    }
+  };
+}
 
 /**
  * Canvas state slice managing all user interactions with the drawing surface.
@@ -34,7 +62,37 @@ export interface CanvasSlice {
  * Provides comprehensive state management for mouse/keyboard interactions,
  * coordinate transformations, and visual feedback systems.
  */
-export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
+export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
+  // Throttled virtual drag update for optimal performance
+  // Limits updates to ~60fps (16ms) to prevent excessive state mutations
+  const throttledVirtualDragUpdate = throttle((deltaX: number, deltaY: number) => {
+    const state = get();
+    const { virtualDragState } = state.canvas;
+    if (!virtualDragState.isActive) return;
+
+    // Update all virtual positions with the delta movement
+    const updatedPositions = new Map(virtualDragState.positions);
+    
+    virtualDragState.positions.forEach((position, id) => {
+      updatedPositions.set(id, {
+        ...position,
+        x: Math.max(0, Math.round(position.initialX + deltaX)), // Constrain to positive coordinates
+        y: Math.max(0, Math.round(position.initialY + deltaY))
+      });
+    });
+
+    set(state => ({
+      canvas: {
+        ...state.canvas,
+        virtualDragState: {
+          ...virtualDragState,
+          positions: updatedPositions
+        }
+      }
+    }));
+  }, 8); // 120fps throttling for maximum responsiveness
+
+  return ({
   // Initial canvas state with default viewport and interaction settings
   canvas: {
     panOffset: { x: 0, y: 0 },     // Current viewport pan offset
@@ -57,7 +115,12 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     keyboardTimeoutId: null,      // Debounce timer for keyboard feedback
     multiSelectDragInitialPositions: null,  // Initial positions for bulk drag operations
     multiSelectRelativePositions: null,     // Relative positions for bulk drag operations
-    minimapVisible: true          // Navigation minimap visibility (default: visible for spatial awareness)
+    minimapVisible: true,         // Navigation minimap visibility (default: visible for spatial awareness)
+    virtualDragState: {           // Virtual drag layer for performance optimization
+      positions: new Map(),
+      isActive: false,
+      primaryDraggedId: null
+    }
   },
 
   // Canvas interaction actions
@@ -85,6 +148,21 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     },
 
     endDrag: () => {
+      // Clear virtual drag state when ending drag operations
+      const state = get();
+      if (state.canvas.virtualDragState.isActive) {
+        set(prevState => ({
+          canvas: {
+            ...prevState.canvas,
+            virtualDragState: {
+              positions: new Map(),
+              isActive: false,
+              primaryDraggedId: null
+            }
+          }
+        }));
+      }
+      
       set(state => ({
         canvas: {
           ...state.canvas,
@@ -149,6 +227,21 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     },
 
     endHierarchyDrag: () => {
+      // Clear virtual drag state when ending hierarchy drag operations
+      const state = get();
+      if (state.canvas.virtualDragState.isActive) {
+        set(prevState => ({
+          canvas: {
+            ...prevState.canvas,
+            virtualDragState: {
+              positions: new Map(),
+              isActive: false,
+              primaryDraggedId: null
+            }
+          }
+        }));
+      }
+      
       set(state => ({
         canvas: {
           ...state.canvas,
@@ -383,7 +476,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
       
       const state = get();
       
-      // Save state to history before starting any modification operation
+      // Save state to history before starting drag operation (asynchronous to prevent UI blocking)
       get().historyActions.saveToHistory();
 
       const containerRect = containerRef.current?.getBoundingClientRect();
@@ -435,6 +528,9 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           const allAffectedIdsArray = Array.from(allAffectedIds);
           get().canvasActions.startMultiSelectDragWithDescendants(positions, allAffectedIdsArray);
           
+          // Initialize virtual drag layer for performance optimization
+          get().canvasActions.startVirtualDrag(rect.id, allAffectedIdsArray, positions);
+          
           // Also set up regular drag state for mouse tracking
           get().canvasActions.startDrag({
             id: rect.id,
@@ -469,6 +565,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           
           get().canvasActions.setInitialPositions(positions);
           
+          // Initialize virtual drag layer for single rectangle drag
+          const affectedIds = [rect.id, ...descendantIds];
+          get().canvasActions.startVirtualDrag(rect.id, affectedIds, positions);
+          
           get().canvasActions.startDrag({
             id: rect.id,
             startX,
@@ -493,6 +593,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         });
         
         get().canvasActions.setInitialPositions(positions);
+        
+        // Initialize virtual drag layer for hierarchy drag
+        const affectedIds = [rect.id, ...descendantIds];
+        get().canvasActions.startVirtualDrag(rect.id, affectedIds, positions);
         
         get().canvasActions.startDrag({
           id: rect.id,
@@ -551,7 +655,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         }
       }
       
-      // Handle drag movement
+      // Handle drag movement using virtual drag layer for optimal performance
       if (state.canvas.dragState) {
         const gridSize = state.settings.gridSize;
         const { zoomState } = state.canvas;
@@ -564,8 +668,9 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
         const gridDeltaX = rawDeltaX / (gridSize * zoomState.level);
         const gridDeltaY = rawDeltaY / (gridSize * zoomState.level);
         
-        const newX = Math.round(state.canvas.dragState.initialX + gridDeltaX);
-        const newY = Math.round(state.canvas.dragState.initialY + gridDeltaY);
+        // Calculate movement delta from initial positions
+        const deltaX = gridDeltaX;
+        const deltaY = gridDeltaY;
         
         if (state.canvas.dragState.isHierarchyDrag) {
           // Hierarchy drag: detect valid drop targets and provide visual feedback
@@ -597,37 +702,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           }));
         }
         
-        // Check if this is a multi-select drag operation
-        if (state.canvas.dragState.isMultiSelectDrag && state.canvas.multiSelectDragInitialPositions) {
-          // Multi-select bulk drag: calculate deltas and apply to all selected rectangles
-          const actualDeltaX = newX - state.canvas.dragState.initialX;
-          const actualDeltaY = newY - state.canvas.dragState.initialY;
-          
-          // Use the multi-select drag system to move all selected rectangles
-          get().canvasActions.updateMultiSelectDrag(actualDeltaX, actualDeltaY);
-        } else {
-          // Single rectangle drag: move the rectangle (and descendants) using efficient temporary update
-          get().rectangleActions.updateRectanglesDuringDrag(rectangles => {
-            const draggedRect = rectangles.find(r => r.id === state.canvas.dragState!.id);
-            if (!draggedRect) return rectangles;
-            
-            const actualDeltaX = newX - draggedRect.x;
-            const actualDeltaY = newY - draggedRect.y;
-            
-            // Move entire subtree together
-            const descendantIds = new Set(getAllDescendants(state.canvas.dragState!.id, rectangles));
-            
-            return rectangles.map(rect => {
-              if (rect.id === state.canvas.dragState!.id || descendantIds.has(rect.id)) {
-                return {
-                  ...rect,
-                  x: rect.x + actualDeltaX,
-                  y: rect.y + actualDeltaY
-                };
-              }
-              return rect;
-            });
-          });
+        // Use throttled virtual drag layer for optimal performance
+        // This prevents excessive state updates during rapid mouse movement
+        if (state.canvas.virtualDragState.isActive) {
+          throttledVirtualDragUpdate(deltaX, deltaY);
         }
       }
       
@@ -693,6 +771,11 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           get().canvasActions.endMultiSelectDrag(true);
         }
         
+        // Commit virtual drag positions to actual state before saving to history
+        if (state.canvas.virtualDragState.isActive) {
+          get().canvasActions.commitVirtualDrag();
+        }
+        
         // Save final state to history after drag/resize operation
         get().historyActions.saveToHistory();
         
@@ -732,6 +815,9 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
     },
 
     cancelDrag: () => {
+      // Cancel virtual drag without applying changes
+      get().canvasActions.cancelVirtualDrag();
+      
       set(state => ({
         canvas: {
           ...state.canvas,
@@ -1037,6 +1123,156 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => ({
           }
         };
       });
+    },
+
+    /**
+     * Virtual drag layer actions for performance optimization.
+     * 
+     * These actions manage a virtual positioning layer that provides immediate
+     * visual feedback during drag operations without triggering expensive 
+     * state updates and re-renders. The virtual layer uses CSS transforms
+     * for smooth 60fps performance regardless of rectangle count.
+     */
+
+    /**
+     * Initialize virtual drag layer with affected rectangles.
+     * 
+     * @param primaryId - Main rectangle being dragged (for interaction logic)
+     * @param affectedIds - All rectangles that will move (including descendants)
+     * @param initialPositions - Starting positions for all affected rectangles
+     */
+    startVirtualDrag: (primaryId: string, affectedIds: string[], initialPositions: Record<string, { x: number; y: number }>) => {
+      set(state => {
+        const positions = new Map<string, VirtualDragPosition>();
+        
+        // Initialize virtual positions for all affected rectangles
+        affectedIds.forEach(id => {
+          const initialPos = initialPositions[id];
+          if (initialPos) {
+            positions.set(id, {
+              x: initialPos.x,
+              y: initialPos.y,
+              initialX: initialPos.x,
+              initialY: initialPos.y
+            });
+          }
+        });
+
+        return {
+          canvas: {
+            ...state.canvas,
+            virtualDragState: {
+              positions,
+              isActive: true,
+              primaryDraggedId: primaryId
+            }
+          }
+        };
+      });
+    },
+
+    /**
+     * Update virtual positions for all dragged rectangles in real-time.
+     * This method provides immediate visual feedback without triggering
+     * expensive rectangle state updates or component re-renders.
+     * 
+     * @param deltaX - Horizontal movement in grid units from initial position
+     * @param deltaY - Vertical movement in grid units from initial position
+     */
+    updateVirtualDragPositions: (deltaX: number, deltaY: number) => {
+      set(state => {
+        const { virtualDragState } = state.canvas;
+        if (!virtualDragState.isActive) return state;
+
+        // Update all virtual positions with the delta movement
+        const updatedPositions = new Map(virtualDragState.positions);
+        
+        virtualDragState.positions.forEach((position, id) => {
+          updatedPositions.set(id, {
+            ...position,
+            x: Math.max(0, Math.round(position.initialX + deltaX)), // Constrain to positive coordinates
+            y: Math.max(0, Math.round(position.initialY + deltaY))
+          });
+        });
+
+        return {
+          canvas: {
+            ...state.canvas,
+            virtualDragState: {
+              ...virtualDragState,
+              positions: updatedPositions
+            }
+          }
+        };
+      });
+    },
+
+    /**
+     * Apply virtual positions to actual rectangle state and clear virtual layer.
+     * This commits the visual changes to the permanent state and triggers
+     * a final re-render with the updated positions.
+     */
+    commitVirtualDrag: () => {
+      const state = get();
+      const { virtualDragState } = state.canvas;
+      
+      if (!virtualDragState.isActive || virtualDragState.positions.size === 0) return;
+
+      // Apply virtual positions to actual rectangles
+      const updatedRectangles = state.rectangles.map(rect => {
+        const virtualPos = virtualDragState.positions.get(rect.id);
+        if (virtualPos) {
+          return {
+            ...rect,
+            x: virtualPos.x,
+            y: virtualPos.y
+          };
+        }
+        return rect;
+      });
+
+      // Update rectangles and clear virtual state in a single operation
+      set(state => ({
+        rectangles: updatedRectangles,
+        canvas: {
+          ...state.canvas,
+          virtualDragState: {
+            positions: new Map(),
+            isActive: false,
+            primaryDraggedId: null
+          }
+        }
+      }));
+    },
+
+    /**
+     * Clear virtual drag layer without applying changes.
+     * Used when canceling drag operations (e.g., ESC key).
+     */
+    cancelVirtualDrag: () => {
+      set(state => ({
+        canvas: {
+          ...state.canvas,
+          virtualDragState: {
+            positions: new Map(),
+            isActive: false,
+            primaryDraggedId: null
+          }
+        }
+      }));
+    },
+
+    /**
+     * Get current virtual position for a specific rectangle.
+     * Returns null if rectangle is not in virtual drag layer.
+     * 
+     * @param rectangleId - ID of rectangle to query
+     * @returns Virtual position or null if not found
+     */
+    getVirtualPosition: (rectangleId: string): VirtualDragPosition | null => {
+      const state = get();
+      return state.canvas.virtualDragState.positions.get(rectangleId) || null;
     }
   }
-});
+  });
+};

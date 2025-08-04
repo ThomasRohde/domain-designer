@@ -187,6 +187,34 @@ export interface ResizeConstraintState {
 }
 
 /**
+ * Virtual drag position state for performance optimization
+ * Decouples visual feedback from actual state updates during drag operations
+ */
+export interface VirtualDragPosition {
+  /** Current virtual X position in grid units */
+  x: number;
+  /** Current virtual Y position in grid units */
+  y: number;
+  /** Initial X position when drag started */
+  initialX: number;
+  /** Initial Y position when drag started */
+  initialY: number;
+}
+
+/**
+ * Virtual drag layer state managing real-time visual feedback
+ * Prevents expensive re-renders during mouse movement by using CSS transforms
+ */
+export interface VirtualDragState {
+  /** Map of rectangle IDs to their virtual positions during drag */
+  positions: Map<string, VirtualDragPosition>;
+  /** Whether virtual drag layer is active */
+  isActive: boolean;
+  /** Primary dragged rectangle ID (for hierarchy and interaction logic) */
+  primaryDraggedId: string | null;
+}
+
+/**
  * State during canvas panning operation
  */
 export interface PanState {
