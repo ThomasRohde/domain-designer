@@ -1049,7 +1049,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         return false;
       }
       
-      const selectedRectangles = rectangles.filter(r => ids.includes(r.id));
+      // Preserve selection order - critical for anchor determination
+      // First selected rectangle becomes the immutable anchor
+      const selectedRectangles = ids.map(id => rectangles.find(r => r.id === id)).filter(Boolean) as Rectangle[];
       
       if (selectedRectangles.length < 2) return false;
       
