@@ -426,11 +426,12 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       {/* Multi-selection count badge: Shows selection position in group */}
       {isSelected && selectedCount > 1 && !isHierarchyDragActive && (
         <div
-          className="absolute px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded-full border-2 border-white shadow-xl"
+          className="absolute w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full border-2 border-white shadow-xl flex items-center justify-center"
           style={{ 
             top: '-8px', // Position outside the rectangle's border
             right: '-8px', // Position outside the rectangle's border
-            zIndex: 100001 // Higher than ActionButtonsOverlay (100000)
+            zIndex: 100001, // Higher than ActionButtonsOverlay (100000)
+            lineHeight: '1' // Ensure text doesn't have extra line spacing
           }}
           title={`${selectedCount} rectangles selected`}
         >
