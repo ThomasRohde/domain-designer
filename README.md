@@ -55,12 +55,13 @@
 - **Mixed Flow Layout**: Intelligent space optimization (20-45% better efficiency)
 
 ### 🎯 Interactive Editing
-- **Drag & Drop**: Intuitive rectangle positioning
+- **Drag & Drop**: Smooth rectangle positioning with perfect parent-child synchronization
 - **Resize Handles**: Visual feedback for parent rectangles
 - **Double-click Editing**: Quick label modifications
 - **Context Menus**: Right-click for advanced options including copy/paste/duplicate
 - **Clipboard Operations**: Copy/paste/duplicate with smart collision avoidance
 - **Keyboard Navigation**: Arrow keys for precise positioning (1px/10px)
+- **Manual/Auto Positioning**: Toggle between automatic layout and manual control
 - **Help System**: Comprehensive keyboard shortcuts overlay (`?` or `F1`)
 
 ### ✨ Multi-Select Operations
@@ -177,19 +178,21 @@ npm run dev
 | Action | Method | Description |
 |--------|--------|-------------|
 | **Edit Label** | Double-click | Quick text editing |
-| **Move Rectangle** | Drag | Reposition root rectangles |
+| **Move Rectangle** | Drag | Smooth repositioning with perfect child synchronization |
 | **Resize** | Drag corner handle | Adjust parent rectangle size |
 | **Context Menu** | Right-click | Access advanced options |
 | **Precise Movement** | Arrow keys | 1px precision movement |
 | **Fast Movement** | Shift + Arrow keys | 10px quick movement |
+| **Toggle Positioning** | Unlock/Lock icons | Switch between auto-layout and manual control |
 
 ### 🔐 Manual Positioning & Lock Controls
 
-For advanced positioning control:
+For advanced positioning control with perfect synchronization:
 
-1. **🔓 Unlock**: Select a parent rectangle and click the unlock icon
-2. **🎯 Move Children**: Use arrow keys to position child rectangles manually
+1. **🔓 Unlock**: Select a parent rectangle and click the unlock icon to enable manual positioning
+2. **🎯 Move Children**: Use arrow keys or drag to position child rectangles manually
 3. **🔒 Lock as-is**: Click the lock icon to preserve exact dimensions and positions
+4. **🤝 Perfect Sync**: Dragging parents with children maintains precise relative positioning
 
 #### 🏗️ Hierarchical Lock Protection
 

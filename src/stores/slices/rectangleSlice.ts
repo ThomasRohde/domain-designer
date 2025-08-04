@@ -29,6 +29,184 @@ import {
 import type { SliceCreator, RectangleActions, AppStore } from '../types';
 
 /**
+ * Check if a rectangle should be exempt from fixed dimension enforcement.
+ * Returns true if the rectangle is in a parent with manual positioning enabled.
+ * 
+ * @param rect - Rectangle to check
+ * @param rectangles - All rectangles for parent lookup  
+ * @returns true if dimensions should not be enforced (manual mode)
+ */
+const shouldExemptFromFixedDimensions = (rect: Rectangle, rectangles: Rectangle[]): boolean => {
+  if (!rect.parentId) return false; // Root rectangles are not affected by this
+  
+  const parent = rectangles.find(r => r.id === rect.parentId);
+  return parent?.isManualPositioningEnabled === true;
+};
+
+/**
+ * Find optimal free space position for a new child in manual positioning mode.
+ * 
+ * Scans the parent rectangle bounds to find available space that doesn't
+ * overlap with existing children, using the global margin setting to ensure
+ * proper gaps between children. Prefers positions that utilize newly
+ * expanded areas when the parent grows to accommodate the new child.
+ * 
+ * Search Strategies:
+ * 1. Gap-filling priority - detects existing grid patterns and fills gaps first
+ *    - Analyzes unique X/Y positions to understand grid structure
+ *    - Systematically checks each grid intersection for gaps
+ *    - Completes existing rows/columns before extending to new ones
+ * 2. Logical extensions - extends grid in most natural direction
+ * 3. Edge space scan - searches remaining edge areas  
+ * 4. Grid search - systematic scan using margin as step size
+ * 5. Fallback - safe position at top-left with margins
+ * 
+ * @param parentId - ID of parent rectangle in manual positioning mode
+ * @param rectangles - Current rectangle array for collision detection
+ * @param defaultSizes - Default dimensions for new rectangle
+ * @param margins - Spacing configuration (margin used for gaps between children)
+ * @returns Position and dimensions for new child in free space with proper gaps
+ */
+const calculateFreeSpacePosition = (
+  parentId: string,
+  rectangles: Rectangle[],
+  defaultSizes: { root: { w: number; h: number }, leaf: { w: number; h: number } },
+  margins: { margin: number; labelMargin: number }
+): { x: number; y: number; w: number; h: number } => {
+  const parent = rectangles.find(r => r.id === parentId);
+  if (!parent) {
+    // Fallback to default positioning if parent not found
+    return { x: 0, y: 0, w: defaultSizes.leaf.w, h: defaultSizes.leaf.h };
+  }
+
+  const existingChildren = rectangles.filter(r => r.parentId === parentId);
+  const { w: childW, h: childH } = defaultSizes.leaf;
+  
+  // Parent bounds with margins
+  const leftBound = parent.x + margins.margin;
+  const topBound = parent.y + margins.labelMargin;
+  const rightBound = parent.x + parent.w - margins.margin;
+  const bottomBound = parent.y + parent.h - margins.margin;
+  
+  // Available space dimensions
+  const availableW = rightBound - leftBound - childW;
+  const availableH = bottomBound - topBound - childH;
+  
+  // Check if a position conflicts with existing children (including margin gaps)
+  const isPositionFree = (testX: number, testY: number): boolean => {
+    const testRight = testX + childW;
+    const testBottom = testY + childH;
+    
+    return existingChildren.every(child => {
+      const childLeft = child.x;
+      const childTop = child.y;
+      const childRight = child.x + child.w;
+      const childBottom = child.y + child.h;
+      
+      // Check for overlap including margin gaps
+      // New rectangle must be at least 'margin' pixels away from existing children
+      return testRight + margins.margin <= childLeft || 
+             testX >= childRight + margins.margin || 
+             testBottom + margins.margin <= childTop || 
+             testY >= childBottom + margins.margin;
+    });
+  };
+  
+  // Strategy 1: Fill gaps in existing grid pattern first (most logical placement)
+  if (existingChildren.length > 0) {
+    // Detect grid pattern by analyzing existing positions
+    const uniqueXPositions = [...new Set(existingChildren.map(child => child.x))].sort((a, b) => a - b);
+    const uniqueYPositions = [...new Set(existingChildren.map(child => child.y))].sort((a, b) => a - b);
+    
+    // If we have a clear grid pattern, look for gaps first
+    if (uniqueXPositions.length > 1 && uniqueYPositions.length > 1) {
+      // Check each grid position to see if it's occupied
+      for (const y of uniqueYPositions) {
+        for (const x of uniqueXPositions) {
+          // Check if this grid position is free and within bounds
+          if (x + childW <= rightBound && y + childH <= bottomBound && isPositionFree(x, y)) {
+            return { x, y, w: childW, h: childH };
+          }
+        }
+      }
+    }
+    
+    // Strategy 1b: Try logical grid extensions (complete rows/columns)
+    const rightmostChild = existingChildren.reduce((max, child) => 
+      (child.x + child.w) > (max.x + max.w) ? child : max
+    );
+    const bottommostChild = existingChildren.reduce((max, child) => 
+      (child.y + child.h) > (max.y + max.h) ? child : max
+    );
+    
+    // Try to complete existing rows before adding new columns
+    for (const y of uniqueYPositions) {
+      const rightX = rightmostChild.x + rightmostChild.w + margins.margin;
+      if (rightX + childW <= rightBound && y + childH <= bottomBound && isPositionFree(rightX, y)) {
+        return { x: rightX, y, w: childW, h: childH };
+      }
+    }
+    
+    // Try to complete existing columns before adding new rows  
+    for (const x of uniqueXPositions) {
+      const bottomY = bottommostChild.y + bottommostChild.h + margins.margin;
+      if (x + childW <= rightBound && bottomY + childH <= bottomBound && isPositionFree(x, bottomY)) {
+        return { x, y: bottomY, w: childW, h: childH };
+      }
+    }
+    
+    // Fallback: extend to completely new positions
+    const rightX = rightmostChild.x + rightmostChild.w + margins.margin;
+    if (rightX + childW <= rightBound && isPositionFree(rightX, topBound)) {
+      return { x: rightX, y: topBound, w: childW, h: childH };
+    }
+    
+    const bottomY = bottommostChild.y + bottommostChild.h + margins.margin;
+    if (bottomY + childH <= bottomBound && isPositionFree(leftBound, bottomY)) {
+      return { x: leftBound, y: bottomY, w: childW, h: childH };
+    }
+  }
+  
+  // Strategy 2: Try remaining edge spaces (fallback for edge cases)
+  // Right edge scan
+  for (let y = topBound; y <= topBound + availableH; y += margins.margin) {
+    const x = rightBound - childW;
+    if (x >= leftBound && isPositionFree(x, y)) {
+      return { x, y, w: childW, h: childH };
+    }
+  }
+  
+  // Bottom edge scan
+  for (let x = leftBound; x <= leftBound + availableW; x += margins.margin) {
+    const y = bottomBound - childH;
+    if (y >= topBound && isPositionFree(x, y)) {
+      return { x, y, w: childW, h: childH };
+    }
+  }
+  
+  // Strategy 3: Grid search for any free space, using margin-based steps for consistent spacing
+  // Use margin as the search step to ensure we find positions that respect spacing
+  const searchStepX = margins.margin;
+  const searchStepY = margins.margin;
+  
+  for (let y = topBound; y <= topBound + availableH; y += searchStepY) {
+    for (let x = leftBound; x <= leftBound + availableW; x += searchStepX) {
+      if (isPositionFree(x, y)) {
+        return { x, y, w: childW, h: childH };
+      }
+    }
+  }
+  
+  // Strategy 4: Fallback - place at top-left with margin (may overlap, but best we can do)
+  return { 
+    x: leftBound, 
+    y: topBound, 
+    w: childW, 
+    h: childH 
+  };
+};
+
+/**
  * Rectangle state slice interface
  */
 export interface RectangleSlice {
@@ -122,7 +300,28 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         leafHeight: settings.leafHeight
       });
       
-      let { x, y, w, h } = layoutManager.calculateNewRectangleLayout(parentId || null, rectangles, DEFAULT_RECTANGLE_SIZE, getMargins());
+      let x: number, y: number, w: number, h: number;
+      
+      // For manual positioning mode, we'll calculate position AFTER parent grows
+      // For auto mode, we can calculate position now since grid layout handles everything
+      const parentRect = parentId ? rectangles.find(r => r.id === parentId) : null;
+      const isManualMode = parentRect?.isManualPositioningEnabled;
+      
+      if (isManualMode) {
+        // Manual mode - use temporary position, will recalculate after parent grows
+        x = (parentRect?.x || 0) + (getMargins().margin);
+        y = (parentRect?.y || 0) + (getMargins().labelMargin);
+        const { w: defaultW, h: defaultH } = parentId ? DEFAULT_RECTANGLE_SIZE.leaf : DEFAULT_RECTANGLE_SIZE.root;
+        w = defaultW;
+        h = defaultH;
+      } else {
+        // Auto mode or root rectangle - calculate final position now
+        const position = layoutManager.calculateNewRectangleLayout(parentId || null, rectangles, DEFAULT_RECTANGLE_SIZE, getMargins());
+        x = position.x;
+        y = position.y;
+        w = position.w;
+        h = position.h;
+      }
       
       // Viewport-aware positioning for root rectangles
       if (!parentId) {
@@ -139,8 +338,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       // Create rectangle
       let newRect = createRectangle(id, x, y, w, h, parentId || undefined);
       
-      // Apply global fixed dimensions to child rectangles
-      if (parentId) {
+      // Apply global fixed dimensions to child rectangles only in auto mode
+      // In manual mode, users have full control over dimensions (like margins)
+      if (parentId && !isManualMode) {
         newRect = applyFixedDimensions(newRect, getFixedDimensions());
       }
 
@@ -155,6 +355,18 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           const margins: MarginSettings = getMargins();
           const fixedDimensions: FixedDimensions = getFixedDimensions();
           updated = fitParentToChildrenRecursive(parentId, updated, fixedDimensions, margins);
+          
+          // For manual positioning mode, now recalculate the child position using the grown parent bounds
+          if (isManualMode) {
+            const optimalPosition = calculateFreeSpacePosition(parentId, updated, DEFAULT_RECTANGLE_SIZE, margins);
+            updated = updated.map(rect => 
+              rect.id === id ? { 
+                ...rect, 
+                x: optimalPosition.x, 
+                y: optimalPosition.y 
+              } : rect
+            );
+          }
         }
         
         return updated;
@@ -189,8 +401,8 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
             newType = 'leaf';
           }
           
-          // Automatic fixed dimension application for new leaf nodes
-          if (newType === 'leaf' && rect.type !== 'leaf') {
+          // Automatic fixed dimension application for new leaf nodes (only in auto mode)
+          if (newType === 'leaf' && rect.type !== 'leaf' && !shouldExemptFromFixedDimensions(rect, updated)) {
             const fixedDims = {
               leafFixedWidth: settings.leafFixedWidth,
               leafFixedHeight: settings.leafFixedHeight,
@@ -301,7 +513,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       });
     },
 
-    toggleManualPositioning: (id: string) => {
+    toggleManualPositioning: (id: string, shiftKey: boolean = false) => {
       const state = get();
       const { settings } = state;
       
@@ -313,18 +525,32 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         leafHeight: settings.leafHeight
       });
       
+      const currentRect = state.rectangles.find(r => r.id === id);
+      if (!currentRect) return;
+      
+      const isCurrentlyManual = currentRect.isManualPositioningEnabled;
+      
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         // Hierarchical unlock cascade: collect all descendants before state changes
         const allDescendants = getAllDescendants(id, currentRectangles);
         
         const updated = currentRectangles.map(rect => {
           if (rect.id === id) {
-            // Toggle manual positioning for target rectangle
-            return { 
-              ...rect, 
-              isManualPositioningEnabled: !rect.isManualPositioningEnabled,
-              isLockedAsIs: false
-            };
+            if (isCurrentlyManual && shiftKey) {
+              // Shift+click when in manual mode: "Lock As-Is" behavior
+              return { 
+                ...rect, 
+                isManualPositioningEnabled: false,
+                isLockedAsIs: true  // Preserve current positions
+              };
+            } else {
+              // Normal toggle: Smart default behavior
+              return { 
+                ...rect, 
+                isManualPositioningEnabled: !rect.isManualPositioningEnabled,
+                isLockedAsIs: false
+              };
+            }
           } else if (allDescendants.includes(rect.id)) {
             // Cascade unlock to all descendants for consistency
             return {
@@ -335,11 +561,19 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           return rect;
         });
         
-        // Apply layout algorithm when returning to automatic positioning
+        // Apply layout algorithm when switching to automatic positioning (unless locked as-is)
         const parent = updated.find(rect => rect.id === id);
-        return (parent && !parent.isManualPositioningEnabled) 
-          ? updateChildrenLayout(updated, getFixedDimensions(), getMargins())
-          : updated;
+        if (parent && !parent.isManualPositioningEnabled && !parent.isLockedAsIs) {
+          // Store layout change flag for undo system
+          setTimeout(() => {
+            const currentState = get();
+            currentState.uiActions.showLayoutUndo?.(id);
+          }, 0);
+          
+          return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
+        }
+        
+        return updated;
       });
     },
 
@@ -523,9 +757,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           return { ...rect, type: newType };
         });
         
-        // Apply fixed dimensions if the reparented rectangle is now a leaf
+        // Apply fixed dimensions if the reparented rectangle is now a leaf (only in auto mode)
         const reparentedRect = updated.find(r => r.id === childId);
-        if (reparentedRect && reparentedRect.type === 'leaf') {
+        if (reparentedRect && reparentedRect.type === 'leaf' && !shouldExemptFromFixedDimensions(reparentedRect, updated)) {
           const fixedDims = getFixedDimensions();
           updated = updated.map(rect => 
             rect.id === childId 

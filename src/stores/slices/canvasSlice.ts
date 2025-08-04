@@ -38,21 +38,24 @@ export interface CanvasSlice {
  * coordinate transformations, and visual feedback systems.
  */
 export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
-  // Throttled virtual drag update for optimal performance
-  // Limits updates to ~60fps (16ms) to prevent excessive state mutations
+  // Critical throttled virtual drag update with cancellation support for drag synchronization fixes
+  // Limits updates to 120fps (8ms) to prevent excessive state mutations while maintaining smooth feedback
+  // The cancellation mechanism prevents children from racing past cursor during drag operations
   const throttledVirtualDragUpdate = throttlePositionUpdate((deltaX: number, deltaY: number) => {
     const state = get();
     const { virtualDragState } = state.canvas;
     if (!virtualDragState.isActive) return;
 
-    // Update all virtual positions with the delta movement
+    // Update all virtual positions with delta movement using precise coordinate transformation
+    // Grid-based positioning ensures pixel-perfect alignment and prevents floating-point drift
     const updatedPositions = new Map(virtualDragState.positions);
     
+    // Apply delta transformation to all virtual positions while maintaining grid alignment
     virtualDragState.positions.forEach((position, id) => {
       updatedPositions.set(id, {
         ...position,
-        x: Math.max(0, Math.round(position.initialX + deltaX)), // Constrain to positive coordinates
-        y: Math.max(0, Math.round(position.initialY + deltaY))
+        x: Math.max(0, Math.round(position.initialX + deltaX)), // Constrain to positive grid coordinates
+        y: Math.max(0, Math.round(position.initialY + deltaY))  // Round to prevent sub-pixel positioning
       });
     });
 
@@ -65,18 +68,18 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         }
       }
     }));
-  }, 8); // 120fps throttling for maximum responsiveness
+  }, 8); // 120fps throttling balances performance with visual smoothness during multi-select drags
 
   return ({
   // Initial canvas state with default viewport and interaction settings
   canvas: {
-    panOffset: { x: 0, y: 0 },     // Current viewport pan offset
-    zoomState: {                  // Enhanced zoom state with constraints
+    panOffset: { x: 0, y: 0 },     // Current viewport pan offset in screen pixels
+    zoomState: {                  // Enhanced zoom state with constraints for UI stability
       level: 1.0,
       centerX: 0,
       centerY: 0,
-      minLevel: 0.1,              // Prevent excessive zoom-out
-      maxLevel: 3.0               // Prevent excessive zoom-in
+      minLevel: 0.1,              // Prevent excessive zoom-out that breaks interactions
+      maxLevel: 3.0               // Prevent excessive zoom-in that impacts performance
     },
     panState: null,               // Active panning operation state
     dragState: null,              // Active drag operation state
@@ -91,10 +94,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     multiSelectDragInitialPositions: null,  // Initial positions for bulk drag operations
     multiSelectRelativePositions: null,     // Relative positions for bulk drag operations
     minimapVisible: true,         // Navigation minimap visibility (default: visible for spatial awareness)
-    virtualDragState: {           // Virtual drag layer for performance optimization
-      positions: new Map(),
-      isActive: false,
-      primaryDraggedId: null
+    virtualDragState: {           // Virtual drag layer for multi-select performance optimization
+      positions: new Map(),       // Maps rectangle IDs to virtual positions during drag
+      isActive: false,            // Whether virtual layer is currently handling drag operations
+      primaryDraggedId: null      // ID of the primary rectangle being dragged
     }
   },
 
@@ -123,9 +126,14 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     },
 
     endDrag: () => {
-      // Clear virtual drag state when ending drag operations
+      // CRITICAL: Cancel pending throttled updates to prevent drag synchronization issues
+      // This prevents rectangles from continuing to move after mouse release
+      throttledVirtualDragUpdate.cancel();
+      
+      // Clear virtual drag state only for multi-select operations
+      // Single rectangle drags use direct atomic movement and don't need virtual layer cleanup
       const state = get();
-      if (state.canvas.virtualDragState.isActive) {
+      if (state.canvas.virtualDragState.isActive && state.canvas.dragState?.isMultiSelectDrag) {
         set(prevState => ({
           canvas: {
             ...prevState.canvas,
@@ -202,21 +210,12 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     },
 
     endHierarchyDrag: () => {
-      // Clear virtual drag state when ending hierarchy drag operations
-      const state = get();
-      if (state.canvas.virtualDragState.isActive) {
-        set(prevState => ({
-          canvas: {
-            ...prevState.canvas,
-            virtualDragState: {
-              positions: new Map(),
-              isActive: false,
-              primaryDraggedId: null
-            }
-          }
-        }));
-      }
+      // CRITICAL: Cancel pending throttled updates to prevent coordinate desynchronization
+      // Essential for hierarchy drag operations to maintain parent-child positioning accuracy
+      throttledVirtualDragUpdate.cancel();
       
+      // Hierarchy drag uses direct atomic movement like keyboard input for perfect synchronization
+      // No virtual drag state cleanup needed since it operates on actual rectangle positions
       set(state => ({
         canvas: {
           ...state.canvas,
@@ -293,9 +292,14 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     },
 
     /**
-     * Mouse-wheel zoom with center-point preservation.
-     * Updates zoom level and pan offset to provide intuitive zoom-to-cursor behavior.
-     * Calculates the correct pan offset adjustment to keep the cursor position fixed.
+     * Mouse-wheel zoom with center-point preservation and coordinate transformation.
+     * Implements zoom-to-cursor behavior by transforming screen coordinates to content space,
+     * applying zoom transformation, then calculating required pan offset adjustments.
+     * 
+     * Coordinate transformation process:
+     * 1. Transform screen mouse position to content coordinates (pre-zoom)
+     * 2. Apply zoom level transformation to content coordinates
+     * 3. Calculate pan offset to keep cursor position visually fixed
      */
     updateZoom: (delta: number, mouseX: number, mouseY: number) => {
       set(state => {
@@ -308,16 +312,18 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         // Skip update if zoom level unchanged (performance optimization)
         if (newLevel === currentLevel) return state;
         
-        // Calculate the content space coordinates at the mouse position
-        // Transform screen coordinates to content coordinates before zoom
+        // Critical coordinate transformation: screen space → content space
+        // Accounts for current pan offset and zoom level to find actual content position under cursor
         const contentX = (mouseX - state.canvas.panOffset.x) / currentLevel;
         const contentY = (mouseY - state.canvas.panOffset.y) / currentLevel;
         
-        // Calculate where this content point should be after zoom to keep it under the cursor
+        // Apply new zoom level to content coordinates to determine new screen position
+        // This calculates where the content point will be positioned after zoom transformation
         const newContentX = contentX * newLevel;
         const newContentY = contentY * newLevel;
         
-        // Adjust pan offset to keep the cursor position fixed
+        // Calculate required pan offset adjustment to maintain cursor position
+        // Formula: new_pan = mouse_screen_pos - (content_pos * new_zoom_level)
         const newPanOffsetX = mouseX - newContentX;
         const newPanOffsetY = mouseY - newContentY;
 
@@ -465,7 +471,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         const isMultiSelectDrag = selectedIds.length > 1 && selectedIds.includes(rect.id);
         
         if (isMultiSelectDrag) {
-          // Multi-select bulk drag: validate all selected rectangles can be moved
+          // Multi-select bulk drag: validate drag permissions for all selected rectangles
+          // Ensures all rectangles are in manually-positioned parents or are root rectangles
           const canBulkMove = selectedIds.every(id => {
             const rectangle = state.rectangles.find(r => r.id === id);
             if (!rectangle) return false;
@@ -481,7 +488,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
             return; // Cannot perform bulk drag if any rectangle is in auto-layout parent
           }
           
-          // Cache initial positions for all selected rectangles and their descendants
+          // Cache initial positions for coordinate system consistency during bulk drag operations
+          // Includes descendants to maintain hierarchical group movement integrity
           const positions: Record<string, { x: number; y: number }> = {};
           const allAffectedIds = new Set<string>();
           
@@ -503,7 +511,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           const allAffectedIdsArray = Array.from(allAffectedIds);
           get().canvasActions.startMultiSelectDragWithDescendants(positions, allAffectedIdsArray);
           
-          // Initialize virtual drag layer for performance optimization
+          // Initialize virtual drag layer for smooth multi-select performance
+          // Virtual layer provides immediate visual feedback without expensive state updates
           get().canvasActions.startVirtualDrag(rect.id, allAffectedIdsArray, positions);
           
           // Also set up regular drag state for mouse tracking
@@ -540,9 +549,9 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           
           get().canvasActions.setInitialPositions(positions);
           
-          // Initialize virtual drag layer for single rectangle drag
-          const affectedIds = [rect.id, ...descendantIds];
-          get().canvasActions.startVirtualDrag(rect.id, affectedIds, positions);
+          // CRITICAL CHANGE: Skip virtual drag layer for single rectangles
+          // Use direct atomic movement to ensure perfect parent-child synchronization
+          // This matches keyboard movement behavior and prevents coordinate drift
           
           get().canvasActions.startDrag({
             id: rect.id,
@@ -569,9 +578,9 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         
         get().canvasActions.setInitialPositions(positions);
         
-        // Initialize virtual drag layer for hierarchy drag
-        const affectedIds = [rect.id, ...descendantIds];
-        get().canvasActions.startVirtualDrag(rect.id, affectedIds, positions);
+        // CRITICAL: Use direct atomic movement for hierarchy drag operations
+        // Prevents coordinate desynchronization during reparenting by moving rectangles immediately
+        // This approach matches keyboard movement and ensures pixel-perfect parent-child alignment
         
         get().canvasActions.startDrag({
           id: rect.id,
@@ -635,17 +644,21 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         const gridSize = state.settings.gridSize;
         const { zoomState } = state.canvas;
         
-        // Calculate new position in grid coordinates
+        // Transform screen-space mouse movement to grid-space coordinate deltas
+        // Critical for maintaining precision and preventing coordinate system drift
         const rawDeltaX = currentX - state.canvas.dragState.startX;
         const rawDeltaY = currentY - state.canvas.dragState.startY;
         
-        // Convert pixel deltas to grid deltas, accounting for zoom
+        // CRITICAL COORDINATE TRANSFORMATION: pixel deltas → grid deltas
+        // Accounts for both grid size and zoom level to maintain positioning accuracy
+        // This prevents rectangles from racing past the cursor during drag operations
         const gridDeltaX = rawDeltaX / (gridSize * zoomState.level);
         const gridDeltaY = rawDeltaY / (gridSize * zoomState.level);
         
-        // Calculate movement delta from initial positions
-        const deltaX = gridDeltaX;
-        const deltaY = gridDeltaY;
+        // Calculate absolute target position in grid coordinates from drag start position
+        // Uses initial position as reference to prevent cumulative coordinate drift
+        const newX = Math.max(0, Math.round(state.canvas.dragState.initialX + gridDeltaX));
+        const newY = Math.max(0, Math.round(state.canvas.dragState.initialY + gridDeltaY));
         
         if (state.canvas.dragState.isHierarchyDrag) {
           // Hierarchy drag: detect valid drop targets and provide visual feedback
@@ -675,12 +688,39 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
               } : null
             }
           }));
+          
+          // Move rectangle during hierarchy drag using absolute positioning
+          // Calculate incremental pixel delta from current position to prevent coordinate accumulation
+          const rect = state.rectangles.find(r => r.id === state.canvas.dragState!.id);
+          if (rect) {
+            // Convert grid coordinate difference to pixel movement for moveRectangle API
+            const pixelDeltaX = (newX - rect.x) * state.settings.gridSize;
+            const pixelDeltaY = (newY - rect.y) * state.settings.gridSize;
+            get().rectangleActions.moveRectangle(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
+          }
         }
         
-        // Use throttled virtual drag layer for optimal performance
-        // This prevents excessive state updates during rapid mouse movement
-        if (state.canvas.virtualDragState.isActive) {
-          throttledVirtualDragUpdate(deltaX, deltaY);
+        // CRITICAL SYNCHRONIZATION FIX: Use direct pixel-based movement like keyboard input
+        // This atomic approach ensures parent and children move together perfectly
+        // Prevents the coordinate desync issues that occurred with virtual drag layer
+        if (state.canvas.dragState.isMultiSelectDrag) {
+          // Multi-select drag: use existing bulk movement logic with grid deltas
+          if (state.canvas.virtualDragState.isActive) {
+            const deltaX = gridDeltaX;
+            const deltaY = gridDeltaY;
+            throttledVirtualDragUpdate.update(deltaX, deltaY);
+          }
+        } else {
+          // CRITICAL: Single rectangle drag uses atomic movement for perfect synchronization
+          // Calculate pixel delta from current position to target position for precise movement
+          // This approach prevents parent-child coordinate drift during drag operations
+          const rect = state.rectangles.find(r => r.id === state.canvas.dragState!.id);
+          if (rect) {
+            // Transform grid coordinate delta to pixel delta for moveRectangle API
+            const pixelDeltaX = (newX - rect.x) * state.settings.gridSize;
+            const pixelDeltaY = (newY - rect.y) * state.settings.gridSize;
+            get().rectangleActions.moveRectangle(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
+          }
         }
       }
       
@@ -714,6 +754,11 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     handleMouseUp: () => {
       const state = get();
       
+      // CRITICAL DRAG SYNCHRONIZATION FIX: Cancel all pending throttled updates immediately
+      // Prevents rectangles from continuing to move after mouse release due to throttled updates
+      // This was the core issue causing children to race past cursor during drag operations
+      throttledVirtualDragUpdate.cancel();
+      
       // Handle panning mouse up
       if (state.canvas.panState) {
         get().canvasActions.endPan();
@@ -746,8 +791,9 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           get().canvasActions.endMultiSelectDrag(true);
         }
         
-        // Commit virtual drag positions to actual state before saving to history
-        if (state.canvas.virtualDragState.isActive) {
+        // Commit virtual drag positions for multi-select drags only
+        // Single rectangle drags use direct atomic movement and don't need virtual layer
+        if (state.canvas.virtualDragState.isActive && state.canvas.dragState?.isMultiSelectDrag) {
           get().canvasActions.commitVirtualDrag();
         }
         
@@ -790,6 +836,9 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     },
 
     cancelDrag: () => {
+      // Cancel any pending throttled updates to prevent position desync
+      throttledVirtualDragUpdate.cancel();
+      
       // Cancel virtual drag without applying changes
       get().canvasActions.cancelVirtualDrag();
       
@@ -986,7 +1035,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         bounds: { x: 0, y: 0, width: 0, height: 0 } // Infinite canvas bounds
       });
       
-      // Transform screen coordinates to canvas space (accounting for pan and zoom)
+      // Critical coordinate transformation: screen space → canvas space
+      // Accounts for viewport pan offset and zoom level to determine actual content coordinates
       const canvasMouseX = (mouseX - state.canvas.panOffset.x) / state.canvas.zoomState.level;
       const canvasMouseY = (mouseY - state.canvas.panOffset.y) / state.canvas.zoomState.level;
       
@@ -1004,7 +1054,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           height: rect.h * state.settings.gridSize
         };
         
-        // Check if mouse is over this rectangle using canvas-space coordinates
+        // Precise hit detection using transformed canvas-space coordinates
+        // Ensures accurate drop target detection regardless of zoom/pan state
         const isMouseOver = canvasMouseX >= rectBounds.x && 
                            canvasMouseX <= rectBounds.x + rectBounds.width &&
                            canvasMouseY >= rectBounds.y && 

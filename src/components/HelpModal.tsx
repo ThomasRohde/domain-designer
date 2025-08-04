@@ -85,7 +85,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
           <div>
             <h4 className="font-semibold text-gray-800 mb-2">Rectangle Operations</h4>
             <ul className="text-sm space-y-1">
-              <li>• <strong>Drag</strong> root rectangles to reposition them</li>
+              <li>• <strong>Drag</strong> rectangles with perfect parent-child synchronization</li>
               <li>• <strong>Resize</strong> parent rectangles using the bottom-right handle</li>
               <li>• <strong>Arrow keys</strong> for pixel-perfect movement (1px precision)</li>
               <li>• <strong>Shift + Arrow keys</strong> for fast movement (10px steps)</li>
@@ -95,12 +95,13 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
           <div>
             <h4 className="font-semibold text-gray-800 mb-2">Manual Positioning & Lock Controls</h4>
             <p className="text-sm text-gray-600 mb-2">
-              To enable arrow key movement for child rectangles:
+              To enable manual positioning and perfect drag synchronization:
             </p>
             <ol className="text-sm space-y-1 list-decimal list-inside">
               <li>Select a parent rectangle</li>
               <li>Click the unlock icon (padlock) to enable manual positioning</li>
-              <li>Child rectangles can now be moved with arrow keys</li>
+              <li>Child rectangles can now be moved with arrow keys or dragged manually</li>
+              <li>Dragging the parent maintains perfect child synchronization - no more position drift!</li>
               <li>Click the lock icon to preserve exact dimensions and positions</li>
             </ol>
           </div>
@@ -118,7 +119,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <li>• <strong>Unlock Cascade</strong> - Unlocking a parent automatically unlocks all descendants</li>
             </ul>
             <p className="text-sm text-gray-600 mt-2">
-              <strong>💡 Pro Tip:</strong> Use "Lock as-is" to preserve imported layouts or freeze sections while adjusting others.
+              <strong>💡 Pro Tip:</strong> Use "Lock as-is" to preserve imported layouts or freeze sections while adjusting others. The improved drag synchronization ensures children stay perfectly aligned even during fast movements.
             </p>
           </div>
           
@@ -262,7 +263,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
               <li>• <strong>M</strong> - Toggle navigation minimap</li>
             </ul>
             <p className="text-sm text-gray-600 mt-2">
-              <strong>Note:</strong> Arrow key movement only works for root rectangles or children of unlocked parents.
+              <strong>Note:</strong> Arrow key movement works for root rectangles or children of unlocked parents. All movement operations use atomic synchronization for perfect parent-child coordination.
             </p>
           </div>
           
@@ -526,9 +527,10 @@ https://yourdomain.com/viewer?url=https://raw.githubusercontent.com/user/repo/ma
             <h4 className="font-semibold text-gray-800 mb-2">Efficiency Tips</h4>
             <ul className="text-sm space-y-1">
               <li>• Use the Mixed Flow Layout for complex diagrams with varied content</li>
-              <li>• Enable manual positioning for fine-tuned control of child rectangles</li>
+              <li>• Enable manual positioning for fine-tuned control with perfect drag synchronization</li>
               <li>• Use keyboard shortcuts for faster editing</li>
               <li>• Take advantage of the undo/redo system to experiment freely</li>
+              <li>• Drag operations now maintain perfect parent-child positioning - no more "fit to children" needed!</li>
             </ul>
           </div>
           
@@ -549,6 +551,16 @@ https://yourdomain.com/viewer?url=https://raw.githubusercontent.com/user/repo/ma
               <li>• Auto-save prevents data loss during long editing sessions</li>
               <li>• Export early and often to preserve your work</li>
               <li>• Use templates for common diagram patterns</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Enhanced Drag System ✨</h4>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>Perfect Synchronization</strong> - Parent and child rectangles move together with atomic precision</li>
+              <li>• <strong>No More Drift</strong> - Fast drag operations maintain exact relative positioning</li>
+              <li>• <strong>Consistent Speed</strong> - Rectangles follow mouse cursor at correct speed across all zoom levels</li>
+              <li>• <strong>Smart Coordination</strong> - Uses same movement system as keyboard for guaranteed accuracy</li>
             </ul>
           </div>
         </div>

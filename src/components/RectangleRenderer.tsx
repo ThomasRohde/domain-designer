@@ -30,25 +30,49 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const selectedIdsSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
   
   // Separate subscriptions for styling to prevent re-renders when only rectangles change
-  const { fontFamily, borderRadius, borderColor, borderWidth } = useAppStore(useShallow(state => ({
+  const { 
+    fontFamily, borderRadius, borderColor, borderWidth
+  } = useAppStore(useShallow(state => ({
     fontFamily: state.settings.fontFamily,
     borderRadius: state.settings.borderRadius,
     borderColor: state.settings.borderColor,
     borderWidth: state.settings.borderWidth
   })));
   
-  const calculateFontSize = useAppStore(state => state.getters.calculateFontSize);
+  // Direct subscriptions to font settings for reactive calculations
+  const rootFontSize = useAppStore(state => state.settings.rootFontSize);
+  const dynamicFontSizing = useAppStore(state => state.settings.dynamicFontSizing);
   
   /**
-   * Font settings subscriptions for reactive re-rendering.
-   * These subscriptions ensure the component re-renders when font settings change,
-   * enabling dynamic font size recalculation across all rectangles.
+   * Calculate dynamic font size based on rectangle hierarchy depth.
+   * This is now reactive to font setting changes.
    */
-  const _rootFontSize = useAppStore(state => state.settings.rootFontSize);
-  const _dynamicFontSizing = useAppStore(state => state.settings.dynamicFontSizing);
-  // Void usage prevents ESLint unused variable warnings while maintaining subscriptions
-  void _rootFontSize;
-  void _dynamicFontSizing;
+  const calculateFontSize = React.useCallback((rectangleId: string) => {
+    if (!dynamicFontSizing) return rootFontSize;
+    
+    // Calculate hierarchy depth with cycle detection
+    const getDepth = (rectId: string): number => {
+      const rect = rectangles.find(r => r.id === rectId);
+      if (!rect || !rect.parentId) return 0;
+      
+      let depth = 0;
+      let current = rect;
+      
+      while (current && current.parentId) {
+        depth++;
+        const parent = rectangles.find(r => r.id === current!.parentId);
+        if (!parent || depth > 10) break; // Prevent infinite loops
+        current = parent;
+      }
+      
+      return depth;
+    };
+    
+    const depth = getDepth(rectangleId);
+    // Progressive font scaling: 10% smaller per level, minimum 60% of root size
+    return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
+  }, [rectangles, rootFontSize, dynamicFontSizing]);
+  
   
   /**
    * Canvas interaction states for visual feedback during operations.

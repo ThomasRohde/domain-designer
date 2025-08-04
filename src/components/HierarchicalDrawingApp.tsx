@@ -20,12 +20,12 @@ import LeftMenu from './LeftMenu';
 import HierarchyOutlinePanel from './HierarchyOutlinePanel';
 import AboutModal from './AboutModal';
 import HelpModal from './HelpModal';
-import LockConfirmationModal from './LockConfirmationModal';
 import DescriptionEditModal from './DescriptionEditModal';
 import ClearDataConfirmationModal from './ClearDataConfirmationModal';
 import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
 import KeyboardShortcutHelpModal from './KeyboardShortcutHelpModal';
+import LayoutUndoButton from './LayoutUndoButton';
 
 
 const HierarchicalDrawingApp = () => {
@@ -44,8 +44,6 @@ const HierarchicalDrawingApp = () => {
     moveRectangle,
     bulkMove,
     fitToChildren,
-    toggleManualPositioning,
-    lockAsIs,
     setRectangles,
     setRectanglesWithHistory,
     updateNextId,
@@ -263,17 +261,6 @@ const HierarchicalDrawingApp = () => {
     uiActions.closeLeftMenu();
   };
 
-  const handleLockConfirmation = useCallback(() => {
-    if (ui.lockConfirmationModal) {
-      toggleManualPositioning(ui.lockConfirmationModal.rectangleId);
-    }
-  }, [ui.lockConfirmationModal, toggleManualPositioning]);
-
-  const handleLockAsIs = useCallback(() => {
-    if (ui.lockConfirmationModal) {
-      lockAsIs(ui.lockConfirmationModal.rectangleId);
-    }
-  }, [ui.lockConfirmationModal, lockAsIs]);
 
   const handleEditDescription = useCallback((rectangleId: string) => {
     const rectangle = findRectangle(rectangleId);
@@ -694,6 +681,7 @@ const HierarchicalDrawingApp = () => {
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
       <UpdateNotification updateNotification={ui.updateNotification} />
+      <LayoutUndoButton />
       <Toolbar
         onAddRectangle={handleAddRectangle}
         onExport={uiActions.openExportModal}
@@ -791,13 +779,6 @@ const HierarchicalDrawingApp = () => {
         onClose={uiActions.closeKeyboardShortcutHelp}
       />
 
-      <LockConfirmationModal
-        isOpen={!!ui.lockConfirmationModal}
-        onClose={uiActions.hideLockConfirmationModal}
-        onConfirm={handleLockConfirmation}
-        onConfirmLockAsIs={handleLockAsIs}
-        rectangleLabel={ui.lockConfirmationModal?.rectangleLabel || ''}
-      />
 
       <DescriptionEditModal
         isOpen={!!ui.descriptionEditModal}

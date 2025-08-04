@@ -98,6 +98,8 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
         isUpdateAvailable: false,
         isUpdating: false,
       },
+      // Layout undo state
+      layoutUndo: null,
       // Multi-select state
       selectedIds: [],
       selectionBoxState: null,
@@ -372,6 +374,60 @@ export const createUISlice: SliceCreator<UISlice> = (set, get) => {
           }
         }
       }));
+    },
+
+    // Layout undo actions
+    showLayoutUndo: (rectangleId: string) => {
+      const currentState = get();
+      
+      // Clear any existing timeout
+      if (currentState.ui.layoutUndo?.timeoutId) {
+        clearTimeout(currentState.ui.layoutUndo.timeoutId);
+      }
+      
+      // Set up auto-hide timeout (5 seconds)
+      const timeoutId = window.setTimeout(() => {
+        get().uiActions.hideLayoutUndo();
+      }, 5000);
+      
+      set(state => ({
+        ui: {
+          ...state.ui,
+          layoutUndo: {
+            isVisible: true,
+            rectangleId,
+            timeoutId
+          }
+        }
+      }));
+    },
+
+    hideLayoutUndo: () => {
+      set(state => {
+        // Clear timeout if it exists
+        if (state.ui.layoutUndo?.timeoutId) {
+          clearTimeout(state.ui.layoutUndo.timeoutId);
+        }
+        
+        return {
+          ui: {
+            ...state.ui,
+            layoutUndo: null
+          }
+        };
+      });
+    },
+
+    performLayoutUndo: () => {
+      const currentState = get();
+      
+      if (currentState.ui.layoutUndo?.rectangleId) {
+        // Trigger undo using the existing history system
+        currentState.historyActions.undo();
+      }
+      
+      // Hide the undo button
+      currentState.uiActions.hideLayoutUndo();
     },
 
     // Selection box actions

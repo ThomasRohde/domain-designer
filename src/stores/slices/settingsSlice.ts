@@ -13,6 +13,21 @@ import { layoutManager } from '../../utils/layout';
 import { getChildren } from '../../utils/layoutUtils';
 import type { SliceCreator, SettingsActions } from '../types';
 
+/**
+ * Check if a rectangle is in a parent with manual positioning enabled.
+ * Used to exempt rectangles from fixed dimension enforcement in manual mode.
+ * 
+ * @param rect - Rectangle to check
+ * @param rectangles - All rectangles for parent lookup  
+ * @returns true if rectangle is in manual mode parent
+ */
+const isInManualModeParent = (rect: Rectangle, rectangles: Rectangle[]): boolean => {
+  if (!rect.parentId) return false;
+  
+  const parent = rectangles.find(r => r.id === rect.parentId);
+  return parent?.isManualPositioningEnabled === true;
+};
+
 // Initial predefined color palette
 const INITIAL_PREDEFINED_COLORS = [
   "#7dca90",
@@ -219,7 +234,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (enabled) {
           // Apply fixed width constraint to all existing leaf rectangles
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, w: state.settings.leafWidth } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs && !isInManualModeParent(rect, state.rectangles) ? { ...rect, w: state.settings.leafWidth } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));
@@ -255,7 +270,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (enabled) {
           // Apply fixed height to all existing leaf nodes
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, h: state.settings.leafHeight } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs && !isInManualModeParent(rect, state.rectangles) ? { ...rect, h: state.settings.leafHeight } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));
@@ -291,7 +306,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (state.settings.leafFixedWidth) {
           // Apply new width to all existing leaf nodes
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, w: width } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs && !isInManualModeParent(rect, state.rectangles) ? { ...rect, w: width } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));
@@ -327,7 +342,7 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         if (state.settings.leafFixedHeight) {
           // Apply new height to all existing leaf nodes
           const updatedRectangles = state.rectangles.map(rect => 
-            rect.type === 'leaf' && !rect.isLockedAsIs ? { ...rect, h: height } : rect
+            rect.type === 'leaf' && !rect.isLockedAsIs && !isInManualModeParent(rect, state.rectangles) ? { ...rect, h: height } : rect
           );
           
           set(() => ({ rectangles: updatedRectangles }));

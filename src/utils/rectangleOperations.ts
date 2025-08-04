@@ -369,18 +369,25 @@ export const fitParentToChildren = (
     margins
   );
   
-  // Update parent rectangle with optimal size and unlock settings
+  // Update parent rectangle with optimal size, preserving manual positioning mode
   const updatedRectangles = rectangles.map(rect => 
     rect.id === parentId ? { 
       ...rect, 
       w: optimalSize.w, 
       h: optimalSize.h,
-      isLockedAsIs: false,
-      isManualPositioningEnabled: false
+      isLockedAsIs: false
+      // Preserve isManualPositioningEnabled - don't override user's mode choice
     } : rect
   );
   
-  // Apply children layout updates
+  // Apply children layout updates only if parent is not in manual positioning mode
+  const parent = updatedRectangles.find(r => r.id === parentId);
+  if (parent && parent.isManualPositioningEnabled) {
+    // Parent is in manual mode - don't apply automatic layout to children
+    return updatedRectangles;
+  }
+  
+  // Parent is in auto mode - apply automatic layout to children
   return updateChildrenLayout(updatedRectangles, fixedDimensions, margins);
 };
 

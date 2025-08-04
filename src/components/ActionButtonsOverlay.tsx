@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Minimize2, Lock, Unlock } from 'lucide-react';
+import { Plus, Trash2, Grid3X3, Move, Container } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -24,7 +24,6 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const removeRectangle = useAppStore(state => state.rectangleActions.removeRectangle);
   const fitToChildren = useAppStore(state => state.rectangleActions.fitToChildren);
   const toggleManualPositioning = useAppStore(state => state.rectangleActions.toggleManualPositioning);
-  const showLockConfirmationModal = useAppStore(state => state.uiActions.showLockConfirmationModal);
   
   const getChildren = useAppStore(state => state.getters.getChildren);
   
@@ -101,48 +100,61 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
       
       {hasChildren && (
         <button
-          className={`p-2 hover:bg-gray-100 rounded-md transition-colors ${
-            isManualPositioningEnabled ? 'text-green-600' : 'text-orange-600'
+          className={`px-3 py-2 hover:bg-gray-100 rounded-md transition-colors text-xs font-medium flex items-center gap-1 ${
+            isManualPositioningEnabled ? 'text-blue-600 bg-blue-50' : 'text-orange-600'
           }`}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Overlay Toggle Manual Positioning button clicked for:', rect.id);
             
-            if (isManualPositioningEnabled) {
-              // Lock operation requires confirmation due to cascade effects
-              showLockConfirmationModal(rect.id, rect.label);
-            } else {
-              // Unlock operations are immediately applied
-              toggleManualPositioning(rect.id);
-            }
+            // Smart default: always apply the toggle action directly
+            // If switching to auto-layout (from manual), it will apply the layout algorithm
+            // If switching to manual (from auto), it enables manual positioning
+            toggleManualPositioning(rect.id, e.shiftKey);
           }}
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          title={isManualPositioningEnabled ? "Lock automatic layout" : "Unlock for manual positioning"}
+          title={isManualPositioningEnabled 
+            ? "Switch to Auto Layout - children will be repositioned using the layout algorithm. Hold Shift+Click to preserve current positions." 
+            : "Switch to Manual Layout - children can be positioned freely"
+          }
         >
-          {isManualPositioningEnabled ? <Unlock size={14} /> : <Lock size={14} />}
+          {isManualPositioningEnabled ? (
+            <>
+              <Grid3X3 size={12} />
+              <span>Auto Layout</span>
+              <span className="text-xs bg-blue-100 text-blue-700 px-1 py-0.5 rounded ml-1">Manual</span>
+            </>
+          ) : (
+            <>
+              <Move size={12} />
+              <span>Manual Layout</span>
+              <span className="text-xs bg-orange-100 text-orange-700 px-1 py-0.5 rounded ml-1">Auto</span>
+            </>
+          )}
         </button>
       )}
       
       {hasChildren && !isManualPositioningEnabled && !rect.isLockedAsIs && (
         <button
-          className="p-2 hover:bg-gray-100 rounded-md text-blue-600 transition-colors"
+          className="px-3 py-2 hover:bg-gray-100 rounded-md text-blue-600 transition-colors text-xs font-medium flex items-center gap-1"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Overlay Fit to Children button clicked for:', rect.id);
+            console.log('Overlay Fit Container button clicked for:', rect.id);
             fitToChildren(rect.id);
           }}
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          title="Fit to Children"
+          title="Resize container to fit all children with proper margins"
         >
-          <Minimize2 size={14} />
+          <Container size={12} />
+          <span>Fit Container</span>
         </button>
       )}
       

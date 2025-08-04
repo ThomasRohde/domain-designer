@@ -477,7 +477,13 @@ export default React.memo(RectangleComponent, (prevProps, nextProps) => {
       prevProps.selectedCount !== nextProps.selectedCount ||
       prevProps.virtualPosition !== nextProps.virtualPosition ||
       prevProps.isCurrentDropTarget !== nextProps.isCurrentDropTarget ||
-      prevProps.rectangle !== nextProps.rectangle) { // Reference equality check for rectangle object
+      prevProps.rectangle !== nextProps.rectangle || // Reference equality check for rectangle object
+      // Visual property changes that must trigger re-render
+      prevProps.fontSize !== nextProps.fontSize ||
+      prevProps.fontFamily !== nextProps.fontFamily ||
+      prevProps.borderRadius !== nextProps.borderRadius ||
+      prevProps.borderColor !== nextProps.borderColor ||
+      prevProps.borderWidth !== nextProps.borderWidth) {
     return false;
   }
   

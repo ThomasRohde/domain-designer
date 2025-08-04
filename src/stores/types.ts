@@ -80,6 +80,12 @@ export interface UIState {
   helpModalOpen: boolean;
   keyboardShortcutHelpOpen: boolean;
   updateNotification: UpdateNotificationState;
+  // Layout undo state for smart default behavior
+  layoutUndo: {
+    isVisible: boolean;
+    rectangleId: string | null;
+    timeoutId: number | null;
+  } | null;
   // Multi-select state
   selectedIds: string[];
   selectionBoxState: SelectionBoxState | null;
@@ -150,7 +156,7 @@ export interface RectangleActions {
   toggleTextLabel: (id: string) => void;
   updateTextLabelProperties: (id: string, properties: Partial<Rectangle>) => void;
   updateRectangleLayoutPreferences: (id: string, preferences: Partial<Rectangle['layoutPreferences']>) => void;
-  toggleManualPositioning: (id: string) => void;
+  toggleManualPositioning: (id: string, shiftKey?: boolean) => void;
   lockAsIs: (id: string) => void;
   fitToChildren: (id: string) => void;
   moveRectangle: (id: string, deltaX: number, deltaY: number) => void;
@@ -204,6 +210,10 @@ export interface UIActions {
   closeKeyboardShortcutHelp: () => void;
   showUpdateNotification: (updateServiceWorker: () => void) => void;
   hideUpdateNotification: () => void;
+  // Layout undo actions
+  showLayoutUndo: (rectangleId: string) => void;
+  hideLayoutUndo: () => void;
+  performLayoutUndo: () => void;
   // Selection box actions
   startSelectionBox: (startX: number, startY: number) => void;
   updateSelectionBox: (currentX: number, currentY: number) => void;
