@@ -425,7 +425,10 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       {canResize && isSelected && selectedCount === 1 && !isHierarchyDragActive && (
         <div
           className="absolute bottom-0 right-0 w-4 h-4 bg-orange-500 cursor-se-resize rounded-tl-md opacity-90 hover:opacity-100 transition-all hover:scale-110 border-2 border-white shadow-sm"
-          onMouseDown={(e) => onMouseDown(e, rectangle, 'resize')}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            onMouseDown(e, rectangle, 'resize');
+          }}
           title="Resize"
         />
       )}
@@ -478,6 +481,12 @@ export default React.memo(RectangleComponent, (prevProps, nextProps) => {
       prevProps.virtualPosition !== nextProps.virtualPosition ||
       prevProps.isCurrentDropTarget !== nextProps.isCurrentDropTarget ||
       prevProps.rectangle !== nextProps.rectangle || // Reference equality check for rectangle object
+      // Critical interaction state changes that affect visual styling
+      prevProps.isBeingResized !== nextProps.isBeingResized ||
+      prevProps.isBeingDragged !== nextProps.isBeingDragged ||
+      prevProps.isDragActive !== nextProps.isDragActive ||
+      prevProps.isResizeActive !== nextProps.isResizeActive ||
+      prevProps.isAtMinSize !== nextProps.isAtMinSize ||
       // Visual property changes that must trigger re-render
       prevProps.fontSize !== nextProps.fontSize ||
       prevProps.fontFamily !== nextProps.fontFamily ||

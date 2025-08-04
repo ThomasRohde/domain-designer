@@ -800,16 +800,19 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         
         // Save final state to history after drag/resize operation
         get().historyActions.saveToHistory();
-        
-        if (state.canvas.dragState) {
-          get().canvasActions.endDrag();
-        }
-        if (state.canvas.resizeState) {
-          get().canvasActions.endResize();
-        }
-        if (state.canvas.hierarchyDragState) {
-          get().canvasActions.endHierarchyDrag();
-        }
+      }
+      
+      // CRITICAL FIX: Check current state for each operation to ensure proper cleanup
+      // Previous logic used stale state captured at function start, causing highlight persistence
+      const currentState = get();
+      if (currentState.canvas.dragState) {
+        get().canvasActions.endDrag();
+      }
+      if (currentState.canvas.resizeState) {
+        get().canvasActions.endResize();
+      }
+      if (currentState.canvas.hierarchyDragState) {
+        get().canvasActions.endHierarchyDrag();
       }
     },
 

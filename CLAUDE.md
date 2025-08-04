@@ -133,6 +133,54 @@ The application includes comprehensive PowerPoint-style multi-select operations 
 - **html2canvas** + **jsPDF** for export functionality
 - **ESLint** with TypeScript rules and React hooks plugin
 
+## React Performance & Memoization Guidelines
+
+**CRITICAL**: When using `React.memo` with custom comparison functions, always include ALL props that affect visual rendering or component behavior.
+
+### Common Memoization Pitfalls to Avoid
+
+1. **Missing Visual State Props**: Always include interaction state props in `React.memo` comparisons:
+   ```typescript
+   // ❌ BAD - Missing visual state props
+   React.memo(Component, (prev, next) => {
+     return prev.id === next.id && prev.label === next.label;
+   });
+   
+   // ✅ GOOD - Include ALL visual state props
+   React.memo(Component, (prev, next) => {
+     if (prev.isBeingResized !== next.isBeingResized ||
+         prev.isBeingDragged !== next.isBeingDragged ||
+         prev.isSelected !== next.isSelected ||
+         prev.isDragActive !== next.isDragActive) {
+       return false; // Force re-render
+     }
+     return true; // Allow memoization
+   });
+   ```
+
+2. **State-Dependent Styling**: Components that change visual appearance based on state MUST include those state props in memo comparisons.
+
+3. **Interaction States**: Props like `isBeingResized`, `isBeingDragged`, `isSelected`, `isDragActive`, `isHierarchyDragActive` directly affect visual styling and must trigger re-renders.
+
+### Debugging Memoization Issues
+
+**Symptoms**: Visual states persist after interactions end (e.g., resize highlight stays after mouse release)
+
+**Root Cause**: `React.memo` blocking re-renders when visual state props change
+
+**Debug Strategy**:
+1. Add console logs to component render functions
+2. Check if state changes in store but component doesn't re-render
+3. Verify all visual state props are included in memo comparison
+4. Test without `React.memo` temporarily to confirm it's the issue
+
+### Best Practices
+
+- **Visual Props First**: Always include props that affect visual appearance in memo comparisons
+- **Complete Coverage**: Include ALL interaction states: resize, drag, selection, hover, focus
+- **Explicit Comparison**: Use explicit `!==` checks for boolean props rather than complex logic
+- **Comment Critical Props**: Document why specific props are included in memo comparisons
+
 ## Mixed Flow Layout Algorithm
 
 The Mixed Flow Layout Algorithm is an advanced layout option that significantly improves space utilization and visual appeal for hierarchical diagrams.
