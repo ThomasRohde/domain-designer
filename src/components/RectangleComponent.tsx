@@ -284,8 +284,8 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     boxShadow,
     // Disable transitions during virtual drag for immediate visual feedback
     transition: (isDragActive || isResizeActive || isBeingDragged || virtualPosition) ? 'none' : 'all 0.2s ease-in-out',
-    // Clip child content during resize to prevent visual overflow issues, but allow resize handle to be visible
-    overflow: childCount > 0 && !isSelected ? 'hidden' : 'visible'
+    // Clip child content during resize to prevent visual overflow issues, but allow resize handle and badges to be visible
+    overflow: childCount > 0 && !isSelected && !isMultiSelected ? 'hidden' : 'visible'
   };
 
   /**
@@ -431,7 +431,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       )}
       
       {/* Multi-selection count badge: Shows selection position in group */}
-      {isSelected && selectedCount > 1 && !isHierarchyDragActive && (
+      {isMultiSelected && !isHierarchyDragActive && (
         <div
           className="absolute w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full border-2 border-white shadow-xl flex items-center justify-center"
           style={{ 
