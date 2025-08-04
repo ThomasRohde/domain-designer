@@ -693,10 +693,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           // Calculate incremental pixel delta from current position to prevent coordinate accumulation
           const rect = state.rectangles.find(r => r.id === state.canvas.dragState!.id);
           if (rect) {
-            // Convert grid coordinate difference to pixel movement for moveRectangle API
+            // Convert grid coordinate difference to pixel movement for moveRectangleDuringDrag API
             const pixelDeltaX = (newX - rect.x) * state.settings.gridSize;
             const pixelDeltaY = (newY - rect.y) * state.settings.gridSize;
-            get().rectangleActions.moveRectangle(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
+            get().rectangleActions.moveRectangleDuringDrag(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
           }
         }
         
@@ -716,10 +716,11 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           // This approach prevents parent-child coordinate drift during drag operations
           const rect = state.rectangles.find(r => r.id === state.canvas.dragState!.id);
           if (rect) {
-            // Transform grid coordinate delta to pixel delta for moveRectangle API
+            // Transform grid coordinate delta to pixel delta for moveRectangleDuringDrag API
+            // Use during-drag version to prevent history pollution
             const pixelDeltaX = (newX - rect.x) * state.settings.gridSize;
             const pixelDeltaY = (newY - rect.y) * state.settings.gridSize;
-            get().rectangleActions.moveRectangle(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
+            get().rectangleActions.moveRectangleDuringDrag(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
           }
         }
       }

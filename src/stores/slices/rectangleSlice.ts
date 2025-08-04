@@ -1270,6 +1270,84 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const state = get();
       const updatedRectangles = updateFn(state.rectangles);
       set({ rectangles: updatedRectangles });
+    },
+
+    /**
+     * Move rectangle during drag operations without creating history entries.
+     * Used for intermediate drag updates to prevent history pollution.
+     * Final position is saved to history on drag end.
+     */
+    moveRectangleDuringDrag: (id: string, deltaXPixels: number, deltaYPixels: number) => {
+      const state = get();
+      const { rectangles, settings } = state;
+      const rect = rectangles.find(r => r.id === id);
+      if (!rect) return;
+
+      // Movement permission validation
+      if (rect.parentId) {
+        const parent = rectangles.find(r => r.id === rect.parentId);
+        if (!parent || !parent.isManualPositioningEnabled) {
+          return; // Parent must allow manual positioning
+        }
+      }
+
+      // Cascade movement: include all descendants in movement operation
+      const descendants = getAllDescendants(id, rectangles);
+      const idsToMove = new Set([id, ...descendants]);
+
+      let actualDeltaXPixels = deltaXPixels;
+      let actualDeltaYPixels = deltaYPixels;
+
+      // Parent boundary constraint enforcement
+      if (rect.parentId) {
+        const parent = rectangles.find(p => p.id === rect.parentId);
+        if (parent) {
+          const { margin, labelMargin } = { margin: settings.margin, labelMargin: settings.labelMargin };
+          const gridSize = settings.gridSize;
+          const currentXPixels = rect.x * gridSize;
+          const currentYPixels = rect.y * gridSize;
+          const parentXPixels = parent.x * gridSize;
+          const parentYPixels = parent.y * gridSize;
+          const parentWPixels = parent.w * gridSize;
+          const parentHPixels = parent.h * gridSize;
+          const rectWPixels = rect.w * gridSize;
+          const rectHPixels = rect.h * gridSize;
+          
+          let newXPixels = currentXPixels + deltaXPixels;
+          let newYPixels = currentYPixels + deltaYPixels;
+          
+          // Clip movement to keep rectangle within parent boundaries
+          newXPixels = Math.max(parentXPixels + margin, newXPixels);
+          newYPixels = Math.max(parentYPixels + labelMargin, newYPixels);
+          newXPixels = Math.min(parentXPixels + parentWPixels - rectWPixels - margin, newXPixels);
+          newYPixels = Math.min(parentYPixels + parentHPixels - rectHPixels - margin, newYPixels);
+          
+          // Calculate constrained movement delta
+          actualDeltaXPixels = newXPixels - currentXPixels;
+          actualDeltaYPixels = newYPixels - currentYPixels;
+        }
+      }
+
+      // Coordinated movement without history: apply same delta to target and all descendants
+      get().rectangleActions.updateRectanglesDuringDrag((currentRectangles) => {
+        return currentRectangles.map(r => {
+          if (idsToMove.has(r.id)) {
+            // Pixel-precise coordinate transformation
+            const currentXPixels = r.x * settings.gridSize;
+            const currentYPixels = r.y * settings.gridSize;
+            
+            const newXPixels = currentXPixels + actualDeltaXPixels;
+            const newYPixels = currentYPixels + actualDeltaYPixels;
+
+            // Convert back to grid coordinate system
+            const newX = newXPixels / settings.gridSize;
+            const newY = newYPixels / settings.gridSize;
+
+            return { ...r, x: newX, y: newY };
+          }
+          return r;
+        });
+      });
     }
   }
 });
