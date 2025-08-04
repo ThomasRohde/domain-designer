@@ -1,31 +1,9 @@
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
-
-/**
- * Throttle utility for mouse events to prevent excessive operations
- */
-function throttleMouseEvent(func: (e: MouseEvent) => void, delay: number) {
-  let timeoutId: number | undefined;
-  let lastExecTime = 0;
-
-  return function (e: MouseEvent) {
-    const currentTime = Date.now();
-
-    if (currentTime - lastExecTime > delay) {
-      func(e);
-      lastExecTime = currentTime;
-    } else {
-      clearTimeout(timeoutId);
-      timeoutId = window.setTimeout(() => {
-        func(e);
-        lastExecTime = Date.now();
-      }, delay - (currentTime - lastExecTime));
-    }
-  };
-}
 import { ExportOptions, Rectangle } from '../types';
 import { exportDiagram } from '../utils/exportUtils';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useAppStore } from '../stores/useAppStore';
+import { throttleMouseEvent } from '../utils/throttleUtils';
 import { importDiagramFromJSON, processImportedDiagram, ImportedDiagramData } from '../utils/exportUtils';
 import { initializeAutoSaveSubscription } from '../stores/useAppStore';
 import { setGlobalUpdateNotificationHandler } from '../main';

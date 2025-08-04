@@ -469,38 +469,17 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   );
 };
 
-// Optimized React.memo with smart comparison to prevent unnecessary re-renders
+// Optimized React.memo with focused comparison for essential props
 export default React.memo(RectangleComponent, (prevProps, nextProps) => {
-  // Always check selection state changes first - critical for proper UI updates
+  // Critical state changes that must trigger re-render
   if (prevProps.isSelected !== nextProps.isSelected ||
       prevProps.isMultiSelected !== nextProps.isMultiSelected ||
-      prevProps.selectedCount !== nextProps.selectedCount) {
-    return false; // Force re-render when selection state changes
-  }
-  
-  // Check for interaction state changes that require visual updates
-  if (prevProps.isBeingDragged !== nextProps.isBeingDragged ||
-      prevProps.isBeingResized !== nextProps.isBeingResized ||
-      prevProps.isDropTarget !== nextProps.isDropTarget ||
+      prevProps.virtualPosition !== nextProps.virtualPosition ||
       prevProps.isCurrentDropTarget !== nextProps.isCurrentDropTarget ||
-      prevProps.isDragActive !== nextProps.isDragActive ||
-      prevProps.isResizeActive !== nextProps.isResizeActive ||
-      prevProps.virtualPosition !== nextProps.virtualPosition) {
-    return false; // Force re-render for interaction state changes
+      prevProps.rectangle !== nextProps.rectangle) { // Reference equality check for rectangle object
+    return false;
   }
   
-  // Check core rectangle properties
-  if (prevProps.rectangle.id !== nextProps.rectangle.id ||
-      prevProps.rectangle.x !== nextProps.rectangle.x ||
-      prevProps.rectangle.y !== nextProps.rectangle.y ||
-      prevProps.rectangle.w !== nextProps.rectangle.w ||
-      prevProps.rectangle.h !== nextProps.rectangle.h ||
-      prevProps.rectangle.label !== nextProps.rectangle.label ||
-      prevProps.rectangle.color !== nextProps.rectangle.color ||
-      prevProps.gridSize !== nextProps.gridSize) {
-    return false; // Force re-render for property changes
-  }
-  
-  // Skip re-render if nothing important changed
+  // Skip re-render if core properties unchanged
   return true;
 });

@@ -122,7 +122,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
           <RectangleComponent
             key={rect.id}
             rectangle={rect}
-            isSelected={isInSelection && selectedIds.length === 1}
+            isSelected={selectedId === rect.id}
             isMultiSelected={isMultiSelected}
             selectedCount={selectedIds.length}
             zIndex={getZIndex(rect, rectangles, selectedId, canvasState.dragState, canvasState.resizeState, canvasState.hierarchyDragState)}

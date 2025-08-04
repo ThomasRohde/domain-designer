@@ -20,32 +20,7 @@ import {
   applyRelativePositioning 
 } from '../../utils/collisionUtils';
 
-/**
- * Throttle utility for limiting function call frequency
- * Optimizes performance by preventing excessive virtual drag updates
- */
-function throttle(
-  func: (deltaX: number, deltaY: number) => void,
-  delay: number
-): (deltaX: number, deltaY: number) => void {
-  let timeoutId: number | undefined;
-  let lastExecTime = 0;
-
-  return function (deltaX: number, deltaY: number) {
-    const currentTime = Date.now();
-
-    if (currentTime - lastExecTime > delay) {
-      func(deltaX, deltaY);
-      lastExecTime = currentTime;
-    } else {
-      clearTimeout(timeoutId);
-      timeoutId = window.setTimeout(() => {
-        func(deltaX, deltaY);
-        lastExecTime = Date.now();
-      }, delay - (currentTime - lastExecTime));
-    }
-  };
-}
+import { throttlePositionUpdate } from '../../utils/throttleUtils';
 
 /**
  * Canvas state slice managing all user interactions with the drawing surface.
@@ -65,7 +40,7 @@ export interface CanvasSlice {
 export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
   // Throttled virtual drag update for optimal performance
   // Limits updates to ~60fps (16ms) to prevent excessive state mutations
-  const throttledVirtualDragUpdate = throttle((deltaX: number, deltaY: number) => {
+  const throttledVirtualDragUpdate = throttlePositionUpdate((deltaX: number, deltaY: number) => {
     const state = get();
     const { virtualDragState } = state.canvas;
     if (!virtualDragState.isActive) return;
