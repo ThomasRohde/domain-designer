@@ -17,7 +17,7 @@ const LayoutUndoButton: React.FC = () => {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-[100001] animate-in slide-in-from-top-2 duration-300">
+    <div className="fixed bottom-4 right-4 z-[100001] animate-in slide-in-from-bottom-2 duration-300">
       <div className="bg-blue-600 text-white rounded-lg shadow-lg border border-blue-700 flex items-center gap-3 px-4 py-3">
         <div className="flex items-center gap-2">
           <Undo2 size={16} />
