@@ -28,7 +28,7 @@ export const DEFAULT_RECTANGLE_SIZE = {
 
 // Typography system - supports hierarchical visual organization through font scaling
 export const DEFAULT_FONT_SETTINGS = {
-  rootFontSize: 15,            // Base font size in pixels for root-level elements
+  rootFontSize: 22,            // Base font size in pixels for root-level elements
   dynamicFontSizing: true      // Automatically reduce font size for deeper hierarchy levels (10% per level)
 };
 
