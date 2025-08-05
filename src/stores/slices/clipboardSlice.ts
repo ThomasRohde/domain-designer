@@ -220,6 +220,7 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
 
     /**
      * Paste rectangles from clipboard to target location
+     * Uses context-aware strategy: exact layout for root, hierarchical mode for parents
      */
     pasteRectangles: (targetParentId?: string) => {
       const { clipboard, rectangles, rectangleActions, historyActions } = get();
@@ -230,63 +231,84 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
 
       const { rectangles: clipboardRectangles, relativeBounds } = clipboard.clipboardData;
       
-      // Generate new IDs for all rectangles
       const idMapping = new Map<string, string>();
       clipboardRectangles.forEach(rect => {
         idMapping.set(rect.id, rectangleActions.generateId());
       });
       
-      // Calculate paste position
-      const pastePosition = calculatePastePosition(
-        relativeBounds,
-        targetParentId,
-        rectangles
-      );
+      let newRectangles: Rectangle[];
       
-      // Create new rectangles with updated IDs and positions
-      const newRectangles = clipboardRectangles.map(rect => {
-        const newId = idMapping.get(rect.id)!;
-        // If the rectangle had a parent and that parent was also copied, use the mapped parent ID
-        // Otherwise, use the target parent ID (the rectangle we're pasting into)
-        const mappedParentId = rect.parentId ? idMapping.get(rect.parentId) : undefined;
-        const newParentId = mappedParentId !== undefined ? mappedParentId : targetParentId;
+      if (targetParentId) {
+        // Hierarchical mode: Replay sequence of addRectangle operations
+        const createdIds: string[] = [];
+        const clipboardIds = new Set(clipboardRectangles.map(r => r.id));
+        const rootRectangles = clipboardRectangles.filter(rect => 
+          !rect.parentId || !clipboardIds.has(rect.parentId)
+        );
         
-        // Calculate new position
-        const offsetX = rect.x - relativeBounds.minX + pastePosition.x;
-        const offsetY = rect.y - relativeBounds.minY + pastePosition.y;
-        
-        return {
-          ...rect,
-          id: newId,
-          parentId: newParentId,
-          x: offsetX,
-          y: offsetY,
+        const processLevel = (parentRectangles: Rectangle[], currentParentId: string) => {
+          parentRectangles.forEach(rect => {
+            rectangleActions.addRectangle(currentParentId);
+            
+            const currentState = get();
+            const lastCreated = currentState.rectangles[currentState.rectangles.length - 1];
+            const newId = lastCreated.id;
+            
+            idMapping.set(rect.id, newId);
+            createdIds.push(newId);
+            
+            rectangleActions.updateRectangleLabel(newId, rect.label);
+            if (rect.description) {
+              rectangleActions.updateRectangleDescription(newId, rect.description);
+            }
+            rectangleActions.updateRectangleColor(newId, rect.color);
+            
+            const children = clipboardRectangles.filter(child => child.parentId === rect.id);
+            if (children.length > 0) {
+              processLevel(children, newId);
+            }
+          });
         };
-      });
+        
+        processLevel(rootRectangles, targetParentId);
+        
+        const currentState = get();
+        newRectangles = currentState.rectangles.filter(r => createdIds.includes(r.id));
+      } else {
+        // Exact layout mode: Preserve positioning and sizing
+        const pastePosition = calculatePastePosition(relativeBounds, targetParentId, rectangles);
+        
+        newRectangles = clipboardRectangles.map(rect => {
+          const newId = idMapping.get(rect.id)!;
+          const mappedParentId = rect.parentId ? idMapping.get(rect.parentId) : undefined;
+          const newParentId = mappedParentId !== undefined ? mappedParentId : targetParentId;
+          
+          const offsetX = rect.x - relativeBounds.minX + pastePosition.x;
+          const offsetY = rect.y - relativeBounds.minY + pastePosition.y;
+          
+          return {
+            ...rect,
+            id: newId,
+            parentId: newParentId,
+            x: offsetX,
+            y: offsetY,
+          };
+        });
+        
+        set(state => ({
+          rectangles: [...state.rectangles, ...newRectangles],
+        }));
+        
+        setTimeout(() => {
+          historyActions.saveToHistory();
+        }, 0);
+      }
       
-      // Update rectangles and save to history after the state update
-      set(state => ({
-        rectangles: [...state.rectangles, ...newRectangles],
-      }));
-      
-      // Save to history after the state update (following the same pattern as other rectangle operations)
-      setTimeout(() => {
-        historyActions.saveToHistory();
-      }, 0);
-      
-      // Select the newly pasted rectangles
       const topLevelPastedIds = newRectangles
         .filter(rect => rect.parentId === targetParentId)
         .map(rect => rect.id);
       
       rectangleActions.setSelectedIds(topLevelPastedIds);
-      
-      // If pasted into a parent, automatically resize parent to fit new children
-      if (targetParentId) {
-        setTimeout(() => {
-          rectangleActions.fitToChildren(targetParentId);
-        }, 50); // Small delay to ensure DOM updates are complete
-      }
     },
 
     /**
