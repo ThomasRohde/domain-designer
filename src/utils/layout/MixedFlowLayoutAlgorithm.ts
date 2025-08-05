@@ -18,8 +18,8 @@ const PRECISION_EPSILON = 0.001;
  * Type for margin-like objects
  */
 interface MarginsLike {
-  margin?: number;
-  labelMargin?: number;
+  margin: number;
+  labelMargin: number;
 }
 
 /**
@@ -81,8 +81,8 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @returns Offset coordinates for child positioning
    */
   private outerOffset(parent: Rectangle, m: MarginsLike) {
-    const margin = m.margin ?? 1;
-    const labelMargin = m.labelMargin ?? 2;
+    const margin = m.margin;
+    const labelMargin = m.labelMargin;
     
     return {
       x: parent.x + margin,
@@ -115,7 +115,7 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
     }
 
     // Convert rectangles to mixed flow rectangles and compute their sizes
-    const mixedChildren = this.computeChildrenSizes(children, fixedDimensions, margins);
+    const mixedChildren = this.computeChildrenSizes(children, fixedDimensions);
     
     // Generate and evaluate different layout options
     const layoutOptions = this.generateLayoutOptions(mixedChildren, margins);
@@ -142,15 +142,15 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
       return { w: 100, h: 60 };
     }
 
-    const mixedChildren = this.computeChildrenSizes(children, fixedDimensions, margins);
+    const mixedChildren = this.computeChildrenSizes(children, fixedDimensions);
     const layoutOptions = this.generateLayoutOptions(mixedChildren, margins);
     const bestOption = this.selectOptimalLayout(layoutOptions);
     
     // Add margins to the final size
     // Horizontal: left + right margins
-    const marginH = 2 * (margins?.margin || 1);
+    const marginH = 2 * margins.margin;
     // Vertical: top label margin + top margin + bottom margin
-    const marginV = (margins?.labelMargin || 2) + (margins?.margin || 1) + (margins?.margin || 1);
+    const marginV = margins.labelMargin + margins.margin + margins.margin;
     
     return {
       w: this.snapToGrid(bestOption.parentW + marginH),
@@ -185,8 +185,7 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
       leafFixedHeight: boolean;
       leafWidth: number;
       leafHeight: number;
-    }, 
-    _margins?: MarginsLike
+    }
   ): MixedFlowRectangle[] {
     return children.map(child => {
       const mixedChild: MixedFlowRectangle = {
@@ -351,9 +350,9 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param margins - Spacing configuration
    * @returns Array of layout options with calculated scores
    */
-  private generateLayoutOptions(children: MixedFlowRectangle[], margins?: MarginsLike): LayoutOption[] {
+  private generateLayoutOptions(children: MixedFlowRectangle[], margins: MarginsLike): LayoutOption[] {
     const options: LayoutOption[] = [];
-    const gap = margins?.margin || 1;
+    const gap = margins.margin;
 
     // Option A: Single Row Layout
     options.push(this.createSingleRowOption(children, gap));
@@ -753,12 +752,12 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param margins - Margin configuration for positioning
    * @returns Array of rectangles with final absolute coordinates
    */
-  private positionChildren(option: LayoutOption, parent: Rectangle, margins?: MarginsLike): Rectangle[] {
-    const offset = this.outerOffset(parent, margins || {});
+  private positionChildren(option: LayoutOption, parent: Rectangle, margins: MarginsLike): Rectangle[] {
+    const offset = this.outerOffset(parent, margins);
     
     // Calculate available space inside parent (minus margins)
-    const marginH = 2 * (margins?.margin || 1);
-    const marginV = (margins?.labelMargin || 2) + (margins?.margin || 1) + (margins?.margin || 1);
+    const marginH = 2 * margins.margin;
+    const marginV = margins.labelMargin + margins.margin + margins.margin;
     const availableW = parent.w - marginH;
     const availableH = parent.h - marginV;
     

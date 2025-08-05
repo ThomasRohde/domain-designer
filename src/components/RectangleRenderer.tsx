@@ -19,10 +19,11 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   onContextMenu,
 }) => {
   // Optimized subscriptions using shallow comparison to prevent unnecessary re-renders
-  const { rectangles, selectedIds, gridSize } = useAppStore(useShallow(state => ({
+  const { rectangles, selectedIds, gridSize, labelMargin } = useAppStore(useShallow(state => ({
     rectangles: state.rectangles,
     selectedIds: state.ui.selectedIds,
-    gridSize: state.settings.gridSize
+    gridSize: state.settings.gridSize,
+    labelMargin: state.settings.labelMargin
   })));
   
   const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
@@ -166,6 +167,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             })()}
             childCount={getChildren(rect.id, rectangles).length}
             gridSize={gridSize}
+            labelMargin={labelMargin}
             fontSize={calculateFontSize(rect.id)}
             fontFamily={fontFamily}
             isDropTarget={isDropTarget}

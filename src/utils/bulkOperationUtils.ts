@@ -204,7 +204,7 @@ export const triggerLayoutRecalculation = (
       labelMargin: settings.labelMargin
     };
 
-    return updateChildrenLayout(rectangles, fixedDimensions, margins);
+    return updateChildrenLayout(rectangles, margins, fixedDimensions);
   }
 
   return rectangles;

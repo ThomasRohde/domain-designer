@@ -52,13 +52,12 @@ export const rectanglesOverlap = (rect1: RectangleBounds, rect2: RectangleBounds
 export const isWithinParentBounds = (
   child: RectangleBounds,
   parent: RectangleBounds,
-  margin: number = 1,
-  labelMargin: number = 2
+  margins: { margin: number; labelMargin: number }
 ): boolean => {
-  const minX = parent.x + margin;
-  const minY = parent.y + labelMargin;
-  const maxX = parent.x + parent.w - child.w - margin;
-  const maxY = parent.y + parent.h - child.h - margin;
+  const minX = parent.x + margins.margin;
+  const minY = parent.y + margins.labelMargin;
+  const maxX = parent.x + parent.w - child.w - margins.margin;
+  const maxY = parent.y + parent.h - child.h - margins.margin;
 
   const result = (
     child.x >= minX &&
@@ -82,8 +81,7 @@ export const isWithinParentBounds = (
 export const isSelectionWithinParentBounds = (
   selection: RectangleBounds[],
   parent: RectangleBounds,
-  margin: number = 1,
-  labelMargin: number = 2
+  margins: { margin: number; labelMargin: number }
 ): boolean => {
   if (selection.length === 0) return true;
 
@@ -102,7 +100,7 @@ export const isSelectionWithinParentBounds = (
   };
 
   // Check if the collective selection bounding box fits within parent
-  return isWithinParentBounds(selectionBounds, parent, margin, labelMargin);
+  return isWithinParentBounds(selectionBounds, parent, margins);
 };
 
 /**
@@ -202,7 +200,7 @@ export const detectBulkMovementCollisions = (
     };
 
     // For multi-select, check if the collective selection would fit within parent bounds
-    if (!isSelectionWithinParentBounds(groupRects, parentBounds, settings.margin, settings.labelMargin)) {
+    if (!isSelectionWithinParentBounds(groupRects, parentBounds, { margin: settings.margin, labelMargin: settings.labelMargin })) {
       result.hasCollision = true;
       result.constraintViolations.push(
         `Selection would move outside parent bounds`

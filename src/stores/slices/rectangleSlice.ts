@@ -500,7 +500,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         if (parent && !parent.isLockedAsIs) {
           const children = getChildren(id, updated);
           if (children.length > 0) {
-            const optimalSize = layoutManager.calculateMinimumParentSize(id, updated, getFixedDimensions(), getMargins());
+            const optimalSize = layoutManager.calculateMinimumParentSize(id, updated, getMargins(), getFixedDimensions());
             
             const resizedUpdated = updated.map(rect => 
               rect.id === id 
@@ -508,11 +508,11 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
                 : rect
             );
             
-            return updateChildrenLayout(resizedUpdated, getFixedDimensions(), getMargins());
+            return updateChildrenLayout(resizedUpdated, getMargins(), getFixedDimensions());
           }
         }
         
-        return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
+        return updateChildrenLayout(updated, getMargins(), getFixedDimensions());
       });
     },
 
@@ -573,7 +573,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
             currentState.uiActions.showLayoutUndo?.(id);
           }, 0);
           
-          return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
+          return updateChildrenLayout(updated, getMargins(), getFixedDimensions());
         }
         
         return updated;
@@ -777,7 +777,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           const newParentChildren = updated.filter(r => r.parentId === newParentId);
           
           if (newParentChildren.length > 0 && newParent && !newParent.isLockedAsIs) {
-            const minParentSize = layoutManager.calculateMinimumParentSize(newParentId, updated, getFixedDimensions(), getMargins());
+            const minParentSize = layoutManager.calculateMinimumParentSize(newParentId, updated, getMargins(), getFixedDimensions());
             
             if (newParent.w < minParentSize.w || newParent.h < minParentSize.h) {
               updated = updated.map(rect => 
@@ -790,7 +790,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         }
         
         // Update layout for both old and new parents
-        return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
+        return updateChildrenLayout(updated, getMargins(), getFixedDimensions());
       });
       
       return true;

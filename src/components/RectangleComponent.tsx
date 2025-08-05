@@ -30,6 +30,8 @@ interface RectangleComponentProps {
   childCount: number;
   /** Grid size for coordinate calculations */
   gridSize?: number;
+  /** Label margin for positioning labels within parent rectangles */
+  labelMargin?: number;
   /** Base font size (may be overridden by text label settings) */
   fontSize?: number;
   /** Base font family (may be overridden by text label settings) */
@@ -99,6 +101,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   canResize,
   childCount,
   gridSize = GRID_SIZE,
+  labelMargin = LABEL_MARGIN,
   fontSize = 14,
   fontFamily = 'Inter',
   isDropTarget = false,
@@ -337,7 +340,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         <div className="relative h-full">
           <div 
             className="absolute left-0 right-0 text-center px-2"
-            style={{ top: `${LABEL_MARGIN * 2}px` }}
+            style={{ top: `${labelMargin * 2}px` }}
           >
             {isEditing ? (
               <input

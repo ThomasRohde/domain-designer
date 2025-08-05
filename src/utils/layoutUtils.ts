@@ -17,15 +17,15 @@ import { layoutManager } from './layout';
  */
 export const updateChildrenLayout = (
   rectangles: Rectangle[],
+  margins: {
+    margin: number;
+    labelMargin: number;
+  },
   fixedDimensions?: {
     leafFixedWidth: boolean;
     leafFixedHeight: boolean;
     leafWidth: number;
     leafHeight: number;
-  },
-  margins?: {
-    margin: number;
-    labelMargin: number;
   }
 ): Rectangle[] => {
   const updated = [...rectangles];
@@ -57,7 +57,7 @@ export const updateChildrenLayout = (
               processedAny = true;
             } else {
               // Check if parent needs to be resized to fit children properly
-              const minParentSize = layoutManager.calculateMinimumParentSize(rect.parentId, updated, fixedDimensions, margins);
+              const minParentSize = layoutManager.calculateMinimumParentSize(rect.parentId, updated, margins, fixedDimensions);
               
               // Find parent index to update if needed
               const parentIndex = updated.findIndex(r => r.id === rect.parentId);
@@ -75,7 +75,7 @@ export const updateChildrenLayout = (
               // Get the updated parent after potential resize
               const updatedParent = updated.find(p => p.id === rect.parentId);
               if (updatedParent) {
-                const newLayout = layoutManager.calculateChildLayout(updatedParent, siblings, fixedDimensions, margins, updated);
+                const newLayout = layoutManager.calculateChildLayout(updatedParent, siblings, margins, fixedDimensions, updated);
                 
                 newLayout.forEach(layoutRect => {
                   const index = updated.findIndex(r => r.id === layoutRect.id);

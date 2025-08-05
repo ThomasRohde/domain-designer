@@ -21,8 +21,8 @@ const HYSTERESIS_FACTOR = 0.05;     // Additional tolerance for sticky behavior
  * Type for margin-like objects
  */
 interface MarginsLike {
-  margin?: number;
-  labelMargin?: number;
+  margin: number;
+  labelMargin: number;
 }
 
 /**
@@ -38,8 +38,8 @@ interface MarginsLike {
  * @returns Inner dimensions with stability rounding applied
  */
 function innerBoxSize(maxW: number, maxH: number, m: MarginsLike) {
-  const margin = m.margin ?? 1;
-  const labelMargin = m.labelMargin ?? 2;
+  const margin = m.margin;
+  const labelMargin = m.labelMargin;
   
   // Use precise calculations for sub-unit margins with stability rounding
   const hori = 2 * margin;
@@ -70,8 +70,8 @@ function innerBoxSize(maxW: number, maxH: number, m: MarginsLike) {
  * @returns Absolute positioning offset for child placement
  */
 function outerOffset(parent: Rectangle, m: MarginsLike) {
-  const margin = m.margin ?? 1;
-  const labelMargin = m.labelMargin ?? 2;
+  const margin = m.margin;
+  const labelMargin = m.labelMargin;
   
   return {
     x: parent.x + margin,
@@ -111,13 +111,13 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param margins - Margin configuration determining rounding strategy
    * @returns Precision-controlled coordinate value
    */
-  private snapToGrid(value: number, margins?: MarginsLike): number {
+  private snapToGrid(value: number, margins: MarginsLike): number {
     // For very small values, preserve precision to avoid layout collapse
     if (Math.abs(value) < PRECISION_EPSILON) return 0;
     
     // Check if margins are whole numbers
-    const margin = margins?.margin ?? 1;
-    const labelMargin = margins?.labelMargin ?? 2;
+    const margin = margins.margin;
+    const labelMargin = margins.labelMargin;
     const hasIntegerMargins = Number.isInteger(margin) && Number.isInteger(labelMargin);
     
     // Only snap to grid if margins are integers
@@ -151,7 +151,7 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param parentH - Parent height for centering calculation
    * @param margins - Margin configuration affecting rounding strategy
    */
-  private centerChildrenInParent(children: FlowRectangle[], parentW: number, parentH: number, margins?: MarginsLike): void {
+  private centerChildrenInParent(children: FlowRectangle[], parentW: number, parentH: number, margins: MarginsLike): void {
     if (children.length === 0) return;
     
     // Calculate actual bounds of all children
@@ -222,7 +222,7 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
     const flowChildren = this.prepareFlowRectangles(children, parentRect, allRectangles, depth);
     
     // Calculate text measurements and set minimum sizes
-    this.calculateMinimumSizes(flowChildren, fixedDimensions, margins);
+    this.calculateMinimumSizes(flowChildren, margins, fixedDimensions);
     
     // Calculate inner box size using helper function
     const innerBox = innerBoxSize(parentRect.w, parentRect.h, margins || {});
@@ -267,13 +267,13 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
     };
 
     const flowChildren = this.prepareFlowRectangles(children, tempParent, allRectangles, depth);
-    this.calculateMinimumSizes(flowChildren, fixedDimensions, margins);
+    this.calculateMinimumSizes(flowChildren, margins, fixedDimensions);
     
     const packedSize = this.pack(tempParent, flowChildren, Infinity, Infinity, margins, allRectangles);
     
     // Add margins using consistent calculations with conditional snapping
-    const marginH = 2 * (margins?.margin || 1);
-    const marginV = (margins?.labelMargin || 2) + 2 * (margins?.margin || 1);
+    const marginH = 2 * margins.margin;
+    const marginV = margins.labelMargin + 2 * margins.margin;
     
     return {
       w: this.snapToGrid(packedSize.w + marginH, margins),
@@ -365,12 +365,12 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param fixedDimensions - Optional fixed sizing for leaf rectangles
    * @param margins - Margin configuration affecting rounding behavior
    */
-  private calculateMinimumSizes(rectangles: FlowRectangle[], fixedDimensions?: {
+  private calculateMinimumSizes(rectangles: FlowRectangle[], margins: MarginsLike, fixedDimensions?: {
     leafFixedWidth: boolean;
     leafFixedHeight: boolean;
     leafWidth: number;
     leafHeight: number;
-  }, margins?: MarginsLike): void {
+  }): void {
     rectangles.forEach(rect => {
       if ('isTextLabel' in rect && rect.isTextLabel || rect.type === 'textLabel') {
         // For text labels, calculate size based on text content and font size
@@ -416,7 +416,7 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param allRectangles - Complete rectangle set for depth calculations
    * @returns Final parent dimensions after packing
    */
-  private pack(parent: FlowRectangle, children: FlowRectangle[], maxW: number, _maxH: number, margins?: MarginsLike, allRectangles?: Rectangle[]): { w: number; h: number } {
+  private pack(parent: FlowRectangle, children: FlowRectangle[], maxW: number, _maxH: number, margins: MarginsLike, allRectangles?: Rectangle[]): { w: number; h: number } {
     if (children.length === 0) {
       return { w: parent.minW || 100, h: parent.minH || 60 };
     }
@@ -462,8 +462,8 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param margins - Spacing configuration
    * @returns Final parent dimensions
    */
-  private packRow(parent: FlowRectangle, children: FlowRectangle[], maxW: number, margins?: MarginsLike): { w: number; h: number } {
-    const gap = margins?.margin || 1;
+  private packRow(parent: FlowRectangle, children: FlowRectangle[], maxW: number, margins: MarginsLike): { w: number; h: number } {
+    const gap = margins.margin;
     let currentX = 0;
     let currentY = 0;
     let rowH = 0;
@@ -544,8 +544,8 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param margins - Spacing configuration
    * @returns Final parent dimensions
    */
-  private packColumn(parent: FlowRectangle, children: FlowRectangle[], margins?: MarginsLike): { w: number; h: number } {
-    const gap = margins?.margin || 1;
+  private packColumn(parent: FlowRectangle, children: FlowRectangle[], margins: MarginsLike): { w: number; h: number } {
+    const gap = margins.margin;
     let currentY = 0;
     let colW = 0;
 
@@ -593,11 +593,11 @@ export class FlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * @param margins - Margin configuration for positioning and rounding
    * @returns Array of final positioned rectangles
    */
-  private convertToRectangles(flowChildren: FlowRectangle[], parent: Rectangle, margins?: {
+  private convertToRectangles(flowChildren: FlowRectangle[], parent: Rectangle, margins: {
     margin: number;
     labelMargin: number;
   }): Rectangle[] {
-    const offset = outerOffset(parent, margins || {});
+    const offset = outerOffset(parent, margins);
 
     const result = flowChildren.map(flowRect => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

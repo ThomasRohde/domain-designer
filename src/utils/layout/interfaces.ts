@@ -17,7 +17,7 @@ export interface LayoutInput {
     leafHeight: number;
   };
   /** Margin configuration for spacing */
-  margins?: {
+  margins: {
     margin: number;
     labelMargin: number;
   };

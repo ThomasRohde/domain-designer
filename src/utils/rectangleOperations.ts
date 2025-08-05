@@ -365,8 +365,8 @@ export const fitParentToChildren = (
   const optimalSize = layoutManager.calculateMinimumParentSize(
     parentId, 
     rectangles, 
-    fixedDimensions, 
-    margins
+    margins,
+    fixedDimensions
   );
   
   // Update parent rectangle with optimal size, preserving manual positioning mode
@@ -388,7 +388,7 @@ export const fitParentToChildren = (
   }
   
   // Parent is in auto mode - apply automatic layout to children
-  return updateChildrenLayout(updatedRectangles, fixedDimensions, margins);
+  return updateChildrenLayout(updatedRectangles, margins, fixedDimensions);
 };
 
 /**

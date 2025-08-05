@@ -12,6 +12,8 @@ interface ViewerRectangleRendererProps {
   rectangles: Rectangle[];
   /** Grid size for coordinate calculations */
   gridSize: number;
+  /** Label margin for positioning labels within parent rectangles */
+  labelMargin: number;
   /** Font size calculation function based on hierarchy depth */
   calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;
   /** Font family for text rendering */
@@ -32,6 +34,7 @@ interface ViewerRectangleRendererProps {
 const ViewerRectangleRenderer: React.FC<ViewerRectangleRendererProps> = ({
   rectangles,
   gridSize,
+  labelMargin,
   calculateFontSize,
   fontFamily,
   borderRadius,
@@ -63,6 +66,7 @@ const ViewerRectangleRenderer: React.FC<ViewerRectangleRendererProps> = ({
             canResize={false}
             childCount={getChildren(rect.id, rectangles).length}
             gridSize={gridSize}
+            labelMargin={labelMargin}
             fontSize={calculateFontSize(rect.id, rectangles)}
             fontFamily={fontFamily}
             isDropTarget={false}

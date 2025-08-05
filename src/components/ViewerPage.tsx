@@ -171,6 +171,7 @@ const ViewerPage: React.FC = () => {
         <ViewerRectangleRenderer
           rectangles={rectangles}
           gridSize={appSettings?.gridSize || 20}
+          labelMargin={appSettings?.labelMargin || 2.0}
           calculateFontSize={calculateFontSize}
           fontFamily={appSettings?.fontFamily || defaultSettings.fontFamily}
           borderRadius={appSettings?.borderRadius || defaultSettings.borderRadius}

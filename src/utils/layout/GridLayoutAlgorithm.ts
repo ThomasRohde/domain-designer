@@ -1,7 +1,7 @@
 import { LayoutPreferences } from '../../types';
 import { LayoutInput, LayoutResult } from './interfaces';
 import { BaseLayoutAlgorithm } from './BaseLayoutAlgorithm';
-import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT, DEFAULT_RECTANGLE_SIZE } from '../constants';
+import { MIN_WIDTH, MIN_HEIGHT, DEFAULT_RECTANGLE_SIZE } from '../constants';
 
 /**
  * Uniform grid layout algorithm with adaptive cell sizing and content-aware positioning.
@@ -79,8 +79,8 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     }
 
     // Asymmetric margin system: extra top space for labels, uniform side spacing
-    const topMargin = margins?.labelMargin ?? LABEL_MARGIN;
-    const sideMargin = margins?.margin ?? MARGIN;
+    const topMargin = margins.labelMargin;
+    const sideMargin = margins.margin;
     
     const availableWidth = parentRect.w - (sideMargin * 2);
     const availableHeight = parentRect.h - topMargin - sideMargin;
@@ -89,7 +89,7 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     const { cols, rows } = this.calculateGridDimensions(children.length, parentRect.layoutPreferences);
 
     // Use consistent spacing between children (same as margin)
-    const childSpacing = margins?.margin ?? MARGIN;
+    const childSpacing = margins.margin;
     
     // Type-aware dimension calculation for heterogeneous content
     const childDimensions = children.map(child => {
@@ -187,15 +187,15 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     }
 
     // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
-    const topMargin = margins?.labelMargin ?? LABEL_MARGIN;
-    const sideMargin = margins?.margin ?? MARGIN;
+    const topMargin = margins.labelMargin;
+    const sideMargin = margins.margin;
 
     // Use layout preferences from parent rectangle
     const { cols, rows } = this.calculateGridDimensions(children.length, parentRect?.layoutPreferences);
 
     // Calculate theoretical optimal child dimensions (not actual current dimensions)
     // This ensures consistent sizing and prevents growth on repeated fit-to-children
-    const childSpacing = margins?.margin ?? MARGIN;
+    const childSpacing = margins.margin;
     
     // Calculate theoretical optimal child dimensions to avoid resize traps
     // Use default sizes rather than current expanded dimensions

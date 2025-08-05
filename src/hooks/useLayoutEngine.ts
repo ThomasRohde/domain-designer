@@ -62,7 +62,7 @@ export const useLayoutEngine = ({
     }
 
     // Delegate to layout utilities for algorithm application
-    return updateChildrenLayout(rectangles, getFixedDimensions(), getMargins());
+    return updateChildrenLayout(rectangles, getMargins(), getFixedDimensions());
   }, [canLayoutUpdate, getFixedDimensions, getMargins]);
 
   /**
@@ -85,7 +85,7 @@ export const useLayoutEngine = ({
     const children = getChildren(parentId, rectangles);
     if (children.length === 0) return rectangles;
 
-    const newSize = layoutManager.calculateMinimumParentSize(parentId, rectangles, getFixedDimensions(), getMargins());
+    const newSize = layoutManager.calculateMinimumParentSize(parentId, rectangles, getMargins(), getFixedDimensions());
 
     // Apply calculated minimum dimensions to parent
     const updated = rectangles.map(rect => 
@@ -93,7 +93,7 @@ export const useLayoutEngine = ({
     );
 
     // Ensure children are properly positioned after parent resize
-    return updateChildrenLayout(updated, getFixedDimensions(), getMargins());
+    return updateChildrenLayout(updated, getMargins(), getFixedDimensions());
   }, [canLayoutUpdate, getFixedDimensions, getMargins]);
 
   /**
@@ -119,7 +119,7 @@ export const useLayoutEngine = ({
     if (children.length === 0) return rectangles;
 
     // Apply layout algorithm to children
-    return updateChildrenLayout(rectangles, getFixedDimensions(), getMargins());
+    return updateChildrenLayout(rectangles, getMargins(), getFixedDimensions());
   }, [canLayoutUpdate, getFixedDimensions, getMargins]);
 
   return {

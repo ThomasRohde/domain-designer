@@ -451,11 +451,21 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           // Store as last good data
           lastGoodDataRef = savedData;
           
+          // Import necessary constants for margin validation
+          const { DEFAULT_MARGIN_SETTINGS } = await import('../../utils/constants');
+          
+          // Ensure restored settings use current default margins to prevent stale values
+          const restoredSettings = {
+            ...data.appSettings,
+            margin: DEFAULT_MARGIN_SETTINGS.margin,
+            labelMargin: DEFAULT_MARGIN_SETTINGS.labelMargin
+          };
+          
           const state = get();
           
           set({
             rectangles: data.rectangles,
-            settings: data.appSettings,
+            settings: restoredSettings,
             autoSave: {
               ...state.autoSave,
               hasSavedData: true,
@@ -498,10 +508,20 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
 
           const success = await saveDataToIndexedDB(autoSaveData);
           if (success) {
+            // Import necessary constants for margin validation
+            const { DEFAULT_MARGIN_SETTINGS } = await import('../../utils/constants');
+            
+            // Ensure rollback settings use current default margins to prevent stale values
+            const restoredSettings = {
+              ...goodData.globalSettings,
+              margin: DEFAULT_MARGIN_SETTINGS.margin,
+              labelMargin: DEFAULT_MARGIN_SETTINGS.labelMargin
+            };
+            
             // Restore the good data to the store
             set({
               rectangles: goodData.rectangles,
-              settings: goodData.globalSettings,
+              settings: restoredSettings,
                 autoSave: {
                 ...get().autoSave,
                 lastSaved: goodData.timestamp,
@@ -639,10 +659,20 @@ export const createAutoSaveSlice: SliceCreator<AutoSaveSlice> = (set, get) => {
           if (validation.isValid) {
             lastGoodDataRef = savedData;
             
+            // Import necessary constants for margin validation
+            const { DEFAULT_MARGIN_SETTINGS } = await import('../../utils/constants');
+            
+            // Ensure restored settings use current default margins to prevent stale values
+            const restoredSettings = {
+              ...savedData.globalSettings,
+              margin: DEFAULT_MARGIN_SETTINGS.margin,
+              labelMargin: DEFAULT_MARGIN_SETTINGS.labelMargin
+            };
+            
             // Auto-restore validated data (once per session)
             set({
               rectangles: savedData.rectangles,
-              settings: savedData.globalSettings,
+              settings: restoredSettings,
                 autoSave: {
                 ...state.autoSave,
                 hasSavedData: true,

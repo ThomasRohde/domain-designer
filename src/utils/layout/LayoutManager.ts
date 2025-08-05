@@ -1,7 +1,7 @@
 import { Rectangle, LayoutPreferences } from '../../types';
 import { ILayoutAlgorithm, LayoutAlgorithmType, LayoutInput } from './interfaces';
 import { layoutAlgorithmFactory } from './LayoutAlgorithmFactory';
-import { MARGIN, LABEL_MARGIN, MIN_WIDTH, MIN_HEIGHT } from '../constants';
+import { MIN_WIDTH, MIN_HEIGHT } from '../constants';
 
 /**
  * Central layout coordinator implementing the Strategy pattern
@@ -69,15 +69,15 @@ export class LayoutManager {
   calculateChildLayout(
     parentRect: Rectangle,
     children: Rectangle[],
+    margins: {
+      margin: number;
+      labelMargin: number;
+    },
     fixedDimensions?: {
       leafFixedWidth: boolean;
       leafFixedHeight: boolean;
       leafWidth: number;
       leafHeight: number;
-    },
-    margins?: {
-      margin: number;
-      labelMargin: number;
     },
     allRectangles?: Rectangle[]
   ): Rectangle[] {
@@ -118,15 +118,15 @@ export class LayoutManager {
   calculateMinimumParentSize(
     parentId: string,
     rectangles: Rectangle[],
+    margins: {
+      margin: number;
+      labelMargin: number;
+    },
     fixedDimensions?: {
       leafFixedWidth: boolean;
       leafFixedHeight: boolean;
       leafWidth: number;
       leafHeight: number;
-    },
-    margins?: {
-      margin: number;
-      labelMargin: number;
     }
   ): { w: number; h: number } {
     const parent = rectangles.find(r => r.id === parentId);
@@ -194,7 +194,7 @@ export class LayoutManager {
     parentId: string | null,
     rectangles: Rectangle[],
     defaultSizes: { root: { w: number; h: number }, leaf: { w: number; h: number } },
-    margins?: {
+    margins: {
       margin: number;
       labelMargin: number;
     }
@@ -209,8 +209,8 @@ export class LayoutManager {
         const totalChildren = existingChildren.length + 1; // +1 for the new child
         
         // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
-        const topMargin = margins?.labelMargin ?? LABEL_MARGIN;
-        const sideMargin = margins?.margin ?? MARGIN;
+        const topMargin = margins.labelMargin;
+        const sideMargin = margins.margin;
         
         const availableWidth = Math.max(MIN_WIDTH, parent.w - (sideMargin * 2));
         const availableHeight = Math.max(MIN_HEIGHT, parent.h - topMargin - sideMargin);
@@ -223,7 +223,7 @@ export class LayoutManager {
         const childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
         
         // Use consistent spacing between children (same as margin)
-        const childSpacing = margins?.margin ?? MARGIN;
+        const childSpacing = margins.margin;
         
         // Calculate total space needed including spacing
         const totalSpacingWidth = (cols - 1) * childSpacing;
@@ -253,7 +253,7 @@ export class LayoutManager {
       const rootRects = rectangles.filter(rect => !rect.parentId);
       if (rootRects.length > 0) {
         const lastRect = rootRects[rootRects.length - 1];
-        x = lastRect.x + lastRect.w + (margins?.margin ?? MARGIN);
+        x = lastRect.x + lastRect.w + margins.margin;
         y = lastRect.y;
       }
     }
@@ -327,5 +327,5 @@ export class LayoutManager {
   }
 }
 
-// Export a singleton instance for global use
-export const layoutManager = new LayoutManager();
+// Export a singleton instance for global use with correct default algorithm
+export const layoutManager = new LayoutManager('mixed-flow');

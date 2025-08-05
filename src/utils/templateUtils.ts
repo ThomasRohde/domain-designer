@@ -233,6 +233,7 @@ export const insertTemplateAsRectangles = (
     gridSize: number;
     leafWidth: number;
     leafHeight: number;
+    margins: { margin: number; labelMargin: number };
   }
 ): TemplateInsertionResult => {
   try {
@@ -274,7 +275,7 @@ export const insertTemplateAsRectangles = (
         const parentRect = newRectangles.find(r => r.id === parentRectangleId);
         if (parentRect) {
           const siblingCount = newRectangles.filter(r => r.parentId === parentRectangleId).length;
-          position = calculateChildPosition(parentRect, siblingCount, size, globalSettings.gridSize);
+          position = calculateChildPosition(parentRect, siblingCount, size, globalSettings.gridSize, globalSettings.margins);
         }
       } else if (index > 0) {
         // Multiple root nodes - arrange horizontally with spacing
@@ -364,16 +365,18 @@ const sortNodesByHierarchy = (nodes: TemplateNode[]): TemplateNode[] => {
  * @param childIndex - Zero-based index of child for grid positioning
  * @param childSize - Dimensions of child rectangle in grid units
  * @param gridSize - Base grid unit for alignment calculations
+ * @param margins - Spacing configuration with margin and labelMargin values
  * @returns Calculated position coordinates within parent
  */
 const calculateChildPosition = (
   parentRect: Rectangle,
   childIndex: number,
   childSize: { w: number; h: number },
-  gridSize: number
+  gridSize: number,
+  margins: { margin: number; labelMargin: number }
 ): { x: number; y: number } => {
-  const margin = gridSize;
-  const labelMargin = gridSize * 2;
+  const margin = margins.margin * gridSize;
+  const labelMargin = margins.labelMargin * gridSize;
   
   // Calculate grid dimensions based on available space
   const availableWidth = parentRect.w - (margin * 2);

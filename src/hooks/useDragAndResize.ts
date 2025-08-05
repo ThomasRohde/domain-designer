@@ -401,7 +401,7 @@ export const useDragAndResize = ({
     let minRequiredH = MIN_HEIGHT;
     
     if (children.length > 0 && !rect.isManualPositioningEnabled && !rect.isLockedAsIs) {
-      const minSize = layoutManager.calculateMinimumParentSize(rect.id, rectangles, getFixedDimensions(), getMargins());
+      const minSize = layoutManager.calculateMinimumParentSize(rect.id, rectangles, getMargins(), getFixedDimensions());
       minRequiredW = minSize.w;
       minRequiredH = minSize.h;
       // Only enforce minimum if the new size would be too small
@@ -524,7 +524,7 @@ export const useDragAndResize = ({
             const parent = rectangles.find(r => r.id === rect.parentId);
             if (parent && !parent.isManualPositioningEnabled && !parent.isLockedAsIs) {
               // Only auto-resize parent if manual positioning is not enabled and parent is not locked as-is
-              const minParentSize = layoutManager.calculateMinimumParentSize(rect.parentId, rectangles, getFixedDimensions(), getMargins());
+              const minParentSize = layoutManager.calculateMinimumParentSize(rect.parentId, rectangles, getMargins(), getFixedDimensions());
               if (parent.w < minParentSize.w || parent.h < minParentSize.h) {
                 // Parent needs to be resized too, trigger a broader layout update
                 setNeedsLayoutUpdate({ type: 'resize', rectangleId: rect.parentId });
@@ -611,7 +611,7 @@ export const useDragAndResize = ({
     if (needsLayoutUpdate) {
       // Defer layout calculation until state stabilizes
       Promise.resolve().then(() => {
-        setRectangles(prev => updateChildrenLayout(prev, getFixedDimensions(), getMargins()));
+        setRectangles(prev => updateChildrenLayout(prev, getMargins(), getFixedDimensions()));
         setNeedsLayoutUpdate(null);
       });
     }
