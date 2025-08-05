@@ -126,7 +126,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             max="50"
             step="1"
             value={gridSize}
-            onChange={(e) => settingsActions.handleGridSizeChange(parseInt(e.target.value))}
+            onChange={(e) => settingsActions.handleGridSizeChange(parseInt(e.target.value), true)}
+            onMouseUp={(e) => settingsActions.handleGridSizeChange(parseInt((e.target as HTMLInputElement).value), false)}
             className="w-full accent-blue-600"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -171,7 +172,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   max="20"
                   step="1"
                   value={leafWidth}
-                  onChange={(e) => settingsActions.handleLeafWidthChange(parseInt(e.target.value))}
+                  onChange={(e) => settingsActions.handleLeafWidthChange(parseInt(e.target.value), true)}
+                  onMouseUp={(e) => settingsActions.handleLeafWidthChange(parseInt((e.target as HTMLInputElement).value), false)}
                   className="w-full accent-blue-600"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -208,7 +210,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   max="16"
                   step="1"
                   value={leafHeight}
-                  onChange={(e) => settingsActions.handleLeafHeightChange(parseInt(e.target.value))}
+                  onChange={(e) => settingsActions.handleLeafHeightChange(parseInt(e.target.value), true)}
+                  onMouseUp={(e) => settingsActions.handleLeafHeightChange(parseInt((e.target as HTMLInputElement).value), false)}
                   className="w-full accent-blue-600"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -334,7 +337,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 max="5"
                 step="0.1"
                 value={margin}
-                onChange={(e) => settingsActions.handleMarginChange(parseFloat(e.target.value))}
+                onChange={(e) => settingsActions.handleMarginChange(parseFloat(e.target.value), true)}
+                onMouseUp={(e) => settingsActions.handleMarginChange(parseFloat((e.target as HTMLInputElement).value), false)}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -354,7 +358,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 max="8"
                 step="0.1"
                 value={labelMargin}
-                onChange={(e) => settingsActions.handleLabelMarginChange(parseFloat(e.target.value))}
+                onChange={(e) => settingsActions.handleLabelMarginChange(parseFloat(e.target.value), true)}
+                onMouseUp={(e) => settingsActions.handleLabelMarginChange(parseFloat((e.target as HTMLInputElement).value), false)}
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
