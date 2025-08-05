@@ -107,7 +107,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
       
       {hasChildren && (
         <button
-          className={`px-3 py-2 hover:bg-gray-100 rounded-md transition-colors text-xs font-medium flex items-center gap-1 ${
+          className={`px-3 py-2 hover:bg-gray-100 rounded-md transition-colors text-xs font-medium flex items-center gap-1 whitespace-nowrap ${
             isLockedAsIs ? 'text-red-600 bg-red-50' : 
             isManualPositioningEnabled ? 'text-blue-600 bg-blue-50' : 'text-orange-600'
           }`}
@@ -156,7 +156,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
       
       {hasChildren && !isManualPositioningEnabled && !rect.isLockedAsIs && (
         <button
-          className="px-3 py-2 hover:bg-gray-100 rounded-md text-blue-600 transition-colors text-xs font-medium flex items-center gap-1"
+          className="px-3 py-2 hover:bg-gray-100 rounded-md text-blue-600 transition-colors text-xs font-medium flex items-center gap-1 whitespace-nowrap"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
