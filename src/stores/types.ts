@@ -161,6 +161,7 @@ export interface RectangleActions {
   updateRectangleLayoutPreferences: (id: string, preferences: Partial<Rectangle['layoutPreferences']>) => void;
   toggleManualPositioning: (id: string, shiftKey?: boolean) => void;
   lockAsIs: (id: string) => void;
+  unlockLayout: (id: string) => void;
   fitToChildren: (id: string) => void;
   moveRectangle: (id: string, deltaX: number, deltaY: number) => void;
   moveRectangleDuringDrag: (id: string, deltaX: number, deltaY: number) => void;

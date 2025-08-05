@@ -599,6 +599,23 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       });
     },
 
+    unlockLayout: (id: string) => {
+      const state = get();
+      
+      // Unlock the rectangle and its descendants
+      state.rectangleActions.updateRectangle(id, { 
+        isLockedAsIs: false 
+      });
+      
+      // Cascade unlock to all descendants
+      const allDescendants = getAllDescendants(id, state.rectangles);
+      allDescendants.forEach(descendantId => {
+        state.rectangleActions.updateRectangle(descendantId, { 
+          isLockedAsIs: false 
+        });
+      });
+    },
+
     fitToChildren: (id: string) => {
       const state = get();
       const { rectangles, settings } = state;

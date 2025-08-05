@@ -118,8 +118,17 @@ export const validateBulkOperationConstraints = (
         };
       }
 
-      // Layout impact analysis: detect automatic layout conflicts
+      // Check for locked rectangles
       const selectedRects = rectangles.filter(r => selectedIds.includes(r.id));
+      const lockedRects = selectedRects.filter(r => r.isLockedAsIs);
+      if (lockedRects.length > 0) {
+        return {
+          isValid: false,
+          errorMessage: `Cannot ${operation} locked rectangles. Unlock them first to allow position changes.`
+        };
+      }
+
+      // Layout impact analysis: detect automatic layout conflicts
       const parentIds = [...new Set(selectedRects.map(r => r.parentId).filter(Boolean))];
       
       for (const parentId of parentIds) {

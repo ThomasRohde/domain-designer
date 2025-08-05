@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard, CopyPlus } from 'lucide-react';
+import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard, CopyPlus, Lock, Unlock } from 'lucide-react';
 import type { AlignmentType, DistributionDirection } from '../stores/types';
 
 interface ContextMenuProps {
@@ -10,6 +10,9 @@ interface ContextMenuProps {
   onAddChild: (parentId: string) => void;
   onRemove: (id: string) => void;
   onEditDescription: (id: string) => void;
+  onLockAsIs?: (id: string) => void;
+  onUnlock?: (id: string) => void;
+  isLockedAsIs?: boolean;
   onClose: () => void;
   // Multi-select operations
   onAlign?: (type: AlignmentType) => void;
@@ -38,6 +41,9 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onAddChild,
   onRemove,
   onEditDescription,
+  onLockAsIs,
+  onUnlock,
+  isLockedAsIs = false,
   onClose,
   onAlign,
   onDistribute,
@@ -66,6 +72,20 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   const handleEditDescription = () => {
     onEditDescription(rectangleId);
     onClose();
+  };
+
+  const handleLockAsIs = () => {
+    if (onLockAsIs) {
+      onLockAsIs(rectangleId);
+      onClose();
+    }
+  };
+
+  const handleUnlock = () => {
+    if (onUnlock) {
+      onUnlock(rectangleId);
+      onClose();
+    }
   };
 
   // Multi-select handlers
@@ -312,6 +332,19 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
             >
               <Edit3 size={14} />
               <span>Edit Description</span>
+            </button>
+            
+            {/* Lock/Unlock functionality */}
+            <button
+              onClick={isLockedAsIs ? handleUnlock : handleLockAsIs}
+              className={`w-full px-3 py-2 text-left text-sm flex items-center space-x-2 ${
+                isLockedAsIs 
+                  ? 'hover:bg-green-50 text-green-600' 
+                  : 'hover:bg-orange-50 text-orange-600'
+              }`}
+            >
+              {isLockedAsIs ? <Unlock size={14} /> : <Lock size={14} />}
+              <span>{isLockedAsIs ? 'Unlock Layout' : 'Lock As-Is'}</span>
             </button>
           </div>
 

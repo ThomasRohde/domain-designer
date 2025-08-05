@@ -93,6 +93,11 @@ export const useDragAndResize = ({
     const { x: startX, y: startY } = getMousePosition(e, containerRect);
 
     if (action === 'drag') {
+      // Don't allow dragging locked rectangles
+      if (rect.isLockedAsIs) {
+        return;
+      }
+      
       // Regular drag - allow for root rectangles and child rectangles when parent has manual positioning enabled
       if (rect.parentId) {
         const parent = rectangles.find(r => r.id === rect.parentId);
@@ -159,6 +164,11 @@ export const useDragAndResize = ({
         mousePosition: { x: startX, y: startY }
       });
     } else if (action === 'resize') {
+      // Don't allow resizing locked rectangles
+      if (rect.isLockedAsIs) {
+        return;
+      }
+      
       setResizeState({
         id: rect.id,
         startX,

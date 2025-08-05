@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Grid3X3, Move, Container } from 'lucide-react';
+import { Plus, Trash2, Grid3X3, Move, Container, Lock } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -47,6 +47,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const rect = selectedRectangle;
   const hasChildren = childCount > 0;
   const isManualPositioningEnabled = rect.isManualPositioningEnabled ?? false;
+  const isLockedAsIs = rect.isLockedAsIs ?? false;
 
   /**
    * Dynamic positioning algorithm for context-sensitive toolbar placement.
@@ -82,10 +83,15 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   return (
     <div style={buttonStyle}>
       <button
-        className="p-2 hover:bg-gray-100 rounded-md transition-colors text-green-600"
+        className={`p-2 rounded-md transition-colors ${
+          isLockedAsIs 
+            ? 'text-gray-400 cursor-not-allowed' 
+            : 'text-green-600 hover:bg-gray-100'
+        }`}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (isLockedAsIs) return;
           console.log('Overlay Add Child button clicked for:', rect.id);
           addRectangle(rect.id);
         }}
@@ -93,7 +99,8 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
           e.preventDefault();
           e.stopPropagation();
         }}
-        title="Add Child"
+        title={isLockedAsIs ? "Cannot add children - rectangle is locked" : "Add Child"}
+        disabled={isLockedAsIs}
       >
         <Plus size={14} />
       </button>
@@ -101,6 +108,7 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
       {hasChildren && (
         <button
           className={`px-3 py-2 hover:bg-gray-100 rounded-md transition-colors text-xs font-medium flex items-center gap-1 ${
+            isLockedAsIs ? 'text-red-600 bg-red-50' : 
             isManualPositioningEnabled ? 'text-blue-600 bg-blue-50' : 'text-orange-600'
           }`}
           onClick={(e) => {
@@ -117,12 +125,20 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
             e.preventDefault();
             e.stopPropagation();
           }}
-          title={isManualPositioningEnabled 
-            ? "Switch to Auto Layout - children will be repositioned using the layout algorithm. Hold Shift+Click to preserve current positions." 
-            : "Switch to Manual Layout - children can be positioned freely"
+          title={isLockedAsIs 
+            ? "Unlock Layout - enable manual positioning or auto layout. Size and position are currently locked." 
+            : isManualPositioningEnabled 
+              ? "Switch to Auto Layout - children will be repositioned using the layout algorithm. Hold Shift+Click to preserve current positions." 
+              : "Switch to Manual Layout - children can be positioned freely"
           }
         >
-          {isManualPositioningEnabled ? (
+          {isLockedAsIs ? (
+            <>
+              <Lock size={12} />
+              <span>Unlock</span>
+              <span className="text-xs bg-red-100 text-red-700 px-1 py-0.5 rounded ml-1">Locked</span>
+            </>
+          ) : isManualPositioningEnabled ? (
             <>
               <Grid3X3 size={12} />
               <span>Auto Layout</span>

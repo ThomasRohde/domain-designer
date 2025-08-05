@@ -47,6 +47,9 @@ const HierarchicalDrawingApp = () => {
     setRectangles,
     setRectanglesWithHistory,
     updateNextId,
+    // Lock/unlock operations
+    lockAsIs,
+    unlockLayout,
     // Multi-select operations
     alignRectangles,
     distributeRectangles,
@@ -729,6 +732,10 @@ const HierarchicalDrawingApp = () => {
         const canAlign = isMultiSelect ? canPerformAlignment(selectedIds, rectangles) : true;
         const canDistribute = isMultiSelect ? canPerformDistribution(selectedIds, rectangles) : true;
         
+        // Get the rectangle to check its locked status
+        const contextRect = rectangles.find(r => r.id === ui.contextMenu!.rectangleId);
+        const isLockedAsIs = contextRect?.isLockedAsIs ?? false;
+        
         return (
           <ContextMenu
             x={ui.contextMenu.x}
@@ -738,6 +745,9 @@ const HierarchicalDrawingApp = () => {
             onAddChild={addRectangle}
             onRemove={removeRectangle}
             onEditDescription={handleEditDescription}
+            onLockAsIs={lockAsIs}
+            onUnlock={unlockLayout}
+            isLockedAsIs={isLockedAsIs}
             onClose={uiActions.hideContextMenu}
             onAlign={handleAlign}
             onDistribute={handleDistribute}

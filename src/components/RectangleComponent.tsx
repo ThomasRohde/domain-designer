@@ -423,7 +423,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
       )}
 
       {/* Resize handle: Only shown for single selection to avoid confusion with multi-select operations */}
-      {canResize && isSelected && selectedCount === 1 && !isHierarchyDragActive && (
+      {canResize && isSelected && selectedCount === 1 && !isHierarchyDragActive && !rectangle.isLockedAsIs && (
         <div
           className="absolute bottom-0 right-0 w-4 h-4 bg-orange-500 cursor-se-resize rounded-tl-md opacity-90 hover:opacity-100 transition-all hover:scale-110 border-2 border-white shadow-sm"
           onMouseDown={(e) => {
