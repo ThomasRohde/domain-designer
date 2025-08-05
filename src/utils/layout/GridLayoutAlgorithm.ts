@@ -79,7 +79,8 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
     }
 
     // Asymmetric margin system: extra top space for labels, uniform side spacing
-    const topMargin = margins.labelMargin;
+    // Match Flow algorithm behavior: labelMargin + margin for top spacing
+    const topMargin = margins.labelMargin + margins.margin;
     const sideMargin = margins.margin;
     
     const availableWidth = parentRect.w - (sideMargin * 2);
@@ -152,6 +153,7 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
       const gridCellX = parentRect.x + sideMargin + horizontalOffset + (col * (maxChildWidth + childSpacing));
       const gridCellY = parentRect.y + topMargin + verticalOffset + (row * (maxChildHeight + childSpacing));
       
+      
       // Center child within its assigned grid cell for visual balance
       const availableCellWidth = maxChildWidth;
       const availableCellHeight = maxChildHeight;
@@ -160,6 +162,7 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
       
       const x = gridCellX + centerOffsetX;
       const y = gridCellY + centerOffsetY;
+
 
       return {
         ...child,
@@ -186,8 +189,8 @@ export class GridLayoutAlgorithm extends BaseLayoutAlgorithm {
       return { w: MIN_WIDTH, h: MIN_HEIGHT };
     }
 
-    // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
-    const topMargin = margins.labelMargin;
+    // Use labelMargin + margin for top spacing to match Flow algorithm behavior
+    const topMargin = margins.labelMargin + margins.margin;
     const sideMargin = margins.margin;
 
     // Use layout preferences from parent rectangle
