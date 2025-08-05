@@ -118,7 +118,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             max="50"
             step="1"
             value={gridSize}
-            onChange={(e) => settingsActions.setGridSize(parseInt(e.target.value))}
+            onChange={(e) => settingsActions.handleGridSizeChange(parseInt(e.target.value))}
             className="w-full accent-blue-600"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">

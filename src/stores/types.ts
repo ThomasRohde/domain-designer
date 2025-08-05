@@ -247,6 +247,7 @@ export interface SettingsActions {
   handleLayoutAlgorithmChange: (algorithm: LayoutAlgorithmType, skipLayoutUpdates?: boolean) => void;
   handlePredefinedColorsChange: (colors: string[]) => void;
   setGridSize: (size: number) => void;
+  handleGridSizeChange: (size: number, skipLayoutUpdates?: boolean) => void;
   handleShowGridChange: (show: boolean) => void;
   // Computed utilities and lifecycle management
   getFixedDimensions: () => FixedDimensions;  // Current leaf rectangle sizing rules

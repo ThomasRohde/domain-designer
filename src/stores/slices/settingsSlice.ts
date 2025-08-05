@@ -534,6 +534,33 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
         }));
       },
 
+      handleGridSizeChange: (size: number, skipLayoutUpdates = false) => {
+        const state = get();
+        
+        set(currentState => ({
+          settings: {
+            ...currentState.settings,
+            gridSize: size
+          }
+        }));
+
+        // Trigger layout update for parents if needed - grid size affects positioning
+        if (!state.settings.isRestoring && !skipLayoutUpdates) {
+          // Find parents that need layout updates
+          const parentsToUpdate = state.rectangles.filter(rect => 
+            (rect.type === 'parent' || rect.type === 'root') && 
+            !rect.isManualPositioningEnabled &&
+            !rect.isLockedAsIs &&
+            getChildren(rect.id, state.rectangles).length > 0
+          );
+          
+          // Use fitToChildren for each parent
+          parentsToUpdate.forEach(parent => {
+            state.rectangleActions.fitToChildren(parent.id);
+          });
+        }
+      },
+
       handleShowGridChange: (show: boolean) => {
         set(state => ({
           settings: {

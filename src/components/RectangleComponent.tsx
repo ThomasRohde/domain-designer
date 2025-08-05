@@ -490,6 +490,7 @@ export default React.memo(RectangleComponent, (prevProps, nextProps) => {
       // Visual property changes that must trigger re-render
       prevProps.fontSize !== nextProps.fontSize ||
       prevProps.fontFamily !== nextProps.fontFamily ||
+      prevProps.gridSize !== nextProps.gridSize ||
       prevProps.borderRadius !== nextProps.borderRadius ||
       prevProps.borderColor !== nextProps.borderColor ||
       prevProps.borderWidth !== nextProps.borderWidth) {
