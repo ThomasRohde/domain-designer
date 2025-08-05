@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Lock, Unlock, Loader2 } from 'lucide-react';
+import { Settings, Lock, Unlock, Loader2, RotateCcw } from 'lucide-react';
 import type { LayoutAlgorithmType } from '../utils/layout';
 import { useAppStore } from '../stores/useAppStore';
 
@@ -56,6 +56,14 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
           <span className="hidden sm:inline">Global Settings</span>
           <span className="sm:hidden">Settings</span>
         </h3>
+        <button
+          onClick={() => settingsActions.resetSettings()}
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+          title="Reset all settings to default values"
+        >
+          <RotateCcw size={12} />
+          Reset
+        </button>
       </div>
 
       <div className="space-y-3">

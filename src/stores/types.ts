@@ -254,6 +254,7 @@ export interface SettingsActions {
   calculateFontSize: (rectangleId: string, rectangles: Rectangle[]) => number;  // Dynamic font scaling by hierarchy
   setIsRestoring: (isRestoring: boolean) => void;  // Loading state during data restoration
   reloadFonts: () => Promise<void>;  // Re-scan system fonts after changes
+  resetSettings: (skipLayoutUpdates?: boolean) => void;  // Reset all settings to default values
 }
 
 /**

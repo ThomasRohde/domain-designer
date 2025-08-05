@@ -650,6 +650,54 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
             }
           }));
         }
+      },
+
+      resetSettings: (skipLayoutUpdates = false) => {
+        const state = get();
+        
+        set(() => ({
+          settings: {
+            gridSize: GRID_SIZE,
+            showGrid: true,
+            leafFixedWidth: true,
+            leafFixedHeight: true,
+            leafWidth: DEFAULT_RECTANGLE_SIZE.leaf.w,
+            leafHeight: DEFAULT_RECTANGLE_SIZE.leaf.h,
+            rootFontSize: DEFAULT_FONT_SETTINGS.rootFontSize,
+            dynamicFontSizing: DEFAULT_FONT_SETTINGS.dynamicFontSizing,
+            fontFamily: DEFAULT_FONT_FAMILY,
+            availableFonts: state.settings.availableFonts, // Keep detected fonts
+            fontsLoading: state.settings.fontsLoading,
+            borderRadius: DEFAULT_BORDER_SETTINGS.borderRadius,
+            borderColor: DEFAULT_BORDER_SETTINGS.borderColor,
+            borderWidth: DEFAULT_BORDER_SETTINGS.borderWidth,
+            predefinedColors: INITIAL_PREDEFINED_COLORS,
+            margin: DEFAULT_MARGIN_SETTINGS.margin,
+            labelMargin: DEFAULT_MARGIN_SETTINGS.labelMargin,
+            layoutAlgorithm: 'mixed-flow',
+            customColors: [],
+            isRestoring: state.settings.isRestoring
+          }
+        }));
+
+        // Update layout manager
+        layoutManager.setAlgorithm('mixed-flow');
+
+        // Trigger layout update if needed
+        if (!skipLayoutUpdates) {
+          // Find parents that need layout updates
+          const parentsToUpdate = state.rectangles.filter(rect => 
+            (rect.type === 'parent' || rect.type === 'root') && 
+            !rect.isManualPositioningEnabled &&
+            !rect.isLockedAsIs &&
+            getChildren(rect.id, state.rectangles).length > 0
+          );
+          
+          // Use fitToChildren for each parent
+          parentsToUpdate.forEach(parent => {
+            state.rectangleActions.fitToChildren(parent.id);
+          });
+        }
       }
     }
   };
