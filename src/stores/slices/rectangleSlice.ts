@@ -820,10 +820,70 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           }
         }
         
-        // Update layout for both old and new parents
-        return updateChildrenLayout(updated, getMargins(), getFixedDimensions());
+        // Preserve relative positions: only update layouts for parent containers, not the reparented subtree
+        const reparentedDescendants = new Set(getAllDescendants(childId, updated));
+        reparentedDescendants.add(childId); // Include the reparented rectangle itself
+        
+        // Update layout only for the old parent (if it exists and still has children)
+        if (currentParentId) {
+          const oldParentChildren = updated.filter(r => r.parentId === currentParentId);
+          if (oldParentChildren.length > 0) {
+            const oldParent = updated.find(r => r.id === currentParentId);
+            if (oldParent && !oldParent.isManualPositioningEnabled && !oldParent.isLockedAsIs) {
+              const repositionedChildren = layoutManager.calculateChildLayout(oldParent, oldParentChildren, getMargins(), getFixedDimensions(), updated);
+              // Merge repositioned children back into the updated array
+              updated = updated.map(rect => {
+                const repositioned = repositionedChildren.find(r => r.id === rect.id);
+                return repositioned || rect;
+              });
+            }
+          }
+        }
+        
+        // Update layout only for the new parent (if it exists and has automatic positioning)
+        if (newParentId) {
+          const newParent = updated.find(r => r.id === newParentId);
+          const newParentChildren = updated.filter(r => r.parentId === newParentId);
+          if (newParent && !newParent.isManualPositioningEnabled && !newParent.isLockedAsIs && newParentChildren.length > 0) {
+            // Store original position of reparented rectangle to calculate movement delta
+            const originalReparentedRect = updated.find(r => r.id === childId);
+            
+            const repositionedChildren = layoutManager.calculateChildLayout(newParent, newParentChildren, getMargins(), getFixedDimensions(), updated);
+            
+            // Find the new position of the reparented rectangle after layout
+            const newReparentedRect = repositionedChildren.find(r => r.id === childId);
+            
+            if (originalReparentedRect && newReparentedRect) {
+              // Calculate how much the reparented rectangle moved due to layout
+              const deltaX = newReparentedRect.x - originalReparentedRect.x;
+              const deltaY = newReparentedRect.y - originalReparentedRect.y;
+              
+              // Apply the layout changes AND move descendants to preserve relative positions
+              updated = updated.map(rect => {
+                const repositioned = repositionedChildren.find(r => r.id === rect.id);
+                if (repositioned) {
+                  // Use the repositioned version from layout manager
+                  return repositioned;
+                } else if (reparentedDescendants.has(rect.id) && rect.id !== childId) {
+                  // Move descendants by the same delta to preserve relative positions
+                  const newX = Math.max(0, rect.x + deltaX);
+                  const newY = Math.max(0, rect.y + deltaY);
+                  return { ...rect, x: newX, y: newY };
+                }
+                return rect;
+              });
+            } else {
+              // Fallback: just merge repositioned children without descendant handling
+              updated = updated.map(rect => {
+                const repositioned = repositionedChildren.find(r => r.id === rect.id);
+                return repositioned || rect;
+              });
+            }
+          }
+        }
+        
+        return updated;
       });
-      
       return true;
     },
 

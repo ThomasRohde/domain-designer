@@ -818,13 +818,30 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
               const success = get().rectangleActions.reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
               
               if (success && dropPosition) {
-                // Apply mouse drop position for child-to-root operations
+                // Apply mouse drop position for child-to-root operations AND move all descendants
                 get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
-                  return rectangles.map(rect => 
-                    rect.id === draggedRectangleId 
-                      ? { ...rect, x: dropPosition.x, y: dropPosition.y }
-                      : rect
-                  );
+                  const draggedRect = rectangles.find(r => r.id === draggedRectangleId);
+                  if (!draggedRect) return rectangles;
+                  
+                  // Calculate movement delta
+                  const deltaX = dropPosition.x - draggedRect.x;
+                  const deltaY = dropPosition.y - draggedRect.y;
+                  
+                  // Get all descendants of the dragged rectangle
+                  const descendantIds = new Set(getAllDescendants(draggedRectangleId, rectangles));
+                  
+                  return rectangles.map(rect => {
+                    if (rect.id === draggedRectangleId) {
+                      // Move the dragged rectangle to drop position
+                      return { ...rect, x: dropPosition.x, y: dropPosition.y };
+                    } else if (descendantIds.has(rect.id)) {
+                      // Move descendants by the same delta to preserve relative positions
+                      const newX = Math.max(0, rect.x + deltaX);
+                      const newY = Math.max(0, rect.y + deltaY);
+                      return { ...rect, x: newX, y: newY };
+                    }
+                    return rect;
+                  });
                 });
               } else if (!success) {
                 resetToInitialPositions();

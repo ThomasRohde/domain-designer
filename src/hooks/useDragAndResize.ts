@@ -279,11 +279,12 @@ export const useDragAndResize = ({
         return { ...rect, x: newX, y: newY };
       } else if (descendantIds.has(rect.id)) {
         // Move all descendants by the same delta
-        return { 
+        const newRect = { 
           ...rect, 
           x: Math.max(0, rect.x + actualDeltaX), 
           y: Math.max(0, rect.y + actualDeltaY) 
         };
+        return newRect;
       }
       return rect;
     });
