@@ -272,7 +272,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const state = get();
       const { rectangles, nextId, settings, canvas } = state;
       
-      // Business rule: Text labels cannot have children
+      // Constraint: Text label rectangles cannot contain child elements
       if (parentId) {
         const parentRect = rectangles.find(rect => rect.id === parentId);
         if (parentRect?.isTextLabel) {
@@ -281,7 +281,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         }
       }
       
-      // Generate collision-free unique identifier
+      // ID generation: Ensure uniqueness across existing rectangles
       let candidateId: string;
       let candidate = nextId;
       
@@ -302,8 +302,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       
       let x: number, y: number, w: number, h: number;
       
-      // For manual positioning mode, we'll calculate position AFTER parent grows
-      // For auto mode, we can calculate position now since grid layout handles everything
+      // Positioning strategy differs by parent mode:
+      // Manual: Calculate after parent expansion (free space algorithm)
+      // Auto: Calculate immediately (layout algorithm handles placement)
       const parentRect = parentId ? rectangles.find(r => r.id === parentId) : null;
       const isManualMode = parentRect?.isManualPositioningEnabled;
       
@@ -323,11 +324,11 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         h = position.h;
       }
       
-      // Viewport-aware positioning for root rectangles
+      // Root rectangle positioning: Consider current viewport for user convenience
       if (!parentId) {
         const rootRects = rectangles.filter(rect => !rect.parentId);
         if (rootRects.length === 0) {
-          // Position first rectangle within current viewport bounds
+          // Initial root: Place within visible area for immediate user access
           const viewportX = Math.round(-canvas.panOffset.x / settings.gridSize);
           const viewportY = Math.round(-canvas.panOffset.y / settings.gridSize);
           x = viewportX + 10;
@@ -338,8 +339,8 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       // Create rectangle
       let newRect = createRectangle(id, x, y, w, h, parentId || undefined);
       
-      // Apply global fixed dimensions to child rectangles in both auto and manual mode
-      // Manual mode only affects positioning, not sizing constraints
+      // Fixed dimension enforcement: Applies to children regardless of positioning mode
+      // Manual positioning affects placement strategy, not size constraints
       if (parentId) {
         newRect = applyFixedDimensions(newRect, getFixedDimensions());
       }
@@ -347,7 +348,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         let updated = [...currentRectangles, newRect];
         
-        // Parent relationship management and layout recalculation
+        // Hierarchy management: Establish parent-child relationships and trigger layout updates
         if (parentId) {
           updated = updateRectangleType(updated, parentId);
           
@@ -356,9 +357,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           const fixedDimensions: FixedDimensions = getFixedDimensions();
           updated = fitParentToChildrenRecursive(parentId, updated, fixedDimensions, margins);
           
-          // For manual positioning mode, now recalculate the child position using the grown parent bounds
+          // Manual mode refinement: Recalculate optimal position within expanded parent
           if (isManualMode) {
-            // Filter out the new rectangle temporarily to ensure collision detection works correctly
+            // Collision detection preparation: Exclude new rectangle from space calculations
             const rectanglesForPositioning = updated.filter(rect => rect.id !== id);
             const optimalPosition = calculateFreeSpacePosition(parentId, rectanglesForPositioning, DEFAULT_RECTANGLE_SIZE, margins);
             updated = updated.map(rect => 
@@ -447,7 +448,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const rect = rectangles.find(r => r.id === id);
       if (!rect) return;
       
-      // Business rule: Parent rectangles cannot become text labels
+      // Constraint: Rectangles with children cannot convert to text-only mode
       const hasChildren = getChildren(id, rectangles).length > 0;
       if (hasChildren && !rect.isTextLabel) {
         console.warn('Cannot convert parent rectangles to text labels');
@@ -628,7 +629,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const rect = rectangles.find(r => r.id === id);
       if (!rect) return;
 
-      // Movement permission validation
+      // Authorization check: Verify parent allows manual positioning
       if (rect.parentId) {
         const parent = rectangles.find(r => r.id === rect.parentId);
         if (!parent || !parent.isManualPositioningEnabled) {
@@ -636,14 +637,14 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         }
       }
 
-      // Cascade movement: include all descendants in movement operation
+      // Hierarchical movement: Move target and all child elements together
       const descendants = getAllDescendants(id, rectangles);
       const idsToMove = new Set([id, ...descendants]);
 
       let actualDeltaXPixels = deltaXPixels;
       let actualDeltaYPixels = deltaYPixels;
 
-      // Parent boundary constraint enforcement
+      // Boundary clipping: Constrain movement to parent container limits
       if (rect.parentId) {
         const parent = rectangles.find(p => p.id === rect.parentId);
         if (parent) {
@@ -661,30 +662,30 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           let newXPixels = currentXPixels + deltaXPixels;
           let newYPixels = currentYPixels + deltaYPixels;
           
-          // Clip movement to keep rectangle within parent boundaries
+          // Boundary enforcement: Prevent movement outside parent container
           newXPixels = Math.max(parentXPixels + margin, newXPixels);
           newYPixels = Math.max(parentYPixels + labelMargin, newYPixels);
           newXPixels = Math.min(parentXPixels + parentWPixels - rectWPixels - margin, newXPixels);
           newYPixels = Math.min(parentYPixels + parentHPixels - rectHPixels - margin, newYPixels);
           
-          // Calculate constrained movement delta
+          // Constraint resolution: Calculate actual movement after boundary limiting
           actualDeltaXPixels = newXPixels - currentXPixels;
           actualDeltaYPixels = newYPixels - currentYPixels;
         }
       }
 
-      // Coordinated movement: apply same delta to target and all descendants
+      // Synchronized movement: Apply calculated delta to entire hierarchy
       updateRectanglesWithHistory(set, get, (currentRectangles) => {
         return currentRectangles.map(r => {
           if (idsToMove.has(r.id)) {
-            // Pixel-precise coordinate transformation
+            // Coordinate conversion: Transform between pixel and grid coordinate systems
             const currentXPixels = r.x * settings.gridSize;
             const currentYPixels = r.y * settings.gridSize;
             
             const newXPixels = currentXPixels + actualDeltaXPixels;
             const newYPixels = currentYPixels + actualDeltaYPixels;
 
-            // Convert back to grid coordinate system
+            // Grid normalization: Convert pixel coordinates back to grid units
             const newX = newXPixels / settings.gridSize;
             const newY = newYPixels / settings.gridSize;
 
@@ -1287,7 +1288,7 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       const rect = rectangles.find(r => r.id === id);
       if (!rect) return;
 
-      // Movement permission validation
+      // Authorization check: Verify parent allows manual positioning
       if (rect.parentId) {
         const parent = rectangles.find(r => r.id === rect.parentId);
         if (!parent || !parent.isManualPositioningEnabled) {
@@ -1295,14 +1296,14 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         }
       }
 
-      // Cascade movement: include all descendants in movement operation
+      // Hierarchical movement: Move target and all child elements together
       const descendants = getAllDescendants(id, rectangles);
       const idsToMove = new Set([id, ...descendants]);
 
       let actualDeltaXPixels = deltaXPixels;
       let actualDeltaYPixels = deltaYPixels;
 
-      // Parent boundary constraint enforcement
+      // Boundary clipping: Constrain movement to parent container limits
       if (rect.parentId) {
         const parent = rectangles.find(p => p.id === rect.parentId);
         if (parent) {
@@ -1320,30 +1321,30 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           let newXPixels = currentXPixels + deltaXPixels;
           let newYPixels = currentYPixels + deltaYPixels;
           
-          // Clip movement to keep rectangle within parent boundaries
+          // Boundary enforcement: Prevent movement outside parent container
           newXPixels = Math.max(parentXPixels + margin, newXPixels);
           newYPixels = Math.max(parentYPixels + labelMargin, newYPixels);
           newXPixels = Math.min(parentXPixels + parentWPixels - rectWPixels - margin, newXPixels);
           newYPixels = Math.min(parentYPixels + parentHPixels - rectHPixels - margin, newYPixels);
           
-          // Calculate constrained movement delta
+          // Constraint resolution: Calculate actual movement after boundary limiting
           actualDeltaXPixels = newXPixels - currentXPixels;
           actualDeltaYPixels = newYPixels - currentYPixels;
         }
       }
 
-      // Coordinated movement without history: apply same delta to target and all descendants
+      // Real-time movement: Apply delta to hierarchy without history tracking
       get().rectangleActions.updateRectanglesDuringDrag((currentRectangles) => {
         return currentRectangles.map(r => {
           if (idsToMove.has(r.id)) {
-            // Pixel-precise coordinate transformation
+            // Coordinate conversion: Transform between pixel and grid coordinate systems
             const currentXPixels = r.x * settings.gridSize;
             const currentYPixels = r.y * settings.gridSize;
             
             const newXPixels = currentXPixels + actualDeltaXPixels;
             const newYPixels = currentYPixels + actualDeltaYPixels;
 
-            // Convert back to grid coordinate system
+            // Grid normalization: Convert pixel coordinates back to grid units
             const newX = newXPixels / settings.gridSize;
             const newY = newYPixels / settings.gridSize;
 

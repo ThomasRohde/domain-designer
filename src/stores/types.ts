@@ -20,17 +20,20 @@ import type {
 import type { LayoutAlgorithmType } from '../utils/layout/interfaces';
 
 /**
- * Multi-select alignment types for PowerPoint-style operations
+ * Multi-select alignment types for PowerPoint-style operations.
+ * Used by alignment algorithms to position rectangles relative to selection bounds.
  */
 export type AlignmentType = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
 
 /**
- * Distribution direction for equal spacing operations
+ * Distribution direction for equal spacing operations.
+ * Controls whether rectangles are spaced evenly horizontally or vertically.
  */
 export type DistributionDirection = 'horizontal' | 'vertical';
 
 /**
- * Selection box state for drag selection operations
+ * Selection box state for drag selection operations.
+ * Tracks mouse coordinates during rectangle selection dragging.
  */
 export interface SelectionBoxState {
   isActive: boolean;
@@ -107,16 +110,16 @@ export interface CanvasState {
   isSpacePressed: boolean;
   isKeyboardMoving: boolean;
   // Internal state for complex multi-step interactions
-  initialPositions: Record<string, { x: number; y: number }> | null;  // Drag start positions for multi-select
-  needsLayoutUpdate: { type: 'reparent' | 'resize'; rectangleId?: string } | null;  // Deferred layout recalculation
-  keyboardTimeoutId: number | null;  // Debounce timer for keyboard navigation
+  initialPositions: Record<string, { x: number; y: number }> | null;  // Stores starting positions before drag operations begin
+  needsLayoutUpdate: { type: 'reparent' | 'resize'; rectangleId?: string } | null;  // Queues layout updates for after interaction completion
+  keyboardTimeoutId: number | null;  // Prevents rapid-fire keyboard movement from creating excessive history entries
   // Multi-select specific state
-  multiSelectDragInitialPositions: Record<string, { x: number; y: number }> | null;  // Initial positions for bulk drag
-  multiSelectRelativePositions: Map<string, { x: number; y: number; relativeX: number; relativeY: number }> | null;  // Relative positions for bulk drag
-  // Navigation minimap state
-  minimapVisible: boolean;  // Controls visibility of spatial navigation overlay
-  // Virtual drag layer for performance optimization
-  virtualDragState: VirtualDragState;  // Manages real-time visual feedback without state updates
+  multiSelectDragInitialPositions: Record<string, { x: number; y: number }> | null;  // Captures positions at start of multi-rectangle drag
+  multiSelectRelativePositions: Map<string, { x: number; y: number; relativeX: number; relativeY: number }> | null;  // Maintains relative spacing during group movement
+  // Navigation minimap state  
+  minimapVisible: boolean;  // Toggle for bird's-eye view navigation panel
+  // Virtual drag layer for performance optimization during complex operations
+  virtualDragState: VirtualDragState;  // Provides immediate visual feedback while deferring expensive state updates
 }
 
 /**
@@ -219,9 +222,9 @@ export interface UIActions {
   startSelectionBox: (startX: number, startY: number) => void;
   updateSelectionBox: (currentX: number, currentY: number) => void;
   endSelectionBox: () => void;
-  // Internal lifecycle methods - prefixed to indicate private usage
-  _handleResize: () => void;  // Window resize handler for responsive UI
-  _cleanupContextMenuListener: () => void;  // Event cleanup on component unmount
+  // Internal lifecycle methods - prefixed to indicate private usage patterns
+  _handleResize: () => void;  // Recalculates UI dimensions when browser window changes size
+  _cleanupContextMenuListener: () => void;  // Removes event listeners to prevent memory leaks on unmount
 }
 
 /**

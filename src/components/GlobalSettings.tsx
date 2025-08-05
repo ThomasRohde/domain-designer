@@ -56,6 +56,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
           <span className="hidden sm:inline">Global Settings</span>
           <span className="sm:hidden">Settings</span>
         </h3>
+        {/* Reset button - restores all settings to factory defaults and triggers layout recalculation */}
         <button
           onClick={() => settingsActions.resetSettings()}
           className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
@@ -67,7 +68,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
       </div>
 
       <div className="space-y-3">
-        {/* Primary layout algorithm selection affects all container arrangements */}
+        {/* Layout algorithm selection - affects all automated container arrangements and space utilization */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Layout Algorithm
@@ -81,7 +82,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             <option value="flow">Flow Layout</option>
             <option value="mixed-flow">Mixed Flow Layout</option>
           </select>
-          {/* Algorithm descriptions help users understand layout behavior differences */}
+          {/* Dynamic descriptions explain layout behavior and help users choose optimal algorithm */}
           <div className="text-xs text-gray-500 mt-1">
             {layoutAlgorithm === 'grid' ? 
               'Traditional grid-based layout with fixed positioning' : 
@@ -128,6 +129,8 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
             value={gridSize}
             onChange={(e) => settingsActions.handleGridSizeChange(parseInt(e.target.value), true)}
             onMouseUp={(e) => settingsActions.handleGridSizeChange(parseInt((e.target as HTMLInputElement).value), false)}
+            // onChange: Real-time preview updates during slider drag
+            // onMouseUp: Final layout recalculation when drag completes
             className="w-full accent-blue-600"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -137,7 +140,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
         </div>
 
 
-        {/* Leaf node constraints override auto-sizing for terminal rectangles */}
+        {/* Fixed dimensions for leaf nodes - enforces consistent sizing for terminal elements */}
         <div className="border-t pt-2 mt-2">
           <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
             <Lock size={12} className="text-gray-600" />
@@ -174,6 +177,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   value={leafWidth}
                   onChange={(e) => settingsActions.handleLeafWidthChange(parseInt(e.target.value), true)}
                   onMouseUp={(e) => settingsActions.handleLeafWidthChange(parseInt((e.target as HTMLInputElement).value), false)}
+                  // Live preview during adjustment, layout recalculation on completion
                   className="w-full accent-blue-600"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -212,6 +216,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                   value={leafHeight}
                   onChange={(e) => settingsActions.handleLeafHeightChange(parseInt(e.target.value), true)}
                   onMouseUp={(e) => settingsActions.handleLeafHeightChange(parseInt((e.target as HTMLInputElement).value), false)}
+                  // Live preview during adjustment, layout recalculation on completion
                   className="w-full accent-blue-600"
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -289,7 +294,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
               </div>
             </div>
 
-            {/* Dynamic font sizing improves readability by reducing font size at deeper hierarchy levels */}
+            {/* Dynamic font scaling - automatically reduces font size for deeper hierarchy levels to maintain visual balance */}
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-xs text-gray-700">Dynamic Font Sizing</label>
@@ -339,6 +344,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 value={margin}
                 onChange={(e) => settingsActions.handleMarginChange(parseFloat(e.target.value), true)}
                 onMouseUp={(e) => settingsActions.handleMarginChange(parseFloat((e.target as HTMLInputElement).value), false)}
+                // Real-time spacing preview, triggers parent layout recalculation on completion
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
@@ -360,6 +366,7 @@ const GlobalSettings: React.FC<GlobalSettingsProps> = ({
                 value={labelMargin}
                 onChange={(e) => settingsActions.handleLabelMarginChange(parseFloat(e.target.value), true)}
                 onMouseUp={(e) => settingsActions.handleLabelMarginChange(parseFloat((e.target as HTMLInputElement).value), false)}
+                // Controls top spacing for parent labels, triggers layout updates when adjusted
                 className="w-full accent-blue-600"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">

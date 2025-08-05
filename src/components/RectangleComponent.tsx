@@ -377,7 +377,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
             )}
           </div>
           
-          {/* Action buttons handled by external ActionButtonsOverlay for proper z-index layering */}
         </div>
       ) : (
         // Leaf rectangles: center-aligned label with text wrapping and alignment support
@@ -417,7 +416,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
             </CustomTooltip>
           )}
           
-          {/* Action buttons handled by external ActionButtonsOverlay for proper z-index layering */}
         </div>
       )}
 

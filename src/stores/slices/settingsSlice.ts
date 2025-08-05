@@ -429,17 +429,17 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
           }
         }));
 
-        // Trigger layout update if needed
+        // Cascading layout updates - margin changes affect all container sizing calculations
         if (!state.settings.isRestoring && !skipLayoutUpdates) {
-          // Find parents that need layout updates
+          // Identify all containers that use automatic layout (excluding manual/locked rectangles)
           const parentsToUpdate = state.rectangles.filter(rect => 
             (rect.type === 'parent' || rect.type === 'root') && 
-            !rect.isManualPositioningEnabled &&
-            !rect.isLockedAsIs &&
+            !rect.isManualPositioningEnabled &&  // Manual mode uses fixed positioning
+            !rect.isLockedAsIs &&                // Locked rectangles preserve exact dimensions
             getChildren(rect.id, state.rectangles).length > 0
           );
           
-          // Use fitToChildren for each parent
+          // Recalculate optimal size for each container using new margin settings
           parentsToUpdate.forEach(parent => {
             state.rectangleActions.fitToChildren(parent.id);
           });
@@ -456,17 +456,17 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
           }
         }));
 
-        // Trigger layout update if needed
+        // Label margin affects top spacing for parent containers - triggers layout cascade
         if (!state.settings.isRestoring && !skipLayoutUpdates) {
-          // Find parents that need layout updates
+          // Target containers that need label spacing recalculation
           const parentsToUpdate = state.rectangles.filter(rect => 
             (rect.type === 'parent' || rect.type === 'root') && 
-            !rect.isManualPositioningEnabled &&
-            !rect.isLockedAsIs &&
+            !rect.isManualPositioningEnabled &&  // Automatic layout containers only
+            !rect.isLockedAsIs &&                // Exclude dimension-locked rectangles
             getChildren(rect.id, state.rectangles).length > 0
           );
           
-          // Use fitToChildren for each parent
+          // Recalculate container dimensions with new label margin spacing
           parentsToUpdate.forEach(parent => {
             state.rectangleActions.fitToChildren(parent.id);
           });
@@ -483,20 +483,20 @@ export const createSettingsSlice: SliceCreator<SettingsSlice> = (set, get) => {
           }
         }));
 
-        // Update layout manager immediately
+        // Update layout manager immediately to use new algorithm for subsequent calculations
         layoutManager.setAlgorithm(algorithm);
 
-        // Trigger layout update if needed
+        // Algorithm change triggers comprehensive layout restructuring for all containers
         if (!state.settings.isRestoring && !skipLayoutUpdates) {
-          // Find parents that need layout updates
+          // All automatic containers need layout recalculation with new algorithm
           const parentsToUpdate = state.rectangles.filter(rect => 
             (rect.type === 'parent' || rect.type === 'root') && 
-            !rect.isManualPositioningEnabled &&
-            !rect.isLockedAsIs &&
+            !rect.isManualPositioningEnabled &&  // Only automatic layout containers
+            !rect.isLockedAsIs &&                // Exclude locked dimensions
             getChildren(rect.id, state.rectangles).length > 0
           );
           
-          // Use fitToChildren for each parent
+          // Apply new layout algorithm to each container hierarchy
           parentsToUpdate.forEach(parent => {
             state.rectangleActions.fitToChildren(parent.id);
           });
