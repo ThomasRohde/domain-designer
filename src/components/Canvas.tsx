@@ -93,9 +93,9 @@ const Canvas: React.FC<CanvasProps> = ({
             isSpacePressed ? 'cursor-grab' : ''
           } ${panState ? 'cursor-grabbing' : ''} ${
             isCanvasCurrentDropTarget 
-              ? 'bg-green-100 border-2 border-green-400 border-dashed' 
+              ? 'bg-green-100/10 border-2 border-green-400/30 border-dashed' 
               : isCanvasDropTarget 
-                ? 'bg-green-50 border-2 border-green-300 border-dashed' 
+                ? 'bg-green-50/5 border-2 border-green-300/20 border-dashed' 
                 : 'bg-gray-50'
           }`}
           style={{ 
@@ -142,8 +142,8 @@ const Canvas: React.FC<CanvasProps> = ({
           
           {/* Active drop zone visual feedback for hierarchy rearrangement */}
           {isCanvasCurrentDropTarget && (
-            <div className="absolute inset-4 border-4 border-green-400 border-dashed rounded-lg bg-green-100 bg-opacity-50 flex items-center justify-center pointer-events-none">
-              <div className="text-green-800 font-bold text-lg">Drop here to make root</div>
+            <div className="absolute inset-4 border-4 border-green-400/40 border-dashed rounded-lg bg-green-100/10 flex items-center justify-center pointer-events-none">
+              <div className="text-green-800/80 font-bold text-lg">Drop here to make root</div>
             </div>
           )}
         </div>
