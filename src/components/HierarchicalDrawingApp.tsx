@@ -206,11 +206,12 @@ const HierarchicalDrawingApp = () => {
           nextId
         );
         
-        // Apply imported dimension settings to leaf rectangles
+        // Apply imported dimension settings to leaf rectangles (but respect isLockedAsIs)
         let finalRectangles = processedRectangles;
         if (importedData.globalSettings?.leafFixedWidth || importedData.globalSettings?.leafFixedHeight) {
           finalRectangles = processedRectangles.map(rect => {
-            if (rect.type === 'leaf') {
+            // Only apply global leaf dimensions to rectangles that are not locked as-is
+            if (rect.type === 'leaf' && !rect.isLockedAsIs) {
               const updatedRect = { ...rect };
               if (importedData.globalSettings!.leafFixedWidth) {
                 updatedRect.w = importedData.globalSettings!.leafWidth;

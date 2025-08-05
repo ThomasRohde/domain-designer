@@ -146,12 +146,35 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
     predefinedColors: predefinedColors || globalSettings.predefinedColors
   } : defaultSettings;
 
+  // Helper function to check if a rectangle is in a manual mode parent
+  const isInManualModeParent = (rect: Rectangle): boolean => {
+    if (!rect.parentId) return false;
+    const parent = rectangles.find(r => r.id === rect.parentId);
+    return parent?.isManualPositioningEnabled === true;
+  };
+
+  // Ensure all rectangles have explicit values for layout-critical properties
+  const rectanglesWithLayoutProperties = rectangles.map(rect => {
+    const inManualParent = isInManualModeParent(rect);
+    return {
+      ...rect,
+      // Ensure these critical layout properties are always exported with explicit values
+      isManualPositioningEnabled: rect.isManualPositioningEnabled ?? false,
+      // For children in manual mode parents, set isLockedAsIs to preserve their manually-adjusted dimensions
+      // Always set to true for children in manual parents to preserve their custom dimensions
+      isLockedAsIs: inManualParent ? true : (rect.isLockedAsIs ?? false),
+      // Preserve other optional properties that might affect layout
+      isEditing: rect.isEditing ?? false,
+      isTextLabel: rect.isTextLabel ?? false
+    };
+  });
+
   // Create v2.0 schema with layout preservation metadata
   const boundingBox = calculateBoundingBox(rectangles);
   
   const data: SavedDiagram = {
     version: '2.0',
-    rectangles,
+    rectangles: rectanglesWithLayoutProperties,
     globalSettings: enhancedGlobalSettings,
     layoutMetadata: {
       algorithm: enhancedGlobalSettings.layoutAlgorithm,
@@ -730,8 +753,9 @@ export const validateAndFixRectangleIds = (rectangles: Rectangle[], currentNextI
  * Processing stages:
  * 1. Fix parent-child relationship integrity
  * 2. Update rectangle types based on relationships
- * 3. Ensure unique IDs and track maximum
- * 4. Calculate next available ID for future use
+ * 3. Restore layout properties with proper defaults for roundtrip integrity
+ * 4. Ensure unique IDs and track maximum
+ * 5. Calculate next available ID for future use
  * 
  * @param importedData - Raw imported diagram data
  * @param currentNextId - Current next available ID
@@ -744,10 +768,21 @@ export const processImportedDiagram = (importedData: ImportedDiagramData, curren
   // Step 2: Update rectangle types based on actual relationships
   processedRectangles = updateRectangleTypes(processedRectangles);
   
-  // Step 3: Validate and fix rectangle IDs
+  // Step 3: Restore layout properties with proper defaults for roundtrip integrity
+  processedRectangles = processedRectangles.map(rect => ({
+    ...rect,
+    // Ensure layout-critical properties are preserved with proper defaults
+    isManualPositioningEnabled: rect.isManualPositioningEnabled ?? false,
+    isLockedAsIs: rect.isLockedAsIs ?? false,
+    // Preserve editing and text label states  
+    isEditing: rect.isEditing ?? false,
+    isTextLabel: rect.isTextLabel ?? false
+  }));
+  
+  // Step 4: Validate and fix rectangle IDs
   const { rectangles: fixedRectangles, maxId } = validateAndFixRectangleIds(processedRectangles, currentNextId);
   
-  // Step 4: Calculate new nextId to prevent future conflicts
+  // Step 5: Calculate new nextId to prevent future conflicts
   const newNextId = maxId + 1;
   
   return { rectangles: fixedRectangles, nextId: newNextId };
