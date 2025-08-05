@@ -106,13 +106,13 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           }
           break;
         case 'c':
-          if (shortcuts.onCopy) {
+          if (shortcuts.onCopy && !isTyping && !isInModal) {
             event.preventDefault();
             shortcuts.onCopy();
           }
           break;
         case 'v':
-          if (shortcuts.onPaste) {
+          if (shortcuts.onPaste && !isTyping && !isInModal) {
             event.preventDefault();
             shortcuts.onPaste();
           }
@@ -124,7 +124,7 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           }
           break;
         case 'a':
-          if (shortcuts.onSelectAll) {
+          if (shortcuts.onSelectAll && !isTyping && !isInModal) {
             event.preventDefault();
             shortcuts.onSelectAll();
           }
