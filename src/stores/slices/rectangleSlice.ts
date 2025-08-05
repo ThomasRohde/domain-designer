@@ -338,9 +338,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       // Create rectangle
       let newRect = createRectangle(id, x, y, w, h, parentId || undefined);
       
-      // Apply global fixed dimensions to child rectangles only in auto mode
-      // In manual mode, users have full control over dimensions (like margins)
-      if (parentId && !isManualMode) {
+      // Apply global fixed dimensions to child rectangles in both auto and manual mode
+      // Manual mode only affects positioning, not sizing constraints
+      if (parentId) {
         newRect = applyFixedDimensions(newRect, getFixedDimensions());
       }
 

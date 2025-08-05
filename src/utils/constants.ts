@@ -1,7 +1,7 @@
 // Layout and positioning constants - grid-based system for consistent alignment
-export const GRID_SIZE = 10;
+export const GRID_SIZE = 15;
 export const MARGIN = 1; // Margin around rectangles to prevent overlap
-export const LABEL_MARGIN = 1.5; // Extra margin for nodes with children to accommodate labels
+export const LABEL_MARGIN = 2.0; // Extra margin for nodes with children to accommodate labels
 
 // Minimum dimensions to ensure rectangle visibility and usability
 export const MIN_WIDTH = 5;
