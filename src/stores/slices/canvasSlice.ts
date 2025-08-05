@@ -664,15 +664,37 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           // Hierarchy drag: detect valid drop targets and provide visual feedback
           const potentialTargets = get().canvasActions.detectDropTargets(currentX, currentY, state.canvas.dragState.id);
           
-          // Prioritize rectangle targets over canvas background
+          /**
+           * Smart drop target selection for hierarchy operations.
+           * 
+           * Handles the special case where dragging a child rectangle outside its parent
+           * should prefer the canvas background (making it a root) over the parent rectangle,
+           * even when the mouse is technically over the parent during the drag operation.
+           */
           let currentDropTarget: DropTarget | null = null;
           const rectTargets = potentialTargets.filter(target => target.targetId !== null && target.isValid);
-          if (rectTargets.length > 0) {
-            currentDropTarget = rectTargets[0]; // Use deepest valid target
+          const draggedRect = state.rectangles.find(r => r.id === state.canvas.dragState!.id);
+          const isChildRectangle = draggedRect?.parentId !== undefined;
+          
+          if (isChildRectangle && rectTargets.length > 0) {
+            const currentParentTarget = rectTargets.find(target => target.targetId === draggedRect?.parentId);
+            
+            if (currentParentTarget && rectTargets.length === 1) {
+              // Only target is current parent - prefer canvas background for child-to-root operation
+              const canvasTarget = potentialTargets.find(target => target.targetId === null);
+              currentDropTarget = canvasTarget || rectTargets[0];
+            } else {
+              // Multiple targets or different parent - use standard priority
+              currentDropTarget = rectTargets[0];
+            }
+          } else if (rectTargets.length > 0) {
+            // Standard rectangle-to-rectangle or root-to-child drag
+            currentDropTarget = rectTargets[0];
           } else {
+            // No rectangle targets - use canvas background
             const canvasTarget = potentialTargets.find(target => target.targetId === null);
             if (canvasTarget) {
-              currentDropTarget = canvasTarget; // Fallback to canvas (make root)
+              currentDropTarget = canvasTarget;
             }
           }
           
@@ -753,35 +775,95 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     },
 
     handleMouseUp: () => {
-      const state = get();
-      
-      // CRITICAL DRAG SYNCHRONIZATION FIX: Cancel all pending throttled updates immediately
-      // Prevents rectangles from continuing to move after mouse release due to throttled updates
-      // This was the core issue causing children to race past cursor during drag operations
+      // Cancel pending throttled updates to prevent coordinate drift after mouse release
       throttledVirtualDragUpdate.cancel();
       
-      // Handle panning mouse up
+      // Handle panning operations
+      let state = get();
       if (state.canvas.panState) {
         get().canvasActions.endPan();
       }
       
+      // Ensure we have the latest state before processing hierarchy drag completion
+      state = get();
+      
       // Handle drag/resize mouse up if there's an active operation
       if (state.canvas.dragState || state.canvas.resizeState) {
-        // Handle hierarchy drag completion BEFORE saving to history
+        /**
+         * Process hierarchy drag completion with coordinate system handling.
+         * 
+         * Key considerations:
+         * - Child→Root: Use mouse position for precise drop location
+         * - Other cases: Let reparentRectangle handle coordinate conversion
+         * - Failed operations: Reset to initial positions to prevent drift
+         */
         if (state.canvas.hierarchyDragState && state.canvas.dragState?.isHierarchyDrag) {
-          const { draggedRectangleId, currentDropTarget } = state.canvas.hierarchyDragState;
+          const { draggedRectangleId, currentDropTarget, mousePosition } = state.canvas.hierarchyDragState;
           
           if (currentDropTarget && currentDropTarget.isValid) {
-            // Check if dropping on the original parent (no-op operation)
             const draggedRect = state.rectangles.find(r => r.id === draggedRectangleId);
             const originalParentId = draggedRect?.parentId || null;
             
+            // Only proceed if this is a meaningful reparenting operation
             if (currentDropTarget.targetId !== originalParentId) {
-              // Perform the reparenting operation
-              const success = get().rectangleActions.reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
-              if (success) {
-                console.log(`✅ Reparented ${draggedRectangleId} to ${currentDropTarget.targetId || 'root'}`);
+              const isChildToRootOperation = mousePosition && 
+                                           currentDropTarget.targetId === null && 
+                                           draggedRect?.parentId;
+              
+              let dropPosition = null;
+              if (isChildToRootOperation) {
+                dropPosition = convertMouseToGridPosition(mousePosition, state);
               }
+              
+              const success = get().rectangleActions.reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
+              
+              if (success && dropPosition) {
+                // Apply mouse drop position for child-to-root operations
+                get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
+                  return rectangles.map(rect => 
+                    rect.id === draggedRectangleId 
+                      ? { ...rect, x: dropPosition.x, y: dropPosition.y }
+                      : rect
+                  );
+                });
+              } else if (!success) {
+                resetToInitialPositions();
+              }
+            }
+          } else {
+            // No valid drop target - reset positions to prevent orphaned movement
+            resetToInitialPositions();
+          }
+          
+          /**
+           * Convert mouse screen coordinates to grid coordinates.
+           * Accounts for canvas pan offset and zoom level.
+           */
+          function convertMouseToGridPosition(mousePos: { x: number; y: number }, currentState: typeof state) {
+            const canvasX = (mousePos.x - currentState.canvas.panOffset.x) / currentState.canvas.zoomState.level;
+            const canvasY = (mousePos.y - currentState.canvas.panOffset.y) / currentState.canvas.zoomState.level;
+            
+            return {
+              x: Math.round(canvasX / currentState.settings.gridSize),
+              y: Math.round(canvasY / currentState.settings.gridSize)
+            };
+          }
+          
+          /**
+           * Reset rectangle and its descendants to their initial positions.
+           * Used when reparenting fails or no valid drop target exists.
+           */
+          function resetToInitialPositions() {
+            const initialPositions = state.canvas.initialPositions;
+            if (initialPositions && initialPositions[draggedRectangleId]) {
+              get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
+                return rectangles.map(rect => {
+                  const storedPosition = initialPositions[rect.id];
+                  return storedPosition 
+                    ? { ...rect, x: storedPosition.x, y: storedPosition.y }
+                    : rect;
+                });
+              });
             }
           }
         }
