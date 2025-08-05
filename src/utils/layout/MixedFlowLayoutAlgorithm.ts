@@ -114,16 +114,16 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
       return { rectangles: [] };
     }
 
-    // Convert rectangles to mixed flow rectangles and compute their sizes
+    // Convert rectangles to mixed flow rectangles and compute their minimum sizes
     const mixedChildren = this.computeChildrenSizes(children, fixedDimensions);
     
-    // Generate and evaluate different layout options
+    // Generate all possible layout configurations (single-row, single-column, two-column, two-row, matrix grids)
     const layoutOptions = this.generateLayoutOptions(mixedChildren, margins);
     
-    // Select the best layout option
+    // Select layout with highest efficiency score (space utilization + aspect ratio + balance)
     const bestOption = this.selectOptimalLayout(layoutOptions);
     
-    // Position children according to the chosen layout
+    // Transform relative coordinates to absolute positions within parent bounds
     const result = this.positionChildren(bestOption, parentRect, margins);
     
     return {
@@ -134,23 +134,52 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
 
   /**
    * Calculate minimum dimensions needed for parent to fit children
+   * 
+   * Two distinct calculation modes:
+   * 1. Manual positioning: Simple bounding box calculation (bypasses algorithm)
+   * 2. Automatic layout: Full Mixed Flow algorithm execution for optimal sizing
    */
   calculateMinimumParentSize(input: LayoutInput): { w: number; h: number } {
-    const { children, fixedDimensions, margins } = input;
+    const { parentRect, children, margins } = input;
     
-    if (children.length === 0) {
+    // Manual positioning mode: bypass Mixed Flow algorithm entirely
+    // Children are positioned manually by user, so algorithm-generated layouts are irrelevant
+    // Uses direct bounding box calculation instead of generating layout options
+    if (parentRect.isManualPositioningEnabled) {
+      if (children.length === 0) {
+        return { w: 100, h: 60 };
+      }
+
+      // Calculate tight bounding box encompassing all manually positioned children
+      const boundingBox = this.calculateBoundingBox(children);
+      
+      // Transform bounding box to parent-relative coordinates with margin buffer
+      // Formula: (bounding_box_right_edge - parent_left_edge) + right_margin
+      // This ensures parent is large enough to contain all children plus margins
+      const requiredWidth = Math.max(100, boundingBox.x - parentRect.x + boundingBox.w + margins.margin);
+      const requiredHeight = Math.max(60, boundingBox.y - parentRect.y + boundingBox.h + margins.margin);
+
+      return { 
+        w: this.snapToGrid(requiredWidth), 
+        h: this.snapToGrid(requiredHeight) 
+      };
+    }
+
+    // Automatic layout mode: run full Mixed Flow algorithm to determine optimal size
+    const { children: childrenForCalc, fixedDimensions } = input;
+    
+    if (childrenForCalc.length === 0) {
       return { w: 100, h: 60 };
     }
 
-    const mixedChildren = this.computeChildrenSizes(children, fixedDimensions);
+    // Execute complete Mixed Flow algorithm: size calculation → option generation → scoring → selection
+    const mixedChildren = this.computeChildrenSizes(childrenForCalc, fixedDimensions);
     const layoutOptions = this.generateLayoutOptions(mixedChildren, margins);
     const bestOption = this.selectOptimalLayout(layoutOptions);
     
-    // Add margins to the final size
-    // Horizontal: left + right margins
-    const marginH = 2 * margins.margin;
-    // Vertical: top label margin + top margin + bottom margin
-    const marginV = margins.labelMargin + margins.margin + margins.margin;
+    // Add full margin envelope to algorithm-calculated size
+    const marginH = 2 * margins.margin;  // left + right margins
+    const marginV = margins.labelMargin + 2 * margins.margin;  // label + top + bottom margins
     
     return {
       w: this.snapToGrid(bestOption.parentW + marginH),
@@ -159,7 +188,10 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Calculate grid dimensions (returns 1x1 for compatibility)
+   * Calculate grid dimensions (returns 1x1 for interface compatibility)
+   * 
+   * Mixed Flow algorithm doesn't use traditional grid dimensions since it
+   * dynamically selects between multiple layout strategies per container.
    */
   calculateGridDimensions(_childrenCount: number, _layoutPreferences?: LayoutPreferences): { cols: number; rows: number } {
     return { cols: 1, rows: 1 };
@@ -169,13 +201,12 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
    * Calculate minimum required dimensions for all child rectangles
    * 
    * Handles three rectangle types with different sizing strategies:
-   * - Text labels: Calculated from font size and text content length
-   * - Leaf nodes: Uses fixed dimensions or maintains current size with minimums
-   * - Container nodes: Text-based sizing with space for child content
+   * - Text labels: Font-based sizing (fontSize × textLength × 0.6 for width)
+   * - Leaf nodes: Fixed dimensions from settings or current size with LEAF_W/H minimums
+   * - Container nodes: Text-based sizing with extra space for child content
    * 
    * @param children - Array of child rectangles to size
    * @param fixedDimensions - Optional fixed sizing configuration for leaf nodes
-   * @param _margins - Margin configuration (unused in current implementation)
    * @returns Array of MixedFlowRectangles with calculated minimum dimensions
    */
   private computeChildrenSizes(
@@ -194,14 +225,14 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
       };
 
       if ('isTextLabel' in child && child.isTextLabel || child.type === 'textLabel') {
-        // For text labels, calculate size based on text content and font size
+        // Text labels: font-proportional sizing with 0.6 width factor and 1.5 height factor
         const fontSize = ('textFontSize' in child ? child.textFontSize : undefined) || 14;
         const textWidth = Math.max(MIN_WIDTH, fontSize * (child.label?.length || 5) * 0.6);
         const textHeight = Math.max(MIN_HEIGHT, fontSize * 1.5);
         mixedChild.minW = this.snapToGrid(textWidth);
         mixedChild.minH = this.snapToGrid(textHeight);
       } else if (child.type === 'leaf') {
-        // For leaves, use fixed dimensions if available
+        // Leaf nodes: fixed dimensions from global settings or current size with LEAF_W/H minimums
         if (fixedDimensions?.leafFixedWidth) {
           mixedChild.minW = fixedDimensions.leafWidth;
         } else {
@@ -214,7 +245,7 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
           mixedChild.minH = Math.max(this.snapToGrid(child.h), LEAF_H);
         }
       } else {
-        // For containers, calculate text-based sizing
+        // Container nodes: text-based sizing with padding for child content
         const textWidth = Math.max(Math.ceil(child.label.length * 0.6), 2);
         mixedChild.minW = Math.max(this.snapToGrid(child.w), textWidth + 1);
         mixedChild.minH = Math.max(this.snapToGrid(child.h), 2);
@@ -386,9 +417,6 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
     return options;
   }
 
-  /**
-   * Create single row layout option
-   */
   private createSingleRowOption(children: MixedFlowRectangle[], gap: number): LayoutOption {
     const childPositions: Array<{ rect: MixedFlowRectangle; x: number; y: number }> = [];
     let currentX = 0;
@@ -408,7 +436,7 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
       maxHeight = Math.max(maxHeight, childH);
     });
 
-    const totalWidth = currentX > 0 ? currentX - gap : 0; // Remove trailing gap, ensure non-negative
+    const totalWidth = currentX > 0 ? currentX - gap : 0; // Remove trailing gap from total width
 
     return {
       type: 'single-row',
@@ -419,9 +447,6 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
     };
   }
 
-  /**
-   * Create single column layout option
-   */
   private createSingleColumnOption(children: MixedFlowRectangle[], gap: number): LayoutOption {
     const childPositions: Array<{ rect: MixedFlowRectangle; x: number; y: number }> = [];
     let currentY = 0;
@@ -441,7 +466,7 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
       maxWidth = Math.max(maxWidth, childW);
     });
 
-    const totalHeight = currentY > 0 ? currentY - gap : 0; // Remove trailing gap, ensure non-negative
+    const totalHeight = currentY > 0 ? currentY - gap : 0; // Remove trailing gap from total height
 
     return {
       type: 'single-column',
@@ -453,10 +478,13 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Create two-column layout option with height balancing
+   * Create two-column layout with height balancing between columns
+   * 
+   * Uses greedy bin-packing to minimize height difference between columns,
+   * reducing wasted vertical whitespace in the final layout.
    */
   private createTwoColumnOption(children: MixedFlowRectangle[], gap: number): LayoutOption {
-    // Split children into two groups, balancing by total height
+    // Distribute children across two columns with balanced total heights
     const { group1, group2 } = this.balanceChildrenByHeight(children);
     
     const childPositions: Array<{ rect: MixedFlowRectangle; x: number; y: number }> = [];
@@ -509,10 +537,13 @@ export class MixedFlowLayoutAlgorithm extends BaseLayoutAlgorithm {
   }
 
   /**
-   * Create two-row layout option with width balancing
+   * Create two-row layout with width balancing between rows
+   * 
+   * Uses greedy bin-packing to minimize width difference between rows,
+   * reducing wasted horizontal whitespace in the final layout.
    */
   private createTwoRowOption(children: MixedFlowRectangle[], gap: number): LayoutOption {
-    // Split children into two groups, balancing by total width
+    // Distribute children across two rows with balanced total widths
     const { group1, group2 } = this.balanceChildrenByWidth(children);
     
     const childPositions: Array<{ rect: MixedFlowRectangle; x: number; y: number }> = [];

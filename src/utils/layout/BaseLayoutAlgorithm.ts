@@ -5,24 +5,34 @@ import { ILayoutAlgorithm, LayoutInput, LayoutResult } from './interfaces';
 /**
  * Abstract base class providing common layout algorithm infrastructure
  * 
- * Implements the Template Method pattern with layout preservation capabilities.
- * Provides utility methods for bounds checking, coordinate calculations, and
- * layout metadata handling. All concrete algorithms inherit preservation logic
- * and standard geometric operations.
+ * Implements the Template Method pattern with dual-layer layout control:
+ * - Manual positioning mode (user override) - Absolute precedence over all algorithms
+ * - Layout preservation flags (temporary protection) - Prevents unwanted relayout during operations
+ * 
+ * This architecture ensures that user control always takes precedence while providing
+ * fine-grained protection against layout disruption during complex UI operations.
+ * All concrete algorithms inherit this control logic plus standard geometric utilities
+ * for bounds checking, coordinate calculations, and content sizing.
  */
 export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
   abstract readonly name: string;
   abstract readonly description: string;
   
   /**
-   * Determine if algorithm should modify existing layout
+   * Determine if algorithm should modify existing layout (secondary control layer)
    * 
-   * Checks layout preservation flags to prevent unwanted automatic relayout
-   * of user-positioned content. Standard implementation defers to metadata
-   * preservation flags.
+   * Part of the dual-layer layout control system, this method provides temporary
+   * protection against unwanted relayout during operations like drag/drop, imports,
+   * or state transitions. This is SECONDARY to manual positioning mode - if manual
+   * positioning is enabled, this check is bypassed entirely.
+   * 
+   * Used for temporary preservation scenarios:
+   * - During active drag operations to prevent layout flickering
+   * - When importing layouts that should maintain exact positions
+   * - During undo/redo operations to preserve intermediate states
    * 
    * @param layoutMetadata - Optional layout state and preservation flags
-   * @returns true if layout modifications are allowed
+   * @returns true if layout modifications are allowed (false = preserve current positions)
    */
   canApplyLayout(layoutMetadata?: LayoutMetadata): boolean {
     if (!layoutMetadata) return true;
@@ -32,18 +42,34 @@ export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
   }
   
   /**
-   * Main layout calculation with preservation checks (Template Method)
+   * Main layout calculation with dual-layer layout control (Template Method)
    * 
-   * Implements the preservation-aware layout workflow:
-   * 1. Check if layout modifications are allowed
-   * 2. If preserved, return existing rectangles unchanged
-   * 3. Otherwise, delegate to concrete algorithm implementation
+   * Implements a hierarchical layout control system with two levels of protection:
+   * 1. Manual positioning mode (highest precedence) - User has full control
+   * 2. Layout preservation flags (secondary) - Temporary protection during operations
+   * 3. Algorithm execution - Normal automatic layout processing
+   * 
+   * The manual positioning check takes absolute precedence over preservation flags,
+   * ensuring that when users enable manual mode, no algorithm will ever execute
+   * regardless of preservation state or layout metadata.
    * 
    * @param input - Complete layout parameters and constraints
    * @returns Layout result with positioned rectangles and parent sizing
    */
   calculateLayout(input: LayoutInput): LayoutResult {
-    // Check if we should preserve the current layout
+    // PRIORITY 1: Manual positioning mode overrides all automatic layout
+    // When enabled, user has complete control over child positioning and algorithms
+    // must never modify or rearrange children, regardless of any other flags
+    if (input.parentRect.isManualPositioningEnabled) {
+      return {
+        rectangles: input.children,
+        minParentSize: this.calculateMinimumParentSize(input)
+      };
+    }
+
+    // PRIORITY 2: Layout preservation flags protect against unwanted relayout
+    // Temporary protection during drag operations, imports, or other state changes
+    // where existing positions should be maintained until operation completes
     if (!this.canApplyLayout(input.layoutMetadata)) {
       return {
         rectangles: input.children,
@@ -51,7 +77,8 @@ export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
       };
     }
     
-    // Delegate to concrete implementation
+    // PRIORITY 3: Execute algorithm-specific layout calculation
+    // Normal path when both manual positioning is disabled and preservation allows changes
     return this.doCalculateLayout(input);
   }
   
@@ -68,11 +95,17 @@ export abstract class BaseLayoutAlgorithm implements ILayoutAlgorithm {
   protected abstract doCalculateLayout(input: LayoutInput): LayoutResult;
   
   /**
-   * Calculate minimum parent dimensions for content (always callable)
+   * Calculate minimum parent dimensions for content (bypasses all layout controls)
    * 
-   * This calculation is always performed regardless of preservation state
-   * since it doesn't modify existing layouts, only computes space requirements.
-   * Used for fit-to-children operations and parent sizing validation.
+   * This calculation is always performed regardless of manual positioning mode or
+   * preservation flags since it's a pure computation that doesn't modify positions.
+   * Essential for:
+   * - Parent fit-to-children operations (both automatic and manual modes)
+   * - Container size validation when children are repositioned
+   * - Export bounds calculation for optimal output sizing
+   * 
+   * Even in manual positioning mode, parents may need to resize to accommodate
+   * user-positioned children, making this calculation always necessary.
    * 
    * @param input - Layout parameters for size calculation
    * @returns Minimum required parent dimensions

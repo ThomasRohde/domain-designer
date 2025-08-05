@@ -19,11 +19,6 @@ export class LayoutManager {
     this.currentAlgorithmType = algorithmType;
   }
 
-  /**
-   * Get active algorithm identifier
-   * 
-   * @returns Currently selected algorithm type string
-   */
   getCurrentAlgorithmType(): LayoutAlgorithmType {
     return this.currentAlgorithmType;
   }
@@ -43,28 +38,24 @@ export class LayoutManager {
     }
   }
 
-  /**
-   * List all registered algorithm types
-   * 
-   * @returns Array of available algorithm identifiers
-   */
   getAvailableAlgorithms(): LayoutAlgorithmType[] {
     return layoutAlgorithmFactory.getAvailableTypes();
   }
 
   /**
-   * Perform layout calculation using active algorithm
+   * Perform layout calculation with manual positioning precedence
    * 
-   * Coordinates the layout process by calculating parent depth, preparing
-   * input parameters, and delegating to the active algorithm. Handles
-   * depth-dependent layout decisions (e.g., flow orientation alternation).
+   * Implements "manual positioning first" strategy: if parent has manual
+   * positioning enabled, returns children unchanged without algorithm execution.
+   * Otherwise, coordinates algorithmic layout by calculating depth and
+   * delegating to the active algorithm.
    * 
    * @param parentRect - Parent rectangle defining boundaries
    * @param children - Child rectangles to arrange
    * @param fixedDimensions - Optional fixed sizing for leaf nodes
    * @param margins - Spacing configuration
    * @param allRectangles - Complete rectangle set for hierarchy navigation
-   * @returns Array of positioned child rectangles
+   * @returns Array of positioned child rectangles (unchanged if manual mode)
    */
   calculateChildLayout(
     parentRect: Rectangle,
@@ -81,7 +72,11 @@ export class LayoutManager {
     },
     allRectangles?: Rectangle[]
   ): Rectangle[] {
-    // Calculate depth of parent for proper orientation alternation
+    // Manual positioning takes precedence - preserve user-defined child positions
+    if (parentRect.isManualPositioningEnabled) {
+      return children;
+    }
+
     const depth = this.calculateDepth(parentRect, allRectangles);
     
     const input: LayoutInput = {
@@ -93,7 +88,7 @@ export class LayoutManager {
       depth
     };
 
-    // Check if this parent has layout preferences that should override global algorithm
+    // Parent layout preferences override global algorithm selection
     const algorithmToUse = parentRect.layoutPreferences?.fillStrategy 
       ? layoutAlgorithmFactory.createAlgorithm('grid')
       : this.currentAlgorithm;
@@ -103,13 +98,13 @@ export class LayoutManager {
   }
 
   /**
-   * Calculate optimal parent sizing for fit-to-children operations
+   * Calculate optimal parent sizing with manual positioning precedence
    * 
-   * Finds parent rectangle, determines its children, and delegates to
-   * the active algorithm for minimum size calculation. Used for automatic
-   * parent resizing and validation of space requirements.
+   * For manual positioning mode: calculates bounding box of child positions
+   * without algorithm involvement, respecting user-defined layouts.
+   * For automatic mode: delegates to layout algorithm for optimal sizing.
    * 
-   * @param parentId - ID of parent rectangl to size
+   * @param parentId - ID of parent rectangle to size
    * @param rectangles - Complete rectangle set for relationship lookup
    * @param fixedDimensions - Optional fixed sizing for leaf nodes
    * @param margins - Spacing configuration
@@ -132,12 +127,33 @@ export class LayoutManager {
     const parent = rectangles.find(r => r.id === parentId);
     const children = rectangles.filter(r => r.parentId === parentId);
 
-
     if (!parent || children.length === 0) {
       return { w: MIN_WIDTH, h: MIN_HEIGHT };
     }
 
-    // Calculate depth of parent for proper orientation alternation
+    // Manual positioning: calculate bounding box of actual child positions
+    if (parent.isManualPositioningEnabled) {
+      if (children.length === 0) {
+        return { w: MIN_WIDTH, h: MIN_HEIGHT };
+      }
+
+      // Find extremes of all child rectangles to determine required parent bounds
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      
+      children.forEach(child => {
+        minX = Math.min(minX, child.x);
+        minY = Math.min(minY, child.y);
+        maxX = Math.max(maxX, child.x + child.w);
+        maxY = Math.max(maxY, child.y + child.h);
+      });
+
+      // Ensure parent encompasses all children with proper margins
+      const requiredWidth = Math.max(MIN_WIDTH, maxX - parent.x + margins.margin);
+      const requiredHeight = Math.max(MIN_HEIGHT, maxY - parent.y + margins.margin);
+
+      return { w: requiredWidth, h: requiredHeight };
+    }
+
     const depth = this.calculateDepth(parent, rectangles);
 
     const input: LayoutInput = {
@@ -149,7 +165,7 @@ export class LayoutManager {
       depth
     };
 
-    // Check if this parent has layout preferences that should override global algorithm
+    // Parent layout preferences override global algorithm selection
     const algorithmToUse = parent.layoutPreferences?.fillStrategy 
       ? layoutAlgorithmFactory.createAlgorithm('grid')
       : this.currentAlgorithm;
@@ -158,18 +174,11 @@ export class LayoutManager {
     return result;
   }
 
-  /**
-   * Delegate grid dimension calculation to active algorithm
-   * 
-   * @param childrenCount - Number of items to arrange
-   * @param layoutPreferences - Optional grid constraints
-   * @returns Optimal grid dimensions for current algorithm
-   */
   calculateGridDimensions(
     childrenCount: number,
     layoutPreferences?: LayoutPreferences
   ): { cols: number; rows: number } {
-    // If layout preferences are provided, use Grid algorithm for calculation
+    // Layout preferences force grid algorithm usage for consistent fill behavior
     const algorithmToUse = layoutPreferences?.fillStrategy 
       ? layoutAlgorithmFactory.createAlgorithm('grid')
       : this.currentAlgorithm;
@@ -180,9 +189,9 @@ export class LayoutManager {
   /**
    * Calculate optimal placement for newly created rectangles
    * 
-   * Determines appropriate position and size for new rectangles based on
-   * parent context. For child rectangles, calculates grid-based positioning
-   * within parent bounds. For root rectangles, places adjacent to existing content.
+   * For manual positioning mode: uses left-to-right, top-to-bottom placement
+   * strategy that respects parent boundaries and existing child positions.
+   * For automatic mode: uses grid-based algorithmic positioning.
    * 
    * @param parentId - Parent ID (null for root rectangles)
    * @param rectangles - Existing rectangles for context
@@ -205,49 +214,80 @@ export class LayoutManager {
     if (parentId) {
       const parent = rectangles.find(rect => rect.id === parentId);
       if (parent) {
-        const existingChildren = rectangles.filter(rect => rect.parentId === parentId);
-        const totalChildren = existingChildren.length + 1; // +1 for the new child
-        
-        // Use labelMargin for top spacing to accommodate labels, regular margin for other sides
-        const topMargin = margins.labelMargin;
-        const sideMargin = margins.margin;
-        
-        const availableWidth = Math.max(MIN_WIDTH, parent.w - (sideMargin * 2));
-        const availableHeight = Math.max(MIN_HEIGHT, parent.h - topMargin - sideMargin);
-        
-        // Use layout preferences from parent rectangle
-        const { cols, rows } = this.calculateGridDimensions(totalChildren, parent.layoutPreferences);
-        
-        // Calculate child dimensions
-        const childWidth = Math.max(MIN_WIDTH, Math.floor(availableWidth / cols));
-        const childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
-        
-        // Use consistent spacing between children (same as margin)
-        const childSpacing = margins.margin;
-        
-        // Calculate total space needed including spacing
-        const totalSpacingWidth = (cols - 1) * childSpacing;
-        const totalSpacingHeight = (rows - 1) * childSpacing;
-        const totalChildrenWidth = cols * childWidth + totalSpacingWidth;
-        const totalChildrenHeight = rows * childHeight + totalSpacingHeight;
-        
-        const extraHorizontalSpace = Math.max(0, availableWidth - totalChildrenWidth);
-        const extraVerticalSpace = Math.max(0, availableHeight - totalChildrenHeight);
-        
-        // Center the children grid within the available space
-        const horizontalOffset = extraHorizontalSpace / 2;
-        const verticalOffset = extraVerticalSpace / 2;
-        
-        const col = existingChildren.length % cols;
-        const row = Math.floor(existingChildren.length / cols);
-        
-        x = parent.x + sideMargin + horizontalOffset + (col * (childWidth + childSpacing));
-        y = parent.y + topMargin + verticalOffset + (row * (childHeight + childSpacing));
-        w = childWidth;
-        h = childHeight;
-        
-        w = Math.max(MIN_WIDTH, w);
-        h = Math.max(MIN_HEIGHT, h);
+        // Manual positioning: natural left-to-right, top-to-bottom flow
+        if (parent.isManualPositioningEnabled) {
+          const existingChildren = rectangles.filter(rect => rect.parentId === parentId);
+          
+          if (existingChildren.length === 0) {
+            // First child positioned at top-left with proper margins
+            x = parent.x + margins.margin;
+            y = parent.y + margins.labelMargin;
+          } else {
+            // Find rightmost child for horizontal placement attempt
+            const rightmostChild = existingChildren.reduce((max, child) => 
+              (child.x + child.w) > (max.x + max.w) ? child : max
+            );
+            
+            const nextX = rightmostChild.x + rightmostChild.w + margins.margin;
+            const nextY = rightmostChild.y;
+            
+            // Place horizontally if space available, otherwise wrap to new row
+            if (nextX + w <= parent.x + parent.w - margins.margin) {
+              x = nextX;
+              y = nextY;
+            } else {
+              // Row wrap: position below bottommost existing child
+              const bottommostChild = existingChildren.reduce((max, child) => 
+                (child.y + child.h) > (max.y + max.h) ? child : max
+              );
+              x = parent.x + margins.margin;
+              y = bottommostChild.y + bottommostChild.h + margins.margin;
+            }
+          }
+          
+          w = defaultSizes.leaf.w;
+          h = defaultSizes.leaf.h;
+        } else {
+          // Automatic mode: algorithmic grid-based positioning
+          const existingChildren = rectangles.filter(rect => rect.parentId === parentId);
+          const totalChildren = existingChildren.length + 1;
+          
+          const topMargin = margins.labelMargin;
+          const sideMargin = margins.margin;
+          
+          const availableWidth = Math.max(MIN_WIDTH, parent.w - (sideMargin * 2));
+          const availableHeight = Math.max(MIN_HEIGHT, parent.h - topMargin - sideMargin);
+          
+          const { cols, rows } = this.calculateGridDimensions(totalChildren, parent.layoutPreferences);
+          
+          const childWidth = Math.max(MIN_WIDTH, Math.floor(availableWidth / cols));
+          const childHeight = Math.max(MIN_HEIGHT, Math.floor(availableHeight / rows));
+          
+          const childSpacing = margins.margin;
+          
+          const totalSpacingWidth = (cols - 1) * childSpacing;
+          const totalSpacingHeight = (rows - 1) * childSpacing;
+          const totalChildrenWidth = cols * childWidth + totalSpacingWidth;
+          const totalChildrenHeight = rows * childHeight + totalSpacingHeight;
+          
+          const extraHorizontalSpace = Math.max(0, availableWidth - totalChildrenWidth);
+          const extraVerticalSpace = Math.max(0, availableHeight - totalChildrenHeight);
+          
+          // Center grid within available parent space
+          const horizontalOffset = extraHorizontalSpace / 2;
+          const verticalOffset = extraVerticalSpace / 2;
+          
+          const col = existingChildren.length % cols;
+          const row = Math.floor(existingChildren.length / cols);
+          
+          x = parent.x + sideMargin + horizontalOffset + (col * (childWidth + childSpacing));
+          y = parent.y + topMargin + verticalOffset + (row * (childHeight + childSpacing));
+          w = childWidth;
+          h = childHeight;
+          
+          w = Math.max(MIN_WIDTH, w);
+          h = Math.max(MIN_HEIGHT, h);
+        }
       }
     } else {
       const rootRects = rectangles.filter(rect => !rect.parentId);
@@ -261,11 +301,6 @@ export class LayoutManager {
     return { x, y, w, h };
   }
 
-  /**
-   * Get metadata about the active algorithm
-   * 
-   * @returns Name and description of currently selected algorithm
-   */
   getCurrentAlgorithmInfo(): { name: string; description: string } {
     return {
       name: this.currentAlgorithm.name,
@@ -273,11 +308,6 @@ export class LayoutManager {
     };
   }
 
-  /**
-   * Get metadata for all registered algorithms
-   * 
-   * @returns Array of algorithm metadata for UI display
-   */
   getAllAlgorithmInfo(): Array<{ type: LayoutAlgorithmType; name: string; description: string }> {
     return this.getAvailableAlgorithms().map(type => {
       const info = layoutAlgorithmFactory.getAlgorithmInfo(type);
@@ -290,22 +320,21 @@ export class LayoutManager {
   }
 
   /**
-   * Traverse parent chain to determine hierarchy depth
+   * Calculate hierarchy depth for flow algorithm orientation alternation
    * 
-   * Used for depth-dependent layout decisions (e.g., flow orientation alternation).
-   * Implements cycle detection to prevent infinite loops in malformed hierarchies.
+   * Traverses parent chain to determine depth level. Used by flow-based algorithms
+   * to alternate between row/column orientation at different hierarchy levels.
+   * Includes cycle detection to handle malformed parent relationships safely.
    * 
    * @param rect - Rectangle to calculate depth for
    * @param allRectangles - Complete rectangle set for parent lookup
    * @returns Depth level (0 = root, 1 = first child level, etc.)
    */
   private calculateDepth(rect: Rectangle, allRectangles?: Rectangle[]): number {
-    // If no parent, this is a root rectangle
     if (!rect.parentId) {
       return 0;
     }
     
-    // If we have all rectangles, traverse up the parent chain
     if (allRectangles) {
       let currentRect = rect;
       let depth = 0;
@@ -314,7 +343,7 @@ export class LayoutManager {
         depth++;
         const parent = allRectangles.find(r => r.id === currentRect.parentId);
         if (!parent) {
-          break; // Parent not found, stop traversal
+          break;
         }
         currentRect = parent;
       }
@@ -322,7 +351,6 @@ export class LayoutManager {
       return depth;
     }
     
-    // Fallback to simple heuristic
     return 1;
   }
 }

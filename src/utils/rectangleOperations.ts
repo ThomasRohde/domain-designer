@@ -4,7 +4,7 @@ import { getChildren, updateChildrenLayout } from './layoutUtils';
 import { layoutManager } from './layout';
 
 /**
- * Configuration for leaf rectangle dimension constraints
+ * Dimension constraints for leaf rectangles in fixed-size mode
  */
 export interface FixedDimensions {
   leafFixedWidth: boolean;
@@ -83,7 +83,6 @@ export const updateRectangleType = (
 ): Rectangle[] => {
   return rectangles.map(rect => {
     if (rect.id === rectangleId) {
-      // Don't change type for text labels
       if (rect.isTextLabel) {
         return rect;
       }
@@ -128,7 +127,6 @@ export const validateRectanglePosition = (
   panOffset: { x: number; y: number },
   gridSize: number
 ): { x: number; y: number } => {
-  // Convert screen coordinates to grid coordinates
   const minX = Math.floor((0 - panOffset.x) / gridSize);
   const minY = Math.floor((0 - panOffset.y) / gridSize);
   const maxX = Math.floor((containerRect.width - panOffset.x) / gridSize) - rect.w;
@@ -199,7 +197,6 @@ export const getDefaultRectangleSize = (type: RectangleType): { w: number; h: nu
 export const updateAllRectangleTypes = (rectangles: Rectangle[]): Rectangle[] => {
   let updated = [...rectangles];
   
-  // Update each rectangle's type based on its relationships
   for (const rect of rectangles) {
     updated = updateRectangleType(updated, rect.id);
   }
@@ -252,12 +249,10 @@ export const canMoveToParent = (
   newParentId: string | undefined,
   rectangles: Rectangle[]
 ): boolean => {
-  // Can't move to self
   if (rectangleId === newParentId) {
     return false;
   }
   
-  // Can't move to own descendant
   if (newParentId) {
     const rect = rectangles.find(r => r.id === rectangleId);
     if (!rect) return false;
@@ -324,7 +319,7 @@ export const getRectangleBounds = (
 };
 
 /**
- * Margin configuration for layout calculations
+ * Spacing configuration for automatic layout algorithms
  */
 export interface MarginSettings {
   margin: number;
@@ -332,18 +327,31 @@ export interface MarginSettings {
 }
 
 /**
- * Fit parent rectangle to children without adding to history
+ * Automatically resize parent rectangle to optimally fit all children
  * 
- * This is a shared utility function that performs the core fit-to-children
- * operation without triggering history saves. It's designed to be used in
- * atomic operations like duplicate and add child where history should be
- * saved as a single entry for the complete operation.
+ * Supports two distinct positioning modes based on parent configuration:
  * 
- * @param parentId - ID of the parent rectangle to fit
+ * **Manual Positioning Mode** (isManualPositioningEnabled=true):
+ * - Preserves exact parent dimensions regardless of children
+ * - Prevents automatic resizing when children are added/modified
+ * - Children can be positioned anywhere within parent bounds
+ * - Used for precise layout control and fixed container scenarios
+ * 
+ * **Automatic Positioning Mode** (isManualPositioningEnabled=false):
+ * - Calculates minimum required parent size to contain all children
+ * - Automatically resizes parent when children change
+ * - Applies layout algorithm to arrange children optimally
+ * - Used for dynamic layouts that adapt to content
+ * 
+ * This is a core utility that performs fit-to-children operations without
+ * triggering history saves, designed for atomic operations where history
+ * should be saved as a single entry.
+ * 
+ * @param parentId - ID of the parent rectangle to potentially resize
  * @param rectangles - Current rectangle array
- * @param fixedDimensions - Fixed dimension configuration
- * @param margins - Margin configuration
- * @returns Updated rectangle array with fitted parent and repositioned children
+ * @param fixedDimensions - Fixed dimension configuration for leaf rectangles
+ * @param margins - Margin configuration for layout calculations
+ * @returns Updated rectangle array with parent fitted (if in automatic mode)
  */
 export const fitParentToChildren = (
   parentId: string,
@@ -361,7 +369,23 @@ export const fitParentToChildren = (
     return rectangles;
   }
   
-  // Calculate optimal size for the parent
+  /* 
+   * MANUAL POSITIONING MODE: Preserve exact parent dimensions
+   * 
+   * When manual positioning is enabled, the parent acts as a fixed container.
+   * This prevents automatic resizing that would interfere with user-controlled
+   * layouts and maintains precise dimensions for design consistency.
+   */
+  if (parentRect.isManualPositioningEnabled) {
+    return rectangles;
+  }
+  
+  /* 
+   * AUTOMATIC POSITIONING MODE: Calculate and apply optimal parent size
+   * 
+   * Uses layout algorithm to determine minimum size needed to contain all
+   * children with proper margins, then resizes parent and arranges children.
+   */
   const optimalSize = layoutManager.calculateMinimumParentSize(
     parentId, 
     rectangles, 
@@ -369,40 +393,40 @@ export const fitParentToChildren = (
     fixedDimensions
   );
   
-  // Update parent rectangle with optimal size, preserving manual positioning mode
   const updatedRectangles = rectangles.map(rect => 
     rect.id === parentId ? { 
       ...rect, 
       w: optimalSize.w, 
       h: optimalSize.h,
       isLockedAsIs: false
-      // Preserve isManualPositioningEnabled - don't override user's mode choice
     } : rect
   );
   
-  // Apply children layout updates only if parent is not in manual positioning mode
-  const parent = updatedRectangles.find(r => r.id === parentId);
-  if (parent && parent.isManualPositioningEnabled) {
-    // Parent is in manual mode - don't apply automatic layout to children
-    return updatedRectangles;
-  }
-  
-  // Parent is in auto mode - apply automatic layout to children
   return updateChildrenLayout(updatedRectangles, margins, fixedDimensions);
 };
 
 /**
- * Fit parent and all ancestors to children (bubbles up hierarchy)
+ * Recursively fit parent and all ancestors to accommodate child changes
  * 
- * This function recursively fits parent rectangles starting from the specified
- * parent and bubbling up the hierarchy. This ensures that when children are
- * added or modified, all ancestors resize appropriately to accommodate the changes.
+ * Traverses up the hierarchy chain, applying fit-to-children logic at each level.
+ * This ensures that when children are added or modified, the sizing changes
+ * propagate upward through the entire ancestor chain.
+ * 
+ * **Manual Positioning Behavior:**
+ * - Parents with isManualPositioningEnabled=true will NOT resize
+ * - Sizing propagation stops at manual positioning parents
+ * - Only automatic positioning parents will resize to fit their children
+ * 
+ * **Use Cases:**
+ * - Adding children to deeply nested hierarchies
+ * - Bulk operations that affect multiple hierarchy levels
+ * - Ensuring consistent sizing after layout algorithm changes
  * 
  * @param parentId - ID of the starting parent rectangle to fit
  * @param rectangles - Current rectangle array
- * @param fixedDimensions - Fixed dimension configuration
- * @param margins - Margin configuration
- * @returns Updated rectangle array with all ancestors fitted
+ * @param fixedDimensions - Fixed dimension configuration for leaf rectangles
+ * @param margins - Margin configuration for layout calculations
+ * @returns Updated rectangle array with eligible ancestors resized
  */
 export const fitParentToChildrenRecursive = (
   parentId: string,
@@ -413,15 +437,11 @@ export const fitParentToChildrenRecursive = (
   let currentRectangles = rectangles;
   let currentParentId: string | undefined = parentId;
   
-  // Fit parents up the hierarchy chain
   while (currentParentId) {
     const parent = currentRectangles.find(r => r.id === currentParentId);
     if (!parent) break;
     
-    // Fit the current parent to its children
     currentRectangles = fitParentToChildren(currentParentId, currentRectangles, fixedDimensions, margins);
-    
-    // Move up to the next parent in the hierarchy
     currentParentId = parent.parentId;
   }
   
