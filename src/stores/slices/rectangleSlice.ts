@@ -358,7 +358,9 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           
           // For manual positioning mode, now recalculate the child position using the grown parent bounds
           if (isManualMode) {
-            const optimalPosition = calculateFreeSpacePosition(parentId, updated, DEFAULT_RECTANGLE_SIZE, margins);
+            // Filter out the new rectangle temporarily to ensure collision detection works correctly
+            const rectanglesForPositioning = updated.filter(rect => rect.id !== id);
+            const optimalPosition = calculateFreeSpacePosition(parentId, rectanglesForPositioning, DEFAULT_RECTANGLE_SIZE, margins);
             updated = updated.map(rect => 
               rect.id === id ? { 
                 ...rect, 

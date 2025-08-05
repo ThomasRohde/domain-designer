@@ -20,10 +20,10 @@ export const DEFAULT_COLORS = {
 
 // Default dimensions in grid units for different rectangle types
 export const DEFAULT_RECTANGLE_SIZE = {
-  root: { w: 16, h: 10 },      // Large size for main domain boundaries
+  root: { w: 20, h: 10 },      // Large size for main domain boundaries
   parent: { w: 6, h: 4 },      // Medium size for container elements
-  leaf: { w: 20, h: 4 },       // Wide aspect for detailed items
-  textLabel: { w: 8, h: 2 }    // Compact size for text annotations
+  leaf: { w: 20, h: 3 },       // Wide aspect for detailed items
+  textLabel: { w: 20, h: 2 }    // Compact size for text annotations
 };
 
 // Typography configuration for hierarchical text scaling
@@ -61,7 +61,7 @@ export const DEFAULT_BORDER_SETTINGS = {
 // Spacing configuration for layout algorithms
 export const DEFAULT_MARGIN_SETTINGS = {
   margin: 1,                  // Standard spacing between rectangles
-  labelMargin: 2.7           // Additional space for parent container labels
+  labelMargin: 2.0           // Additional space for parent container labels
 };
 
 // Standard keyboard shortcuts for application actions
