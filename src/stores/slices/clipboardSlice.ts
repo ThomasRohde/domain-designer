@@ -229,22 +229,32 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
         return;
       }
 
+      // Validate target parent if specified
+      if (targetParentId) {
+        const targetParent = rectangles.find(r => r.id === targetParentId);
+        if (!targetParent) {
+          console.warn(`Cannot paste: Target parent ${targetParentId} not found`);
+          return;
+        }
+        if (targetParent.isTextLabel) {
+          console.warn('Cannot paste into text labels - they cannot have children');
+          return;
+        }
+      }
+
       const { rectangles: clipboardRectangles, relativeBounds } = clipboard.clipboardData;
-      
-      const idMapping = new Map<string, string>();
-      clipboardRectangles.forEach(rect => {
-        idMapping.set(rect.id, rectangleActions.generateId());
-      });
       
       let newRectangles: Rectangle[];
       
       if (targetParentId) {
-        // Hierarchical mode: Replay sequence of addRectangle operations
+        // Hierarchical mode: Replay sequence of addRectangle operations (WORKING ORIGINAL APPROACH)
         const createdIds: string[] = [];
         const clipboardIds = new Set(clipboardRectangles.map(r => r.id));
         const rootRectangles = clipboardRectangles.filter(rect => 
           !rect.parentId || !clipboardIds.has(rect.parentId)
         );
+        
+        const idMapping = new Map<string, string>();
         
         const processLevel = (parentRectangles: Rectangle[], currentParentId: string) => {
           parentRectangles.forEach(rect => {
@@ -274,9 +284,20 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
         
         const currentState = get();
         newRectangles = currentState.rectangles.filter(r => createdIds.includes(r.id));
+        
+        // Save history for hierarchical paste
+        setTimeout(() => {
+          historyActions.saveToHistory();
+        }, 0);
       } else {
         // Exact layout mode: Preserve positioning and sizing
         const pastePosition = calculatePastePosition(relativeBounds, targetParentId, rectangles);
+        
+        // Generate ID mapping for exact layout mode
+        const idMapping = new Map<string, string>();
+        clipboardRectangles.forEach(rect => {
+          idMapping.set(rect.id, rectangleActions.generateId());
+        });
         
         newRectangles = clipboardRectangles.map(rect => {
           const newId = idMapping.get(rect.id)!;
@@ -299,9 +320,49 @@ export const createClipboardSlice: SliceCreator<ClipboardSlice> = (set, get) => 
           rectangles: [...state.rectangles, ...newRectangles],
         }));
         
-        setTimeout(() => {
-          historyActions.saveToHistory();
-        }, 0);
+        // For exact layout mode, auto-resize parent if needed
+        if (targetParentId) {
+          const targetParent = rectangles.find(r => r.id === targetParentId);
+          if (targetParent && !targetParent.isLockedAsIs && !targetParent.isManualPositioningEnabled) {
+            setTimeout(() => {
+              const { rectangles: currentRectangles, settings: currentSettings } = get();
+              const margins: MarginSettings = { 
+                margin: currentSettings.margin, 
+                labelMargin: currentSettings.labelMargin 
+              };
+              const fixedDimensions: FixedDimensions = {
+                leafFixedWidth: currentSettings.leafFixedWidth,
+                leafFixedHeight: currentSettings.leafFixedHeight,
+                leafWidth: currentSettings.leafWidth,
+                leafHeight: currentSettings.leafHeight
+              };
+              
+              const updatedRectangles = fitParentToChildren(
+                targetParentId, 
+                currentRectangles, 
+                fixedDimensions, 
+                margins
+              );
+              
+              set(() => ({
+                rectangles: updatedRectangles,
+              }));
+              
+              // Save history after parent resize
+              historyActions.saveToHistory();
+            }, 50);
+          } else {
+            // Save history without parent resize
+            setTimeout(() => {
+              historyActions.saveToHistory();
+            }, 0);
+          }
+        } else {
+          // Save history for root-level paste
+          setTimeout(() => {
+            historyActions.saveToHistory();
+          }, 0);
+        }
       }
       
       const topLevelPastedIds = newRectangles
