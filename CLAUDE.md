@@ -16,6 +16,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Before running 'npm run dev' always check if the dev server is already running
 - Do not start a dev server. Test if a server is running on port 3000. If not, ask the user to start it
 
+## Wisdom
+
+- Don't "optimize" a working system until you fully understand why it works
+
 ## Architecture Overview
 
 This is a React+TypeScript hierarchical drawing application for domain modeling with constraint-based layout.
