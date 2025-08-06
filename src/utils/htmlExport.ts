@@ -85,11 +85,26 @@ const generateInteractiveHTML = (
     }
   });
 
-  // Sort rectangles by hierarchy (parents first)
+  // Sort rectangles by depth (parents first for proper HTML stacking)
   const sortedRectangles = [...rectangles].sort((a, b) => {
-    if (!a.parentId && b.parentId) return -1;
-    if (a.parentId && !b.parentId) return 1;
-    return 0;
+    // Calculate depth for each rectangle
+    const getDepth = (rect: Rectangle): number => {
+      let depth = 0;
+      let current = rect;
+      while (current && current.parentId) {
+        depth++;
+        const parent = rectangles.find(r => r.id === current.parentId);
+        if (!parent || depth > 10) break;
+        current = parent;
+      }
+      return depth;
+    };
+    
+    const depthA = getDepth(a);
+    const depthB = getDepth(b);
+    
+    // Sort by depth (shallower elements first for HTML stacking)
+    return depthA - depthB;
   });
 
   // Calculate font sizes and padding using global settings
@@ -482,11 +497,26 @@ const generateConfluenceHTML = (
     }
   });
 
-  // Sort rectangles by hierarchy (parents first)
+  // Sort rectangles by depth (parents first for proper HTML stacking)
   const sortedRectangles = [...rectangles].sort((a, b) => {
-    if (!a.parentId && b.parentId) return -1;
-    if (a.parentId && !b.parentId) return 1;
-    return 0;
+    // Calculate depth for each rectangle
+    const getDepth = (rect: Rectangle): number => {
+      let depth = 0;
+      let current = rect;
+      while (current && current.parentId) {
+        depth++;
+        const parent = rectangles.find(r => r.id === current.parentId);
+        if (!parent || depth > 10) break;
+        current = parent;
+      }
+      return depth;
+    };
+    
+    const depthA = getDepth(a);
+    const depthB = getDepth(b);
+    
+    // Sort by depth (shallower elements first for HTML stacking)
+    return depthA - depthB;
   });
 
   // Calculate font sizes and padding using global settings
