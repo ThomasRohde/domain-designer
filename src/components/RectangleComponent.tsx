@@ -340,7 +340,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         <div className="relative h-full">
           <div 
             className="absolute left-0 right-0 text-center px-2"
-            style={{ top: `${labelMargin * 2}px` }}
+            style={{ top: `${labelMargin * 2 - 5}px` }}  // Moves label up by 5px
           >
             {isEditing ? (
               <input
