@@ -1,4 +1,5 @@
 import { Rectangle, GlobalSettings } from '../types';
+import { exportFile } from './exportUtils';
 
 /**
  * HTML Export Utilities
@@ -23,26 +24,23 @@ interface HtmlExportOptions {
 /**
  * Main export function - generates HTML file and triggers browser download
  * Creates a self-contained HTML file with embedded styling and interactivity
+ * Uses native file dialog when supported, falls back to download.
  */
-export const exportToHTML = (
+export const exportToHTML = async (
   rectangles: Rectangle[],
   filename: string,
   options: HtmlExportOptions,
   globalSettings?: GlobalSettings
-): void => {
+): Promise<void> => {
   const html = generateInteractiveHTML(rectangles, options, globalSettings);
-  
-  // Create downloadable blob and trigger browser download
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.download = `${filename}.html`;
-  link.href = url;
-  link.click();
-  
-  // Clean up memory
-  URL.revokeObjectURL(url);
+
+  await exportFile({
+    filename,
+    content: html,
+    mimeType: 'text/html',
+    extension: 'html',
+    description: 'HTML files'
+  });
 };
 
 /**

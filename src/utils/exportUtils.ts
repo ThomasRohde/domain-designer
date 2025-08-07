@@ -5,6 +5,80 @@ import { exportToHTML } from './htmlExport';
 import pako from 'pako';
 
 /**
+ * File export configuration for different formats
+ */
+export interface FileExportOptions {
+  filename: string;
+  content: string;
+  mimeType: string;
+  extension: string;
+  description: string;
+}
+
+/**
+ * Shared utility for exporting files with native file dialog and fallback
+ * 
+ * Uses File System Access API when available to show native file dialog,
+ * automatically falls back to traditional download for unsupported browsers.
+ * 
+ * @param options - File export configuration
+ */
+export const exportFile = async (options: FileExportOptions): Promise<void> => {
+  const { filename, content, mimeType, extension, description } = options;
+
+  // Check if File System Access API is supported
+  if ('showSaveFilePicker' in window) {
+    try {
+      // Use native file dialog
+      const fileHandle = await (window as typeof window & {
+        showSaveFilePicker: (options: {
+          suggestedName: string;
+          types: Array<{
+            description: string;
+            accept: Record<string, string[]>;
+          }>;
+        }) => Promise<{
+          createWritable: () => Promise<{
+            write: (data: string) => Promise<void>;
+            close: () => Promise<void>;
+          }>;
+        }>;
+      }).showSaveFilePicker({
+        suggestedName: `${filename}.${extension}`,
+        types: [{
+          description,
+          accept: {
+            [mimeType]: [`.${extension}`]
+          }
+        }]
+      });
+
+      // Create writable stream and save the file
+      const writable = await fileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      
+      return; // Success, no need for fallback
+    } catch (error) {
+      // User cancelled dialog or other error occurred
+      console.log('File save cancelled or error occurred:', error);
+      // Fall through to download fallback
+    }
+  }
+
+  // Fallback: Use traditional download approach
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  
+  const link = document.createElement('a');
+  link.download = `${filename}.${extension}`;
+  link.href = url;
+  link.click();
+  
+  URL.revokeObjectURL(url);
+};
+
+/**
  * Main export dispatcher supporting multiple output formats
  * 
  * Coordinates export process by delegating to format-specific handlers.
@@ -38,16 +112,16 @@ export const exportDiagram = async (
 
   switch (format) {
     case 'html':
-      exportToHTML(rectangles, filename, { includeBackground, scale, confluenceMode }, globalSettings);
+      await exportToHTML(rectangles, filename, { includeBackground, scale, confluenceMode }, globalSettings);
       break;
     case 'svg':
       await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
       break;
     case 'json':
-      exportToJSON(rectangles, globalSettings, filename, predefinedColors);
+      await exportToJSON(rectangles, globalSettings, filename, predefinedColors);
       break;
     case 'mermaid':
-      exportToMermaid(rectangles, filename);
+      await exportToMermaid(rectangles, filename);
       break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
@@ -87,15 +161,14 @@ const exportToSVG = async (
 ): Promise<void> => {
   try {
     const svg = createSVGFromRectangles(rectangles, options, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
-    const blob = new Blob([svg], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.download = `${filename}.svg`;
-    link.href = url;
-    link.click();
-    
-    URL.revokeObjectURL(url);
+
+    await exportFile({
+      filename,
+      content: svg,
+      mimeType: 'image/svg+xml',
+      extension: 'svg',
+      description: 'SVG files'
+    });
   } catch (error) {
     console.error('Error exporting to SVG:', error);
     throw error;
@@ -113,13 +186,15 @@ const exportToSVG = async (
  * - Bounding box calculations
  * - Timestamp for version tracking
  * 
+ * Uses native file dialog when supported, falls back to download.
+ * 
  * @param rectangles - Rectangle data to export
  * @param globalSettings - Application settings to include
  * @param filename - Output filename for download
  * @param predefinedColors - Color palette to include
  * @param preserveLayout - Whether to preserve current positioning
  */
-const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[], preserveLayout = true): void => {
+const exportToJSON = async (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[], preserveLayout = true): Promise<void> => {
   // Create default settings with all required properties
   const defaultSettings = {
     gridSize: 20,
@@ -185,15 +260,15 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
     timestamp: Date.now()
   };
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.download = `${filename}.json`;
-  link.href = url;
-  link.click();
-  
-  URL.revokeObjectURL(url);
+  const jsonContent = JSON.stringify(data, null, 2);
+
+  await exportFile({
+    filename,
+    content: jsonContent,
+    mimeType: 'application/json',
+    extension: 'json',
+    description: 'JSON files'
+  });
 };
 
 /**
@@ -204,22 +279,21 @@ const exportToJSON = (rectangles: Rectangle[], globalSettings: GlobalSettings | 
  * - Pako compression for URL encoding
  * - Fallback to base64 encoding if compression fails
  * 
+ * Uses native file dialog when supported, falls back to download.
+ * 
  * @param rectangles - Rectangle data to convert
  * @param filename - Output filename for download
  */
-const exportToMermaid = (rectangles: Rectangle[], filename: string): void => {
+const exportToMermaid = async (rectangles: Rectangle[], filename: string): Promise<void> => {
   const mermaidDiagram = generateMermaidDiagram(rectangles);
-  
-  // Save the file
-  const blob = new Blob([mermaidDiagram], { type: 'text/plain' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.download = `${filename}.mmd`;
-  link.href = url;
-  link.click();
-  
-  URL.revokeObjectURL(url);
+
+  await exportFile({
+    filename,
+    content: mermaidDiagram,
+    mimeType: 'text/plain',
+    extension: 'mmd',
+    description: 'Mermaid files'
+  });
   
   // Open preview in new window and generate SVG link
   openMermaidPreview(mermaidDiagram);
