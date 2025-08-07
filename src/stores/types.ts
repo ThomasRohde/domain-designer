@@ -165,6 +165,7 @@ export interface RectangleActions {
   fitToChildren: (id: string) => void;
   moveRectangle: (id: string, deltaX: number, deltaY: number) => void;
   moveRectangleDuringDrag: (id: string, deltaX: number, deltaY: number) => void;
+  moveRectangleToAbsolutePosition: (id: string, deltaXPixelsFromInitial: number, deltaYPixelsFromInitial: number) => void;
   reparentRectangle: (childId: string, newParentId: string | null) => boolean;
   setSelectedIds: (ids: string[]) => void;
   addToSelection: (id: string) => boolean;

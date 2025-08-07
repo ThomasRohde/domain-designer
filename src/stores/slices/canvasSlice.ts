@@ -712,13 +712,13 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           }));
           
           // Move rectangle during hierarchy drag using absolute positioning
-          // Calculate incremental pixel delta from current position to prevent coordinate accumulation
-          const rect = state.rectangles.find(r => r.id === state.canvas.dragState!.id);
-          if (rect) {
-            // Convert grid coordinate difference to pixel movement for moveRectangleDuringDrag API
-            const pixelDeltaX = (newX - rect.x) * state.settings.gridSize;
-            const pixelDeltaY = (newY - rect.y) * state.settings.gridSize;
-            get().rectangleActions.moveRectangleDuringDrag(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
+          // Calculate pixel delta from initial drag position to prevent coordinate accumulation
+          const dragState = state.canvas.dragState;
+          if (dragState) {
+            // Convert grid coordinate difference from initial position to pixel movement
+            const pixelDeltaX = (newX - dragState.initialX) * state.settings.gridSize;
+            const pixelDeltaY = (newY - dragState.initialY) * state.settings.gridSize;
+            get().rectangleActions.moveRectangleToAbsolutePosition(dragState.id, pixelDeltaX, pixelDeltaY);
           }
         }
         
@@ -733,16 +733,16 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
             throttledVirtualDragUpdate.update(deltaX, deltaY);
           }
         } else {
-          // CRITICAL: Single rectangle drag uses atomic movement for perfect synchronization
-          // Calculate pixel delta from current position to target position for precise movement
+          // CRITICAL: Single rectangle drag uses absolute positioning for perfect synchronization
+          // Calculate pixel delta from initial drag position to prevent coordinate accumulation
           // This approach prevents parent-child coordinate drift during drag operations
-          const rect = state.rectangles.find(r => r.id === state.canvas.dragState!.id);
-          if (rect) {
-            // Transform grid coordinate delta to pixel delta for moveRectangleDuringDrag API
-            // Use during-drag version to prevent history pollution
-            const pixelDeltaX = (newX - rect.x) * state.settings.gridSize;
-            const pixelDeltaY = (newY - rect.y) * state.settings.gridSize;
-            get().rectangleActions.moveRectangleDuringDrag(state.canvas.dragState!.id, pixelDeltaX, pixelDeltaY);
+          const dragState = state.canvas.dragState;
+          if (dragState) {
+            // Transform grid coordinate delta from initial position to pixel delta
+            // Use absolute positioning to prevent coordinate accumulation errors
+            const pixelDeltaX = (newX - dragState.initialX) * state.settings.gridSize;
+            const pixelDeltaY = (newY - dragState.initialY) * state.settings.gridSize;
+            get().rectangleActions.moveRectangleToAbsolutePosition(dragState.id, pixelDeltaX, pixelDeltaY);
           }
         }
       }

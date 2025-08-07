@@ -1446,6 +1446,89 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
           return r;
         });
       });
+    },
+
+    /**
+     * Move rectangle to absolute position during drag operations without creating history entries.
+     * Uses initial drag position as reference to prevent coordinate accumulation errors.
+     * This fixes jittery drag behavior by maintaining consistent coordinate calculations.
+     */
+    moveRectangleToAbsolutePosition: (id: string, deltaXPixelsFromInitial: number, deltaYPixelsFromInitial: number) => {
+      const state = get();
+      const { rectangles, settings } = state;
+      const rect = rectangles.find(r => r.id === id);
+      if (!rect) return;
+
+      // Get the initial position from canvas drag state
+      const canvasState = state.canvas;
+      const dragState = canvasState.dragState;
+      if (!dragState) return;
+
+      // Verify parent container permits manual child positioning
+      if (rect.parentId) {
+        const parent = rectangles.find(r => r.id === rect.parentId);
+        if (!parent || !parent.isManualPositioningEnabled) {
+          return; // Parent must allow manual positioning
+        }
+      }
+
+      // Coordinated movement: Relocate entire subtree maintaining relative positions
+      const descendants = getAllDescendants(id, rectangles);
+      const idsToMove = new Set([id, ...descendants]);
+
+      // Calculate target position from initial position
+      const initialXPixels = dragState.initialX * settings.gridSize;
+      const initialYPixels = dragState.initialY * settings.gridSize;
+      let targetXPixels = initialXPixels + deltaXPixelsFromInitial;
+      let targetYPixels = initialYPixels + deltaYPixelsFromInitial;
+
+      // Container constraint: Prevent movement beyond parent boundaries
+      if (rect.parentId) {
+        const parent = rectangles.find(p => p.id === rect.parentId);
+        if (parent) {
+          const { margin, labelMargin } = { margin: settings.margin, labelMargin: settings.labelMargin };
+          const gridSize = settings.gridSize;
+          const parentXPixels = parent.x * gridSize;
+          const parentYPixels = parent.y * gridSize;
+          const parentWPixels = parent.w * gridSize;
+          const parentHPixels = parent.h * gridSize;
+          const rectWPixels = rect.w * gridSize;
+          const rectHPixels = rect.h * gridSize;
+          
+          // Apply container boundaries to prevent child overflow
+          targetXPixels = Math.max(parentXPixels + margin, targetXPixels);
+          targetYPixels = Math.max(parentYPixels + labelMargin, targetYPixels);
+          targetXPixels = Math.min(parentXPixels + parentWPixels - rectWPixels - margin, targetXPixels);
+          targetYPixels = Math.min(parentYPixels + parentHPixels - rectHPixels - margin, targetYPixels);
+        }
+      }
+
+      // Calculate movement delta from current position to target
+      const currentXPixels = rect.x * settings.gridSize;
+      const currentYPixels = rect.y * settings.gridSize;
+      const actualDeltaXPixels = targetXPixels - currentXPixels;
+      const actualDeltaYPixels = targetYPixels - currentYPixels;
+
+      // Execute immediate movement update without history overhead
+      get().rectangleActions.updateRectanglesDuringDrag((currentRectangles) => {
+        return currentRectangles.map(r => {
+          if (idsToMove.has(r.id)) {
+            // Convert pixel deltas to grid coordinate system
+            const currentXPixels = r.x * settings.gridSize;
+            const currentYPixels = r.y * settings.gridSize;
+            
+            const newXPixels = currentXPixels + actualDeltaXPixels;
+            const newYPixels = currentYPixels + actualDeltaYPixels;
+
+            // Normalize final position to grid coordinates
+            const newX = newXPixels / settings.gridSize;
+            const newY = newYPixels / settings.gridSize;
+
+            return { ...r, x: newX, y: newY };
+          }
+          return r;
+        });
+      });
     }
   }
 });
