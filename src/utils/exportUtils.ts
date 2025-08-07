@@ -546,6 +546,12 @@ const createSVGFromRectangles = (
   const width = contentWidth + (margin * 2);
   const height = contentHeight + (margin * 2);
 
+  // Extract font settings from globalSettings to match HTML export
+  const fontFamily = globalSettings?.fontFamily || 'Inter';
+  const marginSetting = globalSettings?.margin || 1;
+  const rootFontSize = globalSettings?.rootFontSize || 12;
+  const dynamicFontSizing = globalSettings?.dynamicFontSizing ?? true;
+
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
   
   if (options.includeBackground) {
@@ -582,6 +588,33 @@ const createSVGFromRectangles = (
     }
   });
 
+  // Helper function to calculate hierarchy depth (same as HTML export)
+  const getDepth = (rectId: string): number => {
+    const rect = rectangles.find(r => r.id === rectId);
+    if (!rect || !rect.parentId) return 0;
+    
+    let depth = 0;
+    let current = rect;
+    
+    while (current && current.parentId) {
+      depth++;
+      const parent = rectangles.find(r => r.id === current!.parentId);
+      if (!parent || depth > 10) break; // Prevent infinite loops
+      current = parent;
+    }
+    
+    return depth;
+  };
+  
+  // Helper function to calculate font size based on depth (same as HTML export)
+  const calculateFontSize = (rectId: string): number => {
+    if (!dynamicFontSizing) return rootFontSize;
+    
+    const depth = getDepth(rectId);
+    // Scale down font size by 10% for each level of depth
+    return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
+  };
+
   sortedRectangles.forEach(rect => {
     // Adjust coordinates to start from top-left with margin offset
     const x = (rect.x - minX) * gridSize * options.scale + margin;
@@ -589,35 +622,38 @@ const createSVGFromRectangles = (
     const w = rect.w * gridSize * options.scale;
     const h = rect.h * gridSize * options.scale;
 
-    // Calculate text positioning and wrapping
+    // Calculate text positioning and wrapping with HTML-matching logic
     const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
+    const isParent = hasChildren.has(rect.id);
+    
+    // Use exact same font calculation as HTML export
+    const fontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : (rect.textFontFamily || fontFamily);
+    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : (isParent ? 'bold' : 'normal');
+    const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
     
     // Text labels should have transparent background and no border
     const fillColor = isTextLabel ? 'transparent' : rect.color;
     const strokeColor = isTextLabel ? 'transparent' : borderColor;
-    const strokeWidth = isTextLabel ? 0 : borderWidth;
+    const strokeWidthFinal = isTextLabel ? 0 : borderWidth;
     
     svg += `<rect x="${x}" y="${y}" width="${w}" height="${h}" 
       fill="${fillColor}" 
       stroke="${strokeColor}" 
-      stroke-width="${strokeWidth}" 
+      stroke-width="${strokeWidthFinal}" 
       rx="${borderRadius}"/>`;
-    const fontSize = isTextLabel ? (rect.textFontSize || 14) : 14;
-    const fontFamily = isTextLabel ? (rect.textFontFamily || globalSettings?.fontFamily || 'Arial') : (globalSettings?.fontFamily || 'Arial');
-    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : 'bold';
-    const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
     
-    const padding = 10;
+    // Use same padding calculation as HTML export
+    const padding = marginSetting * gridSize;
     const textWidth = w - (padding * 2);
     const lines = wrapText(rect.label, textWidth, fontSize);
     
     const lineHeight = fontSize * 1.2;
-    const isParent = hasChildren.has(rect.id);
     
     let textStartY: number;
     if (isParent) {
-      // Top-align for rectangles with children
-      textStartY = y + padding + fontSize;
+      // Top-align for rectangles with children (match HTML export logic)
+      textStartY = y + padding + fontSize - (fontSize * 0.5);
     } else {
       // Center-align for leaf rectangles
       const totalTextHeight = lines.length * lineHeight;
@@ -629,7 +665,7 @@ const createSVGFromRectangles = (
       let textX: number;
       let textAnchor: string;
       
-      // Handle text alignment for text labels
+      // Handle text alignment for text labels (match HTML export)
       if (isTextLabel) {
         switch (textAlign) {
           case 'left':
@@ -651,8 +687,11 @@ const createSVGFromRectangles = (
         textAnchor = 'middle';
       }
       
+      // Use comprehensive font family with fallbacks (match HTML export)
+      const fontFamilyWithFallbacks = `${textFontFamily}, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif`;
+      
       svg += `<text x="${textX}" y="${textY}" 
-        font-family="${fontFamily}, sans-serif" 
+        font-family="${fontFamilyWithFallbacks}" 
         font-size="${fontSize}" 
         font-weight="${fontWeight}" 
         fill="#374151"
