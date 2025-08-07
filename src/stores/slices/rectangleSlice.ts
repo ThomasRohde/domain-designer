@@ -824,23 +824,18 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
         const reparentedDescendants = new Set(getAllDescendants(childId, updated));
         reparentedDescendants.add(childId); // Include the reparented rectangle itself
         
-        // Update layout only for the old parent (if it exists and still has children)
+        // Trigger hierarchical layout update for the source hierarchy (old parent and all ancestors)
         if (currentParentId) {
-          const oldParentChildren = updated.filter(r => r.parentId === currentParentId);
-          if (oldParentChildren.length > 0) {
-            const oldParent = updated.find(r => r.id === currentParentId);
-            if (oldParent && !oldParent.isManualPositioningEnabled && !oldParent.isLockedAsIs) {
-              const repositionedChildren = layoutManager.calculateChildLayout(oldParent, oldParentChildren, getMargins(), getFixedDimensions(), updated);
-              // Merge repositioned children back into the updated array
-              updated = updated.map(rect => {
-                const repositioned = repositionedChildren.find(r => r.id === rect.id);
-                return repositioned || rect;
-              });
-            }
-          }
+          // Use fitParentToChildrenRecursive to update all ancestors in the source hierarchy
+          // This ensures proper cascading layout updates from deepest level first
+          updated = fitParentToChildrenRecursive(currentParentId, updated, getFixedDimensions(), getMargins());
+          
+          // Additionally, apply full layout algorithm cascade from deepest level first
+          // This ensures the selected layout algorithm is properly applied throughout the hierarchy
+          updated = updateChildrenLayout(updated, getMargins(), getFixedDimensions());
         }
         
-        // Update layout only for the new parent (if it exists and has automatic positioning)
+        // Update layout for the destination hierarchy (new parent and all ancestors) 
         if (newParentId) {
           const newParent = updated.find(r => r.id === newParentId);
           const newParentChildren = updated.filter(r => r.parentId === newParentId);
@@ -879,6 +874,13 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
                 return repositioned || rect;
               });
             }
+            
+            // Apply hierarchical layout updates to the destination hierarchy
+            // This ensures all ancestors in the destination hierarchy are properly sized and laid out
+            updated = fitParentToChildrenRecursive(newParentId, updated, getFixedDimensions(), getMargins());
+            
+            // Apply full layout algorithm cascade for the destination hierarchy
+            updated = updateChildrenLayout(updated, getMargins(), getFixedDimensions());
           }
         }
         

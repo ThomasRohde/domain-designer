@@ -337,7 +337,7 @@ Right-click on any selected rectangle to access the multi-select context menu:
 - Automatic collision detection and prevention
 
 </td>
-</tr>
+</tr>w
 </table>
 
 ### 📤 Export Your Work
