@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Palette, Upload, Download, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { X, Palette, Upload, Download, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import { HeatmapPalette } from '../stores/types';
 import HeatmapImportModal from './HeatmapImportModal';
@@ -40,6 +40,16 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
   React.useEffect(() => {
     setSelectedPaletteId(currentPaletteId);
   }, [currentPaletteId]);
+
+  // Close on ESC
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
   
   const handlePaletteChange = (paletteId: string) => {
     setSelectedPaletteId(paletteId);
@@ -83,28 +93,38 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-auto">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="heatmap-settings-title"
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[82vh] overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-md transition-colors"
-            title="Close heat map settings"
-          >
-            <ArrowLeft size={20} />
-          </button>
+        <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-gray-200 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Palette size={20} className="text-orange-600" />
-            <h2 className="text-xl font-semibold">Heat Map Settings</h2>
+            <h2 id="heatmap-settings-title" className="text-lg font-semibold">Heat Map Settings</h2>
           </div>
+          <button
+            onClick={onClose}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            title="Close"
+          >
+            <X size={16} />
+            <span className="hidden sm:inline">Close</span>
+          </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-8">
+        <div className="p-5 space-y-6 overflow-y-auto max-h-[calc(82vh-104px)]">
           {/* Enable/Disable Toggle */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium flex items-center gap-2">
+          <div className="space-y-3">
+            <h3 className="text-base font-medium flex items-center gap-2">
               {heatmapEnabled ? <Eye size={18} /> : <EyeOff size={18} />}
               Heat Map Overlay
             </h3>
@@ -122,12 +142,12 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
                 </span>
               </label>
               {heatmapEnabled && (
-                <span className="text-sm text-green-600 bg-green-50 px-2 py-1 rounded">
+                <span className="text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
                   Heat map colors active
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs text-gray-600">
               When enabled, rectangles with heat map values will display using the selected color palette 
               instead of their normal colors.
             </p>
@@ -135,8 +155,8 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
 
           {/* Current Palette Display */}
           {heatmapEnabled && currentPalette && (
-            <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="font-medium text-blue-900">Currently Active Palette</h4>
+            <div className="space-y-3 p-4 bg-blue-50/60 rounded-lg border border-blue-200">
+              <h4 className="font-medium text-blue-900">Active Palette</h4>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{currentPalette.name}</span>
@@ -146,8 +166,8 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
                     </span>
                   )}
                 </div>
-                <PalettePreview palette={currentPalette} />
-                <div className="flex text-xs text-gray-600 justify-between">
+                <PalettePreview palette={currentPalette} className="h-8 w-full" />
+                <div className="flex text-[11px] text-gray-600 justify-between">
                   <span>0.0 (Low)</span>
                   <span>1.0 (High)</span>
                 </div>
@@ -156,14 +176,14 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
           )}
 
           {/* Palette Selection */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Choose Palette</h3>
-            <div className="grid gap-3">
+          <div className="space-y-3">
+            <h3 className="text-base font-medium">Choose Palette</h3>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               {palettes.map((palette) => (
                 <label
                   key={palette.id}
                   className={`
-                    cursor-pointer p-4 rounded-lg border-2 transition-all
+                    cursor-pointer p-3 rounded-lg border-2 transition-all
                     ${selectedPaletteId === palette.id 
                       ? 'border-orange-500 bg-orange-50' 
                       : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
@@ -187,8 +207,8 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
                         </span>
                       )}
                     </div>
-                    <PalettePreview palette={palette} />
-                    <div className="flex text-xs text-gray-500 justify-between">
+                    <PalettePreview palette={palette} className="h-6 w-full" />
+                    <div className="flex text-[11px] text-gray-500 justify-between">
                       <span>0.0</span>
                       <span>0.5</span>
                       <span>1.0</span>
@@ -200,64 +220,63 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
             
             {/* Palette Change Indicator */}
             {selectedPaletteId !== currentPaletteId && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800">
+              <div className="p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs text-yellow-800">
                   <strong>Palette changed.</strong> Click "Apply Palette" below to update the heat map.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Undefined Value Color */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Undefined Value Color</h3>
-            <p className="text-sm text-gray-600">
-              Color used for rectangles that don't have a heat map value assigned.
-            </p>
-            <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2">
-                <span className="text-sm font-medium">Color:</span>
-                <input
-                  type="color"
-                  value={undefinedValueColor}
-                  onChange={(e) => setUndefinedValueColor(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
+          {/* Quick Settings Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Undefined Value Color */}
+            <div className="space-y-2">
+              <h3 className="text-base font-medium">Undefined Value Color</h3>
+              <p className="text-xs text-gray-600">Used for rectangles without a heat map value.</p>
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Color:</span>
+                  <input
+                    type="color"
+                    value={undefinedValueColor}
+                    onChange={(e) => setUndefinedValueColor(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-10 h-8 border border-gray-300 rounded cursor-pointer"
+                  />
+                </label>
+                <div
+                  className="w-14 h-8 border border-gray-300 rounded"
+                  style={{ backgroundColor: undefinedValueColor }}
                 />
+                <button
+                  onClick={() => setUndefinedValueColor('#e5e7eb')}
+                  className="text-xs text-gray-600 hover:text-gray-800 underline"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            {/* Legend Toggle */}
+            <div className="space-y-2">
+              <h3 className="text-base font-medium">Legend</h3>
+              <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={showLegend}
+                  onChange={(e) => setShowLegend(e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+                <span className="text-sm">Show color scale legend on canvas</span>
               </label>
-              <div 
-                className="w-16 h-8 border border-gray-300 rounded"
-                style={{ backgroundColor: undefinedValueColor }}
-              />
-              <button
-                onClick={() => setUndefinedValueColor('#e5e7eb')}
-                className="text-sm text-gray-600 hover:text-gray-800 underline"
-              >
-                Reset to default
-              </button>
+              <p className="text-xs text-gray-600">Displays a floating legend from 0.0 to 1.0.</p>
             </div>
           </div>
 
-          {/* Legend Toggle */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Legend</h3>
-              <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
-              <input
-                type="checkbox"
-                checked={showLegend}
-                onChange={(e) => setShowLegend(e.target.checked)}
-                className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
-              />
-              <span>Show color scale legend on canvas</span>
-            </label>
-            <p className="text-sm text-gray-600">
-              Displays a floating legend showing the color scale from 0.0 to 1.0.
-            </p>
-          </div>
-
           {/* Management Actions */}
-          <div className="space-y-4 pt-4 border-t border-gray-200">
-            <h3 className="text-lg font-medium">Management</h3>
+          <div className="space-y-3 pt-3 border-t border-gray-200">
+            <h3 className="text-base font-medium">Management</h3>
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={handleClearValues}
@@ -287,7 +306,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
         </div>
 
         {/* Footer Actions */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex justify-between items-center">
+        <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-200 px-6 py-3 flex justify-between items-center">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
@@ -299,7 +318,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
             {selectedPaletteId !== currentPaletteId && (
               <button
                 onClick={handleDeploy}
-                className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                className="px-5 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium shadow-sm"
               >
                 Apply Palette
               </button>
