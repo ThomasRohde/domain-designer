@@ -2,6 +2,49 @@ import type { Rectangle } from '../types';
 import type { HeatmapImportResult } from '../stores/types';
 
 /**
+ * CSV helpers: escape and parse minimal CSV with quotes
+ * - Escape: wrap in quotes if contains comma, quote, or newline; double inner quotes
+ * - Parse: split respecting quotes and unescape doubled quotes
+ */
+function csvEscape(value: string): string {
+  const escaped = value.replace(/"/g, '""');
+  return `"${escaped}"`;
+}
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          // Escaped quote
+          current += '"';
+          i++; // skip next
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === ',') {
+        result.push(current);
+        current = '';
+      } else if (ch === '"') {
+        inQuotes = true;
+      } else {
+        current += ch;
+      }
+    }
+  }
+  result.push(current);
+  return result.map(s => s.trim());
+}
+
+/**
  * CSV entry parsed from a single line
  */
 interface CSVEntry {
@@ -31,8 +74,9 @@ export function parseHeatmapCSV(
   // Split into lines and filter out empty ones
   const lines = csvContent
     .split('\n')
+    .map(line => line.replace(/\r$/, ''))
     .map(line => line.trim())
-  .filter(line => line.length > 0 && !line.startsWith('#'));
+    .filter(line => line.length > 0 && !line.startsWith('#'));
 
   if (lines.length === 0) {
     return result;
@@ -45,13 +89,13 @@ export function parseHeatmapCSV(
     const line = lines[i];
     const lineNumber = i + 1;
     
-  // Skip header row if it looks like one (contains 'name', 'label', 'value', etc.)
-  if (i === 0 && /^(name|label|rectangle|value)/i.test(line)) {
+    // Parse CSV line respecting quotes
+    const parts = parseCSVLine(line);
+    
+    // Skip header row if it looks like one (first cell indicates header)
+    if (i === 0 && parts[0] && /^(name|label|rectangle|rectangleName)$/i.test(parts[0])) {
       continue;
     }
-    
-    // Parse CSV line (simple comma split for now, could be enhanced for quoted values)
-    const parts = line.split(',').map(part => part.trim());
     
     if (parts.length < 2) {
       result.failed.push({
@@ -62,7 +106,7 @@ export function parseHeatmapCSV(
       continue;
     }
     
-    const label = parts[0];
+  const label = parts[0];
     const valueStr = parts[1];
     
     if (!label) {
@@ -218,7 +262,7 @@ export function generateSampleCSV(rectangles: Rectangle[]): string {
   const sampleRectangles = rectangles.slice(0, 5);
   sampleRectangles.forEach((rect, index) => {
     const sampleValue = (index / Math.max(sampleRectangles.length - 1, 1)).toFixed(2);
-    lines.push(`${rect.label},${sampleValue}`);
+    lines.push(`${csvEscape(rect.label)},${sampleValue}`);
   });
   
   // Add some generic examples if we don't have enough rectangles
@@ -228,4 +272,29 @@ export function generateSampleCSV(rectangles: Rectangle[]): string {
   }
   
   return lines.join('\n');
+}
+
+/**
+ * Generates a CSV of current heat map values for round-trip export
+ * Format matches import schema: rectangleName,value
+ * Only includes rectangles with a defined heatmapValue
+ */
+export function generateHeatmapCSV(rectangles: Rectangle[], includeMissingAsZero = false): string {
+  const header = 'rectangleName,value';
+  const rows: string[] = [header];
+
+  const formatValue = (v: number) => Number(v.toFixed(6)).toString();
+
+  rectangles.forEach(rect => {
+    // Skip text labels from heatmap CSV
+    if (rect.isTextLabel || rect.type === 'textLabel') return;
+
+    if (typeof rect.heatmapValue === 'number') {
+      rows.push(`${csvEscape(rect.label)},${formatValue(rect.heatmapValue)}`);
+    } else if (includeMissingAsZero) {
+      rows.push(`${csvEscape(rect.label)},0`);
+    }
+  });
+
+  return rows.join('\n');
 }

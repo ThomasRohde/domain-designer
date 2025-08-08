@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { X, Palette, Upload, Download, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { generateHeatmapCSV } from '../utils/heatmapImport';
+import { exportFile } from '../utils/exportUtils';
 import { useAppStore } from '../stores/useAppStore';
 import { HeatmapPalette } from '../stores/types';
 import HeatmapImportModal from './HeatmapImportModal';
@@ -21,9 +23,11 @@ interface HeatmapSettingsProps {
 const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) => {
   const [selectedPaletteId, setSelectedPaletteId] = useState<string>('');
   const [showImportModal, setShowImportModal] = useState(false);
+  const [exportIncludeMissingAsZero, setExportIncludeMissingAsZero] = useState<boolean>(false);
   
   // Store selectors
   const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
+  const rectangles = useAppStore(state => state.rectangles);
   const currentPaletteId = useAppStore(state => state.heatmap.selectedPaletteId);
   const palettes = useAppStore(state => state.heatmap.palettes);
   const undefinedValueColor = useAppStore(state => state.heatmap.undefinedValueColor);
@@ -63,6 +67,23 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
     if (window.confirm('Clear all heat map values? This cannot be undone.')) {
       clearAllHeatmapValues();
     }
+  };
+
+  const handleExportCSV = async () => {
+    // Generate CSV from current rectangles with heatmap values
+    const csv = generateHeatmapCSV(rectangles, exportIncludeMissingAsZero);
+    const hasData = csv.split('\n').length > 1; // header + at least one row
+    if (!hasData) {
+      alert('No heat map values to export. Assign values first or import from CSV.');
+      return;
+    }
+    await exportFile({
+      filename: 'heatmap-values',
+      content: csv,
+      mimeType: 'text/csv',
+      extension: 'csv',
+      description: 'CSV files'
+    });
   };
   
   const currentPalette = palettes.find(p => p.id === currentPaletteId);
@@ -278,7 +299,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
           {/* Management Actions */}
           <div className="space-y-3 pt-3 border-t border-gray-200">
             <h3 className="text-base font-medium">Management</h3>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
               <button
                 onClick={handleClearValues}
                 className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
@@ -295,13 +316,22 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
                 Import CSV
               </button>
               <button
-                disabled
-                className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-400 border border-gray-200 rounded-lg cursor-not-allowed"
-                title="Custom palette creation"
+                onClick={handleExportCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Export current heat map values to CSV"
               >
                 <Download size={16} />
-                Export Values
+                Export CSV
               </button>
+              <label className="flex items-center gap-2 text-sm text-gray-700 ml-1 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                <input
+                  type="checkbox"
+                  checked={exportIncludeMissingAsZero}
+                  onChange={(e) => setExportIncludeMissingAsZero(e.target.checked)}
+                  className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                />
+                <span>Include 0.0 for missing values</span>
+              </label>
             </div>
           </div>
         </div>
