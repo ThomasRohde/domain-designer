@@ -291,6 +291,115 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       )
     },
     {
+      id: 'heat-maps',
+      title: 'Heat Map Visualization',
+      content: (
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Overview</h4>
+            <p className="text-sm text-gray-600 mb-2">
+              Transform your diagrams into powerful data visualizations by assigning numeric values (0-1) to rectangles. 
+              The heat map system uses color coding to represent data insights with professional scientific palettes.
+            </p>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Getting Started with Heat Maps</h4>
+            <ol className="text-sm space-y-1 list-decimal list-inside">
+              <li>Open Heat Map Settings from the hamburger menu (🎨 Palette icon)</li>
+              <li>Enable the heat map overlay toggle</li>
+              <li>Choose from 4 predefined color palettes:
+                <ul className="ml-6 mt-1 space-y-1">
+                  <li>• <strong>Temperature</strong> - Blue to red gradient</li>
+                  <li>• <strong>Viridis</strong> - Scientific visualization standard</li>
+                  <li>• <strong>Traffic Light</strong> - Green to yellow to red</li>
+                  <li>• <strong>Grayscale</strong> - White to black gradient</li>
+                </ul>
+              </li>
+              <li>Assign values to rectangles using the methods below</li>
+            </ol>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Value Assignment Methods</h4>
+            <div className="space-y-2">
+              <div>
+                <strong className="text-sm">Individual Assignment:</strong>
+                <ol className="text-sm text-gray-600 ml-4 mt-1 list-decimal list-inside">
+                  <li>Right-click any rectangle</li>
+                  <li>Select "Set Heat Map Value" from context menu</li>
+                  <li>Use the slider (0.01 increments) or number input for precise values</li>
+                  <li>See live color preview with palette interpolation</li>
+                  <li>Clear values using the checkbox toggle</li>
+                </ol>
+              </div>
+              <div>
+                <strong className="text-sm">Bulk CSV Import:</strong>
+                <ol className="text-sm text-gray-600 ml-4 mt-1 list-decimal list-inside">
+                  <li>Click "Import CSV" in Heat Map Settings</li>
+                  <li>Upload CSV with format: <code className="bg-gray-100 px-1 rounded">rectangleName,value</code></li>
+                  <li>Review import preview showing successful/failed/unmatched entries</li>
+                  <li>Download sample CSV template if needed</li>
+                  <li>Apply bulk assignment with validation feedback</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Property Panel Integration</h4>
+            <p className="text-sm text-gray-600 mb-2">
+              When selecting rectangles, the property panel shows:
+            </p>
+            <ul className="text-sm space-y-1">
+              <li>• Current heat map value or "Not set" status</li>
+              <li>• Inline editing with Enter/Escape keyboard shortcuts</li>
+              <li>• Computed heat map color preview with hex color code</li>
+              <li>• Current palette name and enabled/disabled status indicators</li>
+              <li>• Contextual messages for better user experience</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Heat Map Legend</h4>
+            <p className="text-sm text-gray-600 mb-2">
+              Enable the optional floating legend to display:
+            </p>
+            <ul className="text-sm space-y-1">
+              <li>• Color scale from 0.0 to 1.0 with precise tick marks</li>
+              <li>• Current active palette name</li>
+              <li>• Professional semi-transparent design in bottom-right corner</li>
+              <li>• Auto-hides when heat map is disabled</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Export Integration</h4>
+            <p className="text-sm text-gray-600 mb-2">
+              Heat map colors are automatically preserved in all export formats:
+            </p>
+            <ul className="text-sm space-y-1">
+              <li>• <strong>HTML/SVG</strong> - Visual colors maintained in exported files</li>
+              <li>• <strong>JSON</strong> - Complete heat map state and values preserved</li>
+              <li>• <strong>Mermaid</strong> - Diagram colors reflect heat map visualization</li>
+              <li>• <strong>URL Sharing</strong> - Shared diagrams display heat map colors</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h4 className="font-semibold text-gray-800 mb-2">Best Practices</h4>
+            <ul className="text-sm space-y-1">
+              <li>• Use consistent value ranges (0-1) for meaningful color comparisons</li>
+              <li>• Choose palettes appropriate for your data type (Temperature for risk, Viridis for scientific data)</li>
+              <li>• Enable legend when sharing visualizations for clear interpretation</li>
+              <li>• Use CSV import for large datasets or when integrating external data</li>
+              <li>• Toggle heat map on/off to compare with original rectangle colors</li>
+            </ul>
+          </div>
+        </div>
+      )
+    },
+    {
       id: 'templates',
       title: 'Templates',
       content: (
@@ -370,7 +479,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <div>
               <h4 className="font-semibold text-gray-800 mb-1">JSON</h4>
               <p className="text-sm text-gray-600">
-                Raw diagram data for backup, sharing, or importing into other tools. Preserves all diagram information and enables URL-based sharing.
+                Raw diagram data for backup, sharing, or importing into other tools. Preserves all diagram information, heat map state, and enables URL-based sharing.
               </p>
             </div>
             

@@ -71,6 +71,14 @@
 - **Bulk Editing**: Change colors, labels, and properties for multiple rectangles
 - **Group Operations**: Move, delete, and modify selections together
 
+### 🎨 Heat Map Visualization
+- **Data-Driven Colors**: Assign numeric values (0-1) to rectangles for visualization
+- **Color Palettes**: Choose from Temperature, Viridis, Traffic Light, Grayscale palettes
+- **CSV Import**: Bulk assign values via CSV files with validation and preview
+- **Manual Assignment**: Individual value setting with live color preview
+- **Export Integration**: Heat map colors preserved in all export formats
+- **Optional Legend**: Floating color scale legend with customizable visibility
+
 </td>
 <td>
 
@@ -83,9 +91,9 @@
 
 ### 🚀 Export & Sharing Options
 - **HTML**: Interactive web documents with zoom/pan
-- **SVG**: Scalable vector graphics
-- **JSON**: Raw diagram data with URL sharing capabilities
-- **Mermaid**: Diagram notation for documentation
+- **SVG**: Scalable vector graphics with heat map color preservation
+- **JSON**: Raw diagram data with URL sharing and complete heat map state
+- **Mermaid**: Diagram notation for documentation with heat map colors
 - **URL Sharing**: View any JSON diagram directly via URL
 
 </td>
@@ -204,6 +212,72 @@ When you lock a rectangle "as-is":
 - **🔓 Unlock Cascade**: Unlocking a parent automatically unlocks all its descendants
 
 > **💡 Pro Tip**: Use "Lock as-is" to preserve imported diagram layouts or freeze sections while adjusting others. The hierarchical protection ensures entire subtrees maintain their exact appearance.
+
+### 🎨 Heat Map Visualization
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Data-Visualization-orange?style=for-the-badge" alt="Data Visualization">
+  <img src="https://img.shields.io/badge/Color-Palettes-purple?style=for-the-badge" alt="Color Palettes">
+  <img src="https://img.shields.io/badge/CSV-Import-green?style=for-the-badge" alt="CSV Import">
+</div>
+
+Transform your diagrams into powerful data visualizations with the advanced heat map system! Assign numeric values to rectangles and watch them come alive with color-coded insights.
+
+#### 🌡️ Heat Map Features
+
+| Feature | Description | Benefits |
+|---------|-------------|----------|
+| **Value Assignment** | Assign values (0-1) to rectangles individually or via CSV | Data-driven visual analysis |
+| **Color Palettes** | Temperature, Viridis, Traffic Light, Grayscale | Professional scientific visualization |
+| **CSV Import** | Bulk value assignment with preview and validation | Efficient data integration |
+| **Live Preview** | Real-time color updates with palette interpolation | Immediate visual feedback |
+| **Export Integration** | Heat map colors preserved in HTML/SVG/JSON/Mermaid | Consistent visualization across formats |
+| **Optional Legend** | Floating color scale (0.0-1.0) with palette information | Clear data interpretation |
+
+#### 🎯 Heat Map Workflow
+
+1. **Enable Heat Map**: Access Heat Map Settings from the burger menu (🎨 Palette icon)
+2. **Choose Palette**: Select from predefined palettes or customize colors
+3. **Assign Values**: 
+   - **Individual**: Right-click rectangle → "Set Heat Map Value" → Use slider or input
+   - **Bulk**: CSV Import with `rectangleName,value` format
+4. **Visualize**: Toggle heat map on/off to compare with normal colors
+5. **Export**: All formats automatically use heat map colors when enabled
+6. **Legend**: Optional floating legend shows color scale and palette info
+
+#### 🔧 Advanced Heat Map Controls
+
+<details>
+<summary><strong>Heat Map Settings Panel</strong></summary>
+
+- **Palette Selection**: Choose from 4 predefined scientific color palettes
+- **Custom Colors**: Define color for rectangles without assigned values  
+- **Legend Toggle**: Show/hide floating color scale legend
+- **Live Preview**: Real-time color updates when changing palettes
+- **Value Management**: Clear all values or reset to undefined state
+- **Status Indicators**: Visual feedback for enabled/disabled states
+
+</details>
+
+<details>
+<summary><strong>CSV Import System</strong></summary>
+
+**File Format:**
+```csv
+rectangleName,value
+Business Process,0.85
+Data Architecture,0.72
+Security Layer,0.45
+```
+
+**Features:**
+- Case-insensitive rectangle name matching
+- Value validation (0-1 range) with detailed error reporting  
+- Preview table showing successful/failed/unmatched entries
+- Sample CSV download for template generation
+- Comprehensive import statistics and feedback
+
+</details>
 
 ### 🎯 Multi-Select Operations
 

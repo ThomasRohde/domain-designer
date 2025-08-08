@@ -13,6 +13,7 @@ import { createCanvasSlice } from './slices/canvasSlice';
 import { createHistorySlice } from './slices/historySlice';
 import { createAutoSaveSlice } from './slices/autoSaveSlice';
 import { createClipboardSlice } from './slices/clipboardSlice';
+import { createHeatmapSlice } from './slices/heatmapSlice';
 
 /**
  * Creates the unified application store by composing domain-specific slices.
@@ -30,6 +31,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
   const historySlice = createHistorySlice(set, get, api);
   const autoSaveSlice = createAutoSaveSlice(set, get, api);
   const clipboardSlice = createClipboardSlice(set, get, api);
+  const heatmapSlice = createHeatmapSlice(set, get, api);
 
   return {
     // Core application state composed from individual slices
@@ -41,6 +43,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
     history: historySlice.history,
     autoSave: autoSaveSlice.autoSave,
     clipboard: clipboardSlice.clipboard,
+    heatmap: heatmapSlice.heatmap,
 
     // Action collections organized by domain responsibility
     rectangleActions: rectangleSlice.rectangleActions,
@@ -50,6 +53,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
     historyActions: historySlice.historyActions,
     autoSaveActions: autoSaveSlice.autoSaveActions,
     clipboardActions: clipboardSlice.clipboardActions,
+    heatmapActions: heatmapSlice.heatmapActions,
 
     /**
      * Computed getters providing derived state and cross-slice calculations.
@@ -167,6 +171,13 @@ export const useAppStore = create<AppStore>()(
               labelMargin: state.settings.labelMargin,
               layoutAlgorithm: state.settings.layoutAlgorithm,
               customColors: state.settings.customColors
+            },
+            heatmap: {
+              enabled: state.heatmap.enabled,
+              selectedPaletteId: state.heatmap.selectedPaletteId,
+              palettes: state.heatmap.palettes,
+              undefinedValueColor: state.heatmap.undefinedValueColor,
+              showLegend: state.heatmap.showLegend
             }
           }),
           /**

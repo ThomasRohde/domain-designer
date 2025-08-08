@@ -1,0 +1,211 @@
+import type { SliceCreator, HeatmapState, HeatmapActions, HeatmapPalette } from '../types';
+import { getColorFromPalette } from '../../utils/heatmapColors';
+
+/**
+ * Heat map slice interface combining state and actions
+ */
+export interface HeatmapSlice {
+  heatmap: HeatmapState;
+  heatmapActions: HeatmapActions;
+}
+
+/**
+ * Predefined heat map palettes
+ */
+const PREDEFINED_PALETTES: HeatmapPalette[] = [
+  {
+    id: 'temperature',
+    name: 'Temperature',
+    stops: [
+      { value: 0, color: '#0066cc' },
+      { value: 0.5, color: '#ffff00' },
+      { value: 1, color: '#ff3300' }
+    ],
+    isCustom: false
+  },
+  {
+    id: 'viridis',
+    name: 'Viridis',
+    stops: [
+      { value: 0, color: '#440154' },
+      { value: 0.25, color: '#31688e' },
+      { value: 0.5, color: '#35b779' },
+      { value: 0.75, color: '#fde725' },
+      { value: 1, color: '#f0f921' }
+    ],
+    isCustom: false
+  },
+  {
+    id: 'traffic-light',
+    name: 'Traffic Light',
+    stops: [
+      { value: 0, color: '#00cc00' },
+      { value: 0.5, color: '#ffcc00' },
+      { value: 1, color: '#cc0000' }
+    ],
+    isCustom: false
+  },
+  {
+    id: 'grayscale',
+    name: 'Grayscale',
+    stops: [
+      { value: 0, color: '#ffffff' },
+      { value: 1, color: '#000000' }
+    ],
+    isCustom: false
+  }
+];
+
+/**
+ * Creates the heatmap slice for the store
+ */
+export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
+  // Initial state
+  heatmap: {
+    enabled: false,
+    selectedPaletteId: 'temperature',
+    palettes: PREDEFINED_PALETTES,
+    undefinedValueColor: '#e5e7eb', // Light gray
+    showLegend: false
+  },
+
+  // Actions
+  heatmapActions: {
+    setEnabled: (enabled: boolean) => {
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          enabled
+        }
+      }));
+    },
+
+    setSelectedPalette: (paletteId: string) => {
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          selectedPaletteId: paletteId
+        }
+      }));
+    },
+
+    addCustomPalette: (palette: HeatmapPalette) => {
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          palettes: [...state.heatmap.palettes, { ...palette, isCustom: true }]
+        }
+      }));
+    },
+
+    removeCustomPalette: (paletteId: string) => {
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          palettes: state.heatmap.palettes.filter(p => p.id !== paletteId),
+          // If we're removing the selected palette, switch to temperature
+          selectedPaletteId: state.heatmap.selectedPaletteId === paletteId 
+            ? 'temperature' 
+            : state.heatmap.selectedPaletteId
+        }
+      }));
+    },
+
+    updateCustomPalette: (paletteId: string, updates: Partial<HeatmapPalette>) => {
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          palettes: state.heatmap.palettes.map(p => 
+            p.id === paletteId ? { ...p, ...updates } : p
+          )
+        }
+      }));
+    },
+
+    setUndefinedValueColor: (color: string) => {
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          undefinedValueColor: color
+        }
+      }));
+    },
+
+    setShowLegend: (show: boolean) => {
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          showLegend: show
+        }
+      }));
+    },
+
+    setRectangleHeatmapValue: (rectangleId: string, value: number | undefined) => {
+      const { rectangleActions } = get();
+      
+      // Validate value range if provided
+      if (value !== undefined && (value < 0 || value > 1)) {
+        console.warn(`Heat map value ${value} is outside valid range [0, 1]. Clamping to range.`);
+        value = Math.max(0, Math.min(1, value));
+      }
+      
+      rectangleActions.updateRectangle(rectangleId, { heatmapValue: value });
+    },
+
+    bulkSetHeatmapValues: (values: Array<{ rectangleId: string; value: number }>) => {
+      const { rectangles, rectangleActions } = get();
+      
+      // Create bulk update for single history entry
+      const updatedRectangles = rectangles.map(rect => {
+        const valueUpdate = values.find(v => v.rectangleId === rect.id);
+        if (valueUpdate) {
+          // Validate and clamp value
+          const clampedValue = Math.max(0, Math.min(1, valueUpdate.value));
+          return { ...rect, heatmapValue: clampedValue };
+        }
+        return rect;
+      });
+      
+      rectangleActions.setRectanglesWithHistory(updatedRectangles);
+    },
+
+    getHeatmapColor: (rectangleId: string): string | null => {
+      const state = get();
+      const { rectangles, heatmap } = state;
+      
+      if (!heatmap.enabled) {
+        return null;
+      }
+      
+      const rectangle = rectangles.find(r => r.id === rectangleId);
+      if (!rectangle) {
+        return null;
+      }
+      
+      // If no heat map value, return undefined value color
+      if (rectangle.heatmapValue === undefined) {
+        return heatmap.undefinedValueColor;
+      }
+      
+      // Find the selected palette
+      const selectedPalette = heatmap.palettes.find(p => p.id === heatmap.selectedPaletteId);
+      if (!selectedPalette) {
+        return heatmap.undefinedValueColor;
+      }
+      
+      return getColorFromPalette(selectedPalette, rectangle.heatmapValue);
+    },
+
+    clearAllHeatmapValues: () => {
+      const { rectangles, rectangleActions } = get();
+      
+      // Create bulk update for single history entry
+      const updatedRectangles = rectangles.map(rect => ({
+        ...rect,
+        heatmapValue: undefined
+      }));
+      
+      rectangleActions.setRectanglesWithHistory(updatedRectangles);
+    }
+  }
+});

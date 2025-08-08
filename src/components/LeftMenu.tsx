@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, FileText, Trash2, HelpCircle, Eye, FolderTree } from 'lucide-react';
+import { Info, FileText, Trash2, HelpCircle, Eye, FolderTree, Palette } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../stores/useAppStore';
 import MobileOverlay from './MobileOverlay';
@@ -9,6 +9,8 @@ interface LeftMenuProps {
   onAboutClick: () => void;
   /** Handler for opening templates interface */
   onTemplatesClick: () => void;
+  /** Handler for opening heat map settings */
+  onHeatmapSettingsClick: () => void;
   /** Optional handler for clearing saved application data */
   onClearSavedData?: () => void;
 }
@@ -18,7 +20,7 @@ interface LeftMenuProps {
  * Provides access to secondary application features and navigation options.
  * Features include templates, viewer mode, help system, and data management.
  */
-const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onClearSavedData }) => {
+const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onHeatmapSettingsClick, onClearSavedData }) => {
   const navigate = useNavigate();
   const isOpen = useAppStore(state => state.ui.leftMenuOpen);
   const onClose = useAppStore(state => state.uiActions.closeLeftMenu);
@@ -33,6 +35,11 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
   const handleViewerModeClick = () => {
     navigate('/viewer');
     onClose(); // Close the left menu when navigating to viewer
+  };
+
+  const handleHeatmapSettingsClick = () => {
+    onHeatmapSettingsClick();
+    onClose(); // Close the left menu when opening heat map settings
   };
   return (
     <>
@@ -82,6 +89,14 @@ const LeftMenu: React.FC<LeftMenuProps> = ({ onAboutClick, onTemplatesClick, onC
           >
             <Eye size={16} />
             <span>Viewer Mode</span>
+          </button>
+          
+          <button
+            onClick={handleHeatmapSettingsClick}
+            className="w-full flex items-center space-x-3 px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <Palette size={16} />
+            <span>Heat Map Settings</span>
           </button>
           
           <button

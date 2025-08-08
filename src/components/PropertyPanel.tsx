@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LayoutPreferences, Rectangle } from '../types';
 import { useAppStore } from '../stores/useAppStore';
+import { Palette, Eye, EyeOff } from 'lucide-react';
 import ColorPalette from './ColorPalette';
 import GlobalSettings from './GlobalSettings';
 
@@ -8,6 +9,160 @@ import GlobalSettings from './GlobalSettings';
 export interface PropertyPanelProps {
   // No props needed - component will access store directly
 }
+
+/**
+ * Heat Map Value Section Component for Property Panel
+ * Shows current heat map value and allows inline editing
+ */
+const HeatmapValueSection: React.FC<{ rectangleId: string }> = ({ rectangleId }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState<string>('');
+
+  // Store selectors
+  const rectangle = useAppStore(state => state.rectangles.find(r => r.id === rectangleId));
+  const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
+  const selectedPaletteId = useAppStore(state => state.heatmap.selectedPaletteId);
+  const palettes = useAppStore(state => state.heatmap.palettes);
+  const undefinedValueColor = useAppStore(state => state.heatmap.undefinedValueColor);
+  
+  // Store actions
+  const setRectangleHeatmapValue = useAppStore(state => state.heatmapActions.setRectangleHeatmapValue);
+  const getHeatmapColor = useAppStore(state => state.heatmapActions.getHeatmapColor);
+
+  if (!rectangle) return null;
+
+  const currentValue = rectangle.heatmapValue;
+  const hasValue = currentValue !== undefined;
+  const selectedPalette = palettes.find(p => p.id === selectedPaletteId);
+
+  const handleStartEdit = () => {
+    setEditValue(currentValue?.toString() ?? '');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const value = parseFloat(editValue);
+    if (!isNaN(value) && value >= 0 && value <= 1) {
+      setRectangleHeatmapValue(rectangleId, value);
+    } else if (editValue === '') {
+      setRectangleHeatmapValue(rectangleId, undefined);
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
+  const previewColor = hasValue && heatmapEnabled ? getHeatmapColor(rectangleId) : undefinedValueColor;
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Palette size={16} className="text-orange-600" />
+        <h3 className="font-semibold text-sm lg:text-base">Heat Map Value</h3>
+        <div title={heatmapEnabled ? "Heat map enabled" : "Heat map disabled"}>
+          {heatmapEnabled ? (
+            <Eye size={14} className="text-green-600" />
+          ) : (
+            <EyeOff size={14} className="text-gray-400" />
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {/* Current Value Display/Editor */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs lg:text-sm font-medium text-gray-700 w-16">Value:</span>
+          {isEditing ? (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyPress}
+                className="px-2 py-1 text-xs lg:text-sm border border-gray-300 rounded w-20"
+                placeholder="0.0-1.0"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveEdit}
+                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-xs lg:text-sm text-gray-600">
+                {hasValue ? currentValue.toFixed(2) : 'Not set'}
+              </span>
+              <button
+                onClick={handleStartEdit}
+                className="px-2 py-1 text-xs text-orange-600 hover:text-orange-700 border border-orange-300 rounded hover:border-orange-400"
+              >
+                Edit
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Color Preview */}
+        {(hasValue || !heatmapEnabled) && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs lg:text-sm font-medium text-gray-700 w-16">Color:</span>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-6 h-6 border border-gray-300 rounded"
+                style={{ backgroundColor: previewColor || undefinedValueColor }}
+                title={`${hasValue ? `Value: ${currentValue?.toFixed(2)}` : 'No value set'}`}
+              />
+              <span className="text-xs text-gray-500">
+                {previewColor || undefinedValueColor}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Palette Info */}
+        {heatmapEnabled && selectedPalette && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs lg:text-sm font-medium text-gray-700 w-16">Palette:</span>
+            <span className="text-xs lg:text-sm text-gray-600">{selectedPalette.name}</span>
+          </div>
+        )}
+
+        {/* Status Messages */}
+        {!hasValue && (
+          <p className="text-xs text-gray-500">
+            No heat map value assigned. Rectangle will use the undefined value color when heat map is enabled.
+          </p>
+        )}
+
+        {hasValue && !heatmapEnabled && (
+          <p className="text-xs text-yellow-700 bg-yellow-50 p-2 rounded border border-yellow-200">
+            Heat map value is set but heat map overlay is currently disabled. 
+            Enable it in Heat Map Settings to see this color applied.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
 
 /**
  * Adaptive property panel that displays different content based on selection state:
@@ -166,6 +321,9 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
             )}
           </div>
         </div>
+
+        {/* Heat Map Value section */}
+        <HeatmapValueSection rectangleId={selectedId} />
 
         {/* Text Label Mode: Typography controls for leaf rectangles (no children) */}
         {children.length === 0 && (

@@ -97,6 +97,8 @@ export interface Rectangle {
   fontWeight?: 'normal' | 'bold';
   /** Text alignment for text labels */
   textAlign?: 'left' | 'center' | 'right' | 'justify';
+  /** Heat map value for color visualization (0-1 range) */
+  heatmapValue?: number;
 }
 
 /**

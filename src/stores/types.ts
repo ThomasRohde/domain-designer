@@ -32,6 +32,53 @@ export type AlignmentType = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bo
 export type DistributionDirection = 'horizontal' | 'vertical';
 
 /**
+ * Heat map color palette configuration
+ */
+export interface HeatmapPalette {
+  /** Unique identifier for the palette */
+  id: string;
+  /** Display name for the palette */
+  name: string;
+  /** Color stops defining the gradient */
+  stops: ColorStop[];
+  /** Whether this is a user-created custom palette */
+  isCustom?: boolean;
+}
+
+/**
+ * Color stop definition for heat map palettes
+ */
+export interface ColorStop {
+  /** Value position (0-1) */
+  value: number;
+  /** Hex color at this position */
+  color: string;
+}
+
+/**
+ * CSV import result for heat map values
+ */
+export interface HeatmapImportResult {
+  /** Successfully matched and imported entries */
+  successful: Array<{
+    rectangleId: string;
+    label: string;
+    value: number;
+  }>;
+  /** Failed entries with validation errors */
+  failed: Array<{
+    label: string;
+    value: string;
+    error: string;
+  }>;
+  /** Entries that couldn't be matched to rectangles */
+  unmatched: Array<{
+    label: string;
+    value: number;
+  }>;
+}
+
+/**
  * Selection box state for drag selection operations.
  * Tracks mouse coordinates during rectangle selection dragging.
  */
@@ -65,6 +112,23 @@ export interface ClipboardData {
  */
 export interface ClipboardState {
   clipboardData: ClipboardData | null;
+}
+
+/**
+ * Heat map state slice - manages heat map visualization
+ * Controls palette selection and rendering behavior
+ */
+export interface HeatmapState {
+  /** Whether heat map overlay is currently enabled */
+  enabled: boolean;
+  /** ID of the currently selected palette */
+  selectedPaletteId: string;
+  /** All available heat map palettes (predefined + custom) */
+  palettes: HeatmapPalette[];
+  /** Color to use for rectangles without heat map values */
+  undefinedValueColor: string;
+  /** Whether to show the heat map legend */
+  showLegend: boolean;
 }
 
 /**
@@ -387,6 +451,35 @@ export interface ClipboardActions {
 }
 
 /**
+ * Heat map operations slice - manages heat map functionality
+ * Controls palette management and value assignments
+ */
+export interface HeatmapActions {
+  /** Enable or disable heat map overlay */
+  setEnabled: (enabled: boolean) => void;
+  /** Select a different heat map palette */
+  setSelectedPalette: (paletteId: string) => void;
+  /** Add a new custom palette */
+  addCustomPalette: (palette: HeatmapPalette) => void;
+  /** Remove a custom palette */
+  removeCustomPalette: (paletteId: string) => void;
+  /** Update an existing custom palette */
+  updateCustomPalette: (paletteId: string, palette: Partial<HeatmapPalette>) => void;
+  /** Set color for rectangles without heat map values */
+  setUndefinedValueColor: (color: string) => void;
+  /** Toggle heat map legend visibility */
+  setShowLegend: (show: boolean) => void;
+  /** Assign heat map value to a rectangle */
+  setRectangleHeatmapValue: (rectangleId: string, value: number | undefined) => void;
+  /** Bulk assign heat map values from CSV import */
+  bulkSetHeatmapValues: (values: Array<{ rectangleId: string; value: number }>) => void;
+  /** Get computed color for a rectangle based on current palette */
+  getHeatmapColor: (rectangleId: string) => string | null;
+  /** Clear all heat map values */
+  clearAllHeatmapValues: () => void;
+}
+
+/**
  * Computed selectors slice - derived state calculations with memoization
  * Provides consistent business logic queries across components
  */
@@ -415,6 +508,7 @@ export interface AppStore {
   history: HistoryState;
   autoSave: AutoSaveState;
   clipboard: ClipboardState;
+  heatmap: HeatmapState;
 
   // Action slices
   rectangleActions: RectangleActions;
@@ -424,6 +518,7 @@ export interface AppStore {
   historyActions: HistoryActions;
   autoSaveActions: AutoSaveActions;
   clipboardActions: ClipboardActions;
+  heatmapActions: HeatmapActions;
 
   // Computed getters
   getters: StoreGetters;

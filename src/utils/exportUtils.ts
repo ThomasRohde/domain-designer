@@ -3,6 +3,40 @@ import { SavedDiagram, calculateBoundingBox } from '../types/layoutSnapshot';
 import { validateDiagramAuto, sanitizeDiagramData } from './schemaValidation';
 import { exportToHTML } from './htmlExport';
 import pako from 'pako';
+import type { HeatmapState } from '../stores/types';
+import { calculateHeatmapColor } from './heatmapColors';
+
+/**
+ * Applies heat map colors to rectangles for export when heat map is enabled
+ * 
+ * @param rectangles - Original rectangles array
+ * @param heatmapState - Heat map configuration state
+ * @returns Rectangles with heat map colors applied (if enabled)
+ */
+const applyHeatmapColorsForExport = (rectangles: Rectangle[], heatmapState: HeatmapState): Rectangle[] => {
+  if (!heatmapState.enabled) {
+    return rectangles;
+  }
+  
+  const selectedPalette = heatmapState.palettes.find(p => p.id === heatmapState.selectedPaletteId);
+  
+  return rectangles.map(rect => {
+    const heatmapColor = calculateHeatmapColor(
+      rect.heatmapValue,
+      selectedPalette,
+      heatmapState.undefinedValueColor
+    );
+    
+    if (heatmapColor) {
+      return {
+        ...rect,
+        color: heatmapColor
+      };
+    }
+    
+    return rect;
+  });
+};
 
 /**
  * File export configuration for different formats
@@ -103,25 +137,31 @@ export const exportDiagram = async (
   borderRadius: number = 8,
   borderColor: string = '#374151',
   borderWidth: number = 2,
-  predefinedColors?: string[]
+  predefinedColors?: string[],
+  heatmapState?: HeatmapState
 ): Promise<void> => {
   const { format, scale = 1, includeBackground = true, confluenceMode = false } = options;
   
   const timestamp = new Date().toISOString().split('T')[0];
   const filename = `domain-model-${timestamp}`;
+  
+  // Apply heat map colors if heat map is enabled
+  const exportRectangles = heatmapState 
+    ? applyHeatmapColorsForExport(rectangles, heatmapState)
+    : rectangles;
 
   switch (format) {
     case 'html':
-      await exportToHTML(rectangles, filename, { includeBackground, scale, confluenceMode }, globalSettings);
+      await exportToHTML(exportRectangles, filename, { includeBackground, scale, confluenceMode }, globalSettings);
       break;
     case 'svg':
-      await exportToSVG(containerElement, rectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
+      await exportToSVG(containerElement, exportRectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
       break;
     case 'json':
-      await exportToJSON(rectangles, globalSettings, filename, predefinedColors);
+      await exportToJSON(exportRectangles, globalSettings, filename, predefinedColors, heatmapState, true);
       break;
     case 'mermaid':
-      await exportToMermaid(rectangles, filename);
+      await exportToMermaid(exportRectangles, filename);
       break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
@@ -194,7 +234,7 @@ const exportToSVG = async (
  * @param predefinedColors - Color palette to include
  * @param preserveLayout - Whether to preserve current positioning
  */
-const exportToJSON = async (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[], preserveLayout = true): Promise<void> => {
+const exportToJSON = async (rectangles: Rectangle[], globalSettings: GlobalSettings | undefined, filename: string, predefinedColors?: string[], heatmapState?: HeatmapState, preserveLayout = true): Promise<void> => {
   // Create default settings with all required properties
   const defaultSettings = {
     gridSize: 20,
@@ -257,6 +297,7 @@ const exportToJSON = async (rectangles: Rectangle[], globalSettings: GlobalSetti
       preservePositions: preserveLayout,
       boundingBox
     },
+    heatmapState: heatmapState,
     timestamp: Date.now()
   };
 

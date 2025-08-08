@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard, CopyPlus, Lock, Unlock } from 'lucide-react';
+import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard, CopyPlus, Lock, Unlock, Palette } from 'lucide-react';
 import type { AlignmentType, DistributionDirection } from '../stores/types';
 
 interface ContextMenuProps {
@@ -10,6 +10,7 @@ interface ContextMenuProps {
   onAddChild: (parentId: string) => void;
   onRemove: (id: string) => void;
   onEditDescription: (id: string) => void;
+  onSetHeatmapValue?: (id: string) => void;
   onLockAsIs?: (id: string) => void;
   onUnlock?: (id: string) => void;
   isLockedAsIs?: boolean;
@@ -41,6 +42,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onAddChild,
   onRemove,
   onEditDescription,
+  onSetHeatmapValue,
   onLockAsIs,
   onUnlock,
   isLockedAsIs = false,
@@ -72,6 +74,13 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   const handleEditDescription = () => {
     onEditDescription(rectangleId);
     onClose();
+  };
+
+  const handleSetHeatmapValue = () => {
+    if (onSetHeatmapValue) {
+      onSetHeatmapValue(rectangleId);
+      onClose();
+    }
   };
 
   const handleLockAsIs = () => {
@@ -333,6 +342,16 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
               <Edit3 size={14} />
               <span>Edit Description</span>
             </button>
+            
+            {onSetHeatmapValue && (
+              <button
+                onClick={handleSetHeatmapValue}
+                className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center space-x-2"
+              >
+                <Palette size={14} />
+                <span>Set Heat Map Value</span>
+              </button>
+            )}
             
             {/* Lock/Unlock functionality */}
             <button

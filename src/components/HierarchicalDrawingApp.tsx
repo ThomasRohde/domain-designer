@@ -16,6 +16,7 @@ import ActionButtonsOverlay from './ActionButtonsOverlay';
 import Canvas from './Canvas';
 import Sidebar from './Sidebar';
 import PropertyPanel from './PropertyPanel';
+import HeatmapLegend from './HeatmapLegend';
 import LeftMenu from './LeftMenu';
 import HierarchyOutlinePanel from './HierarchyOutlinePanel';
 import AboutModal from './AboutModal';
@@ -26,6 +27,8 @@ import TemplatePage from './TemplatePage';
 import { UpdateNotification } from './UpdateNotification';
 import KeyboardShortcutHelpModal from './KeyboardShortcutHelpModal';
 import LayoutUndoButton from './LayoutUndoButton';
+import HeatmapSettings from './HeatmapSettings';
+import HeatmapValueModal from './HeatmapValueModal';
 
 
 const HierarchicalDrawingApp = () => {
@@ -63,6 +66,9 @@ const HierarchicalDrawingApp = () => {
   const uiActions = useAppStore(state => state.uiActions);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [clearDataModalOpen, setClearDataModalOpen] = useState(false);
+  const [heatmapSettingsOpen, setHeatmapSettingsOpen] = useState(false);
+  const [heatmapValueModalOpen, setHeatmapValueModalOpen] = useState(false);
+  const [heatmapValueRectangleId, setHeatmapValueRectangleId] = useState<string | null>(null);
   
   // Auto-save system for data persistence
   const autoSaveState = useAppStore(state => state.autoSave);
@@ -75,6 +81,9 @@ const HierarchicalDrawingApp = () => {
   // Application settings and configuration
   const settings = useAppStore(state => state.settings);
   const settingsActions = useAppStore(state => state.settingsActions);
+  
+  // Heat map state for export integration
+  const heatmapState = useAppStore(state => state.heatmap);
 
   // ID generation counter
   const nextId = useAppStore(state => state.nextId);
@@ -125,12 +134,13 @@ const HierarchicalDrawingApp = () => {
         settings.borderRadius,
         settings.borderColor,
         settings.borderWidth,
-        settings.predefinedColors
+        settings.predefinedColors,
+        heatmapState
       );
     } catch (error) {
       console.error('Error exporting diagram:', error);
     }
-  }, [rectangles, settings]);
+  }, [rectangles, settings, heatmapState]);
 
   const handleDeleteSelected = useCallback(() => {
     const selectedIds = ui.selectedIds;
@@ -263,6 +273,21 @@ const HierarchicalDrawingApp = () => {
   const handleTemplatesClick = () => {
     uiActions.openTemplatePage();
     uiActions.closeLeftMenu();
+  };
+
+  const handleHeatmapSettingsClick = () => {
+    setHeatmapSettingsOpen(true);
+    uiActions.closeLeftMenu();
+  };
+
+  const handleSetHeatmapValue = (rectangleId: string) => {
+    setHeatmapValueRectangleId(rectangleId);
+    setHeatmapValueModalOpen(true);
+  };
+
+  const handleHeatmapValueModalClose = () => {
+    setHeatmapValueModalOpen(false);
+    setHeatmapValueRectangleId(null);
   };
 
 
@@ -701,6 +726,7 @@ const HierarchicalDrawingApp = () => {
         <LeftMenu
           onAboutClick={handleAboutClick}
           onTemplatesClick={handleTemplatesClick}
+          onHeatmapSettingsClick={handleHeatmapSettingsClick}
           onClearSavedData={handleClearSavedData}
         />
         
@@ -745,6 +771,7 @@ const HierarchicalDrawingApp = () => {
             onAddChild={addRectangle}
             onRemove={removeRectangle}
             onEditDescription={handleEditDescription}
+            onSetHeatmapValue={handleSetHeatmapValue}
             onLockAsIs={lockAsIs}
             onUnlock={unlockLayout}
             isLockedAsIs={isLockedAsIs}
@@ -772,6 +799,21 @@ const HierarchicalDrawingApp = () => {
         isOpen={aboutModalOpen}
         onClose={() => setAboutModalOpen(false)}
       />
+
+      <HeatmapSettings
+        isOpen={heatmapSettingsOpen}
+        onClose={() => setHeatmapSettingsOpen(false)}
+      />
+
+      {heatmapValueRectangleId && (
+        <HeatmapValueModal
+          isOpen={heatmapValueModalOpen}
+          rectangleId={heatmapValueRectangleId}
+          rectangleLabel={findRectangle(heatmapValueRectangleId)?.label || 'Unknown'}
+          currentValue={findRectangle(heatmapValueRectangleId)?.heatmapValue}
+          onClose={handleHeatmapValueModalClose}
+        />
+      )}
 
       <ClearDataConfirmationModal
         isOpen={clearDataModalOpen}
@@ -815,6 +857,9 @@ const HierarchicalDrawingApp = () => {
           leafFixedHeight: settings.leafFixedHeight
         }}
       />
+      
+      {/* Heat Map Legend - floating overlay */}
+      <HeatmapLegend />
     </div>
   );
 };

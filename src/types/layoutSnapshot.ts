@@ -1,4 +1,5 @@
 import { Rectangle, AppSettings } from '../types';
+import type { HeatmapState } from '../stores/types';
 
 export interface LayoutMetadata {
   version: string;
@@ -26,6 +27,7 @@ export interface SavedDiagram {
     preservePositions: boolean;
     boundingBox: { w: number; h: number };
   };
+  heatmapState?: HeatmapState;
   timestamp: number;
 }
 

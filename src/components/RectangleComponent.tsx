@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Rectangle, VirtualDragPosition } from '../types';
 import { GRID_SIZE, LABEL_MARGIN } from '../utils/constants';
 import CustomTooltip from './CustomTooltip';
+import { useAppStore } from '../stores/useAppStore';
 
 interface RectangleComponentProps {
   /** Rectangle data including position, size, label, and styling */
@@ -172,8 +173,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
     return brightness > 128 ? '#000000' : '#ffffff';
   };
 
-  const textColor = getTextColor(rectangle.color);
-  
   // Text label mode configuration - overrides normal rectangle styling for typography-focused elements
   const isTextLabel = rectangle.isTextLabel || rectangle.type === 'textLabel';
   const textLabelFontSize = isTextLabel ? (rectangle.textFontSize || 14) : fontSize;
@@ -205,6 +204,16 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   
   // Text labels are transparent by default unless they're interactive targets
   let backgroundColor = rectangle.color;
+  
+  // Heat map color override - replaces normal color when heat map is enabled
+  const heatmapColor = useAppStore(state => state.heatmapActions.getHeatmapColor(rectangle.id));
+  if (heatmapColor) {
+    backgroundColor = heatmapColor;
+  }
+  
+  // Calculate text color based on final background color (including heat map color)
+  const textColor = getTextColor(backgroundColor);
+  
   if (isTextLabel && !isSelected && !isDropTarget && !isCurrentDropTarget) {
     finalBorderWidth = '0px';
     borderStyle = 'none';
