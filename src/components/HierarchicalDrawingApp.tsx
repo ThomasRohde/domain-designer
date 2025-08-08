@@ -249,6 +249,15 @@ const HierarchicalDrawingApp = () => {
           settingsActions.updateSettings(importedData.globalSettings);
         }
         
+        // Apply imported heat map state if present
+        if (importedData.heatmapState) {
+          try {
+            useAppStore.getState().heatmapActions.applyImportedHeatmapState(importedData.heatmapState);
+          } catch (hmErr) {
+            console.warn('Heat map state import skipped due to error:', hmErr);
+          }
+        }
+
         // Re-enable auto-save and persist imported state
         autoSaveActions.setEnabled(true);
         autoSaveActions.resetAutoRestoreFlag();

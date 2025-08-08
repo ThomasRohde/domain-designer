@@ -755,6 +755,8 @@ export interface ImportedDiagramData {
     preservePositions: boolean;
     boundingBox: { w: number; h: number };
   };
+  // Optional heat map state saved with the diagram export (for restoration on import)
+  heatmapState?: HeatmapState;
 }
 
 /**

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { enableMapSet } from 'immer'
 import App from './App.tsx'
+import ErrorBoundary from './components/ErrorBoundary'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import './utils/pwaTestUtils' // Initialize PWA test utilities in development
@@ -82,8 +83,10 @@ if (!root) {
 
 root.render(
   <React.StrictMode>
-    <BrowserRouter basename={basename}>
-      <App />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter basename={basename}>
+        <App />
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>,
 )

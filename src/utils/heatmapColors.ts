@@ -60,7 +60,7 @@ export function getColorFromPalette(palette: HeatmapPalette, value: number): str
   const clampedValue = Math.max(0, Math.min(1, value));
   
   // Create cache key including palette stops
-  const stopsKey = palette.stops
+  const stopsKey = [...palette.stops]
     .sort((a, b) => a.value - b.value)
     .map(stop => `${stop.value}:${stop.color}`)
     .join(',');

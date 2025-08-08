@@ -32,7 +32,7 @@ export function parseHeatmapCSV(
   const lines = csvContent
     .split('\n')
     .map(line => line.trim())
-    .filter(line => line.length > 0);
+  .filter(line => line.length > 0 && !line.startsWith('#'));
 
   if (lines.length === 0) {
     return result;
@@ -45,8 +45,8 @@ export function parseHeatmapCSV(
     const line = lines[i];
     const lineNumber = i + 1;
     
-    // Skip header row if it looks like one (contains 'name', 'label', 'value', etc.)
-    if (i === 0 && /^(name|label|rectangle|value)/i.test(line)) {
+  // Skip header row if it looks like one (contains 'name', 'label', 'value', etc.)
+  if (i === 0 && /^(name|label|rectangle|value)/i.test(line)) {
       continue;
     }
     

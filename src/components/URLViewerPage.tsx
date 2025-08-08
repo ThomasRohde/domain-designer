@@ -91,6 +91,14 @@ const URLViewerPage: React.FC = () => {
         
         setRectangles(importedData.rectangles);
         setAppSettings(importedData.globalSettings || null);
+        // Apply heat map state to store to ensure consistent legend/settings if viewer relies on store
+        if (importedData.heatmapState) {
+          try {
+            useAppStore.getState().heatmapActions.applyImportedHeatmapState(importedData.heatmapState);
+          } catch (hmErr) {
+            console.warn('Heat map state import skipped in viewer due to error:', hmErr);
+          }
+        }
         setLoadingState({
           isLoading: false,
           error: null,

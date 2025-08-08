@@ -477,6 +477,8 @@ export interface HeatmapActions {
   getHeatmapColor: (rectangleId: string) => string | null;
   /** Clear all heat map values */
   clearAllHeatmapValues: () => void;
+  /** Apply an imported heatmap state (palettes, selection, toggles) in one call */
+  applyImportedHeatmapState: (state: HeatmapState) => void;
 }
 
 /**

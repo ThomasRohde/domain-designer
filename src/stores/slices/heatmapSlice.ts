@@ -1,5 +1,5 @@
 import type { SliceCreator, HeatmapState, HeatmapActions, HeatmapPalette } from '../types';
-import { getColorFromPalette } from '../../utils/heatmapColors';
+import { getColorFromPalette, precomputePaletteColors, clearColorCache } from '../../utils/heatmapColors';
 
 /**
  * Heat map slice interface combining state and actions
@@ -78,6 +78,15 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
           enabled
         }
       }));
+
+      // Warm up cache when enabling heatmap for snappy initial render
+      if (enabled) {
+        const { heatmap } = get();
+        const palette = heatmap.palettes.find(p => p.id === heatmap.selectedPaletteId);
+        if (palette) {
+          precomputePaletteColors(palette, 64);
+        }
+      }
     },
 
     setSelectedPalette: (paletteId: string) => {
@@ -87,6 +96,13 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
           selectedPaletteId: paletteId
         }
       }));
+      // Clear and precompute cache for the new palette for smoother UI
+      const { heatmap } = get();
+      const palette = heatmap.palettes.find(p => p.id === paletteId);
+      if (palette) {
+        clearColorCache();
+        precomputePaletteColors(palette, 64);
+      }
     },
 
     addCustomPalette: (palette: HeatmapPalette) => {
@@ -206,6 +222,30 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
       }));
       
       rectangleActions.setRectanglesWithHistory(updatedRectangles);
+    },
+
+    applyImportedHeatmapState: (stateToApply) => {
+      // Basic safety: ensure required fields exist
+      if (!stateToApply) return;
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          enabled: !!stateToApply.enabled,
+          selectedPaletteId: stateToApply.selectedPaletteId || state.heatmap.selectedPaletteId,
+          palettes: Array.isArray(stateToApply.palettes) && stateToApply.palettes.length > 0
+            ? stateToApply.palettes
+            : state.heatmap.palettes,
+          undefinedValueColor: stateToApply.undefinedValueColor || state.heatmap.undefinedValueColor,
+          showLegend: !!stateToApply.showLegend
+        }
+      }));
+      // Precompute for applied palette
+      const { heatmap } = get();
+      const palette = heatmap.palettes.find(p => p.id === heatmap.selectedPaletteId);
+      if (palette) {
+        clearColorCache();
+        precomputePaletteColors(palette, 64);
+      }
     }
   }
 });

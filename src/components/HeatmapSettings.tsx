@@ -64,7 +64,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
     palette, 
     className = "h-8 w-full" 
   }) => {
-    const gradientStops = palette.stops
+    const gradientStops = [...palette.stops]
       .sort((a, b) => a.value - b.value)
       .map(stop => `${stop.color} ${stop.value * 100}%`)
       .join(', ');
@@ -114,6 +114,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
                   type="checkbox"
                   checked={heatmapEnabled}
                   onChange={(e) => setEnabled(e.target.checked)}
+                  onClick={(e) => e.stopPropagation()}
                   className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
                 />
                 <span className="font-medium">
@@ -220,6 +221,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
                   type="color"
                   value={undefinedValueColor}
                   onChange={(e) => setUndefinedValueColor(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
                   className="w-12 h-8 border border-gray-300 rounded cursor-pointer"
                 />
               </label>
@@ -239,7 +241,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
           {/* Legend Toggle */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Legend</h3>
-            <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
               <input
                 type="checkbox"
                 checked={showLegend}

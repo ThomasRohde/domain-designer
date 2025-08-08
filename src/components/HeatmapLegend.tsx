@@ -34,7 +34,7 @@ const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
   }
 
   // Create gradient CSS from palette stops
-  const gradientStops = currentPalette.stops
+  const gradientStops = [...currentPalette.stops]
     .sort((a, b) => a.value - b.value)
     .map(stop => `${stop.color} ${stop.value * 100}%`)
     .join(', ');
