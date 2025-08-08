@@ -112,11 +112,12 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
           </div>
           <button
             onClick={onClose}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
-            title="Close"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
+            title="Close (Esc)"
+            aria-label="Close heat map settings (Esc)"
           >
             <X size={16} />
-            <span className="hidden sm:inline">Close</span>
+            <span>Close</span>
           </button>
         </div>
 
@@ -309,7 +310,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
         <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-200 px-6 py-3 flex justify-between items-center">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
           >
             Close
           </button>
