@@ -54,6 +54,18 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
+
+  // Ensure nested Import CSV modal is closed whenever settings closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setShowImportModal(false);
+    }
+  }, [isOpen]);
+
+  const handleCloseSettings = () => {
+    setShowImportModal(false);
+    onClose();
+  };
   
   const handlePaletteChange = (paletteId: string) => {
     setSelectedPaletteId(paletteId);
@@ -116,7 +128,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+      onClick={handleCloseSettings}
       role="dialog"
       aria-modal="true"
       aria-labelledby="heatmap-settings-title"
@@ -132,7 +144,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
             <h2 id="heatmap-settings-title" className="text-lg font-semibold">Heat Map Settings</h2>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleCloseSettings}
             className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
             title="Close (Esc)"
             aria-label="Close heat map settings (Esc)"
@@ -339,7 +351,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
         {/* Footer Actions */}
         <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-gray-200 px-6 py-3 flex justify-between items-center">
           <button
-            onClick={onClose}
+            onClick={handleCloseSettings}
             className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300"
           >
             Close

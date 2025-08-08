@@ -17,6 +17,7 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
   const [importResult, setImportResult] = useState<HeatmapImportResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Import always applies 0.0 values; no toggle needed here.
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -98,17 +99,21 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
   }, [handleFileSelect]);
 
   const handleApplyImport = useCallback(() => {
-    if (!importResult || importResult.successful.length === 0) {
+    if (!importResult) {
       return;
     }
 
-    // Apply the successful imports
-    bulkSetHeatmapValues(importResult.successful.map(entry => ({
+    const valuesToApply = importResult.successful.map(entry => ({
       rectangleId: entry.rectangleId,
-      value: entry.value
-    })));
+      value: entry.value,
+    }));
 
-    // Close modal
+    if (valuesToApply.length === 0) {
+      handleClose();
+      return;
+    }
+
+    bulkSetHeatmapValues(valuesToApply);
     handleClose();
   }, [importResult, bulkSetHeatmapValues, handleClose]);
 
@@ -129,10 +134,15 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
   if (!isOpen) return null;
 
   const hasResults = importResult !== null;
-  const canApply = hasResults && importResult.successful.length > 0;
+  const effectiveSuccessful = hasResults ? importResult!.successful : [];
+  const canApply = hasResults && effectiveSuccessful.length > 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -352,7 +362,7 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
                 disabled={!canApply}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Apply Import ({importResult.successful.length} values)
+                Apply Import ({effectiveSuccessful.length} values)
               </button>
             )}
           </div>

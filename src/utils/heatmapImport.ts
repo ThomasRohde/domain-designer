@@ -44,6 +44,17 @@ function parseCSVLine(line: string): string[] {
   return result.map(s => s.trim());
 }
 
+// Normalize labels for robust matching: strip BOM, trim, collapse inner whitespace, lowercase
+function normalizeLabel(value: string): string {
+  return value
+    .replace(/^\uFEFF/, '') // strip BOM if present
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+// No debug logging; keep core logic only
+
 /**
  * CSV entry parsed from a single line
  */
@@ -90,10 +101,10 @@ export function parseHeatmapCSV(
     const lineNumber = i + 1;
     
     // Parse CSV line respecting quotes
-    const parts = parseCSVLine(line);
+  const parts = parseCSVLine(line);
     
-    // Skip header row if it looks like one (first cell indicates header)
-    if (i === 0 && parts[0] && /^(name|label|rectangle|rectangleName)$/i.test(parts[0])) {
+  // Skip header row if it looks like one (first cell indicates header)
+  if (i === 0 && parts[0] && /^(name|label|rectangle|rectanglename)$/i.test(normalizeLabel(parts[0]))) {
       continue;
     }
     
@@ -124,12 +135,13 @@ export function parseHeatmapCSV(
   // Create a case-insensitive lookup map for rectangles
   const rectangleLookup = new Map<string, Rectangle>();
   rectangles.forEach(rect => {
-    rectangleLookup.set(rect.label.toLowerCase(), rect);
+    if (rect.isTextLabel || rect.type === 'textLabel') return; // ignore text labels for heatmap
+    rectangleLookup.set(normalizeLabel(rect.label), rect);
   });
 
   // Process each entry
   for (const entry of entries) {
-    const { label, valueStr } = entry;
+  const { label, valueStr } = entry;
     
     // Validate value
     const value = parseFloat(valueStr);
@@ -152,8 +164,8 @@ export function parseHeatmapCSV(
       continue;
     }
     
-    // Try to match rectangle (case-insensitive)
-    const rectangle = rectangleLookup.get(label.toLowerCase());
+  // Try to match rectangle (case/whitespace-insensitive)
+    const rectangle = rectangleLookup.get(normalizeLabel(label));
     
     if (!rectangle) {
       result.unmatched.push({
