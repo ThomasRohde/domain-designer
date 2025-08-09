@@ -27,6 +27,7 @@ export interface SavedDiagram {
     preservePositions: boolean;
     boundingBox: { w: number; h: number };
   };
+  /** Heatmap configuration for color overlay visualization (optional, preserves heatmap settings across save/load) */
   heatmapState?: HeatmapState;
   timestamp: number;
 }

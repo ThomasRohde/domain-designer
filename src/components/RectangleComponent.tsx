@@ -205,13 +205,15 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   // Text labels are transparent by default unless they're interactive targets
   let backgroundColor = rectangle.color;
   
-  // Heat map color override - replaces normal color when heat map is enabled
+  // Heatmap Integration: Override rectangle color when heatmap mode is active
+  // The getHeatmapColor function returns null when heatmap is disabled,
+  // ensuring normal rectangle colors are preserved when heatmap is off
   const heatmapColor = useAppStore(state => state.heatmapActions.getHeatmapColor(rectangle.id));
   if (heatmapColor) {
     backgroundColor = heatmapColor;
   }
   
-  // Calculate text color based on final background color (including heat map color)
+  // Calculate optimal text color contrast based on final background (normal or heatmap color)
   const textColor = getTextColor(backgroundColor);
   
   if (isTextLabel && !isSelected && !isDropTarget && !isCurrentDropTarget) {

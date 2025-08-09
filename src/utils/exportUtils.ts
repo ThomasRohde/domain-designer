@@ -7,11 +7,16 @@ import type { HeatmapState } from '../stores/types';
 import { calculateHeatmapColor } from './heatmapColors';
 
 /**
- * Applies heat map colors to rectangles for export when heat map is enabled
+ * Applies heatmap colors to rectangles for export scenarios.
  * 
- * @param rectangles - Original rectangles array
- * @param heatmapState - Heat map configuration state
- * @returns Rectangles with heat map colors applied (if enabled)
+ * This function ensures exported formats (HTML, SVG, PDF) accurately reflect 
+ * the heatmap visualization as seen in the application. When heatmap is enabled,
+ * rectangle colors are replaced with their computed heatmap colors, preserving
+ * the visual representation in static exports.
+ * 
+ * @param rectangles - Source rectangle data with heatmap values
+ * @param heatmapState - Current heatmap configuration and settings
+ * @returns Modified rectangles with heatmap colors applied to the color property
  */
 const applyHeatmapColorsForExport = (rectangles: Rectangle[], heatmapState: HeatmapState): Rectangle[] => {
   if (!heatmapState.enabled) {
@@ -145,7 +150,7 @@ export const exportDiagram = async (
   const timestamp = new Date().toISOString().split('T')[0];
   const filename = `domain-model-${timestamp}`;
   
-  // Apply heat map colors if heat map is enabled
+  // Apply heatmap colors for export to ensure visual consistency between app and exported format
   const exportRectangles = heatmapState 
     ? applyHeatmapColorsForExport(rectangles, heatmapState)
     : rectangles;

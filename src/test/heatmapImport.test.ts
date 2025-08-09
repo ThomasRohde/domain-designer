@@ -2,6 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { parseHeatmapCSV } from '../utils/heatmapImport';
 import type { Rectangle } from '../types';
 
+/**
+ * Test Suite: Heatmap CSV Import Functionality
+ * 
+ * Validates the CSV parsing, validation, and rectangle matching logic
+ * for heatmap value imports. Tests cover:
+ * - Header detection and comment handling
+ * - Case-insensitive label matching  
+ * - Numeric validation and range checking
+ * - Error categorization (failed vs unmatched)
+ * - Edge cases like empty files and malformed data
+ */
 describe('parseHeatmapCSV', () => {
   const rectangles: Rectangle[] = [
     { id: 'rect-1', label: 'Alpha', description: '', x: 0, y: 0, w: 4, h: 2, color: '#fff', type: 'leaf' },

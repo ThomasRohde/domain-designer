@@ -11,8 +11,17 @@ export interface PropertyPanelProps {
 }
 
 /**
- * Heat Map Value Section Component for Property Panel
- * Shows current heat map value and allows inline editing
+ * Heatmap Value Section Component for Property Panel Integration
+ * 
+ * Provides comprehensive heatmap value management within the property panel:
+ * - Inline editing with real-time validation (0-1 range enforcement)
+ * - Live color preview showing how values map to current palette
+ * - Visual status indicators (enabled/disabled, has value/undefined)
+ * - Keyboard shortcuts (Enter to save, Escape to cancel)
+ * - Automatic integration with global heatmap state and color computation
+ * 
+ * This component demonstrates how heatmap functionality integrates seamlessly
+ * with existing UI patterns while maintaining consistent user experience.
  */
 const HeatmapValueSection: React.FC<{ rectangleId: string }> = ({ rectangleId }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -165,6 +174,198 @@ const HeatmapValueSection: React.FC<{ rectangleId: string }> = ({ rectangleId })
 };
 
 /**
+ * Bulk Heatmap Value Editor Component
+ * 
+ * Provides comprehensive bulk heatmap value management for multiple selected rectangles:
+ * - Displays mixed value indicators when rectangles have different heatmap values
+ * - Allows setting a common heatmap value for all selected rectangles
+ * - Shows live color preview with current palette
+ * - Integrates with bulk heatmap value store actions for efficient updates
+ * - Provides clear indication of heatmap enabled/disabled state
+ */
+interface BulkHeatmapValueEditorProps {
+  selectedRectangles: Rectangle[];
+  heatmapEnabled: boolean;
+  selectedPaletteId: string;
+  palettes: Array<{ id: string; name: string; }>;
+  undefinedValueColor: string;
+  bulkSetHeatmapValues: (values: Array<{ rectangleId: string; value: number }>) => void;
+  getHeatmapColor: (rectangleId: string) => string | null;
+}
+
+const BulkHeatmapValueEditor: React.FC<BulkHeatmapValueEditorProps> = ({
+  selectedRectangles,
+  heatmapEnabled,
+  selectedPaletteId,
+  palettes,
+  undefinedValueColor,
+  bulkSetHeatmapValues,
+  getHeatmapColor
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState<string>('');
+
+  // Get current heatmap values from selected rectangles
+  const heatmapValues = selectedRectangles.map(r => r.heatmapValue);
+  const uniqueValues = [...new Set(heatmapValues.filter(v => v !== undefined))];
+  const hasValues = uniqueValues.length > 0;
+  const allSameValue = uniqueValues.length === 1;
+  const someHaveValues = heatmapValues.some(v => v !== undefined);
+  const allHaveValues = heatmapValues.every(v => v !== undefined);
+  const selectedPalette = palettes.find(p => p.id === selectedPaletteId);
+
+  const displayValue = allSameValue ? uniqueValues[0]?.toFixed(2) : 
+                      someHaveValues ? 'Mixed values' : 'Not set';
+
+  const handleStartEdit = () => {
+    setEditValue(allSameValue ? uniqueValues[0]?.toString() ?? '' : '');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const value = parseFloat(editValue);
+    if (!isNaN(value) && value >= 0 && value <= 1) {
+      // Apply to all selected rectangles
+      const updates = selectedRectangles.map(rect => ({
+        rectangleId: rect.id,
+        value: value
+      }));
+      bulkSetHeatmapValues(updates);
+    } else if (editValue === '') {
+      // Clear all values - use individual updates for undefined values
+      selectedRectangles.forEach(rect => {
+        const setRectangleHeatmapValue = useAppStore.getState().heatmapActions.setRectangleHeatmapValue;
+        setRectangleHeatmapValue(rect.id, undefined);
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
+  // Sample preview color (use first rectangle with a value, or first rectangle for undefined color)
+  const previewRect = selectedRectangles.find(r => r.heatmapValue !== undefined) || selectedRectangles[0];
+  const previewColor = previewRect && heatmapEnabled ? getHeatmapColor(previewRect.id) : undefinedValueColor;
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4 mb-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Palette size={16} className="text-orange-600" />
+        <h3 className="font-semibold text-sm lg:text-base">Bulk Heat Map Values</h3>
+        <div title={heatmapEnabled ? "Heat map enabled" : "Heat map disabled"}>
+          {heatmapEnabled ? (
+            <Eye size={14} className="text-green-600" />
+          ) : (
+            <EyeOff size={14} className="text-gray-400" />
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {/* Current Value Display/Editor */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs lg:text-sm font-medium text-gray-700 w-16">Value:</span>
+          {isEditing ? (
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyPress}
+                className="px-2 py-1 text-xs lg:text-sm border border-gray-300 rounded w-20"
+                placeholder="0.0-1.0"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveEdit}
+                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 flex-1">
+              <span className="text-xs lg:text-sm text-gray-600">
+                {displayValue}
+              </span>
+              <button
+                onClick={handleStartEdit}
+                className="px-2 py-1 text-xs text-orange-600 hover:text-orange-700 border border-orange-300 rounded hover:border-orange-400"
+              >
+                Edit All
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Color Preview */}
+        {(hasValues || !heatmapEnabled) && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs lg:text-sm font-medium text-gray-700 w-16">Preview:</span>
+            <div className="flex items-center gap-2">
+              <div
+                className="w-6 h-6 border border-gray-300 rounded"
+                style={{ backgroundColor: previewColor || undefinedValueColor }}
+                title={allSameValue ? `Value: ${uniqueValues[0]?.toFixed(2)}` : 'Mixed or no values'}
+              />
+              <span className="text-xs text-gray-500">
+                {previewColor || undefinedValueColor}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Palette Info */}
+        {heatmapEnabled && selectedPalette && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs lg:text-sm font-medium text-gray-700 w-16">Palette:</span>
+            <span className="text-xs lg:text-sm text-gray-600">{selectedPalette.name}</span>
+          </div>
+        )}
+
+        {/* Status Messages */}
+        <div className="text-xs">
+          {!allHaveValues && someHaveValues && (
+            <p className="text-yellow-700 bg-yellow-50 p-2 rounded border border-yellow-200 mb-2">
+              ⚠️ {selectedRectangles.filter(r => r.heatmapValue !== undefined).length} of {selectedRectangles.length} rectangles have heatmap values set.
+            </p>
+          )}
+          
+          {!hasValues && (
+            <p className="text-gray-500">
+              No heat map values assigned. Rectangles will use the undefined value color when heat map is enabled.
+            </p>
+          )}
+
+          {hasValues && !heatmapEnabled && (
+            <p className="text-yellow-700 bg-yellow-50 p-2 rounded border border-yellow-200">
+              Heat map values are set but heat map overlay is currently disabled. 
+              Enable it in Heat Map Settings to see colors applied.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
  * Adaptive property panel that displays different content based on selection state:
  * - When a rectangle is selected: Shows rectangle-specific properties (color, layout, text settings)
  * - When no selection: Shows global application settings
@@ -189,6 +390,14 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   const toggleTextLabel = useAppStore(state => state.rectangleActions.toggleTextLabel);
   const updateTextLabelProperties = useAppStore(state => state.rectangleActions.updateTextLabelProperties);
   const updateColorSquare = useAppStore(state => state.settingsActions.updateColorSquare);
+  
+  // Heatmap selectors and actions
+  const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
+  const selectedPaletteId = useAppStore(state => state.heatmap.selectedPaletteId);
+  const palettes = useAppStore(state => state.heatmap.palettes);
+  const undefinedValueColor = useAppStore(state => state.heatmap.undefinedValueColor);
+  const bulkSetHeatmapValues = useAppStore(state => state.heatmapActions.bulkSetHeatmapValues);
+  const getHeatmapColor = useAppStore(state => state.heatmapActions.getHeatmapColor);
   
   const selectedRectangle = selectedId ? rectangles.find(r => r.id === selectedId) || null : null;
   const selectedRectangles = selectedIds.map(id => rectangles.find(r => r.id === id)).filter(Boolean) as Rectangle[];
@@ -273,6 +482,16 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           )}
         </div>
 
+        {/* Bulk heatmap value editor */}
+        <BulkHeatmapValueEditor 
+          selectedRectangles={selectedRectangles}
+          heatmapEnabled={heatmapEnabled}
+          selectedPaletteId={selectedPaletteId}
+          palettes={palettes}
+          undefinedValueColor={undefinedValueColor}
+          bulkSetHeatmapValues={bulkSetHeatmapValues}
+          getHeatmapColor={getHeatmapColor}
+        />
 
         {/* Bulk operation shortcuts */}
         <div className="bg-white rounded-lg shadow p-4">

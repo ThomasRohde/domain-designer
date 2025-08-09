@@ -32,49 +32,64 @@ export type AlignmentType = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bo
 export type DistributionDirection = 'horizontal' | 'vertical';
 
 /**
- * Heat map color palette configuration
+ * Heatmap color palette configuration defining gradient visualization schemes.
+ * 
+ * Palettes consist of color stops that define smooth gradients for mapping
+ * numeric values (0-1 range) to colors. The system interpolates between
+ * stops to create smooth color transitions.
  */
 export interface HeatmapPalette {
-  /** Unique identifier for the palette */
+  /** Unique identifier for palette selection and caching */
   id: string;
-  /** Display name for the palette */
+  /** Human-readable name displayed in UI */
   name: string;
-  /** Color stops defining the gradient */
+  /** Color stops defining gradient points (must include at least 2 stops) */
   stops: ColorStop[];
-  /** Whether this is a user-created custom palette */
+  /** Whether this palette was created by the user (enables editing/deletion) */
   isCustom?: boolean;
 }
 
 /**
- * Color stop definition for heat map palettes
+ * Color stop definition for heatmap gradient creation.
+ * 
+ * Stops define specific points along the 0-1 value range where exact colors
+ * are specified. The heatmap system interpolates between stops to create
+ * smooth gradients for intermediate values.
  */
 export interface ColorStop {
-  /** Value position (0-1) */
+  /** Normalized position along gradient (0.0 = start, 1.0 = end) */
   value: number;
-  /** Hex color at this position */
+  /** Hex color code at this gradient position (#RRGGBB format) */
   color: string;
 }
 
 /**
- * CSV import result for heat map values
+ * Result structure for heatmap CSV import operations.
+ * 
+ * Categorizes import outcomes to provide detailed feedback to users:
+ * - Successful imports are immediately applied to rectangles
+ * - Failed imports show validation errors for correction
+ * - Unmatched entries indicate potential label mismatches
+ * 
+ * This structure enables comprehensive import reporting and user guidance.
  */
 export interface HeatmapImportResult {
-  /** Successfully matched and imported entries */
+  /** Successfully validated and imported entries ready for application */
   successful: Array<{
     rectangleId: string;
-    label: string;
-    value: number;
+    label: string;  // Actual rectangle label (preserves original casing)
+    value: number;  // Validated value in 0-1 range
   }>;
-  /** Failed entries with validation errors */
+  /** Invalid entries with specific validation errors for user correction */
   failed: Array<{
-    label: string;
-    value: string;
-    error: string;
+    label: string;  // Label from CSV (as entered by user)
+    value: string;  // Raw value from CSV (before parsing/validation)
+    error: string;  // Human-readable error description
   }>;
-  /** Entries that couldn't be matched to rectangles */
+  /** Valid entries that couldn't be matched to existing rectangles */
   unmatched: Array<{
-    label: string;
-    value: number;
+    label: string;  // Label from CSV that didn't match any rectangle
+    value: number;  // Parsed numeric value (valid but unmatched)
   }>;
 }
 
@@ -115,19 +130,25 @@ export interface ClipboardState {
 }
 
 /**
- * Heat map state slice - manages heat map visualization
- * Controls palette selection and rendering behavior
+ * Heatmap state slice managing color overlay visualization system.
+ * 
+ * Controls all aspects of heatmap functionality including palette selection,
+ * color computation, and visual display options. When enabled, heatmap colors
+ * override normal rectangle colors based on numeric values (0-1 range).
+ * 
+ * State is automatically persisted and restored across sessions through
+ * the auto-save system integration.
  */
 export interface HeatmapState {
-  /** Whether heat map overlay is currently enabled */
+  /** Global toggle for heatmap color overlay (overrides rectangle.color when true) */
   enabled: boolean;
-  /** ID of the currently selected palette */
+  /** Active palette ID used for color computation */
   selectedPaletteId: string;
-  /** All available heat map palettes (predefined + custom) */
+  /** Complete palette collection including predefined and user-created palettes */
   palettes: HeatmapPalette[];
-  /** Color to use for rectangles without heat map values */
+  /** Fallback color for rectangles without heatmap values (#RRGGBB format) */
   undefinedValueColor: string;
-  /** Whether to show the heat map legend */
+  /** Controls visibility of floating color scale legend */
   showLegend: boolean;
 }
 

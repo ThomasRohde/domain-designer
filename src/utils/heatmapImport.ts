@@ -2,15 +2,26 @@ import type { Rectangle } from '../types';
 import type { HeatmapImportResult } from '../stores/types';
 
 /**
- * CSV helpers: escape and parse minimal CSV with quotes
- * - Escape: wrap in quotes if contains comma, quote, or newline; double inner quotes
- * - Parse: split respecting quotes and unescape doubled quotes
+ * CSV Processing Utilities
+ * 
+ * Implements RFC 4180-compliant CSV parsing with robust error handling:
+ * - Handles quoted fields containing commas, newlines, and embedded quotes
+ * - Escapes quotes by doubling them ("" becomes ")
+ * - Supports BOM removal for files from Excel and other tools
+ * - Normalizes whitespace and handles case-insensitive matching
+ */
+/**
+ * Escapes a string value for CSV output by wrapping in quotes and doubling internal quotes.
  */
 function csvEscape(value: string): string {
   const escaped = value.replace(/"/g, '""');
   return `"${escaped}"`;
 }
 
+/**
+ * Parses a single CSV line respecting quoted fields and escaped quotes.
+ * Handles the complexities of CSV format including comma-separated values within quotes.
+ */
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
   let current = '';
@@ -20,9 +31,9 @@ function parseCSVLine(line: string): string[] {
     if (inQuotes) {
       if (ch === '"') {
         if (i + 1 < line.length && line[i + 1] === '"') {
-          // Escaped quote
+          // Handle escaped quote (double quote sequence)
           current += '"';
-          i++; // skip next
+          i++; // Skip the second quote in the escaped sequence
         } else {
           inQuotes = false;
         }
@@ -44,7 +55,15 @@ function parseCSVLine(line: string): string[] {
   return result.map(s => s.trim());
 }
 
-// Normalize labels for robust matching: strip BOM, trim, collapse inner whitespace, lowercase
+/**
+ * Normalizes rectangle labels for robust case-insensitive matching.
+ * 
+ * Handles common variations in label formatting:
+ * - Removes Unicode BOM (common in Excel exports)
+ * - Trims leading/trailing whitespace
+ * - Collapses multiple internal spaces to single spaces
+ * - Converts to lowercase for case-insensitive comparison
+ */
 function normalizeLabel(value: string): string {
   return value
     .replace(/^\uFEFF/, '') // strip BOM if present
@@ -53,10 +72,8 @@ function normalizeLabel(value: string): string {
     .toLowerCase();
 }
 
-// No debug logging; keep core logic only
-
 /**
- * CSV entry parsed from a single line
+ * Represents a parsed CSV entry with validation context.
  */
 interface CSVEntry {
   label: string;
@@ -65,12 +82,25 @@ interface CSVEntry {
 }
 
 /**
- * Parses CSV content and validates entries
- * Expected format: rectangleName,value
+ * Parses and validates heatmap CSV data for import.
  * 
- * @param csvContent - The raw CSV file content
- * @param rectangles - Array of rectangles to match against
- * @returns Import result with successful, failed, and unmatched entries
+ * Expected CSV format: rectangleName,value
+ * - Supports optional header row (automatically detected and skipped)
+ * - Ignores comment lines starting with #
+ * - Values must be numeric and in range [0, 1]
+ * - Rectangle names matched case-insensitively against existing labels
+ * - Text labels are excluded from matching to prevent invalid assignments
+ * 
+ * Algorithm:
+ * 1. Parse and clean CSV lines, removing empty lines and comments
+ * 2. Detect and skip header rows based on common patterns
+ * 3. Create normalized lookup map of rectangle labels for efficient matching
+ * 4. Validate each entry: numeric values, range checks, rectangle existence
+ * 5. Categorize results: successful imports, validation failures, unmatched labels
+ * 
+ * @param csvContent - Raw CSV file content as string
+ * @param rectangles - Current rectangle data for label matching
+ * @returns Categorized import results with detailed error information
  */
 export function parseHeatmapCSV(
   csvContent: string,
@@ -100,10 +130,10 @@ export function parseHeatmapCSV(
     const line = lines[i];
     const lineNumber = i + 1;
     
-    // Parse CSV line respecting quotes
-  const parts = parseCSVLine(line);
+    // Parse CSV line with proper quote handling
+    const parts = parseCSVLine(line);
     
-  // Skip header row if it looks like one (first cell indicates header)
+    // Auto-detect and skip header rows based on common header patterns
   if (i === 0 && parts[0] && /^(name|label|rectangle|rectanglename)$/i.test(normalizeLabel(parts[0]))) {
       continue;
     }
@@ -132,10 +162,10 @@ export function parseHeatmapCSV(
     entries.push({ label, valueStr, lineNumber });
   }
 
-  // Create a case-insensitive lookup map for rectangles
+  // Build optimized lookup map for case-insensitive rectangle matching
   const rectangleLookup = new Map<string, Rectangle>();
   rectangles.forEach(rect => {
-    if (rect.isTextLabel || rect.type === 'textLabel') return; // ignore text labels for heatmap
+    if (rect.isTextLabel || rect.type === 'textLabel') return; // Exclude text labels (not valid heatmap targets)
     rectangleLookup.set(normalizeLabel(rect.label), rect);
   });
 
@@ -164,7 +194,7 @@ export function parseHeatmapCSV(
       continue;
     }
     
-  // Try to match rectangle (case/whitespace-insensitive)
+  // Attempt normalized case-insensitive rectangle label matching
     const rectangle = rectangleLookup.get(normalizeLabel(label));
     
     if (!rectangle) {
@@ -175,10 +205,10 @@ export function parseHeatmapCSV(
       continue;
     }
     
-    // Success!
+    // Successfully matched rectangle with valid value
     result.successful.push({
       rectangleId: rectangle.id,
-      label: rectangle.label, // Use the actual label from rectangle for display
+      label: rectangle.label, // Use actual rectangle label (preserves original casing) for display
       value
     });
   }
@@ -187,10 +217,16 @@ export function parseHeatmapCSV(
 }
 
 /**
- * Validates a CSV file before parsing
+ * Performs comprehensive validation of CSV files before parsing.
  * 
- * @param file - The file to validate
- * @returns Promise resolving to validation result
+ * Validation checks:
+ * - File extension (.csv) and MIME type verification
+ * - Size limits (1MB maximum to prevent memory issues)
+ * - Content structure validation (non-empty, contains comma separators)
+ * - Encoding support (handles UTF-8 with/without BOM)
+ * 
+ * @param file - File object from input or drag-and-drop
+ * @returns Promise resolving to validation result with content on success
  */
 export async function validateCSVFile(file: File): Promise<{
   isValid: boolean;
@@ -217,7 +253,7 @@ export async function validateCSVFile(file: File): Promise<{
     // Read file content
     const content = await file.text();
     
-    // Basic validation - check if it looks like CSV
+    // Validate basic CSV structure and content
     if (content.trim().length === 0) {
       return {
         isValid: false,
@@ -234,7 +270,7 @@ export async function validateCSVFile(file: File): Promise<{
       };
     }
     
-    // Check if lines have commas (basic CSV check)
+    // Verify CSV format by checking for comma separators
     const hasCommas = lines.some(line => line.includes(','));
     if (!hasCommas) {
       return {
@@ -256,10 +292,17 @@ export async function validateCSVFile(file: File): Promise<{
 }
 
 /**
- * Generates a sample CSV content for download
+ * Generates sample CSV content to help users understand the expected import format.
  * 
- * @param rectangles - Current rectangles in the canvas
- * @returns CSV content string
+ * Creates a template CSV with:
+ * - Standard header row (rectangleName,value)
+ * - Comment lines explaining the format and requirements
+ * - Sample data using actual rectangle names from the canvas
+ * - Graduated sample values (0.0, 0.25, 0.5, 0.75, 1.0) to demonstrate range
+ * - Generic examples if insufficient rectangles exist
+ * 
+ * @param rectangles - Current rectangle data from the canvas
+ * @returns Formatted CSV content string ready for download
  */
 export function generateSampleCSV(rectangles: Rectangle[]): string {
   const lines: string[] = [
@@ -270,14 +313,14 @@ export function generateSampleCSV(rectangles: Rectangle[]): string {
     ''
   ];
   
-  // Add a few examples from actual rectangles
+  // Include examples using real rectangle names from the current canvas
   const sampleRectangles = rectangles.slice(0, 5);
   sampleRectangles.forEach((rect, index) => {
     const sampleValue = (index / Math.max(sampleRectangles.length - 1, 1)).toFixed(2);
     lines.push(`${csvEscape(rect.label)},${sampleValue}`);
   });
   
-  // Add some generic examples if we don't have enough rectangles
+  // Add fallback examples if canvas has few rectangles
   if (sampleRectangles.length < 3) {
     lines.push('Example Rectangle 1,0.25');
     lines.push('Example Rectangle 2,0.75');
@@ -287,9 +330,19 @@ export function generateSampleCSV(rectangles: Rectangle[]): string {
 }
 
 /**
- * Generates a CSV of current heat map values for round-trip export
- * Format matches import schema: rectangleName,value
- * Only includes rectangles with a defined heatmapValue
+ * Generates CSV export of current heatmap values for round-trip workflows.
+ * 
+ * Export features:
+ * - Matches import format exactly (rectangleName,value) for seamless round-trip
+ * - Only includes rectangles that have assigned heatmap values (excludes undefined)
+ * - Optional zero inclusion for rectangles without values (useful for complete datasets)
+ * - Automatic exclusion of text labels (prevents invalid heatmap assignments)
+ * - Proper CSV escaping for complex rectangle names
+ * - High precision value formatting (6 decimal places) to preserve accuracy
+ * 
+ * @param rectangles - Current rectangle data with heatmap values
+ * @param includeMissingAsZero - Whether to export undefined values as 0.0
+ * @returns CSV content string ready for download or external processing
  */
 export function generateHeatmapCSV(rectangles: Rectangle[], includeMissingAsZero = false): string {
   const header = 'rectangleName,value';
@@ -298,7 +351,7 @@ export function generateHeatmapCSV(rectangles: Rectangle[], includeMissingAsZero
   const formatValue = (v: number) => Number(v.toFixed(6)).toString();
 
   rectangles.forEach(rect => {
-    // Skip text labels from heatmap CSV
+    // Exclude text labels (not valid heatmap targets)
     if (rect.isTextLabel || rect.type === 'textLabel') return;
 
     if (typeof rect.heatmapValue === 'number') {

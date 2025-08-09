@@ -1,17 +1,27 @@
 import type { HeatmapPalette } from '../stores/types';
 
 /**
- * Cache for computed colors to avoid recomputation
+ * Global cache for computed heatmap colors to optimize performance.
+ * 
+ * Caches interpolated colors using composite keys that include palette stops,
+ * values, and interpolation factors. This prevents expensive color calculations
+ * during real-time interactions like dragging or resizing.
+ * 
+ * Cache is automatically managed: cleared when palettes change, precomputed
+ * when palettes are selected for smooth user experience.
  */
 const colorCache = new Map<string, string>();
 
 /**
- * Interpolates between two colors based on a factor (0-1)
+ * Performs linear interpolation between two hex colors.
  * 
- * @param color1 - Starting color in hex format
- * @param color2 - Ending color in hex format  
- * @param factor - Interpolation factor (0-1)
- * @returns Interpolated color in hex format
+ * Converts colors to RGB, interpolates each channel separately, then converts back to hex.
+ * Results are cached to avoid repeated calculations for the same inputs.
+ * 
+ * @param color1 - Starting color in hex format (#RRGGBB)
+ * @param color2 - Ending color in hex format (#RRGGBB)
+ * @param factor - Interpolation factor (0 = color1, 1 = color2)
+ * @returns Interpolated color in hex format (#RRGGBB)
  */
 export function interpolateColor(color1: string, color2: string, factor: number): string {
   // Create cache key
@@ -49,11 +59,20 @@ export function interpolateColor(color1: string, color2: string, factor: number)
 }
 
 /**
- * Gets color from palette based on value (0-1) with memoization
+ * Maps a numeric value to a color using a heatmap palette.
  * 
- * @param palette - Heat map palette configuration
- * @param value - Value between 0 and 1
- * @returns Computed color in hex format
+ * Algorithm:
+ * 1. Sorts palette stops by value to handle unordered definitions
+ * 2. Finds the two adjacent stops that bracket the input value
+ * 3. Interpolates between those stop colors based on relative position
+ * 4. Handles edge cases (value outside stop range) gracefully
+ * 
+ * Performance optimized with comprehensive caching including palette stop data
+ * in the cache key to handle palette modifications correctly.
+ * 
+ * @param palette - Heatmap palette with color stops
+ * @param value - Numeric value to map (automatically clamped to 0-1)
+ * @returns Computed color in hex format (#RRGGBB)
  */
 export function getColorFromPalette(palette: HeatmapPalette, value: number): string {
   // Clamp value to 0-1 range
@@ -75,7 +94,7 @@ export function getColorFromPalette(palette: HeatmapPalette, value: number): str
   
   let result: string;
   
-  // Find the two stops to interpolate between
+  // Find adjacent stops that bracket the target value for interpolation
   let foundStop = false;
   for (let i = 0; i < stops.length - 1; i++) {
     const stop1 = stops[i];
@@ -90,7 +109,7 @@ export function getColorFromPalette(palette: HeatmapPalette, value: number): str
   }
   
   if (!foundStop) {
-    // If value is before first stop or after last stop
+    // Handle values outside the defined stop range by using endpoint colors
     if (clampedValue <= stops[0].value) {
       result = stops[0].color;
     } else {
@@ -105,12 +124,17 @@ export function getColorFromPalette(palette: HeatmapPalette, value: number): str
 }
 
 /**
- * Calculates heat map color for a rectangle with memoization
+ * High-level utility to determine the display color for a rectangle's heatmap value.
  * 
- * @param heatmapValue - Rectangle's heat map value (0-1) or undefined
- * @param palette - Selected heat map palette
- * @param undefinedValueColor - Color to use for undefined values
- * @returns Computed color or null if no heat map value
+ * This function encapsulates the logic for handling both defined and undefined values:
+ * - Defined values are mapped through the palette color system
+ * - Undefined values use the configurable undefined value color
+ * - Invalid palette configurations fall back to undefined value color
+ * 
+ * @param heatmapValue - Rectangle's heatmap value (0-1 range) or undefined
+ * @param palette - Active heatmap palette or undefined
+ * @param undefinedValueColor - Color for rectangles without values (#RRGGBB)
+ * @returns Computed color (#RRGGBB) or null for no heatmap value
  */
 export function calculateHeatmapColor(
   heatmapValue: number | undefined,
@@ -129,25 +153,42 @@ export function calculateHeatmapColor(
 }
 
 /**
- * Clears the color computation cache
- * Useful when palettes are updated or memory needs to be freed
+ * Clears the global color computation cache.
+ * 
+ * Called automatically when:
+ * - User changes active palette
+ * - Custom palettes are modified
+ * - Imported heatmap state is applied
+ * 
+ * Can be called manually for memory management in long-running sessions.
  */
 export function clearColorCache(): void {
   colorCache.clear();
 }
 
 /**
- * Gets current cache size (for debugging/monitoring)
+ * Returns the current cache size for debugging and performance monitoring.
+ * 
+ * Useful for understanding cache effectiveness and memory usage patterns.
+ * Cache size typically correlates with the number of unique value/palette combinations used.
  */
 export function getColorCacheSize(): number {
   return colorCache.size;
 }
 
 /**
- * Precomputes colors for a range of values to warm up the cache
+ * Precomputes colors across the value range to warm up the cache for smooth performance.
  * 
- * @param palette - Palette to precompute colors for
- * @param steps - Number of color steps to precompute (default: 100)
+ * This function is called automatically when:
+ * - Heatmap mode is enabled
+ * - User switches to a new palette
+ * - Imported heatmap state is applied
+ * 
+ * Precomputation ensures that common values (0, 0.25, 0.5, 0.75, 1.0) and interpolated
+ * values are immediately available without calculation lag during user interactions.
+ * 
+ * @param palette - Color palette to precompute for
+ * @param steps - Number of evenly-spaced values to precompute (default: 100)
  */
 export function precomputePaletteColors(palette: HeatmapPalette, steps: number = 100): void {
   for (let i = 0; i <= steps; i++) {

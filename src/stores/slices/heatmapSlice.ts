@@ -2,7 +2,13 @@ import type { SliceCreator, HeatmapState, HeatmapActions, HeatmapPalette } from 
 import { getColorFromPalette, precomputePaletteColors, clearColorCache } from '../../utils/heatmapColors';
 
 /**
- * Heat map slice interface combining state and actions
+ * Heatmap slice interface combining state and actions for the Zustand store.
+ * 
+ * The heatmap system provides color overlay functionality for rectangles based on numeric values:
+ * - Values are normalized to 0-1 range for consistent color mapping
+ * - Multiple predefined and custom color palettes supported
+ * - Performance optimized with color caching and precomputation
+ * - Integrates seamlessly with existing rectangle rendering system
  */
 export interface HeatmapSlice {
   heatmap: HeatmapState;
@@ -10,7 +16,16 @@ export interface HeatmapSlice {
 }
 
 /**
- * Predefined heat map palettes
+ * Predefined heatmap color palettes providing common visualization patterns.
+ * 
+ * Each palette defines color stops at specific values (0-1 range) to create
+ * smooth gradients. The system interpolates between stops for intermediate values.
+ * 
+ * Available palettes:
+ * - Temperature: Blue (cold) to red (hot) via yellow
+ * - Viridis: Perceptually uniform scientific palette
+ * - Traffic Light: Green (good) to red (bad) via yellow
+ * - Grayscale: Simple white to black gradient
  */
 const PREDEFINED_PALETTES: HeatmapPalette[] = [
   {
@@ -57,7 +72,13 @@ const PREDEFINED_PALETTES: HeatmapPalette[] = [
 ];
 
 /**
- * Creates the heatmap slice for the store
+ * Creates the heatmap slice for the Zustand store.
+ * 
+ * Provides complete heatmap functionality including:
+ * - State management for palettes, colors, and visibility settings
+ * - Performance optimized color computation with caching
+ * - Bulk operations for CSV import/export workflows
+ * - Integration with rectangle update system and history management
  */
 export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
   // Initial state
@@ -79,7 +100,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
         }
       }));
 
-      // Warm up cache when enabling heatmap for snappy initial render
+      // Warm up color cache when enabling heatmap to ensure smooth initial rendering
       if (enabled) {
         const { heatmap } = get();
         const palette = heatmap.palettes.find(p => p.id === heatmap.selectedPaletteId);
@@ -96,7 +117,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
           selectedPaletteId: paletteId
         }
       }));
-      // Clear and precompute cache for the new palette for smoother UI
+      // Clear existing cache and precompute colors for the new palette to ensure smooth UI transitions
       const { heatmap } = get();
       const palette = heatmap.palettes.find(p => p.id === paletteId);
       if (palette) {
@@ -119,7 +140,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
         heatmap: {
           ...state.heatmap,
           palettes: state.heatmap.palettes.filter(p => p.id !== paletteId),
-          // If we're removing the selected palette, switch to temperature
+          // If removing the currently selected palette, automatically switch to temperature (default)
           selectedPaletteId: state.heatmap.selectedPaletteId === paletteId 
             ? 'temperature' 
             : state.heatmap.selectedPaletteId
@@ -159,7 +180,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     setRectangleHeatmapValue: (rectangleId: string, value: number | undefined) => {
       const { rectangleActions } = get();
       
-      // Validate value range if provided
+      // Validate and clamp heatmap value to valid 0-1 range
       if (value !== undefined && (value < 0 || value > 1)) {
         console.warn(`Heat map value ${value} is outside valid range [0, 1]. Clamping to range.`);
         value = Math.max(0, Math.min(1, value));
@@ -171,7 +192,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     bulkSetHeatmapValues: (values: Array<{ rectangleId: string; value: number }>) => {
       const { rectangles, rectangleActions } = get();
       
-      // Create bulk update for single history entry
+      // Process all values as a single bulk update to create one history entry
       const updatedRectangles = rectangles.map(rect => {
         const valueUpdate = values.find(v => v.rectangleId === rect.id);
         if (valueUpdate) {
@@ -198,7 +219,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
         return null;
       }
       
-      // If no heat map value, return undefined value color
+      // Return undefined value color for rectangles without heatmap values
       if (rectangle.heatmapValue === undefined) {
         return heatmap.undefinedValueColor;
       }
@@ -215,7 +236,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     clearAllHeatmapValues: () => {
       const { rectangles, rectangleActions } = get();
       
-      // Create bulk update for single history entry
+      // Remove all heatmap values in a single bulk update for one history entry
       const updatedRectangles = rectangles.map(rect => ({
         ...rect,
         heatmapValue: undefined
@@ -225,7 +246,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     },
 
     applyImportedHeatmapState: (stateToApply) => {
-      // Basic safety: ensure required fields exist
+      // Apply imported heatmap configuration with validation and fallbacks
       if (!stateToApply) return;
       set(state => ({
         heatmap: {
@@ -239,7 +260,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
           showLegend: !!stateToApply.showLegend
         }
       }));
-      // Precompute for applied palette
+      // Precompute colors for the imported palette to ensure smooth performance
       const { heatmap } = get();
       const palette = heatmap.palettes.find(p => p.id === heatmap.selectedPaletteId);
       if (palette) {
