@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Menu, Download, Upload, Settings, Map } from 'lucide-react';
+import { Plus, Menu, Download, Upload, Settings, Map, Thermometer } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import OfflineIndicator from './OfflineIndicator';
 
@@ -41,6 +41,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   const leftMenuOpen = useAppStore(state => state.ui.leftMenuOpen);
   const onToggleSidebar = useAppStore(state => state.uiActions.toggleSidebar);
   const onToggleLeftMenu = useAppStore(state => state.uiActions.toggleLeftMenu);
+  const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
+  const setHeatmapEnabled = useAppStore(state => state.heatmapActions.setEnabled);
   return (
     <div className="bg-white border-b border-gray-200 px-2 sm:px-4 py-3">
       <div className="flex items-center justify-between">
@@ -91,6 +93,19 @@ const Toolbar: React.FC<ToolbarProps> = ({
           
           {/* Secondary actions - hidden on mobile to prioritize primary functions */}
           <div className="hidden sm:flex items-center space-x-1">
+            {/* Heatmap visibility toggle */}
+            <button
+              onClick={() => setHeatmapEnabled(!heatmapEnabled)}
+              className={`px-3 py-2 text-sm font-medium rounded-md border flex items-center space-x-1 ${
+                heatmapEnabled
+                  ? 'text-blue-700 bg-blue-50 border-blue-300 hover:bg-blue-100'
+                  : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+              }`}
+              title={`${heatmapEnabled ? 'Hide' : 'Show'} heatmap (H)`}
+            >
+              <Thermometer size={16} />
+              <span>Heatmap</span>
+            </button>
             <button
               onClick={onImport}
               className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md border border-gray-300 flex items-center space-x-1"
