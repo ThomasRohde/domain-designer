@@ -42,7 +42,9 @@ const areRectangleStatesEqual = (state1: Rectangle[], state2: Rectangle[]): bool
            rect.fontWeight === other.fontWeight &&
            rect.textAlign === other.textAlign &&
            rect.isManualPositioningEnabled === other.isManualPositioningEnabled &&
-           rect.isLockedAsIs === other.isLockedAsIs;
+           rect.isLockedAsIs === other.isLockedAsIs &&
+           // Important: include heatmapValue so heatmap edits are recorded in history
+           rect.heatmapValue === other.heatmapValue;
   });
 };
 
