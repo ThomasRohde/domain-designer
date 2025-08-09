@@ -57,7 +57,7 @@ const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
       className="fixed bottom-4 z-30 pointer-events-none"
       style={{ right: rightOffset }}
     >
-  <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-3 pb-4 min-w-64">
+  <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-3 pb-6 min-w-64">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-700">Heat Map Scale</span>
