@@ -70,19 +70,6 @@ const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
             className="h-4 rounded border border-gray-300"
             style={gradientStyle}
           />
-          
-          {/* Value markers (absolute ticks at exact positions) */}
-          <div className="absolute top-0 left-0 w-full h-full">
-            {valueLabels.map((value) => (
-              <div
-                key={value}
-                className="absolute top-0"
-                style={{ left: `${value * 100}%`, transform: 'translateX(-50%)' }}
-              >
-                <div className="w-px h-4 bg-gray-600 opacity-30" />
-              </div>
-            ))}
-          </div>
         </div>
         
         {/* Value Labels (absolute at matching positions) */}
