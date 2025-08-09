@@ -1321,6 +1321,79 @@ export const createRectangleSlice: SliceCreator<RectangleSlice> = (set, get) => 
       return true;
     },
 
+    makeSameSize: (ids: string[]) => {
+      const state = get();
+      const { rectangles, settings } = state;
+
+      // Must have at least 2 rectangles and be a valid selection (same parent, no text labels)
+      const validation = validateBulkOperationConstraints('align', ids, rectangles, {
+        margin: settings.margin,
+        labelMargin: settings.labelMargin,
+        gridSize: settings.gridSize
+      });
+      if (!validation.isValid || ids.length < 2) {
+        console.warn('Same-size operation failed validation:', validation.errorMessage);
+        return false;
+      }
+
+      // Anchor is the first selected id
+      const anchor = rectangles.find(r => r.id === ids[0]);
+      if (!anchor) return false;
+
+      // Determine target width/height from anchor
+      const targetW = anchor.w;
+      const targetH = anchor.h;
+
+      updateRectanglesWithHistory(set, get, (currentRectangles) => {
+        // Pre-calc descendant sets for each resized parent to move children accordingly
+        const descendantMap = new Map<string, Set<string>>();
+        ids.forEach(id => {
+          const descendants = getAllDescendants(id, currentRectangles);
+          descendantMap.set(id, new Set(descendants));
+        });
+
+        // Compute size deltas for each rectangle to resize (skip locked-as-is and text labels)
+        const sizeDeltaMap = new Map<string, { dw: number; dh: number }>();
+        ids.forEach(id => {
+          const rect = currentRectangles.find(r => r.id === id);
+          if (!rect) return;
+          if (rect.isLockedAsIs || rect.isTextLabel) return;
+          // Anchor should not change; others adopt anchor size
+          if (rect.id === anchor.id) return;
+          const dw = targetW - rect.w;
+          const dh = targetH - rect.h;
+          if (dw !== 0 || dh !== 0) {
+            sizeDeltaMap.set(id, { dw, dh });
+          }
+        });
+
+        // Apply size changes and shift descendants if a parent was resized
+        let updated = currentRectangles.map(rect => {
+          if (sizeDeltaMap.has(rect.id)) {
+            const delta = sizeDeltaMap.get(rect.id)!;
+            return { ...rect, w: rect.w + delta.dw, h: rect.h + delta.dh };
+          }
+          // If this rect is a descendant of a resized rectangle, and that resized rectangle grew/shrank,
+          // we keep absolute positions of descendants as-is. No coordinate change needed here.
+          return rect;
+        });
+
+        // Trigger layout recalculation for affected parents when in auto layout mode
+        updated = triggerLayoutRecalculation(ids, updated, {
+          margin: settings.margin,
+          labelMargin: settings.labelMargin,
+          leafFixedWidth: settings.leafFixedWidth,
+          leafFixedHeight: settings.leafFixedHeight,
+          leafWidth: settings.leafWidth,
+          leafHeight: settings.leafHeight
+        });
+
+        return updated;
+      });
+
+      return true;
+    },
+
     setRectangles: (rectangles: Rectangle[]) => {
       // Clear descendant cache when rectangles change for optimal performance
       clearDescendantCache();

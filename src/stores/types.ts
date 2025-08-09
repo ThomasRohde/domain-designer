@@ -262,6 +262,8 @@ export interface RectangleActions {
   bulkMove: (ids: string[], deltaX: number, deltaY: number) => boolean;
   alignRectangles: (ids: string[], type: AlignmentType) => void;
   distributeRectangles: (ids: string[], direction: DistributionDirection) => void;
+  /** Make all selected rectangles the same size as the first selected (anchor) */
+  makeSameSize: (ids: string[]) => boolean;
   setRectangles: (rectangles: Rectangle[]) => void;
   setRectanglesWithHistory: (rectangles: Rectangle[]) => void;
   generateId: () => string;

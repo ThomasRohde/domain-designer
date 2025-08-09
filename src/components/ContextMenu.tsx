@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard, CopyPlus, Lock, Unlock, Palette } from 'lucide-react';
+import { Plus, Trash2, Edit3, AlignLeft, AlignCenter, AlignRight, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, MoveHorizontal, MoveVertical, Copy, Clipboard, CopyPlus, Lock, Unlock, Palette, Square } from 'lucide-react';
 import type { AlignmentType, DistributionDirection } from '../stores/types';
 
 interface ContextMenuProps {
@@ -18,6 +18,7 @@ interface ContextMenuProps {
   // Multi-select operations
   onAlign?: (type: AlignmentType) => void;
   onDistribute?: (direction: DistributionDirection) => void;
+  onMakeSameSize?: () => void;
   onBulkDelete?: () => void;
   // Clipboard operations
   onCopy?: () => void;
@@ -27,6 +28,7 @@ interface ContextMenuProps {
   // Operation availability flags
   canPerformAlignmentOperations?: boolean;
   canPerformDistributionOperations?: boolean;
+  canPerformSameSizeOperation?: boolean;
 }
 
 /**
@@ -49,13 +51,15 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   onClose,
   onAlign,
   onDistribute,
+  onMakeSameSize,
   onBulkDelete,
   onCopy,
   onPaste,
   onDuplicate,
   canPaste = false,
   canPerformAlignmentOperations = true,
-  canPerformDistributionOperations = true
+  canPerformDistributionOperations = true,
+  canPerformSameSizeOperation = true
 }) => {
   const isMultiSelect = selectedIds && selectedIds.length > 1;
   const selectionCount = selectedIds?.length || 1;
@@ -108,6 +112,13 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
   const handleDistribute = (direction: DistributionDirection) => {
     if (onDistribute && canPerformDistributionOperations) {
       onDistribute(direction);
+      onClose();
+    }
+  };
+
+  const handleMakeSameSize = () => {
+    if (onMakeSameSize && canPerformSameSizeOperation) {
+      onMakeSameSize();
       onClose();
     }
   };
@@ -284,6 +295,23 @@ const ContextMenu: React.FC<ContextMenuProps> = ({
               </button>
             </div>
           )}
+
+          {/* Same Size option */}
+          <div className="border-t border-gray-100 py-1">
+            <button
+              onClick={handleMakeSameSize}
+              disabled={!canPerformSameSizeOperation}
+              className={`w-full px-3 py-2 text-left text-sm flex items-center space-x-2 ${
+                canPerformSameSizeOperation
+                  ? 'hover:bg-gray-50 cursor-pointer'
+                  : 'opacity-50 cursor-not-allowed text-gray-400'
+              }`}
+              title={canPerformSameSizeOperation ? 'Set all to same size (match first selected)' : 'Cannot resize: selection not allowed'}
+            >
+              <Square size={14} />
+              <span>Same Size as First</span>
+            </button>
+          </div>
 
           {/* Clipboard operations */}
           <div className="border-t border-gray-100 py-1">

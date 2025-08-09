@@ -56,6 +56,7 @@ const HierarchicalDrawingApp = () => {
     // Multi-select operations
     alignRectangles,
     distributeRectangles,
+  makeSameSize,
     bulkDelete
   } = useAppStore(state => state.rectangleActions);
   const { findRectangle } = useAppStore(state => state.getters);
@@ -330,6 +331,17 @@ const HierarchicalDrawingApp = () => {
       }
     }
   }, [ui.selectedIds, distributeRectangles, clearSelection]);
+
+  const handleMakeSameSize = useCallback(() => {
+    if (ui.selectedIds && ui.selectedIds.length > 1) {
+      try {
+        makeSameSize(ui.selectedIds);
+      } catch (error) {
+        console.error('Error during same-size operation:', error);
+        clearSelection();
+      }
+    }
+  }, [ui.selectedIds, makeSameSize, clearSelection]);
 
 
   const handleBulkDelete = useCallback(() => {
@@ -765,7 +777,8 @@ const HierarchicalDrawingApp = () => {
         const selectedIds = ui.contextMenu.selectedIds || [];
         const isMultiSelect = selectedIds.length > 1;
         const canAlign = isMultiSelect ? canPerformAlignment(selectedIds, rectangles) : true;
-        const canDistribute = isMultiSelect ? canPerformDistribution(selectedIds, rectangles) : true;
+  const canDistribute = isMultiSelect ? canPerformDistribution(selectedIds, rectangles) : true;
+  const canSameSize = isMultiSelect ? canPerformAlignment(selectedIds, rectangles) : false; // same requirements as align (>=2, valid selection)
         
         // Get the rectangle to check its locked status
         const contextRect = rectangles.find(r => r.id === ui.contextMenu!.rectangleId);
@@ -787,6 +800,7 @@ const HierarchicalDrawingApp = () => {
             onClose={uiActions.hideContextMenu}
             onAlign={handleAlign}
             onDistribute={handleDistribute}
+            onMakeSameSize={handleMakeSameSize}
             onBulkDelete={handleBulkDelete}
             onCopy={handleCopy}
             onPaste={handlePaste}
@@ -794,6 +808,7 @@ const HierarchicalDrawingApp = () => {
             canPaste={canPaste}
             canPerformAlignmentOperations={canAlign}
             canPerformDistributionOperations={canDistribute}
+            canPerformSameSizeOperation={canSameSize}
           />
         );
       })()}
