@@ -68,6 +68,7 @@
 - **PowerPoint-Style Selection**: Ctrl+Click and drag selection box
 - **Bulk Alignment**: Align Left, Center, Right, Top, Middle, Bottom
 - **Equal Distribution**: Horizontal/vertical spacing with perfect symmetry
+- **Same Size**: Make all selected rectangles match the size of the first selected
 - **Bulk Editing**: Change colors, labels, and properties for multiple rectangles
 - **Group Operations**: Move, delete, and modify selections together
 
@@ -317,6 +318,7 @@ Right-click on any selected rectangle to access the multi-select context menu:
 **Distribution & Bulk Operations**
 - **Distribute Horizontally**: Equal spacing between centers
 - **Distribute Vertically**: Perfect symmetrical distribution
+- **Same Size as First**: Resize all to match first selected
 - **Bulk Color Change**: Apply color to all selected
 - **Bulk Delete**: Remove entire selection with confirmation
 

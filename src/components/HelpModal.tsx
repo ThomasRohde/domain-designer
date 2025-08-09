@@ -163,6 +163,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <ul className="text-sm space-y-1">
               <li>• <strong>Alignment</strong> - Left, Center, Right, Top, Middle, Bottom (3×2 grid layout)</li>
               <li>• <strong>Distribution</strong> - Horizontal/Vertical equal spacing (minimum 3 rectangles)</li>
+              <li>• <strong>Same Size</strong> - Make all selected rectangles match the size of the first selected</li>
               <li>• <strong>Clipboard Operations</strong> - Copy, paste, and duplicate selected rectangles</li>
               <li>• <strong>Bulk Operations</strong> - Change color, delete selected with confirmation</li>
             </ul>
