@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useAppStore } from '../stores/useAppStore';
 
 interface HeatmapLegendProps {
@@ -22,6 +23,8 @@ const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
   const showLegend = useAppStore(state => state.heatmap.showLegend);
   const selectedPaletteId = useAppStore(state => state.heatmap.selectedPaletteId);
   const palettes = useAppStore(state => state.heatmap.palettes);
+  // Detect if the right sidebar (PropertyPanel/GlobalSettings) is open to avoid overlap
+  const sidebarOpen = useAppStore(state => state.ui.sidebarOpen);
 
   // Only show legend if heat map is enabled, legend is toggled on, and component is visible
   if (!visible || !heatmapEnabled || !showLegend) {
@@ -43,12 +46,18 @@ const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
     background: `linear-gradient(to right, ${gradientStops})`
   };
 
-  // Generate value labels (0.0, 0.25, 0.5, 0.75, 1.0)
-  const valueLabels = [0, 0.25, 0.5, 0.75, 1.0];
+  // Generate value labels in 0.2 steps for clean one-decimal formatting
+  const valueLabels = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
 
-  return (
-    <div className="fixed bottom-4 right-4 z-40 pointer-events-none">
-      <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-3 min-w-64">
+  // When the sidebar is open, shift the legend left by the sidebar width (w-96 = 24rem) + 1rem gap
+  const rightOffset = sidebarOpen ? 'calc(24rem + 1rem)' : '1rem';
+
+  const legendEl = (
+    <div
+      className="fixed bottom-4 z-30 pointer-events-none"
+      style={{ right: rightOffset }}
+    >
+  <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-3 pb-4 min-w-64">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-medium text-gray-700">Heat Map Scale</span>
@@ -62,47 +71,47 @@ const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
             style={gradientStyle}
           />
           
-          {/* Value markers */}
-          <div className="absolute top-0 left-0 w-full h-full flex justify-between items-center px-1">
+          {/* Value markers (absolute ticks at exact positions) */}
+          <div className="absolute top-0 left-0 w-full h-full">
             {valueLabels.map((value) => (
-              <div 
+              <div
                 key={value}
-                className="relative"
-                style={{ left: `${(value * 100)}%`, transform: 'translateX(-50%)' }}
+                className="absolute top-0"
+                style={{ left: `${value * 100}%`, transform: 'translateX(-50%)' }}
               >
-                {/* Tick mark */}
-                <div className="absolute top-0 w-px h-4 bg-gray-600 opacity-30" />
+                <div className="w-px h-4 bg-gray-600 opacity-30" />
               </div>
             ))}
           </div>
         </div>
         
-        {/* Value Labels */}
-        <div className="flex justify-between text-xs text-gray-600 px-1">
-          {valueLabels.map(value => (
-            <span 
-              key={value}
-              className="transform -translate-x-1/2"
-              style={{ 
-                position: 'relative',
-                left: `${(value * 100)}%`
-              }}
-            >
-              {value.toFixed(1)}
-            </span>
-          ))}
+        {/* Value Labels (absolute at matching positions) */}
+        <div className="relative text-xs text-gray-600">
+          {valueLabels.map((value) => {
+            const transform = value === 0
+              ? 'translateX(0%)'
+              : value === 1
+                ? 'translateX(-100%)'
+                : 'translateX(-50%)';
+            return (
+              <span
+                key={value}
+                className="absolute select-none"
+                style={{ left: `${value * 100}%`, transform }}
+              >
+                {value.toFixed(1)}
+              </span>
+            );
+          })}
         </div>
         
-        {/* Description */}
-        <div className="mt-2 pt-2 border-t border-gray-200">
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Low</span>
-            <span>High</span>
-          </div>
-        </div>
+  {/* Footer description removed (Low/High) */}
       </div>
     </div>
   );
+
+  // Render via portal to avoid clipping by ancestor overflow/rounded containers
+  return createPortal(legendEl, document.body);
 };
 
 export default HeatmapLegend;
