@@ -38,6 +38,9 @@ export interface CanvasSlice {
  * coordinate transformations, and visual feedback systems.
  */
 export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
+  // Minimum mouse movement in screen pixels before a drag actually moves rectangles
+  // Prevents accidental drags during rapid clicks or tiny pointer jitter
+  const DRAG_START_THRESHOLD_PX = 6;
   // Critical throttled virtual drag update with cancellation support for drag synchronization fixes
   // Limits updates to 120fps (8ms) to prevent excessive state mutations while maintaining smooth feedback
   // The cancellation mechanism prevents children from racing past cursor during drag operations
@@ -648,6 +651,12 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         // Critical for maintaining precision and preventing coordinate system drift
         const rawDeltaX = currentX - state.canvas.dragState.startX;
         const rawDeltaY = currentY - state.canvas.dragState.startY;
+
+        // Early exit until the pointer has moved far enough to be considered an intentional drag
+        // This prevents click jitter from moving rectangles when multi-selecting or clicking rapidly
+        if ((rawDeltaX * rawDeltaX + rawDeltaY * rawDeltaY) < (DRAG_START_THRESHOLD_PX * DRAG_START_THRESHOLD_PX)) {
+          return;
+        }
         
         // CRITICAL COORDINATE TRANSFORMATION: pixel deltas → grid deltas
         // Accounts for both grid size and zoom level to maintain positioning accuracy
