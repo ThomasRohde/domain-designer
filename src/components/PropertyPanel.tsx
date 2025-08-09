@@ -232,11 +232,13 @@ const BulkHeatmapValueEditor: React.FC<BulkHeatmapValueEditorProps> = ({
       }));
       bulkSetHeatmapValues(updates);
     } else if (editValue === '') {
-      // Clear all values - use individual updates for undefined values
-      selectedRectangles.forEach(rect => {
-        const setRectangleHeatmapValue = useAppStore.getState().heatmapActions.setRectangleHeatmapValue;
-        setRectangleHeatmapValue(rect.id, undefined);
-      });
+      // Clear all values in a single history-aware update
+      const state = useAppStore.getState();
+      const selectedIdsSet = new Set(selectedRectangles.map(r => r.id));
+      const updatedRectangles = state.rectangles.map(r =>
+        selectedIdsSet.has(r.id) ? { ...r, heatmapValue: undefined } : r
+      );
+      state.rectangleActions.setRectanglesWithHistory(updatedRectangles);
     }
     setIsEditing(false);
   };
