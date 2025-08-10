@@ -2,9 +2,9 @@ import { Rectangle, ExportOptions, GlobalSettings, ValidationResult } from '../t
 import { SavedDiagram, calculateBoundingBox } from '../types/layoutSnapshot';
 import { validateDiagramAuto, sanitizeDiagramData } from './schemaValidation';
 import { exportToHTML } from './htmlExport';
-import pako from 'pako';
 import type { HeatmapState } from '../stores/types';
 import { calculateHeatmapColor } from './heatmapColors';
+import PptxGenJS from 'pptxgenjs';
 
 /**
  * Applies heatmap colors to rectangles for export scenarios.
@@ -165,8 +165,8 @@ export const exportDiagram = async (
     case 'json':
       await exportToJSON(exportRectangles, globalSettings, filename, predefinedColors, heatmapState, true);
       break;
-    case 'mermaid':
-      await exportToMermaid(exportRectangles, filename);
+    case 'pptx':
+      await exportToPPTX(exportRectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
       break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
@@ -266,24 +266,26 @@ const exportToJSON = async (rectangles: Rectangle[], globalSettings: GlobalSetti
     predefinedColors: predefinedColors || globalSettings.predefinedColors
   } : defaultSettings;
 
-  // Helper function to check if a rectangle is in a manual mode parent
+  /**
+   * Check if a rectangle is contained within a manually-positioned parent.
+   * Children of manual parents need special handling to preserve their custom dimensions.
+   */
   const isInManualModeParent = (rect: Rectangle): boolean => {
     if (!rect.parentId) return false;
     const parent = rectangles.find(r => r.id === rect.parentId);
     return parent?.isManualPositioningEnabled === true;
   };
 
-  // Ensure all rectangles have explicit values for layout-critical properties
+  // Ensure layout-critical properties are explicitly set for round-trip integrity
   const rectanglesWithLayoutProperties = rectangles.map(rect => {
     const inManualParent = isInManualModeParent(rect);
     return {
       ...rect,
-      // Ensure these critical layout properties are always exported with explicit values
+      // Explicitly export manual positioning state
       isManualPositioningEnabled: rect.isManualPositioningEnabled ?? false,
-      // For children in manual mode parents, set isLockedAsIs to preserve their manually-adjusted dimensions
-      // Always set to true for children in manual parents to preserve their custom dimensions
+      // Lock dimensions for children in manual parents to preserve custom sizing
       isLockedAsIs: inManualParent ? true : (rect.isLockedAsIs ?? false),
-      // Preserve other optional properties that might affect layout
+      // Preserve UI state flags
       isEditing: rect.isEditing ?? false,
       isTextLabel: rect.isTextLabel ?? false
     };
@@ -318,176 +320,177 @@ const exportToJSON = async (rectangles: Rectangle[], globalSettings: GlobalSetti
 };
 
 /**
- * Export diagram as Mermaid flowchart with live preview
+ * Export diagram to PowerPoint (PPTX) using PptxGenJS library.
  * 
- * Generates Mermaid syntax and opens interactive preview using:
- * - Mermaid.ink online renderer
- * - Pako compression for URL encoding
- * - Fallback to base64 encoding if compression fails
+ * Creates a native PowerPoint presentation with the following features:
+ * - Dynamic slide sizing based on diagram bounds (minimum 4x3 inches)
+ * - Each rectangle rendered as a rounded shape with embedded text
+ * - Preserves visual hierarchy through font weight (bold for parents)
+ * - Text positioning matches HTML/SVG exports (top-aligned for parents, centered for leaves)
+ * - Handles text labels separately without shape backgrounds
+ * - Supports all global settings (fonts, colors, borders, margins)
+ * - Maintains heat map colors when visualization is enabled
  * 
- * Uses native file dialog when supported, falls back to download.
- * 
- * @param rectangles - Rectangle data to convert
- * @param filename - Output filename for download
+ * The export uses inches for PowerPoint's internal coordinate system (96 DPI conversion).
+ * Border radius is scaled from pixels to PowerPoint's 0-1 range for rounded corners.
  */
-const exportToMermaid = async (rectangles: Rectangle[], filename: string): Promise<void> => {
-  const mermaidDiagram = generateMermaidDiagram(rectangles);
-
-  await exportFile({
-    filename,
-    content: mermaidDiagram,
-    mimeType: 'text/plain',
-    extension: 'mmd',
-    description: 'Mermaid files'
-  });
+const exportToPPTX = async (
+  rectangles: Rectangle[],
+  filename: string,
+  options: { scale: number; includeBackground: boolean },
+  globalSettings?: GlobalSettings,
+  gridSize: number = 20,
+  borderRadius: number = 8,
+  borderColor: string = '#374151',
+  borderWidth: number = 2
+): Promise<void> => {
+  const pptx = new PptxGenJS();
   
-  // Open preview in new window and generate SVG link
-  openMermaidPreview(mermaidDiagram);
-};
+  // Handle empty diagram edge case by creating minimal presentation
+  if (rectangles.length === 0) {
+    await pptx.writeFile({ fileName: `${filename}.pptx` });
+    return;
+  }
 
-/**
- * Open Mermaid diagram in online renderer with compression
- * 
- * Implements two-tier URL encoding strategy:
- * 1. Primary: Pako deflate compression for optimal URL length
- * 2. Fallback: Base64 encoding if compression fails
- * 
- * URL encoding reduces diagram size by ~60-80% for complex diagrams.
- * 
- * @param mermaidDiagram - Mermaid syntax string to render
- */
-const openMermaidPreview = (mermaidDiagram: string): void => {
-  try {
-    // Create the JSON structure that Mermaid Live Editor expects
-    const jGraph = {
-      code: mermaidDiagram,
-      mermaid: { theme: "default" }
-    };
-    
-    // Convert to JSON string
-    const jsonString = JSON.stringify(jGraph);
-    
-    // UTF-8 encode JSON string to byte array for compression
-    const encoder = new TextEncoder();
-    const byteArray = encoder.encode(jsonString);
-    
-    // Apply Deflate compression using Pako library (typically 60-80% size reduction)
-    const compressed = pako.deflate(byteArray);
-    
-    // Convert compressed bytes to base64 string
-    let binary = '';
-    for (let i = 0; i < compressed.length; i++) {
-      binary += String.fromCharCode(compressed[i]);
+  // Calculate diagram bounds in grid units for coordinate transformation
+  const minX = Math.min(...rectangles.map(r => r.x));
+  const minY = Math.min(...rectangles.map(r => r.y));
+  const maxX = Math.max(...rectangles.map(r => r.x + r.w));
+  const maxY = Math.max(...rectangles.map(r => r.y + r.h));
+
+  const marginPx = 20;
+  const contentWidthPx = (maxX - minX) * gridSize * options.scale;
+  const contentHeightPx = (maxY - minY) * gridSize * options.scale;
+  const totalWidthPx = contentWidthPx + marginPx * 2;
+  const totalHeightPx = contentHeightPx + marginPx * 2;
+
+  // PowerPoint uses inches internally - convert from pixels at 96 DPI
+  const pxToIn = (px: number) => px / 96;
+  const slideW = Math.max(pxToIn(totalWidthPx), 4); // Ensure minimum 4 inches width
+  const slideH = Math.max(pxToIn(totalHeightPx), 3); // Ensure minimum 3 inches height
+
+  pptx.defineLayout({ name: 'CONTENT_FIT', width: slideW, height: slideH });
+  pptx.layout = 'CONTENT_FIT';
+
+  const slide = pptx.addSlide();
+  if (options.includeBackground) {
+    slide.bkgd = 'FFFFFF';
+  }
+
+  // Extract visual settings with fallbacks to maintain consistency across export formats
+  const fontFamily = globalSettings?.fontFamily || 'Inter';
+  const marginSetting = globalSettings?.margin || 1;
+  const rootFontSize = globalSettings?.rootFontSize || 12;
+  const dynamicFontSizing = globalSettings?.dynamicFontSizing ?? true;
+  const actualBorderRadius = globalSettings?.borderRadius !== undefined ? globalSettings.borderRadius : borderRadius;
+  const actualBorderColor = globalSettings?.borderColor || borderColor;
+  const actualBorderWidth = globalSettings?.borderWidth !== undefined ? globalSettings.borderWidth : borderWidth;
+
+  // Build hierarchy metadata for proper rendering order and text formatting
+  const hasChildren = new Set<string>();
+  rectangles.forEach(r => { if (r.parentId) hasChildren.add(r.parentId); });
+  
+  /**
+   * Calculate depth in hierarchy tree for font size scaling.
+   * Prevents infinite loops with depth limit of 10.
+   */
+  const getDepth = (rectId: string): number => {
+    const rect = rectangles.find(r => r.id === rectId);
+    if (!rect || !rect.parentId) return 0;
+    let depth = 0;
+    let current: Rectangle | undefined = rect;
+    while (current && current.parentId) {
+      depth++;
+      current = rectangles.find(r => r.id === current!.parentId);
+      if (!current || depth > 10) break;
     }
-    const base64 = btoa(binary);
+    return depth;
+  };
+  const calculateFontSize = (rectId: string): number => {
+    if (!dynamicFontSizing) return rootFontSize;
+    const depth = getDepth(rectId);
+    return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
+  };
+
+  // Sort by depth to ensure proper z-ordering (parents rendered before children)
+  const sorted = [...rectangles].sort((a, b) => {
+    const depthA = getDepth(a.id);
+    const depthB = getDepth(b.id);
+    return depthA - depthB;
+  });
+
+  for (const rect of sorted) {
+    const xPx = (rect.x - minX) * gridSize * options.scale + marginPx;
+    const yPx = (rect.y - minY) * gridSize * options.scale + marginPx;
+    const wPx = rect.w * gridSize * options.scale;
+    const hPx = rect.h * gridSize * options.scale;
+
+    const xIn = pxToIn(xPx);
+    const yIn = pxToIn(yPx);
+    const wIn = pxToIn(wPx);
+    const hIn = pxToIn(hPx);
+
+    const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
+    const isParent = hasChildren.has(rect.id);
+    const textFontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    const textFontFamily = rect.textFontFamily || fontFamily;
+    const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : (isParent ? 'bold' : 'normal');
+
+    // PowerPoint's rectRadius is 0-1 where 0.5 = fully rounded
+    // Map pixel radius (0-20px typical) to PowerPoint scale
+    const rectRadiusValue = Math.min(actualBorderRadius / 40, 0.5);
     
-    // Convert to URL-safe base64 (RFC 4648 §5) for safe URL embedding
-    const urlSafeBase64 = base64.replace(/\+/g, '-').replace(/\//g, '_');
+    const textContent = rect.label || '';
+    const align = rect.textAlign || 'center';
+    const textColor = '374151'; // Hex color without # prefix for PptxGenJS
     
-    // Create Mermaid Ink SVG URL
-    const svgUrl = `https://mermaid.ink/svg/pako:${urlSafeBase64}`;
+    const paddingPx = marginSetting * gridSize;
+    const paddingIn = pxToIn(paddingPx);
     
-    console.log('Opening Mermaid SVG with pako encoding:', svgUrl);
-    
-    // Open SVG directly in new window
-    window.open(svgUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-  } catch (error) {
-    console.error('Error with pako encoding:', error);
-    
-    // Fallback: use simple base64 encoding with JSON structure
-    try {
-      const jGraph = {
-        code: mermaidDiagram,
-        mermaid: { theme: "default" }
-      };
-      const jsonString = JSON.stringify(jGraph);
-      const base64 = btoa(jsonString);
-      const fallbackSvgUrl = `https://mermaid.ink/svg/base64:${base64}`;
+    if (isTextLabel) {
+      // Text-only elements without shape background (transparent labels)
+      slide.addText(textContent, {
+        x: xIn,
+        y: yIn,
+        w: wIn,
+        h: hIn,
+        fontFace: textFontFamily,
+        fontSize: textFontSize,
+        bold: fontWeight === 'bold',
+        color: textColor,
+        align: (align === 'left' ? 'left' : align === 'right' ? 'right' : 'center') as 'left' | 'center' | 'right',
+        valign: 'middle' as 'top' | 'middle' | 'bottom',
+      });
+    } else {
+      // Standard rectangles with background and border
+      // PptxGenJS combines shape and text in single call for proper layering
+      const fillColor = rect.color.replace('#', '');
+      const lineColor = actualBorderColor.replace('#', '');
       
-      console.log('Opening Mermaid SVG with base64 encoding (fallback):', fallbackSvgUrl);
+      // Select shape type based on border radius setting
+      const shapeType = rectRadiusValue > 0 ? 'roundRect' : 'rect';
       
-      // Open SVG directly in new window
-      window.open(fallbackSvgUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-    } catch (fallbackError) {
-      console.error('Error with base64 encoding:', fallbackError);
-      alert('Unable to open Mermaid preview. The diagram has been saved to your downloads folder.');
+      slide.addText(textContent, {
+        shape: shapeType,
+        x: xIn,
+        y: yIn,
+        w: wIn,
+        h: hIn,
+        fill: { color: fillColor },
+        line: { color: lineColor, width: actualBorderWidth },
+        rectRadius: rectRadiusValue,
+        fontFace: textFontFamily,
+        fontSize: textFontSize,
+        bold: fontWeight === 'bold',
+        color: textColor,
+        align: (align === 'left' ? 'left' : align === 'right' ? 'right' : 'center') as 'left' | 'center' | 'right',
+        valign: (isParent ? 'top' : 'middle') as 'top' | 'middle' | 'bottom', // Parents top-aligned to match HTML/SVG
+        margin: isParent ? paddingIn : 0, // Apply margin only for parent rectangles
+      });
     }
   }
-};
 
-/**
- * Convert rectangle hierarchy to Mermaid flowchart syntax
- * 
- * Generates complete Mermaid diagram with:
- * - Node definitions with appropriate shapes
- * - Parent-child relationships as directed edges
- * - Custom styling with original colors
- * - Sanitized labels for Mermaid compatibility
- * 
- * @param rectangles - Rectangle data to convert
- * @returns Complete Mermaid flowchart syntax string
- */
-const generateMermaidDiagram = (rectangles: Rectangle[]): string => {
-
-  let mermaidContent = 'graph TD\n';
-  
-  // Remove problematic characters that break Mermaid syntax
-  const sanitizeLabel = (label: string): string => {
-    return label.replace(/["\n\r]/g, ' ').trim();
-  };
-  
-  // Create Mermaid-safe node identifiers from rectangle IDs
-  const getNodeId = (rect: Rectangle): string => {
-    return `node_${rect.id.replace(/[^a-zA-Z0-9]/g, '_')}`;
-  };
-  
-  // Add all nodes with their labels
-  rectangles.forEach(rect => {
-    const nodeId = getNodeId(rect);
-    const sanitizedLabel = sanitizeLabel(rect.label);
-    
-    // Choose node shape based on type
-    let nodeShape: string;
-    switch (rect.type) {
-      case 'textLabel':
-        nodeShape = `${nodeId}>"${sanitizedLabel}"]`;
-        break;
-      case 'root':
-        nodeShape = `${nodeId}["${sanitizedLabel}"]`;
-        break;
-      case 'parent':
-        nodeShape = `${nodeId}["${sanitizedLabel}"]`;
-        break;
-      case 'leaf':
-        nodeShape = `${nodeId}("${sanitizedLabel}")`;
-        break;
-      default:
-        nodeShape = `${nodeId}["${sanitizedLabel}"]`;
-    }
-    
-    mermaidContent += `    ${nodeShape}\n`;
-  });
-  
-  // Add relationships
-  rectangles.forEach(rect => {
-    if (rect.parentId) {
-      const parentRect = rectangles.find(r => r.id === rect.parentId);
-      if (parentRect) {
-        const parentNodeId = getNodeId(parentRect);
-        const childNodeId = getNodeId(rect);
-        mermaidContent += `    ${parentNodeId} --> ${childNodeId}\n`;
-      }
-    }
-  });
-  
-  // Add styling
-  mermaidContent += '\n';
-  rectangles.forEach(rect => {
-    const nodeId = getNodeId(rect);
-    mermaidContent += `    style ${nodeId} fill:${rect.color},stroke:#333,stroke-width:2px\n`;
-  });
-  
-  return mermaidContent;
+  await pptx.writeFile({ fileName: `${filename}.pptx` });
 };
 
 /**
@@ -765,13 +768,15 @@ export interface ImportedDiagramData {
 }
 
 /**
- * Validate imported data against diagram schema
+ * Validate imported data against diagram schema.
+ * 
+ * Performs comprehensive validation using the schema validation system
+ * to ensure data integrity and prevent corruption from malformed imports.
  * 
  * @param data - Raw imported data to validate
  * @returns Validation result with success/failure and error details
  */
 export const validateImportedData = (data: unknown): ValidationResult => {
-  // Delegate to comprehensive schema validation system
   return validateDiagramAuto(data);
 };
 

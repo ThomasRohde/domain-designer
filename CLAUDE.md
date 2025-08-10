@@ -89,7 +89,7 @@ State is managed through Zustand store with modular slices:
 ### Export System
 
 The application supports multiple export formats through `src/utils/exportUtils.ts`:
-- HTML, SVG, JSON, and Mermaid formats
+- HTML, SVG, JSON, and PowerPoint (PPTX)
 - Interactive HTML exports with zoom and pan functionality
 - Maintains layout integrity across all formats
 

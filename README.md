@@ -94,7 +94,7 @@
 - **HTML**: Interactive web documents with zoom/pan
 - **SVG**: Scalable vector graphics with heat map color preservation
 - **JSON**: Raw diagram data with URL sharing and complete heat map state
-- **Mermaid**: Diagram notation for documentation with heat map colors
+- **PowerPoint (PPTX)**: Export presentation compatible with PowerPoint/Keynote/Google Slides
 - **URL Sharing**: View any JSON diagram directly via URL
 
 </td>
@@ -155,7 +155,7 @@ npm run dev
 - **Tailwind CSS** for utility-first styling
 - **Lucide React** for beautiful icons
 - **html2canvas** for high-quality export functionality
-- **pako** for efficient compression
+- **pptxgenjs** for PowerPoint export
 - **IndexedDB (idb)** for client-side data persistence
 
 ## 📖 Usage
@@ -232,7 +232,7 @@ Transform your diagrams into powerful data visualizations with the advanced heat
 | **Color Palettes** | Temperature, Viridis, Traffic Light, Grayscale | Professional scientific visualization |
 | **CSV Import** | Bulk value assignment with preview and validation | Efficient data integration |
 | **Live Preview** | Real-time color updates with palette interpolation | Immediate visual feedback |
-| **Export Integration** | Heat map colors preserved in HTML/SVG/JSON/Mermaid | Consistent visualization across formats |
+| **Export Integration** | Heat map colors preserved in HTML/SVG/JSON/PPTX | Consistent visualization across formats |
 | **Optional Legend** | Floating color scale (0.0-1.0) with palette information | Clear data interpretation |
 
 #### 🎯 Heat Map Workflow
@@ -422,7 +422,7 @@ Right-click on any selected rectangle to access the multi-select context menu:
   <img src="https://img.shields.io/badge/HTML-Interactive-orange?style=for-the-badge&logo=html5" alt="HTML Export">
   <img src="https://img.shields.io/badge/SVG-Scalable-blue?style=for-the-badge&logo=svg" alt="SVG Export">
   <img src="https://img.shields.io/badge/JSON-Data-green?style=for-the-badge&logo=json" alt="JSON Export">
-  <img src="https://img.shields.io/badge/Mermaid-Diagram-ff69b4?style=for-the-badge&logo=mermaid" alt="Mermaid Export">
+  <img src="https://img.shields.io/badge/PowerPoint-PPTX-orange?style=for-the-badge&logo=microsoftpowerpoint" alt="PowerPoint Export">
 </div>
 
 | Format | Best For | Features |
@@ -430,7 +430,7 @@ Right-click on any selected rectangle to access the multi-select context menu:
 | **HTML** | Web sharing | Interactive zoom/pan, standalone document |
 | **SVG** | High-quality prints | Vector graphics, infinite scalability |
 | **JSON** | Backup/sharing | Raw data, version control friendly, URL sharing |
-| **Mermaid** | Documentation | Code-based diagrams, GitHub integration |
+| **PowerPoint (PPTX)** | Presentation | Open/edit in PowerPoint/Keynote/Slides |
 
 ### 🌐 URL-Based Diagram Sharing
 

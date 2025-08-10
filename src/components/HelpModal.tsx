@@ -382,7 +382,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             <ul className="text-sm space-y-1">
               <li>• <strong>HTML/SVG</strong> - Visual colors maintained in exported files</li>
               <li>• <strong>JSON</strong> - Complete heat map state and values preserved</li>
-              <li>• <strong>Mermaid</strong> - Diagram colors reflect heat map visualization</li>
+              <li>• <strong>PowerPoint (PPTX)</strong> - Diagram colors reflect heat map visualization</li>
               <li>• <strong>URL Sharing</strong> - Shared diagrams display heat map colors</li>
             </ul>
           </div>
@@ -485,9 +485,9 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
             </div>
             
             <div>
-              <h4 className="font-semibold text-gray-800 mb-1">Mermaid</h4>
+              <h4 className="font-semibold text-gray-800 mb-1">PowerPoint</h4>
               <p className="text-sm text-gray-600">
-                Diagram notation format for documentation and version control. Compatible with GitHub, GitLab, and other platforms.
+                Exports a .pptx presentation you can open in Microsoft PowerPoint, Keynote, or Google Slides.
               </p>
             </div>
           </div>

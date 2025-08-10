@@ -365,7 +365,7 @@ export interface DiagramState {
  */
 export interface ExportOptions {
   /** Export format */
-  format: 'html' | 'svg' | 'json' | 'mermaid';
+  format: 'html' | 'svg' | 'json' | 'pptx';
   /** Image quality (0-1) for raster formats */
   quality?: number;
   /** Scale factor for export */

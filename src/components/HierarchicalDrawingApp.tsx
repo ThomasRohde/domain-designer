@@ -347,7 +347,6 @@ const HierarchicalDrawingApp = () => {
   const handleBulkDelete = useCallback(() => {
     if (ui.selectedIds && ui.selectedIds.length > 1) {
       try {
-        // TODO: Add confirmation dialog
         bulkDelete(ui.selectedIds);
       } catch (error) {
         console.error('Error during bulk delete:', error);

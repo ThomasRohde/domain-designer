@@ -10,10 +10,16 @@ interface ExportModalProps {
 
 /**
  * Modal for configuring diagram export options across multiple formats.
- * Supports HTML (with Confluence compatibility), SVG, JSON data, and Mermaid diagram exports.
+ * Supports HTML (with Confluence compatibility), SVG, JSON data, and PowerPoint (PPTX) exports.
+ * 
+ * PowerPoint export leverages PptxGenJS to create native .pptx files with:
+ * - Rounded rectangle shapes matching the application's visual style
+ * - Hierarchical text formatting (bold for parents, normal for leaves)
+ * - Adaptive slide sizing based on diagram bounds
+ * - Heat map color preservation when enabled
  */
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
-  const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'mermaid'>('html');
+  const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'pptx'>('html');
   const [scale, setScale] = useState(1);
   const [includeBackground, setIncludeBackground] = useState(true);
   // Confluence Server HTML Macro requires specific formatting constraints
@@ -78,19 +84,19 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
                 <span>JSON</span>
               </button>
               <button
-                onClick={() => setFormat('mermaid')}
+                onClick={() => setFormat('pptx')}
                 className={`p-3 border rounded-lg flex items-center space-x-2 ${
-                  format === 'mermaid' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                  format === 'pptx' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
                 }`}
               >
                 <FileType size={16} />
-                <span>Mermaid</span>
+                <span>PowerPoint</span>
               </button>
             </div>
           </div>
           
           {/* Visual export formats (HTML/SVG) support scaling and background options */}
-          {format !== 'json' && format !== 'mermaid' && (
+          {format !== 'json' && (
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
