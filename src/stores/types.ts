@@ -32,29 +32,33 @@ export type AlignmentType = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bo
 export type DistributionDirection = 'horizontal' | 'vertical';
 
 /**
- * Heatmap color palette configuration defining gradient visualization schemes.
+ * Heatmap color palette configuration for scientific data visualization.
  * 
- * Palettes consist of color stops that define smooth gradients for mapping
- * numeric values (0-1 range) to colors. The system interpolates between
- * stops to create smooth color transitions.
+ * Defines a complete color scheme through ordered stops that create smooth
+ * gradients for mapping normalized values (0-1) to colors. The interpolation
+ * system supports linear blending between stops for seamless color transitions.
+ * 
+ * Palettes are designed following ColorBrewer and matplotlib standards for
+ * optimal perception, accessibility, and scientific accuracy.
  */
 export interface HeatmapPalette {
   /** Unique identifier for palette selection and caching */
   id: string;
   /** Human-readable name displayed in UI */
   name: string;
-  /** Color stops defining gradient points (must include at least 2 stops) */
+  /** Color stops defining gradient control points (minimum 2 required for interpolation) */
   stops: ColorStop[];
   /** Whether this palette was created by the user (enables editing/deletion) */
   isCustom?: boolean;
 }
 
 /**
- * Color stop definition for heatmap gradient creation.
+ * Color stop definition for precise gradient control.
  * 
- * Stops define specific points along the 0-1 value range where exact colors
- * are specified. The heatmap system interpolates between stops to create
- * smooth gradients for intermediate values.
+ * Each stop anchors a specific color at a normalized position (0-1) along
+ * the gradient. Linear interpolation between adjacent stops generates smooth
+ * color transitions for intermediate values, enabling precise color mapping
+ * for data visualization.
  */
 export interface ColorStop {
   /** Normalized position along gradient (0.0 = start, 1.0 = end) */
@@ -64,21 +68,22 @@ export interface ColorStop {
 }
 
 /**
- * Result structure for heatmap CSV import operations.
+ * Comprehensive result structure for CSV heatmap import validation.
  * 
- * Categorizes import outcomes to provide detailed feedback to users:
- * - Successful imports are immediately applied to rectangles
- * - Failed imports show validation errors for correction
- * - Unmatched entries indicate potential label mismatches
+ * Categorizes import outcomes for detailed user feedback and guidance:
+ * - **Successful**: Validated entries ready for immediate application
+ * - **Failed**: Invalid entries with specific error descriptions
+ * - **Unmatched**: Valid values that couldn't match existing rectangle labels
  * 
- * This structure enables comprehensive import reporting and user guidance.
+ * This tri-state categorization enables precise error reporting and helps
+ * users correct import issues efficiently.
  */
 export interface HeatmapImportResult {
   /** Successfully validated and imported entries ready for application */
   successful: Array<{
     rectangleId: string;
-    label: string;  // Actual rectangle label (preserves original casing)
-    value: number;  // Validated value in 0-1 range
+    label: string;  // Matched rectangle label (preserves original casing)
+    value: number;  // Validated and normalized value (0-1 range)
   }>;
   /** Invalid entries with specific validation errors for user correction */
   failed: Array<{
@@ -130,21 +135,22 @@ export interface ClipboardState {
 }
 
 /**
- * Heatmap state slice managing color overlay visualization system.
+ * Heatmap state slice for data-driven color visualization.
  * 
- * Controls all aspects of heatmap functionality including palette selection,
- * color computation, and visual display options. When enabled, heatmap colors
- * override normal rectangle colors based on numeric values (0-1 range).
+ * Manages the complete heatmap system including scientific color palettes,
+ * value-to-color mapping, and visual display controls. When enabled,
+ * heatmap colors completely override rectangle.color based on normalized
+ * data values (0-1 range), enabling quantitative visualization.
  * 
- * State is automatically persisted and restored across sessions through
- * the auto-save system integration.
+ * Features automatic state persistence, performance-optimized color caching,
+ * and seamless integration with CSV import/export workflows.
  */
 export interface HeatmapState {
   /** Global toggle for heatmap color overlay (overrides rectangle.color when true) */
   enabled: boolean;
-  /** Active palette ID used for color computation */
+  /** Currently selected palette ID for value-to-color mapping */
   selectedPaletteId: string;
-  /** Complete palette collection including predefined and user-created palettes */
+  /** Full palette registry including scientific presets and custom user palettes */
   palettes: HeatmapPalette[];
   /** Fallback color for rectangles without heatmap values (#RRGGBB format) */
   undefinedValueColor: string;
@@ -474,34 +480,39 @@ export interface ClipboardActions {
 }
 
 /**
- * Heat map operations slice - manages heat map functionality
- * Controls palette management and value assignments
+ * Heatmap operations slice - comprehensive data visualization control
+ * 
+ * Provides complete heatmap functionality including scientific palette management,
+ * value assignment with validation, bulk CSV operations, and performance-optimized
+ * color computation with caching.
  */
 export interface HeatmapActions {
-  /** Enable or disable heat map overlay */
+  /** Toggle heatmap color overlay system globally */
   setEnabled: (enabled: boolean) => void;
-  /** Select a different heat map palette */
+  /** Switch active palette with color cache optimization */
   setSelectedPalette: (paletteId: string) => void;
-  /** Add a new custom palette */
+  /** Register new user-created palette */
   addCustomPalette: (palette: HeatmapPalette) => void;
-  /** Remove a custom palette */
+  /** Delete user-created palette (with auto-fallback) */
   removeCustomPalette: (paletteId: string) => void;
-  /** Update an existing custom palette */
+  /** Modify existing custom palette definition */
   updateCustomPalette: (paletteId: string, palette: Partial<HeatmapPalette>) => void;
-  /** Set color for rectangles without heat map values */
+  /** Configure fallback color for rectangles without values */
   setUndefinedValueColor: (color: string) => void;
-  /** Toggle heat map legend visibility */
+  /** Control floating legend display */
   setShowLegend: (show: boolean) => void;
-  /** Assign heat map value to a rectangle */
+  /** Assign normalized value (0-1) to individual rectangle */
   setRectangleHeatmapValue: (rectangleId: string, value: number | undefined) => void;
-  /** Bulk assign heat map values from CSV import */
+  /** Batch import values from CSV with single history entry */
   bulkSetHeatmapValues: (values: Array<{ rectangleId: string; value: number }>) => void;
-  /** Get computed color for a rectangle based on current palette */
+  /** Compute interpolated color for rectangle based on active palette */
   getHeatmapColor: (rectangleId: string) => string | null;
-  /** Clear all heat map values */
+  /** Remove all heatmap values with single undo entry */
   clearAllHeatmapValues: () => void;
-  /** Apply an imported heatmap state (palettes, selection, toggles) in one call */
+  /** Import complete heatmap configuration from saved state */
   applyImportedHeatmapState: (state: HeatmapState) => void;
+  /** Reload predefined scientific palettes to latest definitions */
+  refreshPalettes: () => void;
 }
 
 /**

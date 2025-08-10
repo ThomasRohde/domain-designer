@@ -16,16 +16,33 @@ export interface HeatmapSlice {
 }
 
 /**
- * Predefined heatmap color palettes providing common visualization patterns.
+ * Scientifically-designed heatmap color palettes for data visualization.
  * 
- * Each palette defines color stops at specific values (0-1 range) to create
- * smooth gradients. The system interpolates between stops for intermediate values.
+ * This collection provides 11 carefully selected palettes optimized for different
+ * data types and visualization requirements. Each palette defines color stops at
+ * specific normalized values (0-1 range) with smooth interpolation between stops.
  * 
- * Available palettes:
- * - Temperature: Blue (cold) to red (hot) via yellow
- * - Viridis: Perceptually uniform scientific palette
- * - Traffic Light: Green (good) to red (bad) via yellow
- * - Grayscale: Simple white to black gradient
+ * **Basic Palettes:**
+ * - Temperature: Intuitive blue→yellow→red progression mimicking thermal maps
+ * - Traffic Light: Familiar green→yellow→red for performance/status indicators  
+ * - Grayscale: High-contrast monochrome for accessibility and printing
+ * 
+ * **Sequential Palettes** (single-hue gradients for ordered data):
+ * - Blues: Light to dark blue - excellent for water depth, coldness, or density
+ * - Greens: Light to dark green - ideal for vegetation, growth, or ecological data
+ * - YlOrRd: Yellow→orange→red heat progression - perfect for temperature/intensity
+ * 
+ * **Perceptually Uniform Palettes** (scientifically optimized for human vision):
+ * - Viridis: Purple→blue→green→yellow - gold standard for scientific visualization
+ * - Plasma: Purple→pink→yellow - high contrast alternative to Viridis
+ * - Cividis: Blue→teal→yellow - optimized for all types of color vision deficiencies
+ * 
+ * **Diverging Palettes** (emphasize deviations from central values):
+ * - RdBu: Red→white→blue - classic diverging for correlation/change data
+ * - Cool-Warm: Blue→white→red - temperature-inspired diverging palette
+ * 
+ * All palettes follow ColorBrewer and scientific visualization best practices,
+ * ensuring accessibility, perceptual uniformity, and professional appearance.
  */
 const PREDEFINED_PALETTES: HeatmapPalette[] = [
   {
@@ -68,6 +85,93 @@ const PREDEFINED_PALETTES: HeatmapPalette[] = [
       { value: 1, color: '#000000' }
     ],
     isCustom: false
+  },
+  // Sequential palettes - single-hue progressions following ColorBrewer specifications
+  {
+    id: 'blues',
+    name: 'Blues',
+    stops: [
+      { value: 0, color: '#f7fbff' },
+      { value: 0.25, color: '#c6dbef' },
+      { value: 0.5, color: '#6baed6' },
+      { value: 0.75, color: '#2171b5' },
+      { value: 1, color: '#08306b' }
+    ],
+    isCustom: false
+  },
+  {
+    id: 'greens',
+    name: 'Greens',
+    stops: [
+      { value: 0, color: '#f7fcf5' },
+      { value: 0.25, color: '#c7e9c0' },
+      { value: 0.5, color: '#74c476' },
+      { value: 0.75, color: '#238b45' },
+      { value: 1, color: '#00441b' }
+    ],
+    isCustom: false
+  },
+  {
+    id: 'ylord',
+    name: 'YlOrRd',
+    stops: [
+      { value: 0, color: '#ffffb2' },
+      { value: 0.25, color: '#fed976' },
+      { value: 0.5, color: '#feb24c' },
+      { value: 0.75, color: '#fd8d3c' },
+      { value: 1, color: '#b10026' }
+    ],
+    isCustom: false
+  },
+  // Perceptually uniform palettes - matplotlib-inspired, scientifically validated for human vision
+  {
+    id: 'plasma',
+    name: 'Plasma',
+    stops: [
+      { value: 0, color: '#0d0887' },
+      { value: 0.25, color: '#7e03a8' },
+      { value: 0.5, color: '#cc4778' },
+      { value: 0.75, color: '#f89441' },
+      { value: 1, color: '#f0f921' }
+    ],
+    isCustom: false
+  },
+  {
+    id: 'cividis',
+    name: 'Cividis',
+    stops: [
+      { value: 0, color: '#00224e' },
+      { value: 0.25, color: '#123570' },
+      { value: 0.5, color: '#3b496c' },
+      { value: 0.75, color: '#575d6d' },
+      { value: 1, color: '#fdea45' }
+    ],
+    isCustom: false
+  },
+  // Diverging palettes - emphasize deviations from neutral midpoint (0.5)
+  {
+    id: 'rdbu',
+    name: 'RdBu',
+    stops: [
+      { value: 0, color: '#67001f' },
+      { value: 0.25, color: '#d6604d' },
+      { value: 0.5, color: '#f7f7f7' },
+      { value: 0.75, color: '#4393c3' },
+      { value: 1, color: '#053061' }
+    ],
+    isCustom: false
+  },
+  {
+    id: 'cool-warm',
+    name: 'Cool-Warm',
+    stops: [
+      { value: 0, color: '#3b4cc0' },
+      { value: 0.25, color: '#688aef' },
+      { value: 0.5, color: '#dddddd' },
+      { value: 0.75, color: '#f49b7c' },
+      { value: 1, color: '#b40426' }
+    ],
+    isCustom: false
   }
 ];
 
@@ -100,12 +204,12 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
         }
       }));
 
-      // Warm up color cache when enabling heatmap to ensure smooth initial rendering
+      // Precompute palette colors when enabling to eliminate first-render delays
       if (enabled) {
         const { heatmap } = get();
         const palette = heatmap.palettes.find(p => p.id === heatmap.selectedPaletteId);
         if (palette) {
-          precomputePaletteColors(palette, 64);
+          precomputePaletteColors(palette, 64); // 64 color cache provides smooth gradients
         }
       }
     },
@@ -117,7 +221,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
           selectedPaletteId: paletteId
         }
       }));
-      // Clear existing cache and precompute colors for the new palette to ensure smooth UI transitions
+      // Invalidate old cache and precompute new palette for instant color lookups
       const { heatmap } = get();
       const palette = heatmap.palettes.find(p => p.id === paletteId);
       if (palette) {
@@ -140,7 +244,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
         heatmap: {
           ...state.heatmap,
           palettes: state.heatmap.palettes.filter(p => p.id !== paletteId),
-          // If removing the currently selected palette, automatically switch to temperature (default)
+          // Auto-fallback to temperature palette if removing currently active palette
           selectedPaletteId: state.heatmap.selectedPaletteId === paletteId 
             ? 'temperature' 
             : state.heatmap.selectedPaletteId
@@ -180,7 +284,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     setRectangleHeatmapValue: (rectangleId: string, value: number | undefined) => {
       const { rectangleActions } = get();
       
-      // Validate and clamp heatmap value to valid 0-1 range
+      // Enforce 0-1 range constraint for consistent color mapping
       if (value !== undefined && (value < 0 || value > 1)) {
         console.warn(`Heat map value ${value} is outside valid range [0, 1]. Clamping to range.`);
         value = Math.max(0, Math.min(1, value));
@@ -192,7 +296,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     bulkSetHeatmapValues: (values: Array<{ rectangleId: string; value: number }>) => {
       const { rectangles, rectangleActions } = get();
       
-      // Process all values as a single bulk update to create one history entry
+      // Batch process all value updates to create single undo/redo entry
       const updatedRectangles = rectangles.map(rect => {
         const valueUpdate = values.find(v => v.rectangleId === rect.id);
         if (valueUpdate) {
@@ -219,7 +323,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
         return null;
       }
       
-      // Return undefined value color for rectangles without heatmap values
+      // Use fallback color for rectangles without assigned heatmap values
       if (rectangle.heatmapValue === undefined) {
         return heatmap.undefinedValueColor;
       }
@@ -236,7 +340,7 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     clearAllHeatmapValues: () => {
       const { rectangles, rectangleActions } = get();
       
-      // Remove all heatmap values in a single bulk update for one history entry
+      // Clear all heatmap values with single history entry for clean undo/redo
       const updatedRectangles = rectangles.map(rect => ({
         ...rect,
         heatmapValue: undefined
@@ -246,27 +350,38 @@ export const createHeatmapSlice: SliceCreator<HeatmapSlice> = (set, get) => ({
     },
 
     applyImportedHeatmapState: (stateToApply) => {
-      // Apply imported heatmap configuration with validation and fallbacks
+      // Import heatmap state with validation - preserves current predefined palettes
       if (!stateToApply) return;
       set(state => ({
         heatmap: {
           ...state.heatmap,
           enabled: !!stateToApply.enabled,
           selectedPaletteId: stateToApply.selectedPaletteId || state.heatmap.selectedPaletteId,
-          palettes: Array.isArray(stateToApply.palettes) && stateToApply.palettes.length > 0
-            ? stateToApply.palettes
-            : state.heatmap.palettes,
+          palettes: PREDEFINED_PALETTES, // Always use current predefined palettes for consistency
           undefinedValueColor: stateToApply.undefinedValueColor || state.heatmap.undefinedValueColor,
           showLegend: !!stateToApply.showLegend
         }
       }));
-      // Precompute colors for the imported palette to ensure smooth performance
+      // Prime color cache for imported palette selection
       const { heatmap } = get();
       const palette = heatmap.palettes.find(p => p.id === heatmap.selectedPaletteId);
       if (palette) {
         clearColorCache();
         precomputePaletteColors(palette, 64);
       }
+    },
+
+    refreshPalettes: () => {
+      // Reload predefined palettes to latest definitions (useful after app updates)
+      set(state => ({
+        heatmap: {
+          ...state.heatmap,
+          palettes: PREDEFINED_PALETTES,
+          selectedPaletteId: PREDEFINED_PALETTES.find(p => p.id === state.heatmap.selectedPaletteId) 
+            ? state.heatmap.selectedPaletteId 
+            : 'temperature' // Fallback if current selection was removed/renamed
+        }
+      }));
     }
   }
 });

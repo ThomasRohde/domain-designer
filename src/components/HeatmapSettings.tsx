@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Palette, Upload, Download, Eye, EyeOff, RotateCcw } from 'lucide-react';
+import { X, Palette, Upload, Download, Eye, EyeOff, RotateCcw, RefreshCw } from 'lucide-react';
 import { generateHeatmapCSV } from '../utils/heatmapImport';
 import { exportFile } from '../utils/exportUtils';
 import { useAppStore } from '../stores/useAppStore';
@@ -12,20 +12,25 @@ interface HeatmapSettingsProps {
 }
 
 /**
- * Heat Map Settings Page Component
+ * Heatmap Settings Modal Component
  * 
- * Provides heat map configuration including:
- * - Enable/disable toggle with immediate preview
- * - Palette selection and color gradient visualization
- * - Undefined value color configuration
- * - CSV import and custom palette management
+ * Comprehensive heatmap configuration interface featuring:
+ * - Global enable/disable toggle with immediate visual feedback
+ * - Scalable dropdown palette selection (replaced grid for better UX with 11+ palettes)
+ * - Real-time palette preview with color gradient visualization
+ * - Undefined value color configuration for rectangles without data
+ * - CSV import/export workflow with validation and error reporting
+ * - Palette refresh mechanism to reload predefined scientific palettes
+ * 
+ * The component implements a deferred application pattern - palette changes
+ * are previewed locally before applying to prevent accidental switches.
  */
 const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) => {
   const [selectedPaletteId, setSelectedPaletteId] = useState<string>('');
   const [showImportModal, setShowImportModal] = useState(false);
   const [exportIncludeMissingAsZero, setExportIncludeMissingAsZero] = useState<boolean>(false);
   
-  // Store selectors
+  // Store selectors - reactive state subscriptions
   const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
   const rectangles = useAppStore(state => state.rectangles);
   const currentPaletteId = useAppStore(state => state.heatmap.selectedPaletteId);
@@ -33,19 +38,20 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
   const undefinedValueColor = useAppStore(state => state.heatmap.undefinedValueColor);
   const showLegend = useAppStore(state => state.heatmap.showLegend);
   
-  // Store actions
+  // Store actions - heatmap operations
   const setEnabled = useAppStore(state => state.heatmapActions.setEnabled);
   const setSelectedPalette = useAppStore(state => state.heatmapActions.setSelectedPalette);
   const setUndefinedValueColor = useAppStore(state => state.heatmapActions.setUndefinedValueColor);
   const setShowLegend = useAppStore(state => state.heatmapActions.setShowLegend);
   const clearAllHeatmapValues = useAppStore(state => state.heatmapActions.clearAllHeatmapValues);
+  const refreshPalettes = useAppStore(state => state.heatmapActions.refreshPalettes);
   
-  // Initialize local state with current palette
+  // Sync local palette selection with store state to enable preview-before-apply workflow
   React.useEffect(() => {
     setSelectedPaletteId(currentPaletteId);
   }, [currentPaletteId]);
 
-  // Close on ESC
+  // Standard modal ESC key handling for accessibility
   React.useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -55,7 +61,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
 
-  // Ensure nested Import CSV modal is closed whenever settings closes
+  // Reset nested modal state when parent modal closes to prevent state leaks
   React.useEffect(() => {
     if (!isOpen) {
       setShowImportModal(false);
@@ -82,9 +88,9 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
   };
 
   const handleExportCSV = async () => {
-    // Generate CSV from current rectangles with heatmap values
     const csv = generateHeatmapCSV(rectangles, exportIncludeMissingAsZero);
-    const hasData = csv.split('\n').length > 1; // header + at least one row
+    // Validate export has actual data (more than just headers)
+    const hasData = csv.split('\n').length > 1;
     if (!hasData) {
       alert('No heat map values to export. Assign values first or import from CSV.');
       return;
@@ -101,12 +107,17 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
   const currentPalette = palettes.find(p => p.id === currentPaletteId);
   
   /**
-   * Renders a color gradient preview for a palette
+   * Renders smooth color gradient preview from palette color stops.
+   * 
+   * Creates CSS linear gradient by sorting stops by value and positioning
+   * each color at its percentage point along the gradient. This provides
+   * accurate visual representation of how values will be colored.
    */
   const PalettePreview: React.FC<{ palette: HeatmapPalette; className?: string }> = ({ 
     palette, 
     className = "h-8 w-full" 
   }) => {
+    // Sort stops by value and convert to CSS gradient stops with percentage positions
     const gradientStops = [...palette.stops]
       .sort((a, b) => a.value - b.value)
       .map(stop => `${stop.color} ${stop.value * 100}%`)
@@ -211,48 +222,63 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
 
           {/* Palette Selection */}
           <div className="space-y-3">
-            <h3 className="text-base font-medium">Choose Palette</h3>
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-              {palettes.map((palette) => (
-                <label
-                  key={palette.id}
-                  className={`
-                    cursor-pointer p-3 rounded-lg border-2 transition-all
-                    ${selectedPaletteId === palette.id 
-                      ? 'border-orange-500 bg-orange-50' 
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }
-                  `}
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-medium">Choose Palette</h3>
+              <button
+                onClick={refreshPalettes}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-50 text-gray-700 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
+                title="Reload predefined scientific palettes (resets to latest definitions)"
+              >
+                <RefreshCw size={12} />
+                Refresh
+              </button>
+            </div>
+            <div className="space-y-3">
+              {/* Dropdown-based palette selection - scales better than grid for 11+ palettes */}
+              <div className="relative">
+                <select
+                  value={selectedPaletteId}
+                  onChange={(e) => handlePaletteChange(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 appearance-none cursor-pointer"
                 >
-                  <input
-                    type="radio"
-                    name="palette"
-                    value={palette.id}
-                    checked={selectedPaletteId === palette.id}
-                    onChange={() => handlePaletteChange(palette.id)}
-                    className="sr-only"
-                  />
-                  <div className="space-y-3">
+                  {palettes.map((palette) => (
+                    <option key={palette.id} value={palette.id}>
+                      {palette.name}{palette.isCustom ? ' (Custom)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Real-time preview of currently selected palette with value labels */}
+              {(() => {
+                const selectedPalette = palettes.find(p => p.id === selectedPaletteId);
+                return selectedPalette ? (
+                  <div className="space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{palette.name}</span>
-                      {palette.isCustom && (
+                      <span className="font-medium text-sm">{selectedPalette.name}</span>
+                      {selectedPalette.isCustom && (
                         <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
                           Custom
                         </span>
                       )}
                     </div>
-                    <PalettePreview palette={palette} className="h-6 w-full" />
+                    <PalettePreview palette={selectedPalette} className="h-6 w-full" />
                     <div className="flex text-[11px] text-gray-500 justify-between">
-                      <span>0.0</span>
-                      <span>0.5</span>
-                      <span>1.0</span>
+                      <span>0.0 (Low)</span>
+                      <span>0.5 (Mid)</span>
+                      <span>1.0 (High)</span>
                     </div>
                   </div>
-                </label>
-              ))}
+                ) : null;
+              })()}
             </div>
             
-            {/* Palette Change Indicator */}
+            {/* Deferred application indicator - shows when local preview differs from applied state */}
             {selectedPaletteId !== currentPaletteId && (
               <div className="p-2.5 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-xs text-yellow-800">
@@ -268,7 +294,7 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
             <div className="space-y-2">
               <h3 className="text-base font-medium">Undefined Value Color</h3>
               <p className="text-xs text-gray-600">Used for rectangles without a heat map value.</p>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2">
                   <span className="text-sm font-medium">Color:</span>
                   <input
@@ -279,13 +305,9 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
                     className="w-10 h-8 border border-gray-300 rounded cursor-pointer"
                   />
                 </label>
-                <div
-                  className="w-14 h-8 border border-gray-300 rounded"
-                  style={{ backgroundColor: undefinedValueColor }}
-                />
                 <button
                   onClick={() => setUndefinedValueColor('#e5e7eb')}
-                  className="text-xs text-gray-600 hover:text-gray-800 underline"
+                  className="px-2 py-1 text-xs bg-gray-50 text-gray-700 border border-gray-200 rounded hover:bg-gray-100 transition-colors"
                 >
                   Reset
                 </button>
