@@ -20,7 +20,6 @@ interface ExportModalProps {
  */
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
   const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'pptx'>('html');
-  const [scale, setScale] = useState(1);
   const [includeBackground, setIncludeBackground] = useState(true);
   // Confluence Server HTML Macro requires specific formatting constraints
   const [confluenceMode, setConfluenceMode] = useState(false);
@@ -30,7 +29,6 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
   const handleExport = () => {
     onExport({
       format,
-      scale,
       includeBackground,
       confluenceMode
     });
@@ -95,24 +93,9 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
             </div>
           </div>
           
-          {/* Visual export formats (HTML/SVG) support scaling and background options */}
+          {/* Visual export formats support background and compatibility options */}
           {format !== 'json' && (
             <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Scale: {scale}x
-                </label>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="3"
-                  step="0.1"
-                  value={scale}
-                  onChange={(e) => setScale(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"

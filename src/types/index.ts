@@ -368,8 +368,6 @@ export interface ExportOptions {
   format: 'html' | 'svg' | 'json' | 'pptx';
   /** Image quality (0-1) for raster formats */
   quality?: number;
-  /** Scale factor for export */
-  scale?: number;
   /** Whether to include background in export */
   includeBackground?: boolean;
   /** Generates embeddable HTML without document structure - for wiki integration */

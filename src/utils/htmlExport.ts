@@ -17,7 +17,6 @@ import { exportFile } from './exportUtils';
 
 interface HtmlExportOptions {
   includeBackground: boolean;  // Include white background or transparent
-  scale: number;              // Export scale factor (1.0 = 100%)
   confluenceMode: boolean;    // Generate embeddable HTML without document structure
 }
 

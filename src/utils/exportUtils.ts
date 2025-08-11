@@ -125,7 +125,7 @@ export const exportFile = async (options: FileExportOptions): Promise<void> => {
  * 
  * @param containerElement - Canvas container (used for certain formats)
  * @param rectangles - Rectangle data to export
- * @param options - Export configuration including format and scaling
+ * @param options - Export configuration including format and background options
  * @param globalSettings - Application settings for export context
  * @param gridSize - Grid unit size for coordinate scaling
  * @param borderRadius - Visual styling parameter
@@ -145,7 +145,7 @@ export const exportDiagram = async (
   predefinedColors?: string[],
   heatmapState?: HeatmapState
 ): Promise<void> => {
-  const { format, scale = 1, includeBackground = true, confluenceMode = false } = options;
+  const { format, includeBackground = true, confluenceMode = false } = options;
   
   const timestamp = new Date().toISOString().split('T')[0];
   const filename = `domain-model-${timestamp}`;
@@ -157,16 +157,16 @@ export const exportDiagram = async (
 
   switch (format) {
     case 'html':
-      await exportToHTML(exportRectangles, filename, { includeBackground, scale, confluenceMode }, globalSettings);
+      await exportToHTML(exportRectangles, filename, { includeBackground, confluenceMode }, globalSettings);
       break;
     case 'svg':
-      await exportToSVG(containerElement, exportRectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
+      await exportToSVG(containerElement, exportRectangles, filename, { includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
       break;
     case 'json':
       await exportToJSON(exportRectangles, globalSettings, filename, predefinedColors, heatmapState, true);
       break;
     case 'pptx':
-      await exportToPPTX(exportRectangles, filename, { scale, includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
+      await exportToPPTX(exportRectangles, filename, { includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
       break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
@@ -186,7 +186,7 @@ export const exportDiagram = async (
  * @param _element - Container element (unused in current implementation)
  * @param rectangles - Rectangle data to render
  * @param filename - Output filename for download
- * @param options - Scale and background options
+ * @param options - Background options
  * @param globalSettings - Font and styling preferences
  * @param gridSize - Grid unit size for coordinate conversion
  * @param borderRadius - Corner radius for rectangles
@@ -197,7 +197,7 @@ const exportToSVG = async (
   _element: HTMLElement,
   rectangles: Rectangle[],
   filename: string,
-  options: { scale: number; includeBackground: boolean },
+  options: { includeBackground: boolean },
   globalSettings?: GlobalSettings,
   gridSize: number = 20,
   borderRadius: number = 8,
@@ -205,7 +205,7 @@ const exportToSVG = async (
   borderWidth: number = 2
 ): Promise<void> => {
   try {
-    const svg = createSVGFromRectangles(rectangles, options, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
+    const svg = createSVGFromRectangles(rectangles, { ...options, scale: 1 }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
 
     await exportFile({
       filename,
@@ -337,7 +337,7 @@ const exportToJSON = async (rectangles: Rectangle[], globalSettings: GlobalSetti
 const exportToPPTX = async (
   rectangles: Rectangle[],
   filename: string,
-  options: { scale: number; includeBackground: boolean },
+  options: { includeBackground: boolean },
   globalSettings?: GlobalSettings,
   gridSize: number = 20,
   borderRadius: number = 8,
@@ -359,8 +359,9 @@ const exportToPPTX = async (
   const maxY = Math.max(...rectangles.map(r => r.y + r.h));
 
   const marginPx = 20;
-  const contentWidthPx = (maxX - minX) * gridSize * options.scale;
-  const contentHeightPx = (maxY - minY) * gridSize * options.scale;
+  const scale = 1; // Fixed scale value
+  const contentWidthPx = (maxX - minX) * gridSize * scale;
+  const contentHeightPx = (maxY - minY) * gridSize * scale;
   const totalWidthPx = contentWidthPx + marginPx * 2;
   const totalHeightPx = contentHeightPx + marginPx * 2;
 
@@ -420,10 +421,10 @@ const exportToPPTX = async (
   });
 
   for (const rect of sorted) {
-    const xPx = (rect.x - minX) * gridSize * options.scale + marginPx;
-    const yPx = (rect.y - minY) * gridSize * options.scale + marginPx;
-    const wPx = rect.w * gridSize * options.scale;
-    const hPx = rect.h * gridSize * options.scale;
+    const xPx = (rect.x - minX) * gridSize * scale + marginPx;
+    const yPx = (rect.y - minY) * gridSize * scale + marginPx;
+    const wPx = rect.w * gridSize * scale;
+    const hPx = rect.h * gridSize * scale;
 
     const xIn = pxToIn(xPx);
     const yIn = pxToIn(yPx);
@@ -590,8 +591,9 @@ const createSVGFromRectangles = (
   
   // Add margin around the content
   const margin = 20; // 20px margin
-  const contentWidth = (maxX - minX) * gridSize * options.scale;
-  const contentHeight = (maxY - minY) * gridSize * options.scale;
+  const scale = options.scale || 1; // Use provided scale or default to 1
+  const contentWidth = (maxX - minX) * gridSize * scale;
+  const contentHeight = (maxY - minY) * gridSize * scale;
   const width = contentWidth + (margin * 2);
   const height = contentHeight + (margin * 2);
 
@@ -666,10 +668,10 @@ const createSVGFromRectangles = (
 
   sortedRectangles.forEach(rect => {
     // Adjust coordinates to start from top-left with margin offset
-    const x = (rect.x - minX) * gridSize * options.scale + margin;
-    const y = (rect.y - minY) * gridSize * options.scale + margin;
-    const w = rect.w * gridSize * options.scale;
-    const h = rect.h * gridSize * options.scale;
+    const x = (rect.x - minX) * gridSize * scale + margin;
+    const y = (rect.y - minY) * gridSize * scale + margin;
+    const w = rect.w * gridSize * scale;
+    const h = rect.h * gridSize * scale;
 
     // Calculate text positioning and wrapping with HTML-matching logic
     const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
