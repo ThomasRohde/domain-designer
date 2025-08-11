@@ -168,6 +168,9 @@ export const exportDiagram = async (
     case 'pptx':
       await exportToPPTX(exportRectangles, filename, { includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
       break;
+    case 'drawio':
+      await exportToDrawIO(exportRectangles, filename, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
+      break;
     default:
       throw new Error(`Unsupported export format: ${format}`);
   }
@@ -492,6 +495,140 @@ const exportToPPTX = async (
   }
 
   await pptx.writeFile({ fileName: `${filename}.pptx` });
+};
+
+/**
+ * Export diagram to Draw.io (.drawio) XML format (mxGraphModel)
+ *
+ * Mapping notes:
+ * - Each rectangle becomes an mxCell vertex with geometry (in px = gridSize units converted)
+ * - Parent-child relationships are represented via the parent attribute
+ * - Text labels use value attribute; font style approximated by bold flag for parents
+ * - Border radius maps to style rounded and arcSize; colors map to fillColor and strokeColor
+ * - Text-only labels are exported as vertices with no fill (transparent)
+ */
+const exportToDrawIO = async (
+  rectangles: Rectangle[],
+  filename: string,
+  globalSettings?: GlobalSettings,
+  gridSize: number = 20,
+  borderRadius: number = 8,
+  borderColor: string = '#374151',
+  borderWidth: number = 2
+): Promise<void> => {
+  if (rectangles.length === 0) {
+    const empty = '<?xml version="1.0" encoding="UTF-8"?>\n<mxfile host="app.diagrams.net"><diagram id="0" name="Page-1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>';
+    await exportFile({ filename, content: empty, mimeType: 'application/xml', extension: 'drawio', description: 'Draw.io files' });
+    return;
+  }
+
+  // Normalization and mapping
+  const gs = {
+    borderRadius: globalSettings?.borderRadius ?? borderRadius,
+    borderColor: globalSettings?.borderColor ?? borderColor,
+    borderWidth: globalSettings?.borderWidth ?? borderWidth,
+    fontFamily: globalSettings?.fontFamily ?? 'Inter',
+    rootFontSize: globalSettings?.rootFontSize ?? 12,
+    dynamicFontSizing: globalSettings?.dynamicFontSizing ?? true,
+    margin: globalSettings?.margin ?? 1,
+  };
+
+  // Build depth map for font sizing and order
+  const idToRect = new Map<string, Rectangle>(rectangles.map(r => [r.id, r]));
+  const hasChildren = new Set<string>();
+  rectangles.forEach(r => { if (r.parentId) hasChildren.add(r.parentId); });
+  const getDepth = (id: string): number => {
+    let d = 0; let cur = idToRect.get(id);
+    while (cur && cur.parentId && d < 10) { d++; cur = idToRect.get(cur.parentId); }
+    return d;
+  };
+  const calcFontSize = (id: string): number => {
+    if (!gs.dynamicFontSizing) return gs.rootFontSize;
+    const depth = getDepth(id);
+    return Math.max(gs.rootFontSize * Math.pow(0.9, depth), gs.rootFontSize * 0.6);
+  };
+
+  // Draw.io requires a root (id=0) and a layer (id=1). We'll parent top-level shapes to id=1.
+  const header = ['<?xml version="1.0" encoding="UTF-8"?>',
+    '<mxfile host="app.diagrams.net">',
+    '<diagram id="Page-1" name="Page-1">',
+    '<mxGraphModel>',
+    '<root>',
+    '<mxCell id="0"/>',
+    '<mxCell id="1" parent="0"/>'
+  ].join('\n');
+
+  // Map app rect IDs to numeric-ish IDs safe for mxCell. Use the same IDs but ensure they don't start with non-digit by prefixing r_.
+  const mxId = (id: string) => `r_${id}`;
+  const parentIdFor = (rect: Rectangle) => rect.parentId ? mxId(rect.parentId) : '1';
+
+  // Convert each rectangle to an mxCell vertex with geometry
+  // Note: using a fixed small negative spacingTop for parents per sample export; no general padding here.
+
+  const cells = rectangles.map(rect => {
+    // Coordinates must be relative to parent if parented; adjust accordingly
+    let absX = rect.x;
+    let absY = rect.y;
+    if (rect.parentId) {
+      const parent = idToRect.get(rect.parentId);
+      if (parent) {
+        absX = rect.x - parent.x;
+        absY = rect.y - parent.y;
+      }
+    }
+    const x = absX * gridSize;
+    const y = absY * gridSize;
+    const w = rect.w * gridSize;
+    const h = rect.h * gridSize;
+
+    const isLabel = rect.isTextLabel || rect.type === 'textLabel';
+    const isParent = hasChildren.has(rect.id);
+    const fontSize = rect.textFontSize ?? calcFontSize(rect.id);
+    const fontFamily = rect.textFontFamily ?? gs.fontFamily;
+    const align = rect.textAlign ?? 'center';
+
+    const fillColor = isLabel ? 'none' : rect.color;
+    const strokeColor = isLabel ? 'none' : gs.borderColor;
+  const rounded = (gs.borderRadius ?? 0) > 0 ? 1 : 0;
+  const minDim = Math.max(1, Math.min(w, h));
+  const arcSize = Math.min((gs.borderRadius / minDim) * 100, 50) || (rounded ? 10 : 0);
+    const fontStyle = isParent && !isLabel ? 1 : (rect.fontWeight === 'bold' ? 1 : 0); // 1=bold
+
+    // Draw.io style string
+    const styleParts = [
+      'shape=rectangle',
+  `rounded=${rounded}`,
+      `arcSize=${Math.round(arcSize)}`,
+      `fillColor=${fillColor}`,
+      `strokeColor=${strokeColor}`,
+      `strokeWidth=${gs.borderWidth}`,
+      `fontFamily=${fontFamily}`,
+      `fontSize=${Math.round(fontSize)}`,
+      `fontStyle=${fontStyle}`,
+  'html=1',
+      `align=${align}`,
+      `verticalAlign=${isParent ? 'top' : 'middle'}`,
+      'whiteSpace=wrap',
+  // Nudge parent labels upwards slightly like the sample
+  `spacingTop=${isParent ? 0 : 0}`
+    ];
+
+    const style = styleParts.join(';');
+    const value = escapeXML(rect.label || '');
+    const id = mxId(rect.id);
+    const parent = parentIdFor(rect);
+
+    return [
+      `<mxCell id="${id}" value="${value}" style="${style}" vertex="1" parent="${parent}">`,
+      `<mxGeometry x="${x}" y="${y}" width="${w}" height="${h}" as="geometry"/>`,
+      `</mxCell>`
+    ].join('\n');
+  }).join('\n');
+
+  const footer = ['</root>', '</mxGraphModel>', '</diagram>', '</mxfile>'].join('\n');
+  const xml = [header, cells, footer].join('\n');
+
+  await exportFile({ filename, content: xml, mimeType: 'application/xml', extension: 'drawio', description: 'Draw.io files' });
 };
 
 /**

@@ -19,7 +19,7 @@ interface ExportModalProps {
  * - Heat map color preservation when enabled
  */
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
-  const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'pptx'>('html');
+  const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'pptx' | 'drawio'>('html');
   const [includeBackground, setIncludeBackground] = useState(true);
   // Confluence Server HTML Macro requires specific formatting constraints
   const [confluenceMode, setConfluenceMode] = useState(false);
@@ -89,6 +89,15 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
               >
                 <FileType size={16} />
                 <span>PowerPoint</span>
+              </button>
+              <button
+                onClick={() => setFormat('drawio')}
+                className={`p-3 border rounded-lg flex items-center space-x-2 ${
+                  format === 'drawio' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
+              >
+                <FileType size={16} />
+                <span>Draw.io</span>
               </button>
             </div>
           </div>

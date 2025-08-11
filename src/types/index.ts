@@ -365,7 +365,7 @@ export interface DiagramState {
  */
 export interface ExportOptions {
   /** Export format */
-  format: 'html' | 'svg' | 'json' | 'pptx';
+  format: 'html' | 'svg' | 'json' | 'pptx' | 'drawio';
   /** Image quality (0-1) for raster formats */
   quality?: number;
   /** Whether to include background in export */
