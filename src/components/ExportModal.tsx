@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Download, Globe, FileType, File } from 'lucide-react';
 import { ExportOptions } from '../types';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -10,19 +11,30 @@ interface ExportModalProps {
 
 /**
  * Modal for configuring diagram export options across multiple formats.
- * Supports HTML (with Confluence compatibility), SVG, JSON data, and PowerPoint (PPTX) exports.
  * 
- * PowerPoint export leverages PptxGenJS to create native .pptx files with:
- * - Rounded rectangle shapes matching the application's visual style
- * - Hierarchical text formatting (bold for parents, normal for leaves)
- * - Adaptive slide sizing based on diagram bounds
- * - Heat map color preservation when enabled
+ * Supported Export Formats:
+ * - HTML: Interactive web document with zoom/pan and Confluence Server compatibility
+ * - SVG: Scalable vector graphics for high-quality document embedding
+ * - JSON: Complete diagram data with schema versioning for backup and sharing
+ * - PowerPoint (PPTX): Native presentation format with hierarchical text styling
+ * - Draw.io: XML format compatible with diagrams.net for further editing
+ * - ArchiMate: Enterprise architecture modeling format (.archimate) with:
+ *   • Strategy elements (Capabilities) representing each rectangle
+ *   • Composition relationships for parent-child hierarchy
+ *   • Visual diagram preserving layout, fonts, and colors
+ *   • Compatible with ArchiMate Tool and similar enterprise modeling platforms
+ * 
+ * Features consistent across formats:
+ * - Heat map color preservation when visualization is enabled
+ * - Font family, sizing, and styling maintained
+ * - Hierarchical relationships and positioning preserved
  */
 const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) => {
-  const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'pptx' | 'drawio'>('html');
+  const [format, setFormat] = useState<'html' | 'svg' | 'json' | 'pptx' | 'drawio' | 'archimate'>('html');
   const [includeBackground, setIncludeBackground] = useState(true);
-  // Confluence Server HTML Macro requires specific formatting constraints
+  /** Confluence Server HTML Macro requires specific formatting constraints (no document structure) */
   const [confluenceMode, setConfluenceMode] = useState(false);
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -36,7 +48,10 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" role="dialog">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">Export Diagram</h2>
@@ -99,10 +114,19 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
                 <FileType size={16} />
                 <span>Draw.io</span>
               </button>
+              <button
+                onClick={() => setFormat('archimate')}
+                className={`p-3 border rounded-lg flex items-center space-x-2 ${
+                  format === 'archimate' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
+              >
+                <FileType size={16} />
+                <span>ArchiMate</span>
+              </button>
             </div>
           </div>
           
-          {/* Visual export formats support background and compatibility options */}
+          {/* Background option applies to visual formats; JSON exports complete data regardless */}
           {format !== 'json' && (
             <>
               <div className="flex items-center space-x-2">
@@ -118,7 +142,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
                 </label>
               </div>
               
-              {/* Confluence mode generates HTML compatible with server macro constraints */}
+              {/* Confluence mode removes document wrapper for embedding in Server HTML macros */}
               {format === 'html' && (
                 <div className="flex items-center space-x-2">
                   <input

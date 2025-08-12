@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Keyboard } from 'lucide-react';
 import { getShortcutsByCategory, formatShortcut } from '../types/shortcuts';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 interface KeyboardShortcutHelpModalProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ const KeyboardShortcutHelpModal: React.FC<KeyboardShortcutHelpModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
+  
   if (!isOpen) return null;
 
   const shortcutsByCategory = getShortcutsByCategory();
@@ -24,7 +27,10 @@ const KeyboardShortcutHelpModal: React.FC<KeyboardShortcutHelpModalProps> = ({
   const orderedCategories = categoryOrder.filter(cat => categories.includes(cat));
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000]"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">

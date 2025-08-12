@@ -35,17 +35,21 @@ export type LayoutFillStrategy = 'fill-columns-first' | 'fill-rows-first';
 export type FlowOrientation = 'ROW' | 'COL';
 
 /**
- * Layout configuration for child arrangement within parent rectangles
- * Controls how the layout algorithm arranges child elements
+ * Layout configuration controlling child element arrangement within parent containers.
+ * 
+ * Used by layout algorithms to optimize space utilization and visual hierarchy:
+ * - Grid Layout: Uses fillStrategy and limits for uniform distribution
+ * - Flow Layout: Uses orientation for depth-based alternating directions 
+ * - Mixed Flow Layout: Evaluates multiple arrangements to minimize whitespace
  */
 export interface LayoutPreferences {
-  /** Primary arrangement strategy - affects space utilization */
+  /** Primary arrangement strategy affecting space utilization and visual flow */
   fillStrategy: LayoutFillStrategy;
-  /** Column limit for row-first layouts - prevents excessive horizontal spread */
+  /** Column limit for row-first layouts preventing excessive horizontal spread */
   maxColumns?: number;
-  /** Row limit for column-first layouts - prevents excessive vertical growth */
+  /** Row limit for column-first layouts preventing excessive vertical growth */
   maxRows?: number;
-  /** Flow direction for hierarchical layouts - alternates by depth */
+  /** Flow direction for hierarchical layouts - alternates by tree depth in Flow algorithm */
   orientation?: FlowOrientation;
 }
 
@@ -142,17 +146,22 @@ export interface DropTarget {
 }
 
 /**
- * Real-time state tracking for drag-and-drop reparenting
- * Manages visual feedback and validation during hierarchy modifications
+ * Real-time state tracking for drag-and-drop reparenting operations.
+ * 
+ * Manages visual feedback and validation during hierarchy modifications by:
+ * - Calculating valid drop zones based on hierarchy constraints
+ * - Preventing circular parent-child relationships
+ * - Providing visual feedback for valid/invalid drop targets
+ * - Tracking mouse position for drop zone detection and highlighting
  */
 export interface HierarchyDragState {
-  /** ID of the rectangle being dragged */
+  /** ID of the rectangle currently being dragged for reparenting */
   draggedRectangleId: string;
-  /** Current potential drop target */
+  /** Active drop target under mouse cursor (null if over invalid area) */
   currentDropTarget: DropTarget | null;
-  /** All potential drop targets */
+  /** All valid drop targets calculated for current drag operation */
   potentialTargets: DropTarget[];
-  /** Mouse position for drop zone detection */
+  /** Current mouse position for drop zone detection and visual feedback */
   mousePosition: { x: number; y: number };
 }
 
@@ -204,15 +213,20 @@ export interface VirtualDragPosition {
 }
 
 /**
- * Virtual drag layer state managing real-time visual feedback
- * Prevents expensive re-renders during mouse movement by using CSS transforms
+ * Virtual drag layer state managing real-time visual feedback during drag operations.
+ * 
+ * Performance optimization that decouples visual updates from state mutations:
+ * - Uses CSS transforms for immediate visual feedback without re-renders
+ * - Maintains virtual positions separate from actual rectangle data
+ * - Supports both single-select and multi-select bulk drag operations
+ * - Syncs virtual positions to actual state only on drag completion
  */
 export interface VirtualDragState {
-  /** Map of rectangle IDs to their virtual positions during drag */
+  /** Map of rectangle IDs to their virtual positions during active drag operation */
   positions: Map<string, VirtualDragPosition>;
-  /** Whether virtual drag layer is active */
+  /** Whether virtual drag layer is currently active and managing positions */
   isActive: boolean;
-  /** Primary dragged rectangle ID (for hierarchy and interaction logic) */
+  /** ID of primary dragged rectangle driving the operation (for hierarchy and multi-select logic) */
   primaryDraggedId: string | null;
 }
 
@@ -360,17 +374,24 @@ export interface DiagramState {
 }
 
 /**
- * Output format settings for diagram export functionality
- * Controls visual fidelity and compatibility with external tools
+ * Export format configuration controlling output generation and compatibility.
+ * 
+ * Format-specific behaviors:
+ * - html: Interactive web document with optional Confluence Server macro compatibility
+ * - svg: Scalable vector graphics with precise coordinate transformation
+ * - json: Complete diagram data with v2.0 schema and heat map state preservation
+ * - pptx: Native PowerPoint presentation with hierarchical text formatting
+ * - drawio: XML format compatible with diagrams.net (mxGraphModel structure)
+ * - archimate: Enterprise architecture modeling format with Strategy elements and Composition relationships
  */
 export interface ExportOptions {
-  /** Export format */
-  format: 'html' | 'svg' | 'json' | 'pptx' | 'drawio';
-  /** Image quality (0-1) for raster formats */
+  /** Target export format determining output structure and compatibility */
+  format: 'html' | 'svg' | 'json' | 'pptx' | 'drawio' | 'archimate';
+  /** Image quality (0-1) for raster formats - currently unused but reserved for future PDF export */
   quality?: number;
-  /** Whether to include background in export */
+  /** Whether to include background color/styling (visual formats only, JSON always includes complete data) */
   includeBackground?: boolean;
-  /** Generates embeddable HTML without document structure - for wiki integration */
+  /** Confluence Server HTML Macro mode - removes document wrapper for wiki embedding */
   confluenceMode?: boolean;
 }
 

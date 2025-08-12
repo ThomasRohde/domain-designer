@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Trash2 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 interface HeatmapValueModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ const HeatmapValueModal: React.FC<HeatmapValueModalProps> = ({
   const [value, setValue] = useState<number>(currentValue ?? 0.5);
   const [inputValue, setInputValue] = useState<string>(currentValue?.toString() ?? '0.5');
   const [hasValue, setHasValue] = useState<boolean>(currentValue !== undefined);
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   // Store selectors
   const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
@@ -152,7 +154,10 @@ const HeatmapValueModal: React.FC<HeatmapValueModalProps> = ({
   const previewColor = getPreviewColor();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
