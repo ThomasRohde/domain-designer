@@ -7,15 +7,31 @@ interface HelpModalProps {
 }
 
 /**
- * Comprehensive help documentation modal with tabbed navigation.
- * Provides detailed guidance for all application features, keyboard shortcuts, and best practices.
+ * Comprehensive help documentation modal with sidebar navigation.
+ * 
+ * Architecture:
+ * - Structured content organized by functional areas (Getting Started, Layout Algorithms, etc.)
+ * - Dynamic sidebar navigation with active section highlighting
+ * - Scrollable content area supporting rich formatting and code examples
+ * - Responsive design optimized for various screen sizes
+ * 
+ * Content covers:
+ * - Core application features and workflows
+ * - Multi-select operations with PowerPoint-style alignment tools
+ * - Heat map visualization system with CSV import capabilities
+ * - Template system for hierarchical data import
+ * - Export options including new ArchiMate format
+ * - Progressive Web App installation and offline features
  */
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState<string>('getting-started');
 
   if (!isOpen) return null;
 
-  // Structured help content organized by functional areas
+  /** 
+   * Help content sections organized by user workflow and feature complexity.
+   * Each section includes practical examples, step-by-step instructions, and best practices.
+   */
   const sections = [
     {
       id: 'getting-started',
@@ -490,6 +506,20 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 Exports a .pptx presentation you can open in Microsoft PowerPoint, Keynote, or Google Slides.
               </p>
             </div>
+            
+            <div>
+              <h4 className="font-semibold text-gray-800 mb-1">Draw.io</h4>
+              <p className="text-sm text-gray-600">
+                Creates diagrams compatible with Draw.io/diagrams.net for further editing with diagram-specific tools.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="font-semibold text-gray-800 mb-1">ArchiMate</h4>
+              <p className="text-sm text-gray-600">
+                Exports to ArchiMate Tool format (.archimate) for enterprise architecture modeling and analysis.
+              </p>
+            </div>
           </div>
         </div>
       )
@@ -694,7 +724,7 @@ https://yourdomain.com/viewer?url=https://raw.githubusercontent.com/user/repo/ma
         </div>
         
         <div className="flex-1 flex overflow-hidden">
-          {/* Navigation sidebar with section selection */}
+          {/* Navigation sidebar - fixed width with scrollable section list */}
           <div className="w-64 border-r border-gray-200 overflow-y-auto">
             <nav className="p-4 space-y-1">
               {sections.map((section) => (
@@ -703,8 +733,8 @@ https://yourdomain.com/viewer?url=https://raw.githubusercontent.com/user/repo/ma
                   onClick={() => setActiveSection(section.id)}
                   className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeSection === section.id
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-blue-100 text-blue-800' // Active section highlighting
+                      : 'text-gray-700 hover:bg-gray-100' // Hover state for inactive sections
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -718,7 +748,7 @@ https://yourdomain.com/viewer?url=https://raw.githubusercontent.com/user/repo/ma
             </nav>
           </div>
           
-          {/* Content */}
+          {/* Main content area - scrollable with padding for readability */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">

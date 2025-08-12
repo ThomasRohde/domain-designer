@@ -95,6 +95,8 @@
 - **SVG**: Scalable vector graphics with heat map color preservation
 - **JSON**: Raw diagram data with URL sharing and complete heat map state
 - **PowerPoint (PPTX)**: Export presentation compatible with PowerPoint/Keynote/Google Slides
+- **Draw.io**: Diagrams compatible with Draw.io/diagrams.net for further editing
+- **ArchiMate**: Enterprise architecture models for ArchiMate Tool (.archimate format)
 - **URL Sharing**: View any JSON diagram directly via URL
 
 </td>
@@ -423,6 +425,8 @@ Right-click on any selected rectangle to access the multi-select context menu:
   <img src="https://img.shields.io/badge/SVG-Scalable-blue?style=for-the-badge&logo=svg" alt="SVG Export">
   <img src="https://img.shields.io/badge/JSON-Data-green?style=for-the-badge&logo=json" alt="JSON Export">
   <img src="https://img.shields.io/badge/PowerPoint-PPTX-orange?style=for-the-badge&logo=microsoftpowerpoint" alt="PowerPoint Export">
+  <img src="https://img.shields.io/badge/Draw.io-Diagrams-red?style=for-the-badge" alt="Draw.io Export">
+  <img src="https://img.shields.io/badge/ArchiMate-Enterprise-purple?style=for-the-badge" alt="ArchiMate Export">
 </div>
 
 | Format | Best For | Features |
@@ -431,6 +435,8 @@ Right-click on any selected rectangle to access the multi-select context menu:
 | **SVG** | High-quality prints | Vector graphics, infinite scalability |
 | **JSON** | Backup/sharing | Raw data, version control friendly, URL sharing |
 | **PowerPoint (PPTX)** | Presentation | Open/edit in PowerPoint/Keynote/Slides |
+| **Draw.io** | Diagram editing | Compatible with Draw.io/diagrams.net tools |
+| **ArchiMate** | Enterprise architecture | Import into ArchiMate Tool for EA modeling |
 
 ### 🌐 URL-Based Diagram Sharing
 
