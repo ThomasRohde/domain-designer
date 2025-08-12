@@ -22,7 +22,7 @@ function csvEscape(value: string): string {
  * Parses a single CSV line respecting quoted fields and escaped quotes.
  * Handles the complexities of CSV format including comma-separated values within quotes.
  */
-function parseCSVLine(line: string): string[] {
+function parseCSVLine(line: string, delimiter: ',' | ';' = ','): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -41,7 +41,7 @@ function parseCSVLine(line: string): string[] {
         current += ch;
       }
     } else {
-      if (ch === ',') {
+      if (ch === delimiter) {
         result.push(current);
         current = '';
       } else if (ch === '"') {
@@ -123,6 +123,12 @@ export function parseHeatmapCSV(
     return result;
   }
 
+  // Detect delimiter: prefer comma, but support semicolon if it's the dominant separator (common in some locales)
+  const sample = lines.slice(0, Math.min(10, lines.length));
+  const commaScore = sample.reduce((acc, l) => acc + (l.split(',').length - 1), 0);
+  const semiScore = sample.reduce((acc, l) => acc + (l.split(';').length - 1), 0);
+  const delimiter: ',' | ';' = semiScore > commaScore ? ';' : ',';
+
   // Parse each line
   const entries: CSVEntry[] = [];
   
@@ -131,7 +137,7 @@ export function parseHeatmapCSV(
     const lineNumber = i + 1;
     
     // Parse CSV line with proper quote handling
-    const parts = parseCSVLine(line);
+    const parts = parseCSVLine(line, delimiter);
     
     // Auto-detect and skip header rows based on common header patterns
   if (i === 0 && parts[0] && /^(name|label|rectangle|rectanglename)$/i.test(normalizeLabel(parts[0]))) {
@@ -234,7 +240,8 @@ export async function validateCSVFile(file: File): Promise<{
   content?: string;
 }> {
   // Check file type
-  if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
+  // In some enterprise environments, the MIME type may be blank or generic; rely primarily on extension
+  if (!file.name.toLowerCase().endsWith('.csv')) {
     return {
       isValid: false,
       error: 'File must be a CSV (.csv) file'
@@ -270,12 +277,12 @@ export async function validateCSVFile(file: File): Promise<{
       };
     }
     
-    // Verify CSV format by checking for comma separators
-    const hasCommas = lines.some(line => line.includes(','));
-    if (!hasCommas) {
+  // Verify CSV format by checking for common separators (comma or semicolon)
+  const hasSeparators = lines.some(line => line.includes(',') || line.includes(';'));
+  if (!hasSeparators) {
       return {
         isValid: false,
-        error: 'File does not appear to be valid CSV format (no commas found)'
+    error: 'File does not appear to be valid CSV format (no separators found)'
       };
     }
     

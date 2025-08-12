@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Upload, Download, CheckCircle, AlertCircle, FileText } from 'lucide-react';
-import { parseHeatmapCSV, validateCSVFile, generateSampleCSV } from '../utils/heatmapImport';
+import { X, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { parseHeatmapCSV, validateCSVFile } from '../utils/heatmapImport';
 import { useAppStore } from '../stores/useAppStore';
 import type { HeatmapImportResult } from '../stores/types';
 
@@ -117,19 +117,7 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
     handleClose();
   }, [importResult, bulkSetHeatmapValues, handleClose]);
 
-  const handleDownloadSample = useCallback(() => {
-    const sampleCSV = generateSampleCSV(rectangles);
-    const blob = new Blob([sampleCSV], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'heatmap-sample.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [rectangles]);
+  // Sample CSV download removed per request.
 
   if (!isOpen) return null;
 
@@ -165,20 +153,7 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
                 <p><strong>Note:</strong> Rectangle names are matched case-insensitively.</p>
               </div>
 
-              {/* Sample Download */}
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="flex items-center space-x-2">
-                  <FileText size={16} className="text-blue-600" />
-                  <span className="text-sm text-blue-800">Need a template?</span>
-                </div>
-                <button
-                  onClick={handleDownloadSample}
-                  className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-                >
-                  <Download size={14} />
-                  <span>Download Sample CSV</span>
-                </button>
-              </div>
+              {/* Sample CSV download removed */}
 
               {/* Error Display */}
               {error && (
@@ -214,6 +189,9 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
                 >
                   {isProcessing ? 'Processing...' : 'Choose File'}
                 </button>
+                <p className="text-xs text-gray-600 mt-3">
+                  If the file picker does not work in your environment, drag and drop the CSV file onto this area instead.
+                </p>
                 <input
                   ref={fileInputRef}
                   type="file"

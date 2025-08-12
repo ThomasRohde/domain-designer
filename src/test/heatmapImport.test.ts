@@ -56,4 +56,21 @@ describe('parseHeatmapCSV', () => {
     expect(result.failed.length >= 1).toBe(true);
     expect(result.unmatched).toEqual([{ label: 'Gamma', value: 0.5 }]);
   });
+
+  it('supports semicolon-delimited CSV (locale variants)', () => {
+    const csv = [
+      'rectangleName;value',
+      'Alpha;0.1',
+      'Beta;0.9',
+    ].join('\n');
+
+    const result = parseHeatmapCSV(csv, rectangles);
+
+    expect(result.successful).toHaveLength(2);
+    const values = result.successful.map(e => ({ id: e.rectangleId, value: e.value })).sort((a,b) => a.id.localeCompare(b.id));
+    expect(values).toEqual([
+      { id: 'rect-1', value: 0.1 },
+      { id: 'rect-2', value: 0.9 },
+    ]);
+  });
 });

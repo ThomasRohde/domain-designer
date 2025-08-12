@@ -139,7 +139,11 @@ const HeatmapSettings: React.FC<HeatmapSettingsProps> = ({ isOpen, onClose }) =>
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={handleCloseSettings}
+      onClick={() => {
+        // If the nested Import modal is open, ignore backdrop clicks to avoid unmounting mid-file selection
+        if (showImportModal) return;
+        handleCloseSettings();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="heatmap-settings-title"
