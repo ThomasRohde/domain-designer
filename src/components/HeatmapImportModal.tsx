@@ -3,6 +3,7 @@ import { X, Upload, Download, CheckCircle, AlertCircle, FileText } from 'lucide-
 import { parseHeatmapCSV, validateCSVFile, generateSampleCSV } from '../utils/heatmapImport';
 import { useAppStore } from '../stores/useAppStore';
 import type { HeatmapImportResult } from '../stores/types';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 interface HeatmapImportModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface HeatmapImportModalProps {
 export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportModalProps) {
   const rectangles = useAppStore(state => state.rectangles);
   const bulkSetHeatmapValues = useAppStore(state => state.heatmapActions.bulkSetHeatmapValues);
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   const [dragActive, setDragActive] = useState(false);
   const [importResult, setImportResult] = useState<HeatmapImportResult | null>(null);
@@ -140,8 +142,7 @@ export default function HeatmapImportModal({ isOpen, onClose }: HeatmapImportMod
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={(e) => e.stopPropagation()}
-      onMouseDown={(e) => e.stopPropagation()}
+      onClick={handleBackdropClick}
     >
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}

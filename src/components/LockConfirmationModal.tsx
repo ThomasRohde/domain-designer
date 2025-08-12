@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Lock, AlertTriangle, Archive } from 'lucide-react';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 interface LockConfirmationModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ const LockConfirmationModal: React.FC<LockConfirmationModalProps> = ({
 }) => {
   // Default to re-layout option as it's more commonly desired behavior
   const [lockType, setLockType] = useState<'lock-as-is' | 'lock-and-relayout'>('lock-and-relayout');
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -35,7 +37,10 @@ const LockConfirmationModal: React.FC<LockConfirmationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" role="dialog">
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center space-x-2">

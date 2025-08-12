@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Download, Globe, FileType, File } from 'lucide-react';
 import { ExportOptions } from '../types';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
   const [includeBackground, setIncludeBackground] = useState(true);
   /** Confluence Server HTML Macro requires specific formatting constraints (no document structure) */
   const [confluenceMode, setConfluenceMode] = useState(false);
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -46,7 +48,10 @@ const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport }) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" role="dialog">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">Export Diagram</h2>

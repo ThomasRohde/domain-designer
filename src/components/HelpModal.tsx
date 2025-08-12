@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, ChevronRight } from 'lucide-react';
+import { useModalDismiss } from '../hooks/useModalDismiss';
 
 interface HelpModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ interface HelpModalProps {
  */
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState<string>('getting-started');
+  const { handleBackdropClick } = useModalDismiss(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -711,7 +713,10 @@ https://yourdomain.com/viewer?url=https://raw.githubusercontent.com/user/repo/ma
   const activeContent = sections.find(section => section.id === activeSection);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-white rounded-lg max-w-4xl w-full mx-4 h-[80vh] flex flex-col" role="dialog">
         <div className="flex justify-between items-center p-6 border-b">
           <h2 className="text-xl font-bold text-gray-800">Help & Documentation</h2>
