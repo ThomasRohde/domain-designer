@@ -479,7 +479,25 @@ const exportToPPTX = async (
 
     const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
     const isParent = hasChildren.has(rect.id);
-    const textFontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    
+    // Calculate initial font size
+    let initialFontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    
+    // Calculate available space for text (accounting for padding)
+    const textPaddingPx = marginSetting * gridSize;
+    const availableWidth = wPx - (textPaddingPx * 2);
+    const availableHeight = hPx - (textPaddingPx * 2);
+    
+    // Optimize font size to prevent overflow/excessive wrapping
+    const optimizedFontSize = optimizeFontSize(
+      rect.label || '',
+      availableWidth,
+      availableHeight,
+      initialFontSize,
+      3 // Max 3 reduction steps
+    );
+    
+    const textFontSize = Math.floor(optimizedFontSize);
     const textFontFamily = rect.textFontFamily || fontFamily;
     const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : (isParent ? 'bold' : 'normal');
 
@@ -626,7 +644,25 @@ const exportToDrawIO = async (
 
     const isLabel = rect.isTextLabel || rect.type === 'textLabel';
     const isParent = hasChildren.has(rect.id);
-    const fontSize = rect.textFontSize ?? calcFontSize(rect.id);
+    
+    // Calculate initial font size
+    const initialFontSize = rect.textFontSize ?? calcFontSize(rect.id);
+    
+    // Calculate available space for text (accounting for typical padding)
+    const padding = gs.margin * gridSize;
+    const availableWidth = w - (padding * 2);
+    const availableHeight = h - (padding * 2);
+    
+    // Optimize font size to prevent overflow/excessive wrapping (less aggressive for Draw.io)
+    const optimizedFontSize = optimizeFontSize(
+      rect.label || '',
+      availableWidth,
+      availableHeight,
+      initialFontSize,
+      2 // Max 2 reduction steps for Draw.io (less aggressive)
+    );
+    
+    const fontSize = Math.round(optimizedFontSize);
     const fontFamily = rect.textFontFamily ?? gs.fontFamily;
     const align = rect.textAlign ?? 'center';
 
@@ -839,8 +875,24 @@ const exportToArchimate = async (
     const width = rect.w * gridSize;
     const height = rect.h * gridSize;
     
-    // Calculate font settings
-    const fontSize = isTextLabel ? (rect.textFontSize || 24) : calculateFontSize(rect.id);
+    // Calculate initial font settings
+    const initialFontSize = isTextLabel ? (rect.textFontSize || 24) : calculateFontSize(rect.id);
+    
+    // Calculate available space for text (accounting for typical ArchiMate margins)
+    const padding = 8; // ArchiMate typically uses smaller padding
+    const availableWidth = width - (padding * 2);
+    const availableHeight = height - (padding * 2);
+    
+    // Optimize font size to prevent overflow/excessive wrapping
+    const optimizedFontSize = optimizeFontSize(
+      rect.label || '',
+      availableWidth,
+      availableHeight,
+      initialFontSize,
+      3 // Max 3 reduction steps
+    );
+    
+    const fontSize = Math.round(optimizedFontSize);
     const fontWeight = isTextLabel ? 400 : (isParent ? 700 : 400);
     const fontBold = isTextLabel ? '0' : (isParent ? '1' : '0');
     
@@ -966,6 +1018,89 @@ const escapeXML = (text: string): string => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+};
+
+/**
+ * Check if text would require wrapping or exceed height constraints.
+ * 
+ * @param text - Text content to check
+ * @param availableWidth - Available width in pixels
+ * @param availableHeight - Available height in pixels
+ * @param fontSize - Current font size
+ * @returns True if text would require multiple lines or exceed height
+ */
+const wouldTextRequireWrapping = (text: string, availableWidth: number, availableHeight: number, fontSize: number): boolean => {
+  const words = text.split(' ');
+  const charWidth = fontSize * 0.6;
+  const lineHeight = fontSize * 1.2;
+  const maxCharsPerLine = Math.floor(availableWidth / charWidth);
+  
+  let lines = 1;
+  let currentLineLength = 0;
+  
+  for (const word of words) {
+    const wordLength = word.length;
+    const testLength = currentLineLength === 0 ? wordLength : currentLineLength + 1 + wordLength; // +1 for space
+    
+    if (testLength > maxCharsPerLine) {
+      if (currentLineLength > 0) {
+        lines++;
+        currentLineLength = wordLength;
+      } else {
+        // Single word longer than line, will be truncated
+        lines++;
+        currentLineLength = 0;
+      }
+    } else {
+      currentLineLength = testLength;
+    }
+  }
+  
+  const totalHeight = lines * lineHeight;
+  return totalHeight > availableHeight;
+};
+
+/**
+ * Find optimal font size to prevent text from exceeding available height.
+ * 
+ * Attempts to reduce font size by 1-3 steps until wrapped text fits within height constraints.
+ * Both leaf and parent nodes now support word wrapping - font size is only reduced when
+ * the wrapped text would exceed the available height.
+ * 
+ * @param text - Text content to fit
+ * @param availableWidth - Available width in pixels
+ * @param availableHeight - Available height in pixels
+ * @param initialFontSize - Starting font size
+ * @param maxReduction - Maximum font size reduction steps (default 3)
+ * @returns Optimized font size
+ */
+const optimizeFontSize = (
+  text: string, 
+  availableWidth: number, 
+  availableHeight: number, 
+  initialFontSize: number, 
+  maxReduction: number = 3
+): number => {
+  if (!text || text.trim().length === 0) {
+    return initialFontSize;
+  }
+  
+  let fontSize = initialFontSize;
+  let reductionSteps = 0;
+  
+  while (reductionSteps < maxReduction) {
+    // Check if wrapped text fits within height constraints
+    if (!wouldTextRequireWrapping(text, availableWidth, availableHeight, fontSize)) {
+      break;
+    }
+    
+    // More conservative reduction: smaller steps and higher minimum
+    const reduction = fontSize > 16 ? 1.5 : 1; // Smaller reductions
+    fontSize = Math.max(fontSize - reduction, Math.floor(initialFontSize * 0.75)); // Don't go below 75% of original (was 60%)
+    reductionSteps++;
+  }
+  
+  return Math.floor(fontSize); // Ensure integer font size
 };
 
 /**
@@ -1144,8 +1279,24 @@ const createSVGFromRectangles = (
     const isTextLabel = rect.isTextLabel || rect.type === 'textLabel';
     const isParent = hasChildren.has(rect.id);
     
-    // Use exact same font calculation as HTML export
-    const fontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    // Calculate initial font size
+    let initialFontSize = isTextLabel ? (rect.textFontSize || 14) : calculateFontSize(rect.id);
+    
+    // Use same padding calculation as HTML export
+    const padding = marginSetting * gridSize;
+    const textWidth = w - (padding * 2);
+    const textHeight = h - (padding * 2);
+    
+    // Optimize font size to prevent overflow/excessive wrapping (less aggressive for SVG)
+    const optimizedFontSize = optimizeFontSize(
+      rect.label || '',
+      textWidth,
+      textHeight,
+      initialFontSize,
+      2 // Max 2 reduction steps for SVG (less aggressive)
+    );
+    
+    const fontSize = optimizedFontSize;
     const textFontFamily = isTextLabel ? (rect.textFontFamily || fontFamily) : (rect.textFontFamily || fontFamily);
     const fontWeight = isTextLabel ? (rect.fontWeight || 'normal') : (isParent ? 'bold' : 'normal');
     const textAlign = isTextLabel ? (rect.textAlign || 'center') : 'center';
@@ -1161,9 +1312,6 @@ const createSVGFromRectangles = (
       stroke-width="${strokeWidthFinal}" 
       rx="${borderRadius}"/>`;
     
-    // Use same padding calculation as HTML export
-    const padding = marginSetting * gridSize;
-    const textWidth = w - (padding * 2);
     const lines = wrapText(rect.label, textWidth, fontSize);
     
     const lineHeight = fontSize * 1.2;
