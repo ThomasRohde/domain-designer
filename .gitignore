@@ -193,3 +193,4 @@ test.json
 EDM47.json
 package-lock.json
 package-lock.json
+extract-empty-descriptions.js
