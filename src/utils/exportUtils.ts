@@ -563,10 +563,12 @@ const exportToPPTX = async (
  *
  * Mapping notes:
  * - Each rectangle becomes an mxCell vertex with geometry (in px = gridSize units converted)
- * - Parent-child relationships are represented via the parent attribute
+ * - All rectangles are placed on the root layer (no parent-child grouping in Draw.io)
+ * - Z-ordering is maintained by depth-based sorting (parents rendered before children)
  * - Text labels use value attribute; font style approximated by bold flag for parents
  * - Border radius maps to style rounded and arcSize; colors map to fillColor and strokeColor
  * - Text-only labels are exported as vertices with no fill (transparent)
+ * - Absolute coordinates are used for all rectangles to avoid grouping behavior
  */
 const exportToDrawIO = async (
   rectangles: Rectangle[],
@@ -609,7 +611,7 @@ const exportToDrawIO = async (
     return Math.max(gs.rootFontSize * Math.pow(0.9, depth), gs.rootFontSize * 0.6);
   };
 
-  // Draw.io requires a root (id=0) and a layer (id=1). We'll parent top-level shapes to id=1.
+  // Draw.io requires a root (id=0) and a layer (id=1). All shapes will be parented to layer 1 to avoid grouping.
   const header = ['<?xml version="1.0" encoding="UTF-8"?>',
     '<mxfile host="app.diagrams.net">',
     '<diagram id="Page-1" name="Page-1">',
@@ -621,24 +623,21 @@ const exportToDrawIO = async (
 
   // Map app rect IDs to numeric-ish IDs safe for mxCell. Use the same IDs but ensure they don't start with non-digit by prefixing r_.
   const mxId = (id: string) => `r_${id}`;
-  const parentIdFor = (rect: Rectangle) => rect.parentId ? mxId(rect.parentId) : '1';
+
+  // Sort rectangles by depth to ensure correct z-ordering (parents drawn before children)
+  const sortedRectangles = [...rectangles].sort((a, b) => {
+    const depthA = getDepth(a.id);
+    const depthB = getDepth(b.id);
+    return depthA - depthB;
+  });
 
   // Convert each rectangle to an mxCell vertex with geometry
-  // Note: using a fixed small negative spacingTop for parents per sample export; no general padding here.
+  // All rectangles are parented to layer 1 (no grouping) and use absolute coordinates
 
-  const cells = rectangles.map(rect => {
-    // Coordinates must be relative to parent if parented; adjust accordingly
-    let absX = rect.x;
-    let absY = rect.y;
-    if (rect.parentId) {
-      const parent = idToRect.get(rect.parentId);
-      if (parent) {
-        absX = rect.x - parent.x;
-        absY = rect.y - parent.y;
-      }
-    }
-    const x = absX * gridSize;
-    const y = absY * gridSize;
+  const cells = sortedRectangles.map(rect => {
+    // Use absolute coordinates (no relative positioning since we're not grouping)
+    const x = rect.x * gridSize;
+    const y = rect.y * gridSize;
     const w = rect.w * gridSize;
     const h = rect.h * gridSize;
 
@@ -695,7 +694,7 @@ const exportToDrawIO = async (
     const style = styleParts.join(';');
     const value = escapeXML(rect.label || '');
     const id = mxId(rect.id);
-    const parent = parentIdFor(rect);
+    const parent = '1'; // All rectangles are parented to layer 1 to avoid grouping
 
     return [
       `<mxCell id="${id}" value="${value}" style="${style}" vertex="1" parent="${parent}">`,
