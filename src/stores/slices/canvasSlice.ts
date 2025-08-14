@@ -217,8 +217,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
       // Essential for hierarchy drag operations to maintain parent-child positioning accuracy
       throttledVirtualDragUpdate.cancel();
       
-      // Hierarchy drag uses direct atomic movement like keyboard input for perfect synchronization
-      // No virtual drag state cleanup needed since it operates on actual rectangle positions
+  // Clear virtual drag layer used for hierarchy drag visualization
+  get().canvasActions.cancelVirtualDrag();
       set(state => ({
         canvas: {
           ...state.canvas,
@@ -581,6 +581,10 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         
         get().canvasActions.setInitialPositions(positions);
         
+  // Initialize virtual drag layer for visual feedback during hierarchy drag
+  const allAffectedIds = [rect.id, ...Array.from(descendantIds)];
+  get().canvasActions.startVirtualDrag(rect.id, allAffectedIds, positions);
+        
         // CRITICAL: Use direct atomic movement for hierarchy drag operations
         // Prevents coordinate desynchronization during reparenting by moving rectangles immediately
         // This approach matches keyboard movement and ensures pixel-perfect parent-child alignment
@@ -720,15 +724,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
             }
           }));
           
-          // Move rectangle during hierarchy drag using absolute positioning
-          // Calculate pixel delta from initial drag position to prevent coordinate accumulation
-          const dragState = state.canvas.dragState;
-          if (dragState) {
-            // Convert grid coordinate difference from initial position to pixel movement
-            const pixelDeltaX = (newX - dragState.initialX) * state.settings.gridSize;
-            const pixelDeltaY = (newY - dragState.initialY) * state.settings.gridSize;
-            get().rectangleActions.moveRectangleToAbsolutePosition(dragState.id, pixelDeltaX, pixelDeltaY);
-          }
+          // Update virtual positions for smooth visual feedback during hierarchy drag
+          throttledVirtualDragUpdate.update(gridDeltaX, gridDeltaY);
         }
         
         // CRITICAL SYNCHRONIZATION FIX: Use direct pixel-based movement like keyboard input
@@ -746,7 +743,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           // Calculate pixel delta from initial drag position to prevent coordinate accumulation
           // This approach prevents parent-child coordinate drift during drag operations
           const dragState = state.canvas.dragState;
-          if (dragState) {
+          if (dragState && !dragState.isHierarchyDrag) {
             // Transform grid coordinate delta from initial position to pixel delta
             // Use absolute positioning to prevent coordinate accumulation errors
             const pixelDeltaX = (newX - dragState.initialX) * state.settings.gridSize;
