@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { vi, beforeEach } from 'vitest';
+import { enableMapSet } from 'immer';
 
 /**
  * Test Environment Setup
@@ -52,3 +53,30 @@ Object.defineProperty(window, 'matchMedia', {
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+// Enable Immer Map/Set support for tests that use Map in state (e.g., virtual drag positions)
+enableMapSet();
+
+// Mock canvas getContext to avoid JSDOM not-implemented errors during font detection
+// Always override to a harmless 2D context stub
+const canvasProto = (globalThis as unknown as { HTMLCanvasElement?: { prototype?: unknown } }).HTMLCanvasElement?.prototype as
+  | (HTMLCanvasElement & { prototype?: unknown })
+  | undefined;
+
+if (canvasProto) {
+  // Provide a minimal CanvasRenderingContext2D stub used by fontDetection.ts
+  // measureText is the only method we rely on; font property is set/read
+  vi.spyOn(canvasProto as unknown as HTMLCanvasElement, 'getContext').mockImplementation(() => {
+    let _font = '';
+    const ctx = {
+      get font() {
+        return _font;
+      },
+      set font(v: string) {
+        _font = v;
+      },
+  measureText: (_text: string) => ({ width: 100 }),
+    } as unknown as CanvasRenderingContext2D;
+    return ctx;
+  });
+}

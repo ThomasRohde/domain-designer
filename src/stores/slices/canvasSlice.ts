@@ -52,13 +52,27 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
     // Update all virtual positions with delta movement using precise coordinate transformation
     // Grid-based positioning ensures pixel-perfect alignment and prevents floating-point drift
     const updatedPositions = new Map(virtualDragState.positions);
+
+    // Group-wise clamp: ensure the entire dragged set maintains relative positions
+    // by limiting delta so that none of the items crosses the 0,0 boundary.
+    let minInitialX = Infinity;
+    let minInitialY = Infinity;
+    virtualDragState.positions.forEach((position) => {
+      if (position.initialX < minInitialX) minInitialX = position.initialX;
+      if (position.initialY < minInitialY) minInitialY = position.initialY;
+    });
+    // Round deltas to grid units and clamp so min stays >= 0
+    const intendedDX = Math.round(deltaX);
+    const intendedDY = Math.round(deltaY);
+    const clampedDX = Math.max(intendedDX, -minInitialX);
+    const clampedDY = Math.max(intendedDY, -minInitialY);
     
     // Apply delta transformation to all virtual positions while maintaining grid alignment
     virtualDragState.positions.forEach((position, id) => {
       updatedPositions.set(id, {
         ...position,
-        x: Math.max(0, Math.round(position.initialX + deltaX)), // Constrain to positive grid coordinates
-        y: Math.max(0, Math.round(position.initialY + deltaY))  // Round to prevent sub-pixel positioning
+        x: Math.round(position.initialX + clampedDX), // Group-clamped to keep set aligned at boundary
+        y: Math.round(position.initialY + clampedDY)  // Round to prevent sub-pixel positioning
       });
     });
 
@@ -826,25 +840,36 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
               if (success && dropPosition) {
                 // Apply mouse drop position for child-to-root operations AND move all descendants
                 get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
-                  const draggedRect = rectangles.find(r => r.id === draggedRectangleId);
-                  if (!draggedRect) return rectangles;
-                  
-                  // Calculate movement delta
-                  const deltaX = dropPosition.x - draggedRect.x;
-                  const deltaY = dropPosition.y - draggedRect.y;
-                  
-                  // Get all descendants of the dragged rectangle
-                  const descendantIds = new Set(getAllDescendants(draggedRectangleId, rectangles));
-                  
+                  const draggedRectAfter = rectangles.find(r => r.id === draggedRectangleId);
+                  if (!draggedRectAfter) return rectangles;
+
+                  // Clamp intended drop to non-negative coordinates
+                  const targetX = Math.max(0, dropPosition.x);
+                  const targetY = Math.max(0, dropPosition.y);
+
+                  // Compute subtree to keep group alignment at boundary
+                  const descendantIdsArr = getAllDescendants(draggedRectangleId, rectangles);
+                  const subtreeIds = new Set([draggedRectangleId, ...descendantIdsArr]);
+                  let minSubtreeX = Infinity;
+                  let minSubtreeY = Infinity;
+                  rectangles.forEach(r => {
+                    if (subtreeIds.has(r.id)) {
+                      if (r.x < minSubtreeX) minSubtreeX = r.x;
+                      if (r.y < minSubtreeY) minSubtreeY = r.y;
+                    }
+                  });
+
+                  // Intended movement
+                  const intendedDX = targetX - draggedRectAfter.x;
+                  const intendedDY = targetY - draggedRectAfter.y;
+
+                  // Group clamp: don't let any member cross the 0 boundary
+                  const clampedDX = Math.max(intendedDX, -minSubtreeX);
+                  const clampedDY = Math.max(intendedDY, -minSubtreeY);
+
                   return rectangles.map(rect => {
-                    if (rect.id === draggedRectangleId) {
-                      // Move the dragged rectangle to drop position
-                      return { ...rect, x: dropPosition.x, y: dropPosition.y };
-                    } else if (descendantIds.has(rect.id)) {
-                      // Move descendants by the same delta to preserve relative positions
-                      const newX = Math.max(0, rect.x + deltaX);
-                      const newY = Math.max(0, rect.y + deltaY);
-                      return { ...rect, x: newX, y: newY };
+                    if (subtreeIds.has(rect.id)) {
+                      return { ...rect, x: rect.x + clampedDX, y: rect.y + clampedDY };
                     }
                     return rect;
                   });
@@ -1321,12 +1346,24 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
 
         // Update all virtual positions with the delta movement
         const updatedPositions = new Map(virtualDragState.positions);
+
+        // Group-wise clamp to keep all affected rectangles aligned when hitting 0-boundary
+        let minInitialX = Infinity;
+        let minInitialY = Infinity;
+        virtualDragState.positions.forEach((position) => {
+          if (position.initialX < minInitialX) minInitialX = position.initialX;
+          if (position.initialY < minInitialY) minInitialY = position.initialY;
+        });
+        const intendedDX = Math.round(deltaX);
+        const intendedDY = Math.round(deltaY);
+        const clampedDX = Math.max(intendedDX, -minInitialX);
+        const clampedDY = Math.max(intendedDY, -minInitialY);
         
         virtualDragState.positions.forEach((position, id) => {
           updatedPositions.set(id, {
             ...position,
-            x: Math.max(0, Math.round(position.initialX + deltaX)), // Constrain to positive coordinates
-            y: Math.max(0, Math.round(position.initialY + deltaY))
+            x: Math.round(position.initialX + clampedDX),
+            y: Math.round(position.initialY + clampedDY)
           });
         });
 
