@@ -101,6 +101,10 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
         const state = get();
         const { rectangles } = state;
         
+        // Disallow reparenting if the child itself is locked
+        const childRect = rectangles.find((r: Rectangle) => r.id === childId);
+        if (childRect?.isLockedAsIs) return false;
+
         // Prevent self-parenting (circular reference)
         if (childId === newParentId) return false;
         
@@ -114,6 +118,8 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
         if (newParentId) {
           const targetParent = rectangles.find((r: Rectangle) => r.id === newParentId);
           if (targetParent?.isTextLabel) return false;
+          // Disallow dropping into locked rectangles
+          if (targetParent?.isLockedAsIs) return false;
         }
         
         return true;

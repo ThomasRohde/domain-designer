@@ -65,6 +65,8 @@ interface RectangleComponentProps {
   disableEditing?: boolean;
   /** Virtual drag position for performance optimization during drag operations */
   virtualPosition?: VirtualDragPosition | null;
+  /** Disable hierarchy rearrangement UI and interactions (e.g., due to locks) */
+  rearrangeDisabled?: boolean;
 }
 
 /**
@@ -119,6 +121,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   borderWidth = 2,
   disableEditing = false,
   virtualPosition = null
+  , rearrangeDisabled = false
 }) => {
   // In-place editing state management
   const [isEditing, setIsEditing] = useState(false);
@@ -316,7 +319,7 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
    * - Proper event propagation ensures parent components handle selection logic
    */
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.ctrlKey || e.metaKey) {
+  if ((e.ctrlKey || e.metaKey) && !rearrangeDisabled && !rectangle.isLockedAsIs) {
       onMouseDown(e, rectangle, 'hierarchy-drag');
     } else if (canDrag) {
       onMouseDown(e, rectangle, 'drag');
@@ -461,14 +464,16 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
         </div>
       )}
 
-      {/* Hierarchy drag handle: Orange circle matching resize handle, single selection only */}
-      {isSelected && selectedCount === 1 && !isHierarchyDragActive && (
+  {/* Hierarchy drag handle: hidden when rectangle is locked-as-is */}
+      {isSelected && selectedCount === 1 && !isHierarchyDragActive && !rectangle.isLockedAsIs && !rearrangeDisabled && (
         <div
           className="absolute top-1 left-1 w-4 h-4 bg-orange-500 rounded-full opacity-90 hover:opacity-100 transition-all hover:scale-110 cursor-pointer border-2 border-white shadow-sm"
           title="Drag to rearrange hierarchy"
           onMouseDown={(e) => {
             e.stopPropagation();
-            onMouseDown(e, rectangle, 'hierarchy-drag');
+            if (!rearrangeDisabled) {
+              onMouseDown(e, rectangle, 'hierarchy-drag');
+            }
           }}
         />
       )}

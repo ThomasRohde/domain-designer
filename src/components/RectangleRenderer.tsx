@@ -93,6 +93,18 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const { setSelectedIds, updateRectangleLabel, toggleSelection } = useAppStore(state => state.rectangleActions);
   const handleRectangleMouseDown = useAppStore(state => state.canvasActions.handleRectangleMouseDown);
   
+  // Helper: check if a rectangle has any locked ancestor
+  const hasLockedAncestor = React.useCallback((rect: Rectangle): boolean => {
+    let current = rect;
+    while (current.parentId) {
+      const parent = rectangles.find(r => r.id === current.parentId);
+      if (!parent) break;
+      if (parent.isLockedAsIs) return true;
+      current = parent;
+    }
+    return false;
+  }, [rectangles]);
+  
 
   /**
    * Mouse event handler factory that injects containerRef for coordinate calculations.
@@ -183,6 +195,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             borderColor={borderColor}
             borderWidth={borderWidth}
             virtualPosition={virtualPosition}
+            rearrangeDisabled={rect.isLockedAsIs || hasLockedAncestor(rect)}
           />
         );
       })}

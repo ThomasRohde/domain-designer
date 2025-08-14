@@ -579,7 +579,11 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
           });
         }
       } else if (action === 'hierarchy-drag') {
-        // Hierarchy drag - allow for any rectangle
+        // Block hierarchy rearrangement if the rectangle is locked
+        if (rect.isLockedAsIs) {
+          return;
+        }
+        // Hierarchy drag - allow for any rectangle (when not locked)
         const descendantIds = new Set(getAllDescendants(rect.id, state.rectangles));
         const positions: Record<string, { x: number; y: number }> = {};
         
@@ -820,7 +824,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
         if (state.canvas.hierarchyDragState && state.canvas.dragState?.isHierarchyDrag) {
           const { draggedRectangleId, currentDropTarget, mousePosition } = state.canvas.hierarchyDragState;
           
-          if (currentDropTarget && currentDropTarget.isValid) {
+      if (currentDropTarget && currentDropTarget.isValid) {
             const draggedRect = state.rectangles.find(r => r.id === draggedRectangleId);
             const originalParentId = draggedRect?.parentId || null;
             
@@ -837,7 +841,7 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
               
               const success = get().rectangleActions.reparentRectangle(draggedRectangleId, currentDropTarget.targetId);
               
-              if (success && dropPosition) {
+        if (success && dropPosition) {
                 // Apply mouse drop position for child-to-root operations AND move all descendants
                 get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
                   const draggedRectAfter = rectangles.find(r => r.id === draggedRectangleId);
@@ -874,6 +878,47 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
                     return rect;
                   });
                 });
+              } else if (success && currentDropTarget.targetId) {
+                // Dropped onto a parent (not root). If the new parent is in manual mode,
+                // place the reparented rectangle at the mouse position, clamped to parent bounds,
+                // and move its descendants by the same delta to preserve relative layout.
+                const latestState = get();
+                const newParent = latestState.rectangles.find(r => r.id === currentDropTarget.targetId!);
+                if (newParent && newParent.isManualPositioningEnabled && mousePosition) {
+                  // Compute desired drop position in grid coordinates
+                  const mouseGridPos = convertMouseToGridPosition(mousePosition, latestState);
+
+                  // Determine clamped top-left position inside parent bounds using margins
+                  const margin = latestState.settings.margin;
+                  const labelMargin = latestState.settings.labelMargin;
+
+                  // Re-read dragged rectangle after reparent to get current size and position
+                  const draggedRectAfter = latestState.rectangles.find(r => r.id === draggedRectangleId);
+                  if (draggedRectAfter) {
+                    const minX = newParent.x + margin;
+                    const minY = newParent.y + labelMargin;
+                    const maxX = newParent.x + newParent.w - draggedRectAfter.w - margin;
+                    const maxY = newParent.y + newParent.h - draggedRectAfter.h - margin;
+
+                    const targetX = Math.max(minX, Math.min(maxX, mouseGridPos.x));
+                    const targetY = Math.max(minY, Math.min(maxY, mouseGridPos.y));
+
+                    const intendedDX = targetX - draggedRectAfter.x;
+                    const intendedDY = targetY - draggedRectAfter.y;
+
+                    // Move the entire subtree (reparented rect + its descendants)
+                    get().rectangleActions.updateRectanglesDuringDrag((rectangles) => {
+                      const descendantIdsArr = getAllDescendants(draggedRectangleId, rectangles);
+                      const subtreeIds = new Set([draggedRectangleId, ...descendantIdsArr]);
+                      return rectangles.map(rect => {
+                        if (subtreeIds.has(rect.id)) {
+                          return { ...rect, x: rect.x + intendedDX, y: rect.y + intendedDY };
+                        }
+                        return rect;
+                      });
+                    });
+                  }
+                }
               } else if (!success) {
                 resetToInitialPositions();
               }
@@ -1215,6 +1260,8 @@ export const createCanvasSlice: SliceCreator<CanvasSlice> = (set, get) => {
       
       // Add valid drop targets
       mouseOverRects.forEach(({ rect, bounds }) => {
+        // Skip locked rectangles entirely as drop targets
+        if (rect.isLockedAsIs) return;
         const canReparent = get().getters.canReparent(draggedRectId, rect.id);
         
         targets.push({
