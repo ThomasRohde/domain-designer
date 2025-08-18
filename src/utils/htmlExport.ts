@@ -1,4 +1,5 @@
 import { Rectangle, GlobalSettings } from '../types';
+import type { HeatmapState } from '../stores/types';
 import { exportFile } from './exportUtils';
 
 /**
@@ -29,9 +30,10 @@ export const exportToHTML = async (
   rectangles: Rectangle[],
   filename: string,
   options: HtmlExportOptions,
-  globalSettings?: GlobalSettings
+  globalSettings?: GlobalSettings,
+  heatmapState?: HeatmapState
 ): Promise<void> => {
-  const html = generateInteractiveHTML(rectangles, options, globalSettings);
+  const html = generateInteractiveHTML(rectangles, options, globalSettings, heatmapState);
 
   await exportFile({
     filename,
@@ -49,13 +51,14 @@ export const exportToHTML = async (
 const generateInteractiveHTML = (
   rectangles: Rectangle[],
   options: HtmlExportOptions,
-  globalSettings?: GlobalSettings
+  globalSettings?: GlobalSettings,
+  heatmapState?: HeatmapState
 ): string => {
   if (rectangles.length === 0) return '';
 
   // Route to simplified mode for wiki embedding
   if (options.confluenceMode) {
-    return generateConfluenceHTML(rectangles, options, globalSettings);
+    return generateConfluenceHTML(rectangles, options, globalSettings, heatmapState);
   }
 
   const gridSize = globalSettings?.gridSize || 20;
@@ -329,6 +332,7 @@ const generateInteractiveHTML = (
   </div>
   
   <div class="tooltip" id="tooltip" style="display: none;"></div>
+  ${renderLegendHTML(heatmapState, 'fixed')}
   
   <script>
     let scale = 1;
@@ -468,7 +472,8 @@ const generateInteractiveHTML = (
 const generateConfluenceHTML = (
   rectangles: Rectangle[],
   options: HtmlExportOptions,
-  globalSettings?: GlobalSettings
+  globalSettings?: GlobalSettings,
+  heatmapState?: HeatmapState
 ): string => {
   const gridSize = globalSettings?.gridSize || 20;
   const borderRadius = globalSettings?.borderRadius || 8;
@@ -485,6 +490,10 @@ const generateConfluenceHTML = (
   
   const width = (maxX - minX) * gridSize;
   const height = (maxY - minY) * gridSize;
+
+  // Legend height reservation in Confluence mode so it appears beneath rectangles
+  const includeLegend = !!(heatmapState && heatmapState.enabled);
+  const legendReservedHeight = includeLegend ? 80 : 0; // Reserve ~80px for legend
 
   // Check which rectangles have children
   const hasChildren = new Set<string>();
@@ -612,7 +621,7 @@ const generateConfluenceHTML = (
   return `<div style="
     position: relative;
     width: ${width}px;
-    height: ${height}px;
+    height: ${height + legendReservedHeight}px;
     background-color: ${backgroundColor};
     font-family: ${fontFamily}, Arial, sans-serif;
     margin: 0;
@@ -620,6 +629,7 @@ const generateConfluenceHTML = (
     overflow: hidden;
   ">
     ${rectangleElements}
+  ${renderLegendHTML(heatmapState, 'absolute', height)}
   </div>`;
 };
 
@@ -627,4 +637,58 @@ const escapeHtml = (text: string): string => {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+};
+
+/**
+ * Render a heatmap legend when heatmap is enabled. Two modes:
+ * - 'fixed': fixed bottom-right overlay for full HTML export
+ * - 'absolute': absolutely positioned inside container for Confluence export
+ */
+const renderLegendHTML = (
+  heatmapState: HeatmapState | undefined,
+  mode: 'fixed' | 'absolute',
+  contentHeight?: number
+): string => {
+  if (!heatmapState || !heatmapState.enabled) return '';
+
+  const current = heatmapState.palettes.find(p => p.id === heatmapState.selectedPaletteId);
+  if (!current) return '';
+
+  const sortedStops = [...current.stops].sort((a, b) => a.value - b.value);
+  const gradient = sortedStops.map(s => `${s.color} ${s.value * 100}%`).join(', ');
+  const values = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+
+  const baseBox = `
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(4px);
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    padding: 12px 12px 20px 12px;
+    min-width: 256px;
+  `;
+
+  const positionStyle = mode === 'fixed'
+    ? 'position: fixed; right: 20px; bottom: 20px; z-index: 1002;'
+    : `position: absolute; right: 20px; top: ${(contentHeight ?? 0) + 20}px;`;
+
+  return `
+    <div style="${positionStyle} pointer-events: none;">
+      <div style="${baseBox} pointer-events: auto;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <span style="font-size: 12px; font-weight: 600; color: #374151;">Heat Map Scale</span>
+          <span style="font-size: 12px; color: #6b7280;">${escapeHtml(current.name)}</span>
+        </div>
+        <div style="position: relative; margin-bottom: 6px;">
+          <div style="height: 16px; border-radius: 4px; border: 1px solid #d1d5db; background: linear-gradient(to right, ${gradient});"></div>
+        </div>
+        <div style="position: relative; font-size: 12px; color: #4b5563;">
+          ${values.map(v => {
+            const transform = v === 0 ? 'translateX(0%)' : (v === 1 ? 'translateX(-100%)' : 'translateX(-50%)');
+            return `<span style="position:absolute; left:${v * 100}%; transform:${transform}; user-select:none;">${v.toFixed(1)}</span>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+  `;
 };

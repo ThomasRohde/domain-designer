@@ -181,7 +181,7 @@ export const exportDiagram = async (
 
   switch (format) {
     case 'html':
-      await exportToHTML(exportRectangles, filename, { includeBackground, confluenceMode }, globalSettings);
+      await exportToHTML(exportRectangles, filename, { includeBackground, confluenceMode }, globalSettings, heatmapState);
       break;
     case 'svg':
       await exportToSVG(containerElement, exportRectangles, filename, { includeBackground }, globalSettings, gridSize, borderRadius, borderColor, borderWidth);
