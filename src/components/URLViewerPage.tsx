@@ -6,6 +6,7 @@ import { importDiagramFromJSON, ImportedDiagramData } from '../utils/exportUtils
 import { useAppStore } from '../stores/useAppStore';
 import ViewerCanvas from './ViewerCanvas';
 import ViewerRectangleRenderer from './ViewerRectangleRenderer';
+import HeatmapLegend from './HeatmapLegend';
 
 interface LoadingState {
   isLoading: boolean;
@@ -283,6 +284,9 @@ const URLViewerPage: React.FC = () => {
           borderWidth={appSettings?.borderWidth || defaultSettings.borderWidth}
         />
       </ViewerCanvas>
+
+  {/* Heat Map Legend - floating overlay (no sidebar compensation in viewer) */}
+  <HeatmapLegend compensateForSidebar={false} />
     </div>
   );
 };

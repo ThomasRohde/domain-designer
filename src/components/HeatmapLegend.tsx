@@ -5,6 +5,8 @@ import { useAppStore } from '../stores/useAppStore';
 interface HeatmapLegendProps {
   /** Whether the legend is visible */
   visible?: boolean;
+  /** If true, shift left when sidebar is open (editor). Disable in viewer pages. */
+  compensateForSidebar?: boolean;
 }
 
 /**
@@ -18,7 +20,7 @@ interface HeatmapLegendProps {
  * - Shows current palette name and range
  * - Only displays when heat map is enabled and legend toggle is active
  */
-const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
+const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true, compensateForSidebar = true }) => {
   const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
   const showLegend = useAppStore(state => state.heatmap.showLegend);
   const selectedPaletteId = useAppStore(state => state.heatmap.selectedPaletteId);
@@ -49,8 +51,8 @@ const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true }) => {
   // Generate value labels in 0.2 steps for clean one-decimal formatting
   const valueLabels = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
 
-  // When the sidebar is open, shift the legend left by the sidebar width (w-96 = 24rem) + 1rem gap
-  const rightOffset = sidebarOpen ? 'calc(24rem + 1rem)' : '1rem';
+  // When the sidebar is open (and compensation enabled), shift legend left by sidebar width (w-96 = 24rem) + 1rem gap
+  const rightOffset = compensateForSidebar && sidebarOpen ? 'calc(24rem + 1rem)' : '1rem';
 
   const legendEl = (
     <div

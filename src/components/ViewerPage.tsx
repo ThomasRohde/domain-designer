@@ -6,6 +6,7 @@ import { useAutoSave } from '../hooks/useAutoSave';
 import ViewerCanvas from './ViewerCanvas';
 import ViewerRectangleRenderer from './ViewerRectangleRenderer';
 import URLViewerPage from './URLViewerPage';
+import HeatmapLegend from './HeatmapLegend';
 
 const ViewerPage: React.FC = () => {
   const location = useLocation();
@@ -179,6 +180,9 @@ const ViewerPage: React.FC = () => {
           borderWidth={appSettings?.borderWidth || defaultSettings.borderWidth}
         />
       </ViewerCanvas>
+
+  {/* Heat Map Legend - floating overlay (no sidebar compensation in viewer) */}
+  <HeatmapLegend compensateForSidebar={false} />
     </div>
   );
 };
