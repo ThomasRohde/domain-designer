@@ -130,7 +130,6 @@ function isFontAvailableCanvas(fontName: string): boolean {
     if (canvas) {
       canvas.width = 0;
       canvas.height = 0;
-      canvas = null;
     }
   }
 }

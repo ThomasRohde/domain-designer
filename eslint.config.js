@@ -5,6 +5,11 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from '@typescript-eslint/eslint-plugin'
 import tsparser from '@typescript-eslint/parser'
 
+const classicReactHooksRules = {
+  'react-hooks/rules-of-hooks': 'error',
+  'react-hooks/exhaustive-deps': 'warn'
+}
+
 export default [
   {
     ignores: ['dist', 'node_modules']
@@ -30,7 +35,7 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...tseslint.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
+      ...classicReactHooksRules,
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true }
