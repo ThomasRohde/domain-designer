@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { LayoutPreferences, Rectangle } from '../types';
 import { useAppStore } from '../stores/useAppStore';
 import { Palette, Eye, EyeOff } from 'lucide-react';
 import ColorPalette from './ColorPalette';
 import GlobalSettings from './GlobalSettings';
+import MultiSelectActionControls from './MultiSelectActionControls';
+import { buildRectangleRenderIndex, getRectanglePath } from '../utils/rectangleIndexUtils';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface PropertyPanelProps {
@@ -404,6 +406,7 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
   const selectedRectangle = selectedId ? rectangles.find(r => r.id === selectedId) || null : null;
   const selectedRectangles = selectedIds.map(id => rectangles.find(r => r.id === id)).filter(Boolean) as Rectangle[];
   const isMultiSelect = selectedIds.length > 1;
+  const renderIndex = useMemo(() => buildRectangleRenderIndex(rectangles), [rectangles]);
   
   const {
     gridSize,
@@ -495,19 +498,9 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
           getHeatmapColor={getHeatmapColor}
         />
 
-        {/* Bulk operation shortcuts */}
+        {/* Bulk operation controls */}
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="font-semibold mb-2 text-sm lg:text-base">Bulk Operations</h3>
-          <div className="space-y-2">
-            <p className="text-xs lg:text-sm text-gray-600">
-              Use the context menu (right-click) for alignment, distribution, and other bulk operations.
-            </p>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="bg-gray-100 px-2 py-1 rounded">Right-click → Align</span>
-              <span className="bg-gray-100 px-2 py-1 rounded">Right-click → Distribute</span>
-              <span className="bg-gray-100 px-2 py-1 rounded">Right-click → Delete</span>
-            </div>
-          </div>
+          <MultiSelectActionControls variant="panel" />
         </div>
 
       </>
@@ -516,7 +509,9 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
 
   // Single-select rendering: existing functionality preserved
   if (selectedId && selectedRectangle) {
-    const children = useAppStore.getState().getters.getChildren(selectedId);
+    const children = renderIndex.childrenByParentId.get(selectedId) ?? [];
+    const selectedPath = getRectanglePath(selectedId, renderIndex);
+    const pathText = selectedPath.map(rectangle => rectangle.label || rectangle.id).join(' / ');
     
     return (
       <>
@@ -532,6 +527,11 @@ const PropertyPanel: React.FC<PropertyPanelProps> = () => {
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="font-semibold mb-2 text-sm lg:text-base">Selected: {selectedId}</h3>
           <div className="text-xs lg:text-sm text-gray-600 space-y-1">
+            {pathText && (
+              <div className="break-words">
+                Path: <span className="font-medium text-gray-700">{pathText}</span>
+              </div>
+            )}
             <div>Position: ({selectedRectangle.x}, {selectedRectangle.y})</div>
             <div>Size: {selectedRectangle.w} × {selectedRectangle.h}</div>
             <div>Children: {children.length}</div>

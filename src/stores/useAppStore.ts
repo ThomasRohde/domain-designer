@@ -139,6 +139,7 @@ const createAppStore = (set: any, get: any, api: any): AppStore => {
  * when modifications occur. Subscription is managed separately from store creation.
  */
 let autoSaveUnsubscribe: (() => void) | null = null;
+let pendingAutoSaveAfterInteraction = false;
 
 /**
  * Main application store with Zustand middleware stack.
@@ -217,33 +218,41 @@ export const initializeAutoSaveSubscription = () => {
   if (autoSaveUnsubscribe) {
     autoSaveUnsubscribe();
   }
+  pendingAutoSaveAfterInteraction = false;
   
   // Subscribe to state changes that require persistence
   autoSaveUnsubscribe = useAppStore.subscribe(
-    (state) => ({ rectangles: state.rectangles, settings: state.settings, virtualDragActive: state.canvas.virtualDragState.isActive }),
+    (state) => ({
+      rectangles: state.rectangles,
+      settings: state.settings,
+      interactionActive: Boolean(
+        state.canvas.dragState ||
+        state.canvas.resizeState ||
+        state.canvas.hierarchyDragState ||
+        state.canvas.virtualDragState.isActive
+      )
+    }),
     (current, previous) => {
-      // Skip expensive operations during virtual drag for optimal performance
-      if (current.virtualDragActive) {
+      const dataChanged = current.rectangles !== previous.rectangles || current.settings !== previous.settings;
+      const becameIdle = previous.interactionActive && !current.interactionActive;
+
+      if (dataChanged && current.interactionActive) {
+        pendingAutoSaveAfterInteraction = true;
         return;
       }
       
-      // Deep equality check to avoid saves on reference changes without content changes
-      const rectanglesChanged = JSON.stringify(current.rectangles) !== JSON.stringify(previous.rectangles);
-      const settingsChanged = JSON.stringify(current.settings) !== JSON.stringify(previous.settings);
-      
-      if (rectanglesChanged || settingsChanged) {
-        // Trigger IndexedDB save with current state
-        const state = useAppStore.getState();
-        state.autoSaveActions.saveData();
+      if ((dataChanged && !current.interactionActive) || (becameIdle && pendingAutoSaveAfterInteraction)) {
+        pendingAutoSaveAfterInteraction = false;
+        useAppStore.getState().autoSaveActions.saveData();
       }
     },
     {
       equalityFn: (a, b) => {
-        // Skip expensive JSON comparison during virtual drag operations
-        if (a.virtualDragActive || b.virtualDragActive) {
-          return true; // Prevent triggering during virtual drag
-        }
-        return JSON.stringify(a) === JSON.stringify(b);
+        return (
+          a.rectangles === b.rectangles &&
+          a.settings === b.settings &&
+          a.interactionActive === b.interactionActive
+        );
       }
     }
   );
@@ -261,6 +270,7 @@ export const cleanupAutoSaveSubscription = () => {
     autoSaveUnsubscribe();
     autoSaveUnsubscribe = null;
   }
+  pendingAutoSaveAfterInteraction = false;
 };
 
 // Export store type for TypeScript inference in components

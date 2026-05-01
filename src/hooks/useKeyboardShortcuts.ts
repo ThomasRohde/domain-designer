@@ -19,6 +19,7 @@ interface KeyboardShortcuts {
   onMoveDown?: (deltaPixels: number) => void;
   onMoveLeft?: (deltaPixels: number) => void;
   onMoveRight?: (deltaPixels: number) => void;
+  onFitView?: () => void;  // 'F' key fits current selection or full diagram into view
   onToggleMinimap?: () => void;  // 'M' key toggles navigation minimap visibility
   onShowHelp?: () => void;  // Show keyboard shortcut help overlay
 }
@@ -48,6 +49,10 @@ export const useKeyboardShortcuts = (shortcuts: KeyboardShortcuts) => {
           // 'M' key toggles minimap visibility for spatial navigation
           event.preventDefault();
           shortcuts.onToggleMinimap();
+        } else if (key.toLowerCase() === 'f' && shortcuts.onFitView && !isTyping && !isInModal) {
+          // 'F' key fits current selection or the full diagram into view
+          event.preventDefault();
+          shortcuts.onFitView();
         } else if ((key === '?' || key === 'F1') && shortcuts.onShowHelp && !isTyping && !isInModal) {
           // '?' or F1 key shows keyboard shortcut help
           event.preventDefault();

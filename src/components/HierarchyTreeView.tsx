@@ -243,18 +243,25 @@ const HierarchyTreeView: React.FC<HierarchyTreeViewProps> = ({
   // Auto-expand nodes that have search matches
   React.useEffect(() => {
     if (searchFilter.trim() && filteredNodeIds.size > 0) {
-      const newExpanded = new Set(expandedNodes);
-      filteredNodeIds.forEach(nodeId => {
-        // Expand all parents of matched nodes
-        let currentParent = hierarchyNodes.find(n => n.id === nodeId)?.parentId;
-        while (currentParent) {
-          newExpanded.add(currentParent);
-          currentParent = hierarchyNodes.find(n => n.id === currentParent)?.parentId;
+      setExpandedNodes(prevExpanded => {
+        const newExpanded = new Set(prevExpanded);
+        filteredNodeIds.forEach(nodeId => {
+          // Expand all parents of matched nodes
+          let currentParent = hierarchyNodes.find(n => n.id === nodeId)?.parentId;
+          while (currentParent) {
+            newExpanded.add(currentParent);
+            currentParent = hierarchyNodes.find(n => n.id === currentParent)?.parentId;
+          }
+        });
+
+        if (newExpanded.size === prevExpanded.size) {
+          return prevExpanded;
         }
+
+        return newExpanded;
       });
-      setExpandedNodes(newExpanded);
     }
-  }, [searchFilter, filteredNodeIds, hierarchyNodes, expandedNodes]);
+  }, [searchFilter, filteredNodeIds, hierarchyNodes]);
 
   // Recursive component to render a node and its children
   const renderNode = useCallback((node: HierarchyNode, level: number): React.ReactNode => {

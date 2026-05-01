@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Rectangle, VirtualDragPosition } from '../types';
 import { GRID_SIZE, LABEL_MARGIN } from '../utils/constants';
 import CustomTooltip from './CustomTooltip';
-import { useAppStore } from '../stores/useAppStore';
 
 interface RectangleComponentProps {
   /** Rectangle data including position, size, label, and styling */
@@ -67,6 +66,8 @@ interface RectangleComponentProps {
   virtualPosition?: VirtualDragPosition | null;
   /** Disable hierarchy rearrangement UI and interactions (e.g., due to locks) */
   rearrangeDisabled?: boolean;
+  /** Precomputed heatmap color override supplied by the renderer */
+  heatmapColor?: string | null;
 }
 
 /**
@@ -120,8 +121,9 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   borderColor = '#374151',
   borderWidth = 2,
   disableEditing = false,
-  virtualPosition = null
-  , rearrangeDisabled = false
+  virtualPosition = null,
+  rearrangeDisabled = false,
+  heatmapColor = null
 }) => {
   // In-place editing state management
   const [isEditing, setIsEditing] = useState(false);
@@ -208,10 +210,6 @@ const RectangleComponent: React.FC<RectangleComponentProps> = ({
   // Text labels are transparent by default unless they're interactive targets
   let backgroundColor = rectangle.color;
   
-  // Heatmap Integration: Override rectangle color when heatmap mode is active
-  // The getHeatmapColor function returns null when heatmap is disabled,
-  // ensuring normal rectangle colors are preserved when heatmap is off
-  const heatmapColor = useAppStore(state => state.heatmapActions.getHeatmapColor(rectangle.id));
   if (heatmapColor) {
     backgroundColor = heatmapColor;
   }
@@ -510,7 +508,8 @@ export default React.memo(RectangleComponent, (prevProps, nextProps) => {
       prevProps.gridSize !== nextProps.gridSize ||
       prevProps.borderRadius !== nextProps.borderRadius ||
       prevProps.borderColor !== nextProps.borderColor ||
-      prevProps.borderWidth !== nextProps.borderWidth) {
+      prevProps.borderWidth !== nextProps.borderWidth ||
+      prevProps.heatmapColor !== nextProps.heatmapColor) {
     return false;
   }
   

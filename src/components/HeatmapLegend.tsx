@@ -1,12 +1,15 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useAppStore } from '../stores/useAppStore';
+import type { HeatmapState } from '../stores/types';
 
 interface HeatmapLegendProps {
   /** Whether the legend is visible */
   visible?: boolean;
   /** If true, shift left when sidebar is open (editor). Disable in viewer pages. */
   compensateForSidebar?: boolean;
+  /** Heatmap state for this diagram. Undefined falls back to the editor store; null hides the legend. */
+  heatmapState?: HeatmapState | null;
 }
 
 /**
@@ -20,20 +23,27 @@ interface HeatmapLegendProps {
  * - Shows current palette name and range
  * - Only displays when heat map is enabled and legend toggle is active
  */
-const HeatmapLegend: React.FC<HeatmapLegendProps> = ({ visible = true, compensateForSidebar = true }) => {
+const HeatmapLegend: React.FC<HeatmapLegendProps> = ({
+  visible = true,
+  compensateForSidebar = true,
+  heatmapState,
+}) => {
   const heatmapEnabled = useAppStore(state => state.heatmap.enabled);
   const showLegend = useAppStore(state => state.heatmap.showLegend);
   const selectedPaletteId = useAppStore(state => state.heatmap.selectedPaletteId);
   const palettes = useAppStore(state => state.heatmap.palettes);
   // Detect if the right sidebar (PropertyPanel/GlobalSettings) is open to avoid overlap
   const sidebarOpen = useAppStore(state => state.ui.sidebarOpen);
+  const activeHeatmap = heatmapState === undefined
+    ? { enabled: heatmapEnabled, showLegend, selectedPaletteId, palettes }
+    : heatmapState;
 
   // Only show legend if heat map is enabled, legend is toggled on, and component is visible
-  if (!visible || !heatmapEnabled || !showLegend) {
+  if (!visible || !activeHeatmap?.enabled || !activeHeatmap.showLegend) {
     return null;
   }
 
-  const currentPalette = palettes.find(p => p.id === selectedPaletteId);
+  const currentPalette = activeHeatmap.palettes.find(p => p.id === activeHeatmap.selectedPaletteId);
   if (!currentPalette) {
     return null;
   }

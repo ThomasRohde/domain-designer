@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { Rectangle, PanOffset, ZoomState } from '../types';
 import { Eye, EyeOff } from 'lucide-react';
 
@@ -31,8 +31,6 @@ interface MinimapProps {
   onToggleVisibility: () => void;
   /** Callback to jump to a specific position */
   onJumpToPosition: (x: number, y: number, containerWidth?: number, containerHeight?: number) => void;
-  /** Callback to start pan operation from minimap */
-  onStartPan?: (startX: number, startY: number) => void;
 }
 
 /**
@@ -50,9 +48,11 @@ const Minimap: React.FC<MinimapProps> = ({
   containerHeight,
   visible,
   onToggleVisibility,
-  onJumpToPosition,
-  onStartPan
+  onJumpToPosition
 }) => {
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const viewportDragOffsetRef = useRef({ x: 0, y: 0 });
+  const [isViewportDragging, setIsViewportDragging] = useState(false);
   // Minimap dimensions (fixed size for consistent UX)
   const MINIMAP_WIDTH = 200;
   const MINIMAP_HEIGHT = 150;
@@ -200,15 +200,52 @@ const Minimap: React.FC<MinimapProps> = ({
   /**
    * Handle drag start on viewport indicator
    */
-  const handleViewportMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleViewportMouseDown = useCallback((e: React.MouseEvent<SVGRectElement>) => {
+    e.preventDefault();
     e.stopPropagation();
-    if (onStartPan) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const minimapX = e.clientX - rect.left;
-      const minimapY = e.clientY - rect.top;
-      onStartPan(minimapX, minimapY);
-    }
-  }, [onStartPan]);
+    const svgBounds = svgRef.current?.getBoundingClientRect();
+    if (!svgBounds) return;
+
+    const minimapX = e.clientX - svgBounds.left;
+    const minimapY = e.clientY - svgBounds.top;
+    const viewportCenter = gridToMinimap(
+      viewportBounds.x + viewportBounds.width / 2,
+      viewportBounds.y + viewportBounds.height / 2
+    );
+
+    viewportDragOffsetRef.current = {
+      x: minimapX - viewportCenter.x,
+      y: minimapY - viewportCenter.y,
+    };
+    setIsViewportDragging(true);
+  }, [gridToMinimap, viewportBounds]);
+
+  useEffect(() => {
+    if (!isViewportDragging) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const svgBounds = svgRef.current?.getBoundingClientRect();
+      if (!svgBounds) return;
+
+      const minimapX = event.clientX - svgBounds.left - viewportDragOffsetRef.current.x;
+      const minimapY = event.clientY - svgBounds.top - viewportDragOffsetRef.current.y;
+      const gridPos = minimapToGrid(minimapX, minimapY);
+
+      onJumpToPosition(gridPos.x * gridSize, gridPos.y * gridSize, containerWidth, containerHeight);
+    };
+
+    const handleMouseUp = () => {
+      setIsViewportDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isViewportDragging, minimapToGrid, gridSize, onJumpToPosition, containerWidth, containerHeight]);
 
   if (!visible) {
     return (
@@ -242,9 +279,10 @@ const Minimap: React.FC<MinimapProps> = ({
         {/* Minimap Content */}
         <div className="relative">
           <svg
+            ref={svgRef}
             width={MINIMAP_WIDTH}
             height={MINIMAP_HEIGHT}
-            className="cursor-pointer"
+            className={isViewportDragging ? 'cursor-grabbing' : 'cursor-pointer'}
             onClick={handleMinimapClick}
           >
             <rect
@@ -338,8 +376,9 @@ const Minimap: React.FC<MinimapProps> = ({
                     strokeWidth={2}
                     strokeDasharray="4,2"
                     clipPath="url(#minimap-viewport-bounds)"
-                    className="cursor-move transition-all duration-300 ease-out"
+                    className={isViewportDragging ? 'cursor-grabbing' : 'cursor-move transition-all duration-300 ease-out'}
                     onMouseDown={handleViewportMouseDown}
+                    onClick={(event) => event.stopPropagation()}
                   />
                 </g>
               );

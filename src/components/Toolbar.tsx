@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Menu, Download, Upload, Settings, Map, Thermometer } from 'lucide-react';
+import { Plus, Menu, Download, Upload, Settings, Map, Thermometer, Maximize2 } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import OfflineIndicator from './OfflineIndicator';
 
@@ -18,6 +18,8 @@ interface ToolbarProps {
   autoSaveEnabled?: boolean;
   /** Navigation minimap toggle functionality */
   onToggleMinimap?: () => void;
+  /** Fit current selection or full diagram into the viewport */
+  onFitView?: () => void;
   /** Current minimap visibility state for button styling */
   minimapVisible?: boolean;
 }
@@ -35,6 +37,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   lastSaved,
   autoSaveEnabled,
   onToggleMinimap,
+  onFitView,
   minimapVisible
 }) => {
   const sidebarOpen = useAppStore(state => state.ui.sidebarOpen);
@@ -122,6 +125,16 @@ const Toolbar: React.FC<ToolbarProps> = ({
               <Download size={16} />
               <span>Export</span>
             </button>
+            {onFitView && (
+              <button
+                onClick={onFitView}
+                className="px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md border border-gray-300 flex items-center space-x-1"
+                title="Fit selection or diagram (F)"
+              >
+                <Maximize2 size={16} />
+                <span>Fit View</span>
+              </button>
+            )}
             {/* Navigation minimap toggle with active state styling */}
             {onToggleMinimap && (
               <button

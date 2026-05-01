@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Search, X, FolderTree } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
 import HierarchyTreeView from './HierarchyTreeView';
@@ -18,6 +18,7 @@ import MobileOverlay from './MobileOverlay';
  */
 const HierarchyOutlinePanel: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   
   // Store state and actions
   const isOpen = useAppStore(state => state.ui.hierarchyOutlineOpen);
@@ -45,8 +46,9 @@ const HierarchyOutlinePanel: React.FC = () => {
       jumpToPosition(centerX, centerY);
     }
     
-    // Close hierarchy outline after selection for clean view
-    closePanel();
+    if (window.innerWidth < 1024) {
+      closePanel();
+    }
   }, [setSelectedIds, rectangles, gridSize, jumpToPosition, closePanel]);
 
   // Handle search input with debouncing
@@ -57,6 +59,7 @@ const HierarchyOutlinePanel: React.FC = () => {
   // Clear search
   const handleClearSearch = useCallback(() => {
     setSearchTerm('');
+    setActiveSearchIndex(0);
   }, []);
 
   // Stats for the header
@@ -68,20 +71,60 @@ const HierarchyOutlinePanel: React.FC = () => {
   }, [rectangles]);
 
   // Filter info for search
-  const searchStats = useMemo(() => {
+  const directSearchMatches = useMemo(() => {
     if (!searchTerm.trim()) return null;
     
     const searchLower = searchTerm.toLowerCase();
-    const matches = rectangles.filter(rect => 
-      rect.label?.toLowerCase().includes(searchLower) ||
-      rect.description?.toLowerCase().includes(searchLower)
-    );
+    return rectangles
+      .filter(rect => 
+        rect.label?.toLowerCase().includes(searchLower) ||
+        rect.description?.toLowerCase().includes(searchLower)
+      )
+      .sort((a, b) => (a.label || a.id).localeCompare(b.label || b.id));
+  }, [rectangles, searchTerm]);
+
+  const searchStats = useMemo(() => {
+    if (!directSearchMatches) return null;
     
     return {
-      matches: matches.length,
+      matches: directSearchMatches.length,
       total: rectangles.length
     };
-  }, [rectangles, searchTerm]);
+  }, [rectangles.length, directSearchMatches]);
+
+  useEffect(() => {
+    setActiveSearchIndex(0);
+  }, [searchTerm]);
+
+  const handleSearchKeyDown = useCallback((event: React.KeyboardEvent<HTMLInputElement>) => {
+    const matchCount = directSearchMatches?.length ?? 0;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      if (searchTerm) {
+        handleClearSearch();
+      } else {
+        closePanel();
+      }
+      return;
+    }
+
+    if (matchCount === 0) return;
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSearchIndex(index => (index + 1) % matchCount);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSearchIndex(index => (index - 1 + matchCount) % matchCount);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      const match = directSearchMatches?.[activeSearchIndex] ?? directSearchMatches?.[0];
+      if (match) {
+        handleRectangleSelect(match.id);
+      }
+    }
+  }, [activeSearchIndex, closePanel, directSearchMatches, handleClearSearch, handleRectangleSelect, searchTerm]);
 
   return (
     <>
@@ -126,6 +169,7 @@ const HierarchyOutlinePanel: React.FC = () => {
               type="text"
               value={searchTerm}
               onChange={handleSearchChange}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Search rectangles..."
               className="block w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
@@ -144,6 +188,27 @@ const HierarchyOutlinePanel: React.FC = () => {
           {searchStats && (
             <div className="mt-2 text-xs text-gray-600">
               {searchStats.matches} of {searchStats.total} rectangles match "{searchTerm}"
+            </div>
+          )}
+
+          {directSearchMatches && directSearchMatches.length > 0 && (
+            <div className="mt-2 max-h-36 overflow-y-auto rounded-md border border-gray-200 bg-white">
+              {directSearchMatches.slice(0, 8).map((match, index) => (
+                <button
+                  key={match.id}
+                  type="button"
+                  className={`block w-full truncate px-3 py-1.5 text-left text-xs ${
+                    index === activeSearchIndex
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                  title={match.label || match.id}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => handleRectangleSelect(match.id)}
+                >
+                  {match.label || match.id}
+                </button>
+              ))}
             </div>
           )}
         </div>

@@ -121,6 +121,12 @@ export const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
 
   // View shortcuts
   {
+    key: 'F',
+    modifiers: [],
+    description: 'Fit selection or diagram',
+    category: 'View'
+  },
+  {
     key: 'M',
     modifiers: [],
     description: 'Toggle navigation minimap',

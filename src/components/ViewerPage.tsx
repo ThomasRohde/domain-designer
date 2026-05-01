@@ -55,34 +55,6 @@ const ViewerPage: React.FC = () => {
     return <URLViewerPage />;
   }
 
-  /**
-   * Dynamic font size calculation based on hierarchy depth.
-   * Provides visual hierarchy through progressive font scaling while maintaining readability.
-   */
-  const calculateFontSize = (rectangleId: string, rectangles: Rectangle[]) => {
-    if (!appSettings) return 16; // Safe fallback when settings not loaded
-    
-    if (!appSettings.dynamicFontSizing) {
-      return appSettings.rootFontSize;
-    }
-    
-    const rectangle = rectangles.find(r => r.id === rectangleId);
-    if (!rectangle) return appSettings.rootFontSize;
-    
-    // Calculate hierarchy depth by traversing parent chain
-    let depth = 0;
-    let currentRect = rectangle;
-    while (currentRect.parentId) {
-      depth++;
-      currentRect = rectangles.find(r => r.id === currentRect.parentId) || currentRect;
-      if (depth > 10) break; // Prevent infinite loops in malformed data
-    }
-    
-    // Apply 10% size reduction per level with minimum size constraint
-    const scaleFactor = Math.pow(0.9, depth);
-    return Math.max(8, Math.round(appSettings.rootFontSize * scaleFactor));
-  };
-
   // Default settings fallback
   const defaultSettings = {
     fontFamily: 'Inter, system-ui, sans-serif',
@@ -173,7 +145,8 @@ const ViewerPage: React.FC = () => {
           rectangles={rectangles}
           gridSize={appSettings?.gridSize || 20}
           labelMargin={appSettings?.labelMargin || 2.0}
-          calculateFontSize={calculateFontSize}
+          rootFontSize={appSettings?.rootFontSize || 16}
+          dynamicFontSizing={appSettings?.dynamicFontSizing ?? true}
           fontFamily={appSettings?.fontFamily || defaultSettings.fontFamily}
           borderRadius={appSettings?.borderRadius || defaultSettings.borderRadius}
           borderColor={appSettings?.borderColor || defaultSettings.borderColor}

@@ -1,14 +1,15 @@
 import React from 'react';
 import { Plus, Trash2, Grid3X3, Move, Container, Lock } from 'lucide-react';
 import { useAppStore } from '../stores/useAppStore';
+import type { Rectangle } from '../types';
+import MultiSelectActionControls from './MultiSelectActionControls';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface ActionButtonsOverlayProps {}
 
 /**
  * Floating action buttons overlay for selected rectangles.
- * Provides quick access to common operations: add child, remove, fit to children, and manual positioning toggle.
- * Hidden during multi-select operations since these actions don't apply to multiple rectangles.
+ * Provides quick access to common operations for single selection and direct bulk actions for multi-selection.
  */
 const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
   const selectedIds = useAppStore(state => state.ui.selectedIds);
@@ -40,7 +41,43 @@ const ActionButtonsOverlay: React.FC<ActionButtonsOverlayProps> = () => {
    * - Multi-select modes where group operations take precedence over single-rectangle actions
    * - No selection state where context-specific actions are not applicable
    */
-  if (!selectedRectangle || isDragging || isResizing || isHierarchyDragging || isKeyboardMoving || isMultiSelectActive) {
+  if (isDragging || isResizing || isHierarchyDragging || isKeyboardMoving) {
+    return null;
+  }
+
+  if (isMultiSelectActive) {
+    const selectedRectangles = selectedIds
+      .map(id => rectangles.find(rectangle => rectangle.id === id))
+      .filter((rectangle): rectangle is Rectangle => rectangle !== undefined);
+
+    if (selectedRectangles.length <= 1) return null;
+
+    const bounds = selectedRectangles.reduce(
+      (acc, rectangle) => ({
+        minX: Math.min(acc.minX, rectangle.x),
+        minY: Math.min(acc.minY, rectangle.y),
+        maxX: Math.max(acc.maxX, rectangle.x + rectangle.w),
+      }),
+      { minX: Infinity, minY: Infinity, maxX: -Infinity }
+    );
+
+    const overlayStyle: React.CSSProperties = {
+      position: 'absolute',
+      left: ((bounds.minX + bounds.maxX) / 2) * gridSize,
+      top: bounds.minY * gridSize - 44,
+      zIndex: 100000,
+      pointerEvents: 'auto',
+      transform: 'translateX(-50%)'
+    };
+
+    return (
+      <div style={overlayStyle}>
+        <MultiSelectActionControls variant="toolbar" />
+      </div>
+    );
+  }
+
+  if (!selectedRectangle) {
     return null;
   }
 

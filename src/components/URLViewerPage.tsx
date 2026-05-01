@@ -4,6 +4,7 @@ import { Rectangle, AppSettings } from '../types';
 import { useViewerInteractions } from '../hooks/useViewerInteractions';
 import { importDiagramFromJSON, ImportedDiagramData } from '../utils/exportUtils';
 import { useAppStore } from '../stores/useAppStore';
+import type { HeatmapState } from '../stores/types';
 import ViewerCanvas from './ViewerCanvas';
 import ViewerRectangleRenderer from './ViewerRectangleRenderer';
 import HeatmapLegend from './HeatmapLegend';
@@ -18,6 +19,7 @@ const URLViewerPage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [rectangles, setRectangles] = useState<Rectangle[]>([]);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  const [diagramHeatmapState, setDiagramHeatmapState] = useState<HeatmapState | null>(null);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     isLoading: true,
     error: null,
@@ -92,14 +94,7 @@ const URLViewerPage: React.FC = () => {
         
         setRectangles(importedData.rectangles);
         setAppSettings(importedData.globalSettings || null);
-        // Apply heat map state to store to ensure consistent legend/settings if viewer relies on store
-        if (importedData.heatmapState) {
-          try {
-            useAppStore.getState().heatmapActions.applyImportedHeatmapState(importedData.heatmapState);
-          } catch (hmErr) {
-            console.warn('Heat map state import skipped in viewer due to error:', hmErr);
-          }
-        }
+        setDiagramHeatmapState(importedData.heatmapState || null);
         setLoadingState({
           isLoading: false,
           error: null,
@@ -118,34 +113,6 @@ const URLViewerPage: React.FC = () => {
 
     loadFromURL();
   }, [url, navigate]);
-
-  /**
-   * Dynamic font size calculation based on hierarchy depth.
-   * Provides visual hierarchy through progressive font scaling while maintaining readability.
-   */
-  const calculateFontSize = (rectangleId: string, rectangles: Rectangle[]) => {
-    if (!appSettings) return 16; // Safe fallback when settings not loaded
-    
-    if (!appSettings.dynamicFontSizing) {
-      return appSettings.rootFontSize;
-    }
-    
-    const rectangle = rectangles.find(r => r.id === rectangleId);
-    if (!rectangle) return appSettings.rootFontSize;
-    
-    // Calculate hierarchy depth by traversing parent chain
-    let depth = 0;
-    let currentRect = rectangle;
-    while (currentRect.parentId) {
-      depth++;
-      currentRect = rectangles.find(r => r.id === currentRect.parentId) || currentRect;
-      if (depth > 10) break; // Prevent infinite loops in malformed data
-    }
-    
-    // Apply 10% size reduction per level with minimum size constraint
-    const scaleFactor = Math.pow(0.9, depth);
-    return Math.max(8, Math.round(appSettings.rootFontSize * scaleFactor));
-  };
 
   // Default settings fallback
   const defaultSettings = {
@@ -184,6 +151,12 @@ const URLViewerPage: React.FC = () => {
           console.warn('Failed to import settings, using defaults:', settingsError);
           // Continue without settings import - rectangles are more important
         }
+      }
+
+      if (diagramHeatmapState) {
+        useAppStore.getState().heatmapActions.applyImportedHeatmapState(diagramHeatmapState);
+      } else {
+        useAppStore.getState().heatmapActions.setEnabled(false);
       }
       
       // Trigger auto-save to persist the imported data to IndexedDB
@@ -277,16 +250,18 @@ const URLViewerPage: React.FC = () => {
           rectangles={rectangles}
           gridSize={appSettings?.gridSize || 20}
           labelMargin={appSettings?.labelMargin || 2.0}
-          calculateFontSize={calculateFontSize}
+          rootFontSize={appSettings?.rootFontSize || 16}
+          dynamicFontSizing={appSettings?.dynamicFontSizing ?? true}
           fontFamily={appSettings?.fontFamily || defaultSettings.fontFamily}
           borderRadius={appSettings?.borderRadius || defaultSettings.borderRadius}
           borderColor={appSettings?.borderColor || defaultSettings.borderColor}
           borderWidth={appSettings?.borderWidth || defaultSettings.borderWidth}
+          heatmapState={diagramHeatmapState}
         />
       </ViewerCanvas>
 
   {/* Heat Map Legend - floating overlay (no sidebar compensation in viewer) */}
-  <HeatmapLegend compensateForSidebar={false} />
+  <HeatmapLegend compensateForSidebar={false} heatmapState={diagramHeatmapState} />
     </div>
   );
 };

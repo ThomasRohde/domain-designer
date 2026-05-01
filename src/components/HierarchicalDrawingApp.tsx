@@ -8,6 +8,7 @@ import { importDiagramFromJSON, processImportedDiagram, ImportedDiagramData } fr
 import { initializeAutoSaveSubscription } from '../stores/useAppStore';
 import { setGlobalUpdateNotificationHandler } from '../main';
 import { canPerformAlignment, canPerformDistribution } from '../utils/selectionUtils';
+import { calculateFitView } from '../utils/viewportUtils';
 import RectangleRenderer from './RectangleRenderer';
 import ContextMenu from './ContextMenu';
 import Toolbar from './Toolbar';
@@ -538,6 +539,35 @@ const HierarchicalDrawingApp = () => {
   // Minimap controls
   const toggleMinimap = useAppStore(state => state.canvasActions.toggleMinimap);
   const minimapVisible = useAppStore(state => state.canvas.minimapVisible);
+  const setPanOffset = useAppStore(state => state.canvasActions.setPanOffset);
+  const setZoomState = useAppStore(state => state.canvasActions.setZoomState);
+  const zoomState = useAppStore(state => state.canvas.zoomState);
+
+  const handleFitView = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const selectedSet = new Set(ui.selectedIds);
+    const targetRectangles = selectedSet.size > 0
+      ? rectangles.filter(rectangle => selectedSet.has(rectangle.id))
+      : rectangles;
+
+    const fit = calculateFitView(targetRectangles, {
+      containerWidth: container.clientWidth,
+      containerHeight: container.clientHeight,
+      gridSize: settings.gridSize,
+      minZoom: zoomState.minLevel,
+      maxZoom: zoomState.maxLevel,
+    });
+
+    if (!fit) return;
+
+    setZoomState({
+      ...zoomState,
+      level: fit.zoomLevel,
+    });
+    setPanOffset(fit.panOffset);
+  }, [rectangles, ui.selectedIds, settings.gridSize, zoomState, setZoomState, setPanOffset]);
 
   /**
    * High-precision keyboard movement system with collision detection.
@@ -723,9 +753,10 @@ const HierarchicalDrawingApp = () => {
     onMoveDown: handleMoveDown,
     onMoveLeft: handleMoveLeft,
     onMoveRight: handleMoveRight,
+    onFitView: handleFitView,
     onToggleMinimap: toggleMinimap, // 'M' key toggles navigation minimap visibility
     onShowHelp: handleShowKeyboardHelp, // '?' or F1 key shows keyboard shortcuts help
-  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleCopy, handlePaste, handleDuplicate, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight, toggleMinimap, handleShowKeyboardHelp]));
+  }), [undo, redo, handleDeleteSelected, handleClearSelection, handleSelectAllSiblings, handleCopy, handlePaste, handleDuplicate, handleMoveUp, handleMoveDown, handleMoveLeft, handleMoveRight, handleFitView, toggleMinimap, handleShowKeyboardHelp]));
 
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden select-none">
@@ -738,6 +769,7 @@ const HierarchicalDrawingApp = () => {
         selectedId={ui.selectedIds && ui.selectedIds.length === 1 ? ui.selectedIds[0] : selectedId}
         lastSaved={autoSaveState.lastSaved}
         autoSaveEnabled={autoSaveState.enabled}
+        onFitView={handleFitView}
         onToggleMinimap={toggleMinimap}
         minimapVisible={minimapVisible}
       />

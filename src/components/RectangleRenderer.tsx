@@ -1,11 +1,12 @@
 import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Rectangle } from '../types';
-import { 
-  getChildren,
-  getZIndex,
-  sortRectanglesByDepth,
-} from '../utils/layoutUtils';
+import {
+  buildRectangleRenderIndex,
+  calculateIndexedFontSize,
+  getIndexedZIndex,
+} from '../utils/rectangleIndexUtils';
+import { calculateHeatmapColor } from '../utils/heatmapColors';
 import { useAppStore } from '../stores/useAppStore';
 import RectangleComponent from './RectangleComponent';
 
@@ -29,6 +30,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const selectedId = selectedIds.length > 0 ? selectedIds[0] : null;
   // Performance optimization: Convert selectedIds to Set for O(1) lookup
   const selectedIdsSet = React.useMemo(() => new Set(selectedIds), [selectedIds]);
+  const renderIndex = React.useMemo(() => buildRectangleRenderIndex(rectangles), [rectangles]);
   
   // Separate subscriptions for styling to prevent re-renders when only rectangles change
   const { 
@@ -43,37 +45,23 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   // Direct subscriptions to font settings for reactive calculations
   const rootFontSize = useAppStore(state => state.settings.rootFontSize);
   const dynamicFontSizing = useAppStore(state => state.settings.dynamicFontSizing);
-  
-  /**
-   * Calculate dynamic font size based on rectangle hierarchy depth.
-   * This is now reactive to font setting changes.
-   */
-  const calculateFontSize = React.useCallback((rectangleId: string) => {
-    if (!dynamicFontSizing) return rootFontSize;
-    
-    // Calculate hierarchy depth with cycle detection
-    const getDepth = (rectId: string): number => {
-      const rect = rectangles.find(r => r.id === rectId);
-      if (!rect || !rect.parentId) return 0;
-      
-      let depth = 0;
-      let current = rect;
-      
-      while (current && current.parentId) {
-        depth++;
-        const parent = rectangles.find(r => r.id === current!.parentId);
-        if (!parent || depth > 10) break; // Prevent infinite loops
-        current = parent;
-      }
-      
-      return depth;
-    };
-    
-    const depth = getDepth(rectangleId);
-    // Progressive font scaling: 10% smaller per level, minimum 60% of root size
-    return Math.max(rootFontSize * Math.pow(0.9, depth), rootFontSize * 0.6);
-  }, [rectangles, rootFontSize, dynamicFontSizing]);
-  
+
+  const heatmap = useAppStore(useShallow(state => ({
+    enabled: state.heatmap.enabled,
+    selectedPaletteId: state.heatmap.selectedPaletteId,
+    palettes: state.heatmap.palettes,
+    undefinedValueColor: state.heatmap.undefinedValueColor
+  })));
+
+  const selectedPalette = React.useMemo(
+    () => heatmap.palettes.find(palette => palette.id === heatmap.selectedPaletteId),
+    [heatmap.palettes, heatmap.selectedPaletteId]
+  );
+
+  const getHeatmapColorForRectangle = React.useCallback((rect: Rectangle) => {
+    if (!heatmap.enabled) return null;
+    return calculateHeatmapColor(rect.heatmapValue, selectedPalette, heatmap.undefinedValueColor);
+  }, [heatmap.enabled, heatmap.undefinedValueColor, selectedPalette]);
   
   /**
    * Canvas interaction states for visual feedback during operations.
@@ -93,19 +81,6 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   const { setSelectedIds, updateRectangleLabel, toggleSelection } = useAppStore(state => state.rectangleActions);
   const handleRectangleMouseDown = useAppStore(state => state.canvasActions.handleRectangleMouseDown);
   
-  // Helper: check if a rectangle has any locked ancestor
-  const hasLockedAncestor = React.useCallback((rect: Rectangle): boolean => {
-    let current = rect;
-    while (current.parentId) {
-      const parent = rectangles.find(r => r.id === current.parentId);
-      if (!parent) break;
-      if (parent.isLockedAsIs) return true;
-      current = parent;
-    }
-    return false;
-  }, [rectangles]);
-  
-
   /**
    * Mouse event handler factory that injects containerRef for coordinate calculations.
    * Bridges component-level containerRef with store-level mouse handling logic,
@@ -131,7 +106,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
   return (
     <>
       {/* Render all rectangles */}
-      {sortRectanglesByDepth(rectangles).map(rect => {
+      {renderIndex.sortedByDepth.map(rect => {
         /**
          * Calculate rectangle interaction states for visual feedback.
          * These states determine visual appearance during drag operations,
@@ -154,6 +129,8 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
         
         // Get virtual position for performance optimization during drag operations
         const virtualPosition = canvasState.virtualDragState?.isActive ? getVirtualPosition(rect.id) : null;
+        const childCount = renderIndex.childCountById.get(rect.id) ?? 0;
+        const parent = rect.parentId ? renderIndex.rectById.get(rect.parentId) : undefined;
         
         return (
           <RectangleComponent
@@ -162,26 +139,24 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             isSelected={selectedId === rect.id}
             isMultiSelected={isMultiSelected}
             selectedCount={selectedIds.length}
-            zIndex={getZIndex(rect, rectangles, selectedId, canvasState.dragState, canvasState.resizeState, canvasState.hierarchyDragState)}
+            zIndex={getIndexedZIndex(rect, renderIndex, selectedId, canvasState.dragState, canvasState.resizeState, canvasState.hierarchyDragState)}
             onMouseDown={onMouseDown}
             onContextMenu={onContextMenu}
             onSelect={handleRectangleSelect}
             onUpdateLabel={updateRectangleLabel}
             // Drag/resize permissions based on hierarchy and manual positioning settings
-            canDrag={!rect.parentId || Boolean(rect.parentId && rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)}
-            canResize={(() => {
-              const hasChildren = getChildren(rect.id, rectangles).length > 0;
-              return (
-                !rect.parentId || // Root rectangles can always be resized
-                (!hasChildren && rect.parentId && Boolean(rectangles.find(r => r.id === rect.parentId)?.isManualPositioningEnabled)) || // Leaf rectangles under unlocked parents
-                (hasChildren && Boolean(rect.isManualPositioningEnabled)) // Parent rectangles that are themselves unlocked
-              );
-            })()}
-            childCount={getChildren(rect.id, rectangles).length}
+            canDrag={!rect.parentId || Boolean(parent?.isManualPositioningEnabled)}
+            canResize={
+              !rect.parentId ||
+              (childCount === 0 && Boolean(parent?.isManualPositioningEnabled)) ||
+              (childCount > 0 && Boolean(rect.isManualPositioningEnabled))
+            }
+            childCount={childCount}
             gridSize={gridSize}
             labelMargin={labelMargin}
-            fontSize={calculateFontSize(rect.id)}
+            fontSize={calculateIndexedFontSize(rect.id, renderIndex, rootFontSize, dynamicFontSizing)}
             fontFamily={fontFamily}
+            heatmapColor={getHeatmapColorForRectangle(rect)}
             isDropTarget={isDropTarget}
             isValidDropTarget={isValidDropTarget}
             isCurrentDropTarget={isCurrentDropTarget}
@@ -195,7 +170,7 @@ const RectangleRenderer: React.FC<RectangleRendererProps> = ({
             borderColor={borderColor}
             borderWidth={borderWidth}
             virtualPosition={virtualPosition}
-            rearrangeDisabled={rect.isLockedAsIs || hasLockedAncestor(rect)}
+            rearrangeDisabled={rect.isLockedAsIs || (renderIndex.hasLockedAncestorById.get(rect.id) ?? false)}
           />
         );
       })}
